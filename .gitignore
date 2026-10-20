@@ -1,0 +1,17 @@
+# 개인 데이터 / personal data (never commit)
+bin/4Dir_*.json
+bin/*.running
+bin/log/
+bin/sessions/
+bin/workspaces/
+bin/index/
+reports/
+__pycache__/
+*.pyc
+# build outputs
+runtime/
+_release/
+_build/cache/
+_build/*_log.txt
+_build/corp_words.txt
+_site/out/

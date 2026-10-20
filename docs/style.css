@@ -1,0 +1,29 @@
+:root{--bg:#f7f8fa;--fg:#1d2330;--mut:#5b6475;--card:#fff;--line:#e2e5eb;--acc:#1f6feb;--acc2:#1859c4;--don:#e0446b;--code:#eef1f5}
+@media (prefers-color-scheme:dark){:root{--bg:#15181e;--fg:#e6e9ef;--mut:#9aa3b2;--card:#1d2129;--line:#2c313b;--acc:#4c8dff;--acc2:#6aa1ff;--don:#ff5c86;--code:#252a33}}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 "Segoe UI","Malgun Gothic","Microsoft YaHei","Yu Gothic UI",system-ui,sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+a{color:var(--acc)}
+.top{border-bottom:1px solid var(--line);background:var(--card)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:56px;gap:12px}
+.logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:20px;color:var(--fg);text-decoration:none}
+.lang{font-size:14px;color:var(--mut)}.lang select{font:inherit;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg);max-width:46vw}
+.hero{text-align:center;padding:48px 0 24px}
+.hero h1{font-size:clamp(26px,4.4vw,42px);line-height:1.25;margin:0 0 12px}
+.sub{color:var(--mut);font-size:18px;margin:0 0 24px}
+.note{color:var(--mut);font-size:14px}
+.btn{display:inline-block;padding:10px 18px;border-radius:8px;background:var(--acc);color:#fff;text-decoration:none;font-weight:600}
+.btn:hover{background:var(--acc2)}.btn.big{font-size:19px;padding:14px 28px}
+.btn.don{background:var(--don);margin:4px}
+.shot{margin:24px 0;text-align:center}.shot img{max-width:100%;height:auto;border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.12)}
+figcaption{color:var(--mut);font-size:14px;margin-top:6px}
+section{margin:40px 0}h2{font-size:26px;margin:0 0 16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px}.card h3{margin:0 0 6px;font-size:18px}.card p{margin:0;color:var(--mut)}
+ol li{margin:6px 0}.tip{background:var(--card);border-left:4px solid var(--acc);padding:10px 14px;border-radius:6px}
+code{background:var(--code);padding:2px 6px;border-radius:4px;font-family:Consolas,monospace;font-size:14px;word-break:break-all}
+code.sha{display:inline-block;max-width:100%}
+details{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:8px 0}summary{cursor:pointer;font-weight:600}
+#donate{text-align:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:24px 16px}
+footer{border-top:1px solid var(--line);padding:24px 0;color:var(--mut);font-size:14px;text-align:center}
+@media (max-width:600px){.hero{padding:32px 0 16px}.sub{font-size:16px}.grid{grid-template-columns:1fr}}

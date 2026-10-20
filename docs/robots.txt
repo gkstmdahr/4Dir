@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://gkstmdahr.github.io/4Dir/sitemap.xml
