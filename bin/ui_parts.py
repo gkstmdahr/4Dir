@@ -62,6 +62,7 @@ class Settings:
                      "guide_shown": False,   # 처음 실행 때 사용법 창을 보여줬는지
                      "update_check": True,   # 시작할 때 새 버전 확인 (하루 한 번, 버전 정보 파일만 읽음)
                      "update_last": "",      # 마지막으로 확인한 날 (YYYY-MM-DD)
+                     "update_skip": "",      # 새 버전 팝업에서 '이 버전 건너뛰기' 누른 버전 (v0.9.62)
                      "resume_after_reboot": True,   # 켜 둔 채 윈도우 종료·재부팅하면 다음 로그인 때 다시 열기 (10/12)
                      "keys": {},             # 바꾼 단축키만 {기능: "Ctrl+X; F7"} (keymap.py)
                      "search_roots": None,   # 검색 범위 [{path, on}] (None = 기본: 로컬 NTFS 드라이브)
@@ -75,7 +76,7 @@ class Settings:
                     self.data[tk].update({k: v for k, v in d.get(tk, {}).items() if k in THEME_KEYS})
                 if "theme_mode" not in d and d.get("dark"):   # 0.6.2 이전: 다크 모드 켜둔 사람은 '어둡게' 유지
                     self.data["theme_mode"] = "dark"
-                for k in ("theme_mode", "dark", "fav_expanded", "on_top", "allow_multi", "sysmon", "breadcrumb", "keys", "search_roots", "lang", "chrome_collapsed", "batch_rename", "guide_shown", "update_check", "update_last", "resume_after_reboot"):
+                for k in ("theme_mode", "dark", "fav_expanded", "on_top", "allow_multi", "sysmon", "breadcrumb", "keys", "search_roots", "lang", "chrome_collapsed", "batch_rename", "guide_shown", "update_check", "update_last", "update_skip", "resume_after_reboot"):
                     if k in d:
                         self.data[k] = d[k]
             except Exception:

@@ -589,5 +589,9 @@
  "저장했고 파일 경로를 복사했습니다: {0} — 이 파일을 {1} 로 보내 주세요  ✕": "Salvo e caminho copiado: {0} — envie este arquivo para {1}  ✕",
  "메일로 보내기": "Enviar por e-mail",
  "첨부할 파일: {0}": "Arquivo para anexar: {0}",
- "메일 프로그램을 열지 못했습니다. 주소를 복사했습니다: {0} — 쓰시는 메일에서 zip 을 첨부해 보내 주세요  ✕": "Não foi possível abrir o programa de e-mail. Endereço copiado: {0} — envie o zip pelo seu e-mail  ✕"
+ "메일 프로그램을 열지 못했습니다. 주소를 복사했습니다: {0} — 쓰시는 메일에서 zip 을 첨부해 보내 주세요  ✕": "Não foi possível abrir o programa de e-mail. Endereço copiado: {0} — envie o zip pelo seu e-mail  ✕",
+ "새 버전 알림": "Nova versão",
+ "새 버전 4Dir v{0} 이 나왔습니다 (지금 v{1})": "4Dir v{0} está disponível (você tem a v{1})",
+ "이 버전 건너뛰기": "Pular esta versão",
+ "나중에": "Mais tarde"
 }

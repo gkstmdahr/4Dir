@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.61"
+QE_VERSION = "0.9.62"
 
 import os
 import sys
@@ -261,11 +261,48 @@ def _update_done(data, err, manual):
     page = data.get("page") or ""
     if _ver_tuple(new) > _ver_tuple(QE_VERSION):
         notes = data.get("notes") or ""
-        w.show_notice(T("새 버전 4Dir v{0} 이 나왔습니다 (지금 v{1}). {2}  ✕").format(new, QE_VERSION, notes), sticky=True,
-                      action=(T("받으러 가기"), lambda: QtGui.QDesktopServices.openUrl(QtCore.QUrl(page))) if page else None)
-        log.info("새 버전 있음 v%s (지금 v%s) %s", new, QE_VERSION, page)
+        log.info("새 버전 있음 v%s (지금 v%s) %s 건너뛴버전=%r", new, QE_VERSION, page, SETTINGS["update_skip"])
+        if not manual and SETTINGS["update_skip"] == new:
+            log.info("새 버전 팝업 생략: 사용자가 v%s 를 건너뛰기로 함", new)
+            return
+        show_update_popup(w, new, notes, page)
     elif manual:
         w.show_notice(T("지금 최신 버전입니다 (v{0})").format(QE_VERSION))
+
+
+def show_update_popup(w, new, notes, page):
+    """v0.9.62: 새 버전 팝업 (10/22 사용자 요청) — 받으러 가기 / 이 버전 건너뛰기(이 버전은 다시 안 물음) / 나중에(내일 다시 물음).
+    exec() 대신 open() 으로 띄워 뒤의 작업(검색 색인 등)을 멈추지 않음. 누른 버튼은 로그에 남김"""
+    old = getattr(w, "_upd_dlg", None)
+    if old is not None:
+        old.close()
+    box = QtWidgets.QMessageBox(w)
+    box.setIcon(QtWidgets.QMessageBox.Information)
+    box.setWindowTitle(T("새 버전 알림"))
+    box.setText(T("새 버전 4Dir v{0} 이 나왔습니다 (지금 v{1})").format(new, QE_VERSION))
+    if notes:
+        box.setInformativeText(notes)
+    b_get = box.addButton(T("받으러 가기"), QtWidgets.QMessageBox.AcceptRole) if page else None
+    b_skip = box.addButton(T("이 버전 건너뛰기"), QtWidgets.QMessageBox.DestructiveRole)
+    b_later = box.addButton(T("나중에"), QtWidgets.QMessageBox.RejectRole)
+    box.setDefaultButton(b_get or b_later)
+    box.setEscapeButton(b_later)
+
+    def clicked(b):
+        if b is not None and b is b_get:
+            log.info("새 버전 팝업: 받으러 가기 v%s %s", new, page)
+            QtGui.QDesktopServices.openUrl(QtCore.QUrl(page))
+        elif b is b_skip:
+            log.info("새 버전 팝업: v%s 건너뛰기", new)
+            SETTINGS["update_skip"] = new
+        else:
+            log.info("새 버전 팝업: 나중에 v%s", new)
+    box.buttonClicked.connect(clicked)
+    box.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+    box.destroyed.connect(lambda *_: setattr(w, "_upd_dlg", None))
+    w._upd_dlg = box
+    box.open()
+    return box
 
 
 class _UndoSig(QtCore.QObject):
