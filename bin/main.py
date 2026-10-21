@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.56"
+QE_VERSION = "0.9.57"
 
 import os
 import sys
@@ -85,7 +85,12 @@ def start_hang_watch(app):
         f = open(p, "a", encoding="utf-8")
         f.write(f"\n=== 4Dir v{QE_VERSION} pid={os.getpid()} 시작 {time.strftime('%Y-%m-%d %H:%M:%S')} ===\n")
         f.flush()
-        faulthandler.enable(file=f)   # 프로그램이 통째로 죽는 충돌도 위치 기록
+        # 프로그램이 통째로 죽는 충돌도 위치 기록. all_threads=False (v0.9.57): 윈도우 셸(속성 창·끌기 등)이 안에서
+        # 일부러 던지고 스스로 받는 COM 오류(0x8001010e)도 이 기록 장치가 잡는데, 그때마다 '모든 스레드' 위치를 훑다가
+        # 다른 스레드가 움직이는 중이라 기록 장치 자체가 접근 위반으로 4Dir 를 죽임(10/21 실측: 속성 누른 순간 종료,
+        # hang.log 가 줄 중간에서 끊기고 윈도우 오류 기록 = python313.dll c0000005). 지금 스레드만 기록하면 안전.
+        # 멈춤 감시(dump_traceback_later)는 그대로 모든 스레드 기록.
+        faulthandler.enable(file=f, all_threads=False)
         faulthandler.dump_traceback_later(HANG_SEC, exit=False, file=f)
     except Exception:
         log.exception("멈춤 감시 시작 실패")
