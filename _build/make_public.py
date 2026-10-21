@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 공개 저장소 폴더 만들기 (MAKE_PUBLIC_VER 1.0.1)
+"""4Dir 공개 저장소 폴더 만들기 (MAKE_PUBLIC_VER 1.0.2)
 
 python make_public.py   → 4Dir\\_public\\  (깃허브에 올릴 내용 그대로. .git 폴더는 남기고 나머지를 새로 채움)
 - 올리는 것: 4Dir.vbs, bin 의 소스(.py)·언어·사용법 그림·아이콘, _build 의 만들기 스크립트, docs\\ (사이트), LICENSE, README
@@ -16,7 +16,7 @@ import time
 import shutil
 import subprocess
 
-MAKE_PUBLIC_VER = "1.0.1"
+MAKE_PUBLIC_VER = "1.0.2"
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 BIN = os.path.join(ROOT, "bin")
@@ -170,7 +170,8 @@ def main():
         cfg.update(json.load(open(os.path.join(HERE, "site_config.json"), encoding="utf-8")))
     owner = cfg["owner"] or "OWNER"
     repo = f"https://github.com/{owner}/{cfg['repo']}"
-    site = f"https://{owner.lower()}.github.io/{cfg['repo']}/"
+    from make_site import site_base
+    site = site_base(cfg)
     log(f"공개 저장소 만들기 v{MAKE_PUBLIC_VER} — 4Dir v{ver} → {OUT}  계정={cfg['owner'] or '(아직 없음 → OWNER)'}")
     os.makedirs(OUT, exist_ok=True)
     for f in os.listdir(OUT):   # .git 만 남기고 비움 (우리 결과물 폴더)

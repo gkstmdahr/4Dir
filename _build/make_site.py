@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 공개 사이트 만들기 (MAKE_SITE_VER 1.0.1)
+"""4Dir 공개 사이트 만들기 (MAKE_SITE_VER 1.1.0)
 
 python make_site.py [출력 폴더]   (기본: 4Dir\\_site\\out)
 - 문구: site_text.py (10개 언어), 설정: site_config.json (깃허브 계정·후원 주소)
@@ -17,7 +17,7 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.0.1"
+MAKE_SITE_VER = "1.1.0"
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 SITE_SRC = os.path.join(ROOT, "_site")
@@ -35,6 +35,13 @@ def log(msg):
     print(line, flush=True)
     _logf.write(line + "\n")
     _logf.flush()
+
+
+def site_base(cfg):
+    """사이트 주소: 개인 도메인(cfg domain)이 있으면 그것, 없으면 깃허브 무료 페이지 주소 (1.1.0)"""
+    if cfg.get("domain"):
+        return f"https://{cfg['domain']}/"
+    return f"https://{(cfg['owner'] or 'OWNER').lower()}.github.io/{cfg['repo']}/"
 
 
 def load_config():
@@ -61,7 +68,7 @@ def page(lang, cfg, rel):
     ver, zpath, zsize, sha, date = rel
     owner = cfg["owner"] or "OWNER"
     repo_url = f"https://github.com/{owner}/{cfg['repo']}"
-    base = f"https://{owner.lower()}.github.io/{cfg['repo']}/"
+    base = site_base(cfg)
     dl_url = f"{repo_url}/releases/download/v{ver}/{os.path.basename(zpath)}"
     up = "" if lang == "en" else "../"
     fmt = dict(ver=ver, size=f"{zsize / 1048576:.0f} MB", date=date)
@@ -200,7 +207,7 @@ def main():
     shutil.copytree(os.path.join(SITE_SRC, "img"), os.path.join(OUT, "img"))
     log(f"아이콘 {'만듦' if make_icon(os.path.join(OUT, 'icon.png')) else '없음'}")
     owner = cfg["owner"] or "OWNER"
-    base = f"https://{owner.lower()}.github.io/{cfg['repo']}/"
+    base = site_base(cfg)
     ver = rel[0]
     json.dump({"version": ver, "page": base, "notes": ""}, open(os.path.join(OUT, "version.json"), "w", encoding="utf-8"))
     open(os.path.join(OUT, "robots.txt"), "w", encoding="utf-8").write(f"User-agent: *\nAllow: /\nSitemap: {base}sitemap.xml\n")
@@ -208,6 +215,10 @@ def main():
     open(os.path.join(OUT, "sitemap.xml"), "w", encoding="utf-8").write(
         f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>\n')
     open(os.path.join(OUT, ".nojekyll"), "w").close()
+    if cfg.get("domain"):   # 깃허브 무료 페이지의 개인 도메인 표시 파일 (1.1.0)
+        with open(os.path.join(OUT, "CNAME"), "w", encoding="ascii", newline="") as f:
+            f.write(cfg["domain"] + chr(10))
+        log(f"개인 도메인 {cfg['domain']} (CNAME)")
     n = sum(len(fs) for _, _, fs in os.walk(OUT))
     mb = sum(os.path.getsize(os.path.join(a, f)) for a, _, fs in os.walk(OUT) for f in fs) / 1048576
     log(f"완료: 파일 {n}개 {mb:.1f}MB, 언어 {len(ST.LANGS)}개, version.json = {ver}")

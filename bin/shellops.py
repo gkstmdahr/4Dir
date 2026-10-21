@@ -14,6 +14,7 @@ from i18n import T   # 화면 문구 번역
 import threading
 import time
 import ctypes
+import struct
 import functools
 import winreg
 
@@ -329,16 +330,95 @@ def _proc_name(pid):
         k.CloseHandle(ph)
 
 
-def set_clipboard(paths, cut):
+def _set_clipboard_qt(paths, cut):
+    """예전 방식(Qt 자료): 파일 목록(CF_HDROP)+주소(URL) 형식뿐 — 윈도우 셸 방식이 실패할 때만"""
     from PySide6 import QtCore
     md = QtCore.QMimeData()
     md.setUrls([QtCore.QUrl.fromLocalFile(p) for p in paths])
     md.setData(_PDE_MIME, QtCore.QByteArray((DROPEFFECT_MOVE if cut else DROPEFFECT_COPY).to_bytes(4, "little")))
     QtGui.QGuiApplication.clipboard().setMimeData(md)
+
+
+def _set_hglobal(do, cf, data, what):
+    """자료 객체 do 에 형식 cf 의 메모리 자료를 넣음 (IDataObject::SetData, fRelease=TRUE → 자료 객체가 메모리 해제)"""
+    k32 = ctypes.windll.kernel32
+    k32.GlobalAlloc.restype = ctypes.c_void_p
+    k32.GlobalLock.restype = ctypes.c_void_p
+    k32.GlobalLock.argtypes = k32.GlobalUnlock.argtypes = k32.GlobalFree.argtypes = [ctypes.c_void_p]
+    hg = k32.GlobalAlloc(0x0042, len(data))   # GMEM_MOVEABLE | GMEM_ZEROINIT
+    ctypes.memmove(k32.GlobalLock(hg), data, len(data))
+    k32.GlobalUnlock(hg)
+    fe = _FORMATETC(cf, None, 1, -1, 1)   # DVASPECT_CONTENT, TYMED_HGLOBAL
+    sm = _STGMEDIUM(1, hg, None)
+    hr = _com(do.value, 7, [ctypes.POINTER(_FORMATETC), ctypes.POINTER(_STGMEDIUM), _wt.BOOL],
+              ctypes.byref(fe), ctypes.byref(sm), True)
+    if hr < 0:
+        k32.GlobalFree(hg)
+    _check(hr, what)
+
+
+def _set_clipboard_shell(paths, cut):
+    """윈도우 탐색기와 같은 방식 (v0.9.53): 셸이 만든 파일 자료 객체를 그대로 클립보드에.
+    → Shell IDList Array·FileNameW·FileContents 등 탐색기와 같은 형식 (10/21 사용자: 4Dir 에서 복사한 apk 가
+    다른 프로그램에 안 붙음, 탐색기 복사는 됨 — 형식 비교로 원인 확정). 같은 폴더면 그 폴더의 GetUIObjectOf
+    (탐색기와 동일), 여러 폴더(검색 결과)면 SHCreateDataObject(바탕화면 기준 전체 경로). 잘라내기 표시는 SetData."""
+    pidls, kids, psf, do = [], [], ctypes.c_void_p(), ctypes.c_void_p()
+    try:
+        for p in paths:
+            pidls.append(_parse(os.path.normpath(p)))
+        same = len({os.path.dirname(os.path.normcase(os.path.normpath(p))) for p in paths}) == 1
+        if same:
+            for i, pidl in enumerate(pidls):
+                sf, child = ctypes.c_void_p(), ctypes.c_void_p()
+                _check(_shell32.SHBindToParent(pidl, ctypes.byref(IID_IShellFolder), ctypes.byref(sf), ctypes.byref(child)), "상위폴더")
+                kids.append(child.value)
+                if i == 0:
+                    psf = sf
+                else:
+                    _release(sf.value)
+            arr = (ctypes.c_void_p * len(kids))(*kids)
+            _check(_com(psf.value, 10, [_wt.HWND, ctypes.c_uint, ctypes.c_void_p, ctypes.POINTER(_GUID),
+                                        ctypes.c_void_p, ctypes.POINTER(ctypes.c_void_p)],
+                        None, len(kids), arr, ctypes.byref(IID_IDataObject), None, ctypes.byref(do)), "GetUIObjectOf(자료)")
+        else:
+            arr = (ctypes.c_void_p * len(pidls))(*[x.value for x in pidls])
+            _check(_shell32.SHCreateDataObject(None, len(pidls), arr, None, ctypes.byref(IID_IDataObject), ctypes.byref(do)),
+                   "SHCreateDataObject")
+            # 바탕화면 기준 자료 객체는 파일 목록(CF_HDROP)을 안 만듦(실측) → 직접 넣음 (DROPFILES, 유니코드)
+            body = ("\0".join(os.path.normpath(p) for p in paths) + "\0\0").encode("utf-16-le")
+            _set_hglobal(do, 15, struct.pack("<IiiII", 20, 0, 0, 0, 1) + body, "SetData(CF_HDROP)")
+            # 셸 항목 목록(Shell IDList Array = CIDA): 부모 = 바탕화면(빈 목록), 항목 = 전체 경로 항목
+            items = [ctypes.string_at(x.value, _shell32.ILGetSize(x)) for x in pidls]
+            head = 4 * (len(items) + 2)
+            offs, cur = [head], head + 2
+            for it in items:
+                offs.append(cur)
+                cur += len(it)
+            cida = struct.pack(f"<{len(items) + 2}I", len(items), *offs) + b"\0\0" + b"".join(items)
+            _set_hglobal(do, ctypes.windll.user32.RegisterClipboardFormatW("Shell IDList Array"), cida, "SetData(Shell IDList Array)")
+        # 잘라내기/복사 표시 (Preferred DropEffect, DWORD) — 탐색기 붙여넣기가 이걸 보고 이동/복사를 정함
+        _set_hglobal(do, ctypes.windll.user32.RegisterClipboardFormatW("Preferred DropEffect"),
+                     struct.pack("<I", DROPEFFECT_MOVE if cut else DROPEFFECT_COPY), "SetData(Preferred DropEffect)")
+        _check(_ole32.OleSetClipboard(do), "OleSetClipboard")   # 클립보드가 참조를 따로 잡음
+    finally:
+        _release(do.value)
+        _release(psf.value)
+        for x in pidls:
+            _ole32.CoTaskMemFree(x)
+
+
+def set_clipboard(paths, cut):
+    try:
+        _set_clipboard_shell(paths, cut)
+        how = "탐색기 방식"
+    except Exception as ex:
+        log.warning("클립보드 탐색기 방식 실패 → 예전 방식: %s", ex)
+        _set_clipboard_qt(paths, cut)
+        how = "예전 방식"
     info = clipboard_info()
     _CLIP_SEQ[0] = info["seq"]
     if info["files"] and info["owner"] == "4Dir":
-        log.info("클립보드 %s n=%d (윈도우 확인: 파일 있음, 순번 %d)", "잘라내기" if cut else "복사", len(paths), info["seq"])
+        log.info("클립보드 %s n=%d %s (윈도우 확인: 파일 있음, 순번 %d)", "잘라내기" if cut else "복사", len(paths), how, info["seq"])
     else:   # 윈도우 클립보드에 안 들어감 — 다른 프로그램이 잡고 있었거나 바로 덮어씀
         log.warning("클립보드 %s n=%d 실패? 윈도우 확인: %s", "잘라내기" if cut else "복사", len(paths), info)
     return info["files"]
@@ -388,6 +468,23 @@ _shell32.SHBindToParent.argtypes = [ctypes.c_void_p, ctypes.POINTER(_GUID), ctyp
                                     ctypes.POINTER(ctypes.c_void_p)]
 _shell32.SHBindToParent.restype = ctypes.c_long
 _ole32.CoTaskMemFree.argtypes = [ctypes.c_void_p]
+IID_IDataObject = _guid("{0000010E-0000-0000-C000-000000000046}")
+_shell32.SHCreateDataObject.argtypes = [ctypes.c_void_p, ctypes.c_uint, ctypes.c_void_p, ctypes.c_void_p,
+                                        ctypes.POINTER(_GUID), ctypes.POINTER(ctypes.c_void_p)]
+_shell32.SHCreateDataObject.restype = ctypes.c_long
+_shell32.ILGetSize.argtypes = [ctypes.c_void_p]
+_shell32.ILGetSize.restype = ctypes.c_uint
+_ole32.OleSetClipboard.argtypes = [ctypes.c_void_p]
+_ole32.OleSetClipboard.restype = ctypes.c_long
+
+
+class _FORMATETC(ctypes.Structure):
+    _fields_ = [("cfFormat", ctypes.c_ushort), ("ptd", ctypes.c_void_p), ("dwAspect", _wt.DWORD),
+                ("lindex", ctypes.c_long), ("tymed", _wt.DWORD)]
+
+
+class _STGMEDIUM(ctypes.Structure):
+    _fields_ = [("tymed", _wt.DWORD), ("hGlobal", ctypes.c_void_p), ("pUnkForRelease", ctypes.c_void_p)]
 
 
 def _com(ptr, idx, argtypes, *args):
