@@ -1,3 +1,3 @@
 User-agent: *
 Allow: /
-Sitemap: https://gkstmdahr.github.io/4Dir/sitemap.xml
+Sitemap: https://4dir.net/sitemap.xml

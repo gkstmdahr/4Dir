@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.59"
+QE_VERSION = "0.9.60"
 
 import os
 import sys
@@ -185,7 +185,7 @@ def size_short(b):
 # ---- 새 버전 알림 (웹에서 받은 사람용). 버전 정보 파일 하나만 읽고, 자동 설치는 안 함. 보내는 정보 없음(4Dir 버전 글자만)
 # 파일 형식: {"version": "0.9.30", "page": "https://.../download", "notes": "바뀐 점 한 줄"}
 # ★공개 사이트 주소 (v0.9.48) — 비어 있으면 홈페이지·후원 메뉴를 숨기고 새 버전 확인도 안 함
-SITE_URL = "https://gkstmdahr.github.io/4Dir/"   # 공개 사이트 (10/21, 깃허브 무료 페이지). 끝에 / 붙일 것
+SITE_URL = "https://4dir.net/"   # 공개 사이트 (10/22 개인 도메인, 깃허브 무료 페이지). 끝에 / 붙일 것. 옛 gkstmdahr.github.io/4Dir/ 는 깃허브가 여기로 넘김
 DONATE_URL = "https://ko-fi.com/4dirofficial"   # 후원 페이지 (10/21 개설). 비어 있으면 사이트의 후원 칸(#donate)
 UPDATE_URL = SITE_URL + "version.json" if SITE_URL else ""
 

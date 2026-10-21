@@ -2,7 +2,7 @@
 
 **윈도우용 여러 칸 분할 + 탭 파일 관리자 — 무료, 설치 없음, PC 를 무겁게 하지 않음.**
 
-[사이트·받기](https://gkstmdahr.github.io/4Dir/ko/) · [배포판](https://github.com/gkstmdahr/4Dir/releases) · [English](README.md)
+[사이트·받기](https://4dir.net/ko/) · [배포판](https://github.com/gkstmdahr/4Dir/releases) · [English](README.md)
 
 > **[배포판(Releases)](https://github.com/gkstmdahr/4Dir/releases/latest) 에서 zip 을 받으세요** (`4Dir_v….zip`).
 > 초록색 **Code → Download ZIP** 은 소스 코드만 들어 있어서, 파이썬 3.12 이상과 PySide6 가 없으면 실행되지 않습니다.
@@ -24,7 +24,7 @@
 
 ## 후원
 
-4Dir 는 무료이고 광고가 없습니다. 도움이 됐다면 [사이트](https://gkstmdahr.github.io/4Dir/ko/#donate)에서 후원할 수 있습니다.
+4Dir 는 무료이고 광고가 없습니다. 도움이 됐다면 [사이트](https://4dir.net/ko/#donate)에서 후원할 수 있습니다.
 
 ## 라이선스
 

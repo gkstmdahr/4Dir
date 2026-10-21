@@ -2,7 +2,7 @@
 
 **Multi-pane tabbed file manager for Windows — free, portable, light on your PC.**
 
-[Website & download](https://gkstmdahr.github.io/4Dir/) · [Releases](https://github.com/gkstmdahr/4Dir/releases) · [한국어](README.ko.md)
+[Website & download](https://4dir.net/) · [Releases](https://github.com/gkstmdahr/4Dir/releases) · [한국어](README.ko.md)
 
 > **Download the release zip from [Releases](https://github.com/gkstmdahr/4Dir/releases/latest)** (`4Dir_v….zip`).
 > The green **Code → Download ZIP** button gives source code only — it won't run without Python 3.12+ and PySide6.
@@ -31,7 +31,7 @@ Build a release: `python _build/make_release.py` (needs your own `_build/corp_wo
 
 ## Support
 
-4Dir is free and has no ads. If it saves you time, you can support development on the [website](https://gkstmdahr.github.io/4Dir/#donate).
+4Dir is free and has no ads. If it saves you time, you can support development on the [website](https://4dir.net/#donate).
 
 ## License
 
