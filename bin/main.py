@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.58"
+QE_VERSION = "0.9.59"
 
 import os
 import sys
@@ -4192,6 +4192,33 @@ def layout_icon(key, w=22, h=18):
     return QtGui.QIcon(pm)
 
 
+def preview_icon(w=22, h=18):
+    """미리보기 창 버튼 그림 (v0.9.59): 레이아웃 아이콘과 같은 창 모양 — 왼쪽 목록 줄 + 오른쪽 그림 칸(산·해)"""
+    pm = QtGui.QPixmap(w, h)
+    pm.fill(Qt.transparent)
+    p = QtGui.QPainter(pm)
+    p.setRenderHint(QtGui.QPainter.Antialiasing, False)
+    p.setPen(QtGui.QPen(QtGui.QColor("#3a4652"), 1))
+    p.setBrush(QtGui.QColor("#ffffff"))
+    p.drawRect(QtCore.QRect(1, 1, w - 3, h - 3))
+    p.fillRect(QtCore.QRect(2, 2, w - 4, 3), QtGui.QColor("#5b8ed6"))   # 제목줄
+    sx = 1 + (w - 3) * 5 // 9                                           # 목록 | 미리보기 경계
+    p.drawLine(sx, 5, sx, h - 2)
+    for y in range(7, h - 3, 3):                                         # 왼쪽 목록 줄
+        p.drawLine(3, y, sx - 2, y)
+    pic = QtCore.QRect(sx + 2, 7, w - sx - 5, h - 11)                    # 오른쪽 그림 칸
+    p.fillRect(pic, QtGui.QColor("#cfe3ff"))
+    p.setRenderHint(QtGui.QPainter.Antialiasing, True)
+    p.setPen(Qt.NoPen)
+    p.setBrush(QtGui.QColor("#3c8d4a"))                                 # 산
+    p.drawPolygon(QtGui.QPolygon([QtCore.QPoint(pic.left(), pic.bottom() + 1), QtCore.QPoint(pic.left() + pic.width() // 2, pic.top() + 2),
+                                  QtCore.QPoint(pic.right() + 1, pic.bottom() + 1)]))
+    p.setBrush(QtGui.QColor("#f2b01e"))                                 # 해
+    p.drawEllipse(QtCore.QPoint(pic.right() - 1, pic.top() + 1), 1, 1)
+    p.end()
+    return QtGui.QIcon(pm)
+
+
 # 화면 색상은 ui_parts.build_style(SETTINGS[theme 또는 theme_dark]) 로 만든다 (보기 > 색상 설정에서 변경)
 
 
@@ -4607,6 +4634,11 @@ class Main(QtWidgets.QMainWindow):
         menu_btn(T("즐겨찾기"), self._fill_fav_menu)
         menu_btn(T("창 저장/불러오기"), self._fill_session_menu)
         menu_btn(T("도구"), self._fill_tool_menu)
+        # 미리보기 창 켜기/끄기 — 도구 오른쪽 (v0.9.59, 사용자 요청)
+        self.act_preview = tb.addAction(preview_icon(), T("미리보기 창"), lambda: self.set_preview(not self.preview.isVisible()))
+        self.act_preview.setCheckable(True)
+        self.act_preview.setChecked(bool(SETTINGS["preview_pane"]))
+        self.act_preview.setToolTip(T("미리보기 창") + (f" ({key_text('toggle_preview')})" if key_text("toggle_preview") else ""))
         tb.addSeparator()
         self.layout_group = QtGui.QActionGroup(self)
         self.layout_actions = {}
@@ -4699,6 +4731,8 @@ class Main(QtWidgets.QMainWindow):
         elif not on:
             self.preview.setVisible(False)
         SETTINGS["preview_pane"] = on
+        if getattr(self, "act_preview", None) is not None:
+            self.act_preview.setChecked(on)   # 메뉴·Alt+P 로 바꿔도 버튼 눌림 표시 맞춤
         log.info("미리보기 창 %s", "켬" if on else "끔")
 
     def _preview_moved(self, *_):
