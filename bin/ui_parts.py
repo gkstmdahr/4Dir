@@ -164,6 +164,8 @@ QMainWindow, #central {{ background:{T['win_bg']}; }}
 #notice {{ background:{F['notice_bg']}; border:1px solid #e0b84a; border-radius:3px; padding:2px 8px; color:{F['notice_fg']}; }}
 #noticeAct {{ background:#1a73e8; color:white; border:none; border-radius:3px; padding:3px 12px; font-weight:bold; }}
 #noticeAct:hover {{ background:#1765cc; }}
+#noticeAct2 {{ background:{F['notice_bg']}; color:{F['notice_fg']}; border:1px solid #e0b84a; border-radius:3px; padding:2px 10px; }}
+#noticeAct2:hover {{ border-color:#1a73e8; color:#1a73e8; }}
 #pane {{ background:{F['pane_bg']}; border:1px solid {T['border']}; }}
 #pane[active="true"] {{ border:2px solid {T['accent']}; }}
 #paneHead {{ background:{T['head_bg']}; border-bottom:1px solid {T['border']}; }}

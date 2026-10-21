@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.62"
+QE_VERSION = "0.9.63"
 
 import os
 import sys
@@ -265,44 +265,26 @@ def _update_done(data, err, manual):
         if not manual and SETTINGS["update_skip"] == new:
             log.info("새 버전 팝업 생략: 사용자가 v%s 를 건너뛰기로 함", new)
             return
-        show_update_popup(w, new, notes, page)
+        show_update_notice(w, new, notes, page)
     elif manual:
         w.show_notice(T("지금 최신 버전입니다 (v{0})").format(QE_VERSION))
 
 
-def show_update_popup(w, new, notes, page):
-    """v0.9.62: 새 버전 팝업 (10/22 사용자 요청) — 받으러 가기 / 이 버전 건너뛰기(이 버전은 다시 안 물음) / 나중에(내일 다시 물음).
-    exec() 대신 open() 으로 띄워 뒤의 작업(검색 색인 등)을 멈추지 않음. 누른 버튼은 로그에 남김"""
-    old = getattr(w, "_upd_dlg", None)
-    if old is not None:
-        old.close()
-    box = QtWidgets.QMessageBox(w)
-    box.setIcon(QtWidgets.QMessageBox.Information)
-    box.setWindowTitle(T("새 버전 알림"))
-    box.setText(T("새 버전 4Dir v{0} 이 나왔습니다 (지금 v{1})").format(new, QE_VERSION))
-    if notes:
-        box.setInformativeText(notes)
-    b_get = box.addButton(T("받으러 가기"), QtWidgets.QMessageBox.AcceptRole) if page else None
-    b_skip = box.addButton(T("이 버전 건너뛰기"), QtWidgets.QMessageBox.DestructiveRole)
-    b_later = box.addButton(T("나중에"), QtWidgets.QMessageBox.RejectRole)
-    box.setDefaultButton(b_get or b_later)
-    box.setEscapeButton(b_later)
+def show_update_notice(w, new, notes, page):
+    """v0.9.63: 새 버전 알림 = 위쪽 알림 줄 (10/22 사용자 요청: 작업 중 팝업은 불편) — 작업을 막지 않고 누를 때까지 남음.
+    받으러 가기 = 페이지 열기 / 이 버전 건너뛰기 = 그 버전은 자동 확인 때 다시 안 알림 / 알림 글자(✕) 누름 = 나중에(다음 날 다시)"""
+    def get():
+        log.info("새 버전 알림: 받으러 가기 v%s %s", new, page)
+        QtGui.QDesktopServices.openUrl(QtCore.QUrl(page))
 
-    def clicked(b):
-        if b is not None and b is b_get:
-            log.info("새 버전 팝업: 받으러 가기 v%s %s", new, page)
-            QtGui.QDesktopServices.openUrl(QtCore.QUrl(page))
-        elif b is b_skip:
-            log.info("새 버전 팝업: v%s 건너뛰기", new)
-            SETTINGS["update_skip"] = new
-        else:
-            log.info("새 버전 팝업: 나중에 v%s", new)
-    box.buttonClicked.connect(clicked)
-    box.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-    box.destroyed.connect(lambda *_: setattr(w, "_upd_dlg", None))
-    w._upd_dlg = box
-    box.open()
-    return box
+    def skip():
+        log.info("새 버전 알림: v%s 건너뛰기", new)
+        SETTINGS["update_skip"] = new
+    text = T("새 버전 4Dir v{0} 이 나왔습니다 (지금 v{1})").format(new, QE_VERSION)
+    if notes:
+        text += " — " + notes
+    w.show_notice(text + "  ✕", sticky=True, action=(T("받으러 가기"), get) if page else None,
+                  action2=(T("이 버전 건너뛰기"), skip))
 
 
 class _UndoSig(QtCore.QObject):
@@ -4450,6 +4432,7 @@ class Main(QtWidgets.QMainWindow):
         nrow.setSpacing(4)
         nrow.addWidget(self.notice, 1)
         nrow.addWidget(self.notice_act)
+        nrow.addWidget(self.notice_act2)
         cl.addLayout(nrow)
         cl.addWidget(self.favbar)
         body = QtWidgets.QWidget()
@@ -4716,6 +4699,12 @@ class Main(QtWidgets.QMainWindow):
         self.notice_act.setCursor(Qt.PointingHandCursor)
         self.notice_act.setVisible(False)
         self.notice_act.clicked.connect(self._notice_act_clicked)
+        self.notice_act2 = QtWidgets.QPushButton()   # 보조 버튼 (예: 새 버전 '이 버전 건너뛰기', v0.9.63)
+        self.notice_act2.setObjectName("noticeAct2")
+        self.notice_act2.setCursor(Qt.PointingHandCursor)
+        self.notice_act2.setVisible(False)
+        self.notice_act2.clicked.connect(self._notice_act2_clicked)
+        self._notice_fn2 = None
         self._notice_fn = None
         tb.addSeparator()
         self.gsearch = QtWidgets.QLineEdit()
@@ -5698,14 +5687,17 @@ eports.
         self.apply_state(st, geometry=True)
         return st.get("saved", "")[11:]
 
-    def show_notice(self, text, sticky=None, ms=5000, action=None):
+    def show_notice(self, text, sticky=None, ms=5000, action=None, action2=None):
         """알림 줄. 보통 알림은 5초 뒤 저절로 닫힘, ⚠ 경고는 눌러서 닫을 때까지 남음.
-        action=(버튼 글자, 함수) 이면 알림 오른쪽에 버튼 (누르면 알림 닫고 함수 실행)"""
+        action=(버튼 글자, 함수) 이면 알림 오른쪽에 버튼 (누르면 알림 닫고 함수 실행). action2 = 그 옆 보조 버튼 (v0.9.63)"""
         self.notice.setText(text)
         self.notice.setVisible(True)
         self._notice_fn = action[1] if action else None
         self.notice_act.setText(action[0] if action else "")
         self.notice_act.setVisible(bool(action))
+        self._notice_fn2 = action2[1] if action2 else None
+        self.notice_act2.setText(action2[0] if action2 else "")
+        self.notice_act2.setVisible(bool(action2))
         if not hasattr(self, "notice_timer"):
             self.notice_timer = QtCore.QTimer(self)
             self.notice_timer.setSingleShot(True)
@@ -5720,12 +5712,20 @@ eports.
     def hide_notice(self):
         self.notice.setVisible(False)
         self.notice_act.setVisible(False)
+        self.notice_act2.setVisible(False)
 
     def _notice_act_clicked(self):
         fn = self._notice_fn
         self.hide_notice()
         if fn:
             log.info("알림 버튼 누름: %s", self.notice_act.text())
+            fn()
+
+    def _notice_act2_clicked(self):
+        fn = self._notice_fn2
+        self.hide_notice()
+        if fn:
+            log.info("알림 보조 버튼 누름: %s", self.notice_act2.text())
             fn()
 
     def apply_state(self, st, geometry=True):
