@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.57"
+QE_VERSION = "0.9.58"
 
 import os
 import sys
@@ -3323,6 +3323,7 @@ class Pane(QtWidgets.QFrame):
         self.pages[key] = v
         v.pathChanged.connect(lambda p, v=v: self._on_path(v, p))
         v.status.connect(lambda s, v=v: v is self.view() and (self.stat.setText(s), self.stat.setToolTip(getattr(v, "status_tip", ""))))
+        v.status.connect(lambda s, v=v: v is self.view() and self._poke_preview())   # 선택·폴더가 바뀌면 상태 글자가 바뀜 (v0.9.58)
         v.openInNewTab.connect(lambda p: self.add_tab(p, activate=False))
         hd = v.tree.header()   # 정렬·열 너비가 바뀌면 상태 저장 예약(2초 뒤 한 번)
         hd.sortIndicatorChanged.connect(lambda *_: self.changed.emit())
@@ -3648,6 +3649,11 @@ class Pane(QtWidgets.QFrame):
             v.set_mode(mode)
         log.info("보기 방식 pane=%d %s", self.idx, mode)
         self.changed.emit()
+
+    def _poke_preview(self):
+        m = main_of(self)
+        if m is not None and getattr(m, "preview", None) is not None and m.active_pane is self:
+            m.preview.schedule()
 
     def fill_view_menu(self, m):
         m.clear()
@@ -4208,6 +4214,115 @@ def drive_list():
 
 
 # ================================================================ 메인 창
+class PreviewPane(QtWidgets.QFrame):
+    """오른쪽 미리보기 창 (v0.9.58, 사용자 요청 — 자세히 보기에서도 그림을 크게).
+    지금 칸에서 고른 파일 하나를 크게: 그림 파일(.max·.psd 포함)은 미리보기(thumbs, 뒤 스레드), 나머지는 큰 아이콘 + 정보.
+    선택이 바뀔 때만 120ms 묶어 다시 그림(유휴 시 타이머 없음). 숨겨져 있으면 아무것도 안 함."""
+    PX = 512   # 미리보기 요청 크기 (창에 맞춰 줄여 그림, 2배 넘게는 안 늘림)
+
+    def __init__(self, main):
+        super().__init__()
+        self.main = main
+        self.setObjectName("previewPane")
+        self.setMinimumWidth(160)
+        lay = QtWidgets.QVBoxLayout(self)
+        lay.setContentsMargins(10, 10, 10, 10)
+        lay.setSpacing(8)
+        self.pic = QtWidgets.QLabel()
+        self.pic.setAlignment(Qt.AlignCenter)
+        self.pic.setMinimumHeight(120)
+        self.pic.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Expanding)
+        self.name = QtWidgets.QLabel()
+        self.name.setWordWrap(True)
+        self.name.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
+        f = self.name.font()
+        f.setBold(True)
+        self.name.setFont(f)
+        self.info = QtWidgets.QLabel()
+        self.info.setWordWrap(True)
+        self.info.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
+        self.info.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        lay.addWidget(self.pic, 1)
+        lay.addWidget(self.name)
+        lay.addWidget(self.info)
+        lay.addStretch(0)
+        self.cur = None      # (경로, mtime) — 지금 보여주는 그림 파일
+        self.src = None      # 지금 그림 (QPixmap, 창 크기 바뀌면 다시 맞춤)
+        self.timer = QtCore.QTimer(self)
+        self.timer.setSingleShot(True)
+        self.timer.setInterval(120)
+        self.timer.timeout.connect(self.refresh)
+
+    def schedule(self):
+        if self.isVisible():
+            self.timer.start()
+
+    def showEvent(self, ev):
+        super().showEvent(ev)
+        thumbs_service().ready.connect(self._on_ready, Qt.UniqueConnection)
+        self.refresh()
+
+    def resizeEvent(self, ev):
+        super().resizeEvent(ev)
+        self._fit()
+
+    def _on_ready(self, path, px):
+        if self.cur and px == self.PX and os.path.normcase(path) == os.path.normcase(self.cur[0]) and self.isVisible():
+            self.refresh()
+
+    def _set_pic(self, pm):
+        self.src = pm
+        self._fit()
+
+    def _fit(self):
+        if self.src is None or self.src.isNull():
+            self.pic.clear()
+            return
+        w, h = max(1, self.pic.width() - 4), max(1, self.pic.height() - 4)
+        sw, sh = self.src.width(), self.src.height()
+        k = min(w / sw, h / sh, 2.0)   # 작은 그림(PSD 내장 160px 등)은 2배까지만 키움
+        self.pic.setPixmap(self.src.scaled(max(1, int(sw * k)), max(1, int(sh * k)), Qt.KeepAspectRatio, Qt.SmoothTransformation))
+
+    def refresh(self):
+        if not self.isVisible():
+            return
+        pane = self.main.pane()
+        v = pane.view() if pane else None
+        if v is None:
+            return
+        rows = v.selected_rows()
+        if len(rows) != 1:
+            self.cur = None
+            self._set_pic(None)
+            if rows:
+                es = [v.model_.rows[r] for r in rows]
+                self.name.setText(T('    {0:,}개 항목 선택함').format(len(rows)).strip())   # 상태줄과 같은 문구
+                fs = [e[2] for e in es if not e[1] and e[2] >= 0]
+                self.info.setText(size_short(sum(fs)) if fs else "")
+            else:
+                self.name.setText("")
+                self.info.setText(T("파일을 고르면 여기에 미리보기가 나옵니다"))
+            return
+        e = v.model_.rows[rows[0]]
+        path = v.model_.full(e)
+        self.name.setText(e[7] or e[0])
+        lines = [shellops.type_for(e[0], e[1])]
+        if not e[1] and e[2] >= 0:
+            lines.append(win_kbsize(e[2]))
+        if e[3]:
+            lines.append(T("수정한 날짜") + ": " + win_datetime(e[3]))
+        self.info.setText("\n".join(x for x in lines if x))
+        pm = None
+        if not e[1] and thumbs.is_image(e[0]) and OPTS["thumbnails"]:
+            self.cur = (path, e[3])
+            pm = thumbs_service().get(path, e[3], self.PX)   # 없으면 요청 → 다 되면 _on_ready
+        else:
+            self.cur = None
+        if pm is None:
+            pm = shellops.icon_for(e[0], e[1], 256, e[6]).pixmap(128, 128)
+        self._set_pic(pm)
+
+
 class Main(QtWidgets.QMainWindow):
     def __init__(self, crashed=False, open_path=None, src=None, open_state=None, restore_geometry=False):
         """open_path 가 있으면 '새 창으로 열기' — 저장 상태 대신 칸 1개 + 그 폴더로 시작 (src = 연 창, 위치 기준)
@@ -4275,7 +4390,18 @@ class Main(QtWidgets.QMainWindow):
         body = QtWidgets.QWidget()
         bl = QtWidgets.QVBoxLayout(body)
         bl.setContentsMargins(4, 4, 4, 4)
-        bl.addWidget(self.vert)
+        # 칸들 | 오른쪽 미리보기 창 (v0.9.58)
+        self.hsplit = QtWidgets.QSplitter(Qt.Horizontal)
+        self.hsplit.setChildrenCollapsible(False)
+        self.hsplit.setHandleWidth(5)
+        self.preview = PreviewPane(self)
+        self.hsplit.addWidget(self.vert)
+        self.hsplit.addWidget(self.preview)
+        self.hsplit.setStretchFactor(0, 1)
+        self.hsplit.setStretchFactor(1, 0)
+        self.hsplit.splitterMoved.connect(self._preview_moved)
+        self.preview.setVisible(bool(SETTINGS["preview_pane"]))
+        bl.addWidget(self.hsplit)
         cl.addWidget(body, 1)
         self.setCentralWidget(central)
         if SETTINGS["chrome_collapsed"]:
@@ -4305,6 +4431,7 @@ class Main(QtWidgets.QMainWindow):
             "toggle_hidden": lambda: self.toggle_opt("show_hidden"),
             "add_fav": add_fav,
             "toggle_chrome": lambda: self.set_chrome_collapsed(not SETTINGS["chrome_collapsed"]),
+            "toggle_preview": lambda: self.set_preview(not self.preview.isVisible()),
         }
         for i in range(NPANES):
             self.win_actions[f"pane{i + 1}"] = (lambda i=i: self._focus_pane(i))
@@ -4561,9 +4688,30 @@ class Main(QtWidgets.QMainWindow):
         tb.addWidget(ver)
         self.set_sysmon(SETTINGS["sysmon"], save=False)
 
+    def set_preview(self, on):
+        """오른쪽 미리보기 창 보이기/숨기기 (v0.9.58). 너비는 기억"""
+        on = bool(on)
+        if on and not self.preview.isVisible():
+            self.preview.setVisible(True)
+            total = sum(self.hsplit.sizes()) or self.width()
+            pw = max(160, min(int(SETTINGS["preview_w"] or 300), total // 2))
+            self.hsplit.setSizes([max(200, total - pw), pw])
+        elif not on:
+            self.preview.setVisible(False)
+        SETTINGS["preview_pane"] = on
+        log.info("미리보기 창 %s", "켬" if on else "끔")
+
+    def _preview_moved(self, *_):
+        if self.preview.isVisible():
+            SETTINGS["preview_w"] = self.hsplit.sizes()[1]
+
     def _fill_main_view_menu(self, m):
         self.pane().fill_view_menu(m)
         m.addSeparator()
+        pv = m.addAction(T("미리보기 창") + (("	" + key_text("toggle_preview")) if key_text("toggle_preview") else ""),
+                         lambda: self.set_preview(not self.preview.isVisible()))
+        pv.setCheckable(True)
+        pv.setChecked(self.preview.isVisible())
         fav = m.addAction(T("즐겨찾기 바 펼치기"), self.favbar.toggle)
         fav.setCheckable(True)
         fav.setChecked(self.favbar.expanded)
@@ -5284,6 +5432,8 @@ eports.
             self.prev_pane = self.active_pane   # F6 '다른 칸으로' 대상
             self.active_pane = w
             self._paint_active()
+            if getattr(self, "preview", None) is not None:   # 미리보기 창: 다른 칸으로 옮기면 그 칸의 선택으로 (v0.9.58)
+                self.preview.schedule()
 
     def _paint_active(self):
         for p in self.panes:

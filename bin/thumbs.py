@@ -8,9 +8,13 @@
 - 최근 요청 먼저(스크롤하면 지금 보이는 것부터), 폴더를 옮기면 이전 요청은 버림.
 - 만든 것은 메모리에 기억(약 120MB 까지, 오래된 것부터 버림) → 같은 폴더로 돌아오면 바로.
 실측(10/6, 40장 96px): 윈도우 미리보기 처음 1.0~1.3초, 두 번째 0.4~0.5초.
+1.1.0 (v0.9.58): .max = 파일 안 미리보기를 직접 읽음(요약 정보의 윈도우 메타파일 안 비트맵, 1ms 안팎 —
+  3ds Max·Autodesk 부품 필요 없음, 맥스 없는 PC 에서도 나옴). .psd = 파일 안 미리보기(JPEG)를 직접 읽어 GDI+ 로 풂
+  (윈도우는 PSD 미리보기가 없음). 둘 다 실패하면 윈도우 미리보기. 파일은 앞부분·요약 정보만 읽음(전체 안 읽음).
 """
 import os
 import time
+import struct
 import ctypes
 import logging
 import threading
@@ -20,8 +24,8 @@ from ctypes import wintypes
 from PySide6 import QtCore, QtGui
 
 log = logging.getLogger("QE.thumb")
-VERSION = "1.0.0"
-IMAGE_EXT = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tga", ".psd", ".dds", ".tif", ".tiff", ".webp", ".ico", ".exr", ".hdr"}
+VERSION = "1.1.0"
+IMAGE_EXT = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tga", ".psd", ".dds", ".tif", ".tiff", ".webp", ".ico", ".exr", ".hdr", ".max"}
 CACHE_BYTES = 120 * 1024 * 1024
 
 ole = ctypes.windll.ole32
@@ -79,6 +83,11 @@ def shell_thumbnail(path, px):
         release(p)
     if hr != 0 or not hb:
         return None
+    return _hbitmap_image(hb)
+
+
+def _hbitmap_image(hb):
+    """HBITMAP → QImage (HBITMAP 은 지움)"""
     try:
         bm = _BITMAP()
         gdi.GetObjectW(hb, ctypes.sizeof(bm), ctypes.byref(bm))
@@ -105,6 +114,140 @@ def _all_clear(img):
         if img.pixelColor(x, y).alpha() != 0:
             return False
     return True
+
+
+# ---------------------------------------------------------------- 파일 안 미리보기 직접 읽기 (1.1.0)
+def _fit(img, px):
+    if img is None or img.isNull():
+        return None
+    if img.width() > px or img.height() > px:
+        img = img.scaled(px, px, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+    return img
+
+
+def _dib_image(dib):
+    """CF_DIB(BITMAPINFOHEADER + 색표 + 점) → QImage (BMP 머리를 붙여 Qt 기본 BMP 읽기로)"""
+    hsize, w, h, planes, bpp, comp, isize, xp, yp, used = struct.unpack_from("<IiiHHIIiiI", dib, 0)
+    colors = used or ((1 << bpp) if bpp <= 8 else (3 if comp == 3 else 0))
+    off = 14 + hsize + colors * 4
+    return QtGui.QImage.fromData(b"BM" + struct.pack("<IHHI", 14 + len(dib), 0, 0, off) + dib, "BMP")
+
+
+def max_preview(path):
+    """.max (OLE 저장소) 요약 정보 PIDSI_THUMBNAIL(17) → VT_CF → CF_METAFILEPICT(WMF 안 StretchDIB) 또는 CF_DIB → QImage.
+    없거나 형식이 다르면 None"""
+    import pythoncom
+    from win32com import storagecon
+    stg = pythoncom.StgOpenStorage(path, None, storagecon.STGM_READ | storagecon.STGM_SHARE_DENY_NONE | storagecon.STGM_TRANSACTED)
+    st = stg.OpenStream("SummaryInformation", None, storagecon.STGM_READ | storagecon.STGM_SHARE_EXCLUSIVE)
+    data = b""
+    while len(data) < 16 << 20:
+        chunk = st.Read(1 << 20)
+        if not chunk:
+            break
+        data += chunk
+    off = struct.unpack_from("<I", data, 44)[0]
+    for i in range(struct.unpack_from("<I", data, off + 4)[0]):
+        pid, po = struct.unpack_from("<II", data, off + 8 + i * 8)
+        if pid != 17:
+            continue
+        p = off + po
+        vt, size, fmt = struct.unpack_from("<IIi", data, p)
+        if vt != 0x47:   # VT_CF
+            return None
+        body, end = p + 12, p + 8 + size
+        if fmt == -1:   # 윈도우 클립보드 형식 → 다음 4바이트가 형식 번호
+            fmt = struct.unpack_from("<I", data, body)[0]
+            body += 4
+        blob = data[body:end]
+        if fmt == 8:    # CF_DIB
+            return _dib_image(blob)
+        if fmt == 3:    # CF_METAFILEPICT: 머리 8 + WMF(머리 18) → StretchDIB(0x0F43)/DIBStretchBlt(0x0B41) 기록의 DIB
+            wmf, q = blob[8:], 18
+            while q + 6 <= len(wmf):
+                rsz, fn = struct.unpack_from("<IH", wmf, q)
+                if rsz < 3:
+                    break
+                if fn in (0x0F43, 0x0B41):
+                    return _dib_image(wmf[q + 6 + (22 if fn == 0x0F43 else 20): q + rsz * 2])
+                q += rsz * 2
+        return None
+    return None
+
+
+_gdip = {"token": None}
+
+
+def _gdiplus():
+    if _gdip["token"] is None:
+        class _SI(ctypes.Structure):
+            _fields_ = [("ver", ctypes.c_uint32), ("cb", ctypes.c_void_p), ("bg", ctypes.c_int), ("codecs", ctypes.c_int)]
+        tok = ctypes.c_size_t()
+        if ctypes.windll.gdiplus.GdiplusStartup(ctypes.byref(tok), ctypes.byref(_SI(1, None, 0, 0)), None) != 0:
+            raise OSError("GdiplusStartup")
+        _gdip["token"] = tok
+    return ctypes.windll.gdiplus
+
+
+def jpeg_image(data):
+    """JPEG 바이트 → QImage (윈도우 GDI+ 로 풂 — 배포판 Qt 에는 JPEG 읽기 부품이 없음)"""
+    g = _gdiplus()
+    shl = ctypes.windll.shlwapi
+    shl.SHCreateMemStream.restype = ctypes.c_void_p
+    shl.SHCreateMemStream.argtypes = [ctypes.c_char_p, ctypes.c_uint]
+    stream = shl.SHCreateMemStream(data, len(data))
+    if not stream:
+        return None
+    bmp, hb = ctypes.c_void_p(), wintypes.HBITMAP()
+    try:
+        if g.GdipCreateBitmapFromStream(ctypes.c_void_p(stream), ctypes.byref(bmp)) != 0:
+            return None
+        if g.GdipCreateHBITMAPFromBitmap(bmp, ctypes.byref(hb), ctypes.c_uint32(0xFF000000)) != 0:
+            return None
+        img = _hbitmap_image(hb)
+        return img.convertToFormat(QtGui.QImage.Format_RGB32) if img is not None else None
+    finally:
+        if bmp:
+            g.GdipDisposeImage(bmp)
+        vt = ctypes.cast(ctypes.cast(ctypes.c_void_p(stream), ctypes.POINTER(ctypes.c_void_p))[0], ctypes.POINTER(ctypes.c_void_p))
+        ctypes.WINFUNCTYPE(ctypes.c_ulong, ctypes.c_void_p)(vt[2])(stream)
+
+
+def psd_preview(path):
+    """.psd 이미지 자원 1036(포토샵 5+, RGB JPEG) / 1033(옛, BGR JPEG) → QImage. 앞부분만 읽음. 없으면 None"""
+    with open(path, "rb") as f:
+        if f.read(4) != b"8BPS":
+            return None
+        f.seek(26)
+        f.seek(struct.unpack(">I", f.read(4))[0], 1)        # 색 모드 자료 건너뜀
+        end = struct.unpack(">I", f.read(4))[0] + f.tell()  # 이미지 자원 구역 끝
+        while f.tell() + 12 <= end:
+            if f.read(4) != b"8BIM":
+                return None
+            rid = struct.unpack(">H", f.read(2))[0]
+            nl = f.read(1)[0]
+            f.seek(nl + ((nl + 1) % 2), 1)                  # 이름(짝수 맞춤)
+            size = struct.unpack(">I", f.read(4))[0]
+            if rid in (1036, 1033) and size > 28:
+                img = jpeg_image(f.read(size)[28:])          # 28바이트 머리 뒤가 JPEG
+                if img is not None and rid == 1033:
+                    img = img.rgbSwapped()
+                return img
+            f.seek(size + (size % 2), 1)
+    return None
+
+
+def make_image(path, px):
+    """미리보기 하나 만들기 — .max·.psd 는 파일 안 미리보기 먼저, 없으면 윈도우 미리보기"""
+    ext = os.path.splitext(path)[1].lower()
+    if ext in (".max", ".psd"):
+        try:
+            img = _fit(max_preview(path) if ext == ".max" else psd_preview(path), px)
+            if img is not None:
+                return img
+        except Exception as ex:
+            log.debug("파일 안 미리보기 못 읽음 %s: %s", path, ex)
+    return shell_thumbnail(path, px)
 
 
 class Thumbs(QtCore.QObject):
@@ -181,7 +324,7 @@ class Thumbs(QtCore.QObject):
                     key, path = self.want.popitem(last=True)   # 최근 요청 먼저
                 t = time.perf_counter()
                 try:
-                    img = shell_thumbnail(path, key[2])
+                    img = make_image(path, key[2])
                 except Exception:
                     log.exception("미리보기 실패 %s", path)
                     img = None

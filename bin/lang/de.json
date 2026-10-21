@@ -580,5 +580,8 @@
  "ZIP 파일": "ZIP-Datei",
  "7z 파일": "7z-Datei",
  "TAR 파일": "TAR-Datei",
- "이 윈도우에는 압축 도구(tar.exe)가 없습니다": "Dieses Windows hat kein Komprimierungswerkzeug (tar.exe)"
+ "이 윈도우에는 압축 도구(tar.exe)가 없습니다": "Dieses Windows hat kein Komprimierungswerkzeug (tar.exe)",
+ "미리보기 창": "Vorschaufenster",
+ "파일을 고르면 여기에 미리보기가 나옵니다": "Datei auswählen, um hier die Vorschau zu sehen",
+ "미리보기 창 보이기/숨기기": "Vorschaufenster ein-/ausblenden"
 }

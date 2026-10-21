@@ -44,6 +44,7 @@ ACTIONS = [
     ("toggle_hidden", T("숨긴 항목 보이기/숨기기"), "Ctrl+H", "window"),
     ("add_fav", T("현재 폴더를 즐겨찾기에 추가"), "Ctrl+D", "window"),
     ("toggle_chrome", T("메뉴·즐겨찾기 접기/펼치기"), "Ctrl+Shift+M", "window"),
+    ("toggle_preview", T("미리보기 창 보이기/숨기기"), "Alt+P", "window"),   # 탐색기와 같은 키 (v0.9.58)
 ] + [(f"pane{i + 1}", T('{0}번 칸으로').format(i + 1), f"Ctrl+{i + 1}", "window") for i in range(6)]
 
 LABEL = {a: lbl for a, lbl, _, _ in ACTIONS}

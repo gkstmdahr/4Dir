@@ -55,6 +55,8 @@ class Settings:
                      "fav_expanded": True, "on_top": False,
                      "allow_multi": False,   # False = 창 하나만 (다시 실행하면 기존 창을 앞으로)
                      "sysmon": True,         # 상단에 CPU·GPU 사용량 표시
+                     "preview_pane": False,  # 오른쪽 미리보기 창 (v0.9.58, 보기 > 미리보기 창 / Alt+P)
+                     "preview_w": 300,       # 미리보기 창 너비
                      "breadcrumb": True,     # 주소를 경로 버튼으로 (기본: 경로 버튼, 빈 곳 클릭하면 입력칸)
                      "batch_rename": {},     # 이름 일괄 변경 창의 마지막 입력값
                      "guide_shown": False,   # 처음 실행 때 사용법 창을 보여줬는지
@@ -171,6 +173,7 @@ QTabBar::tab:selected {{ background:{F['tab_sel']}; color:{F['tab_sel_text']}; f
 QTabBar::tab:hover:!selected {{ background:{F['tab_hover']}; }}
 #plusTab {{ font-weight:bold; font-size:20px; padding:0 0 2px 0; border-radius:4px; }}
 #plusTab:hover {{ background:{F['tab_sel']}; }}
+#previewPane {{ background:{F['pane_bg']}; border:1px solid {T['border']}; }}   /* 오른쪽 미리보기 창 (v0.9.58) */
 #paneStatus {{ background:{T['status']}; border-top:1px solid {T['border']}; color:{F['sub']}; padding:2px 6px; }}
 #sidebar {{ background:{T['side_bg']}; border:none; border-right:1px solid {T['border']}; }}
 #topBar QToolButton:hover:!checked, #paneHead QToolButton:hover:!checked, #favPanel QToolButton:hover:!checked {{
