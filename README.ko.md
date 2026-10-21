@@ -22,6 +22,10 @@
 2. zip 우클릭 → 속성 → **차단 해제** → 확인.
 3. 아무 곳에나 풀고 **4Dir.vbs** 실행.
 
+## 문제 보고·의견
+
+4Dir 에서 **도구 → 문제 보고용 로그 저장 → 메일로 보내기**, 또는 zip 을 **support@4dir.net** 으로 보내 주세요. 깃허브 사용자는 [문제 보고(Issue)](https://github.com/gkstmdahr/4Dir/issues/new/choose)도 됩니다.
+
 ## 후원
 
 4Dir 는 무료이고 광고가 없습니다. 도움이 됐다면 [사이트](https://4dir.net/ko/#donate)에서 후원할 수 있습니다.

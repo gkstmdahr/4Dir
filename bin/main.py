@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.60"
+QE_VERSION = "0.9.61"
 
 import os
 import sys
@@ -187,6 +187,7 @@ def size_short(b):
 # ★공개 사이트 주소 (v0.9.48) — 비어 있으면 홈페이지·후원 메뉴를 숨기고 새 버전 확인도 안 함
 SITE_URL = "https://4dir.net/"   # 공개 사이트 (10/22 개인 도메인, 깃허브 무료 페이지). 끝에 / 붙일 것. 옛 gkstmdahr.github.io/4Dir/ 는 깃허브가 여기로 넘김
 DONATE_URL = "https://ko-fi.com/4dirofficial"   # 후원 페이지 (10/21 개설). 비어 있으면 사이트의 후원 칸(#donate)
+SUPPORT_EMAIL = "support@4dir.net"   # 문제 보고 받는 주소 (10/22, 클라우드플레어 메일 전달 → 개발자 지메일)
 UPDATE_URL = SITE_URL + "version.json" if SITE_URL else ""
 
 
@@ -5433,7 +5434,30 @@ eports.
         except OSError:
             log.exception("탐색기 열기 실패 %s", out)
         QtWidgets.QApplication.clipboard().setText(out)   # 경로를 바로 붙여 넣을 수 있게 (메일·대화창)
-        self.show_notice(T('저장했고 파일 경로를 복사했습니다: {0} — 이 파일을 보내 주세요  ✕').format(out), sticky=True)
+        # v0.9.61: 깃허브 계정 없이도 보낼 수 있게 '메일로 보내기' (support@4dir.net) — 메일 창 + 탐색기에서 zip 끌어 넣기
+        self.show_notice(T('저장했고 파일 경로를 복사했습니다: {0} — 이 파일을 {1} 로 보내 주세요  ✕').format(out, SUPPORT_EMAIL), sticky=True,
+                         action=(T("메일로 보내기"), lambda: self.mail_report(out)))
+
+    def mail_report(self, path):
+        """문제 보고 메일 창 열기 (mailto). 첨부는 메일 프로그램 규칙상 자동으로 못 넣음 → 탐색기에 zip 을 보여 주고 끌어 넣게 안내.
+        메일 프로그램이 없으면 주소를 복사하고 알림"""
+        import platform
+        from urllib.parse import quote
+        subject = f"4Dir v{QE_VERSION} problem report"
+        body = (chr(13) + chr(10)).join([T("어떤 문제가 있었나요? (무엇을 하다가, 어떻게 됐는지)"), "", "", "----",
+                             f"4Dir {QE_VERSION} / {platform.platform()}",
+                             T("첨부할 파일: {0}").format(os.path.basename(path)),
+                             T("(탐색기에 보이는 이 zip 파일을 메일 창에 끌어다 놓아 주세요)")])
+        url = f"mailto:{SUPPORT_EMAIL}?subject={quote(subject)}&body={quote(body)}"
+        ok = QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
+        log.info("문제 보고 메일 창 열기 %s → %s", SUPPORT_EMAIL, ok)
+        try:
+            subprocess.Popen(["explorer.exe", "/select,", path])
+        except OSError:
+            log.exception("탐색기 열기 실패 %s", path)
+        if not ok:
+            QtWidgets.QApplication.clipboard().setText(SUPPORT_EMAIL)
+            self.show_notice(T("메일 프로그램을 열지 못했습니다. 주소를 복사했습니다: {0} — 쓰시는 메일에서 zip 을 첨부해 보내 주세요  ✕").format(SUPPORT_EMAIL), sticky=True)
 
     def open_fav(self, path):
         new_tab = bool(QtWidgets.QApplication.keyboardModifiers() & Qt.ControlModifier)

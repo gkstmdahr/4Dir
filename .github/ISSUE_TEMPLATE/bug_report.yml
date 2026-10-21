@@ -1,0 +1,33 @@
+name: Problem report
+description: Something does not work in 4Dir
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks! In 4Dir use **Tools → Save log for problem report** and attach the zip below.
+        No GitHub account? Email the zip to **support@4dir.net** instead.
+  - type: input
+    id: version
+    attributes:
+      label: 4Dir version
+      description: Shown at the top right of the window (e.g. v0.9.61)
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: Windows 11 23H2
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, what happened instead
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Problem-report zip
+      description: Drag the zip from the 4Dir 'reports' folder here

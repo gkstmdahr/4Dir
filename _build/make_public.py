@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 공개 저장소 폴더 만들기 (MAKE_PUBLIC_VER 1.0.2)
+"""4Dir 공개 저장소 폴더 만들기 (MAKE_PUBLIC_VER 1.0.3)
 
 python make_public.py   → 4Dir\\_public\\  (깃허브에 올릴 내용 그대로. .git 폴더는 남기고 나머지를 새로 채움)
 - 올리는 것: 4Dir.vbs, bin 의 소스(.py)·언어·사용법 그림·아이콘, _build 의 만들기 스크립트, docs\\ (사이트), LICENSE, README
@@ -16,7 +16,7 @@ import time
 import shutil
 import subprocess
 
-MAKE_PUBLIC_VER = "1.0.2"
+MAKE_PUBLIC_VER = "1.0.3"
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 BIN = os.path.join(ROOT, "bin")
@@ -62,6 +62,48 @@ _build/corp_words.txt
 _site/out/
 """
 
+ISSUE_TEMPLATE = """name: Problem report
+description: Something does not work in 4Dir
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks! In 4Dir use **Tools → Save log for problem report** and attach the zip below.
+        No GitHub account? Email the zip to **support@4dir.net** instead.
+  - type: input
+    id: version
+    attributes:
+      label: 4Dir version
+      description: Shown at the top right of the window (e.g. v0.9.61)
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: Windows 11 23H2
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, what happened instead
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Problem-report zip
+      description: Drag the zip from the 4Dir 'reports' folder here
+"""
+
+ISSUE_CONFIG = """blank_issues_enabled: true
+contact_links:
+  - name: Email (no GitHub account needed)
+    url: mailto:support@4dir.net
+    about: Send the problem-report zip to support@4dir.net
+"""
+
 README_EN = """# 4Dir
 
 **Multi-pane tabbed file manager for Windows — free, portable, light on your PC.**
@@ -92,6 +134,10 @@ The release zip contains the official python.org embeddable Python, PySide6 (Qt,
 
 Python 3.13 + `pip install PySide6 pywin32`, then run `4Dir.vbs` (uses `pythonw` on PATH) or `pythonw bin/main.py`.
 Build a release: `python _build/make_release.py` (needs your own `_build/corp_words.txt`, one forbidden word per line).
+
+## Problems / feedback
+
+In 4Dir: **Tools → Save log for problem report → Send by email**, or email the zip to **support@4dir.net**. GitHub users can also open an [issue]({repo}/issues/new/choose).
 
 ## Support
 
@@ -125,6 +171,10 @@ README_KO = """# 4Dir
 1. [배포판]({repo}/releases)에서 zip 을 받습니다.
 2. zip 우클릭 → 속성 → **차단 해제** → 확인.
 3. 아무 곳에나 풀고 **4Dir.vbs** 실행.
+
+## 문제 보고·의견
+
+4Dir 에서 **도구 → 문제 보고용 로그 저장 → 메일로 보내기**, 또는 zip 을 **support@4dir.net** 으로 보내 주세요. 깃허브 사용자는 [문제 보고(Issue)]({repo}/issues/new/choose)도 됩니다.
 
 ## 후원
 
@@ -210,6 +260,11 @@ def main():
     open(os.path.join(OUT, ".gitignore"), "w", encoding="utf-8", newline="\n").write(GITIGNORE)
     open(os.path.join(OUT, "README.md"), "w", encoding="utf-8", newline="\n").write(README_EN.format(site=site, repo=repo))
     open(os.path.join(OUT, "README.ko.md"), "w", encoding="utf-8", newline="\n").write(README_KO.format(site=site, repo=repo))
+    # 깃허브 문제 보고 양식 (1.0.3) — 버전·증상·로그 zip 칸 + 깃허브 계정 없으면 메일 안내
+    tdir = os.path.join(OUT, ".github", "ISSUE_TEMPLATE")
+    os.makedirs(tdir, exist_ok=True)
+    open(os.path.join(tdir, "bug_report.yml"), "w", encoding="utf-8", newline="\n").write(ISSUE_TEMPLATE)
+    open(os.path.join(tdir, "config.yml"), "w", encoding="utf-8", newline="\n").write(ISSUE_CONFIG)
 
     hits = scan(OUT)
     n = sum(len(fs) for a, _, fs in os.walk(OUT) if ".git" not in a.split(os.sep))

@@ -583,5 +583,11 @@
  "이 윈도우에는 압축 도구(tar.exe)가 없습니다": "Este Windows no tiene herramienta de compresión (tar.exe)",
  "미리보기 창": "Panel de vista previa",
  "파일을 고르면 여기에 미리보기가 나옵니다": "Selecciona un archivo para verlo aquí",
- "미리보기 창 보이기/숨기기": "Mostrar/ocultar panel de vista previa"
+ "미리보기 창 보이기/숨기기": "Mostrar/ocultar panel de vista previa",
+ "어떤 문제가 있었나요? (무엇을 하다가, 어떻게 됐는지)": "¿Qué falló? (qué estabas haciendo y qué pasó)",
+ "(탐색기에 보이는 이 zip 파일을 메일 창에 끌어다 놓아 주세요)": "(Arrastra este archivo zip que aparece en el Explorador a la ventana del correo)",
+ "저장했고 파일 경로를 복사했습니다: {0} — 이 파일을 {1} 로 보내 주세요  ✕": "Guardado y ruta copiada: {0} — envía este archivo a {1}  ✕",
+ "메일로 보내기": "Enviar por correo",
+ "첨부할 파일: {0}": "Archivo para adjuntar: {0}",
+ "메일 프로그램을 열지 못했습니다. 주소를 복사했습니다: {0} — 쓰시는 메일에서 zip 을 첨부해 보내 주세요  ✕": "No se pudo abrir el programa de correo. Dirección copiada: {0} — envía el zip desde tu correo  ✕"
 }

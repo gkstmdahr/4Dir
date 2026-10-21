@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 공개 사이트 만들기 (MAKE_SITE_VER 1.1.0)
+"""4Dir 공개 사이트 만들기 (MAKE_SITE_VER 1.1.1)
 
 python make_site.py [출력 폴더]   (기본: 4Dir\\_site\\out)
 - 문구: site_text.py (10개 언어), 설정: site_config.json (깃허브 계정·후원 주소)
@@ -17,7 +17,8 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.1.0"
+MAKE_SITE_VER = "1.1.1"
+SUPPORT = "support@4dir.net"   # 문제 보고 메일 (1.1.1)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 SITE_SRC = os.path.join(ROOT, "_site")
@@ -135,7 +136,7 @@ def page(lang, cfg, rel):
 <section><h2>{e(t["faq_h"])}</h2>{faq}</section>
 </main>
 <footer><div class="wrap">
-<a href="{repo_url}">{e(t["src"])}</a> · <a href="{repo_url}/issues">{e(t["issues"])}</a> · <a href="{repo_url}/releases">v{ver}</a>
+<a href="{repo_url}">{e(t["src"])}</a> · <a href="{repo_url}/issues">{e(t["issues"])}</a> · <a href="mailto:{SUPPORT}">{SUPPORT}</a> · <a href="{repo_url}/releases">v{ver}</a>
 <p>{e(t["lic"])}</p>
 </div></footer>
 </body>

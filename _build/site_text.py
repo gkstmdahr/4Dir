@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 사이트 문구 (SITE_TEXT_VER 1.0.2) — make_site.py 가 읽음.
+"""4Dir 사이트 문구 (SITE_TEXT_VER 1.0.3) — make_site.py 가 읽음.
 키: 언어 폴더 이름(en 은 사이트 맨 위). {ver} {size} {date} 는 make_site 가 채움."""
 
 LANGS = ["en", "ko", "zh-CN", "zh-TW", "ja", "es", "de", "fr", "pt-BR", "ru"]
@@ -31,7 +31,7 @@ T = {
     faq_h="FAQ",
     faq=[("Is it really free?", "Yes. 4Dir is free and open source (GPL-3.0). No ads, no account, no trial."),
          ("Does it send any data?", "No personal data. It only checks once a day whether a new version exists (you can turn this off in Tools)."),
-         ("Something went wrong?", "Tools → Save log for problem report, then open an issue on GitHub with the zip file.")],
+         ("Something went wrong?", "Tools → Save log for problem report, then press “Send by email” (or email the zip to support@4dir.net). GitHub users can also open an issue.")],
     src="Source code", issues="Report a problem", lic="Free software under GPL-3.0. Windows is a trademark of Microsoft.",
     lang="Language"),
 "ko": dict(
@@ -56,7 +56,7 @@ T = {
     faq_h="자주 묻는 질문",
     faq=[("정말 무료인가요?", "네. 무료 오픈소스(GPL-3.0)입니다. 광고·회원가입·체험 기간 없습니다."),
          ("정보를 보내나요?", "개인 정보는 보내지 않습니다. 하루 한 번 새 버전이 있는지만 확인합니다(도구 메뉴에서 끌 수 있음)."),
-         ("문제가 생기면?", "도구 → 문제 보고용 로그 저장 → 생긴 zip 파일을 깃허브 문제 보고에 올려 주세요.")],
+         ("문제가 생기면?", "도구 → 문제 보고용 로그 저장 → 알림의 '메일로 보내기'를 누르거나, 생긴 zip 을 support@4dir.net 으로 보내 주세요. 깃허브 사용자는 문제 보고(Issue)도 됩니다.")],
     src="소스 코드", issues="문제 보고", lic="GPL-3.0 무료 소프트웨어. Windows 는 Microsoft 의 상표입니다.",
     lang="언어"),
 "zh-CN": dict(
@@ -81,7 +81,7 @@ T = {
     faq_h="常见问题",
     faq=[("真的免费吗？", "是的。4Dir 是免费开源软件（GPL-3.0）。无广告、无需账号、无试用期。"),
          ("会发送数据吗？", "不会发送个人数据。每天只检查一次是否有新版本（可在“工具”中关闭）。"),
-         ("遇到问题？", "工具 → 保存问题报告日志，然后在 GitHub 上提交 issue 并附上 zip 文件。")],
+         ("遇到问题？", "工具 → 保存问题报告日志，然后点击“通过邮件发送”（或把 zip 发到 support@4dir.net）。GitHub 用户也可以提交 issue。")],
     src="源代码", issues="报告问题", lic="GPL-3.0 自由软件。Windows 是 Microsoft 的商标。",
     lang="语言"),
 "zh-TW": dict(
@@ -106,7 +106,7 @@ T = {
     faq_h="常見問題",
     faq=[("真的免費嗎？", "是的。4Dir 是免費開源軟體（GPL-3.0）。沒有廣告、不需帳號、沒有試用期。"),
          ("會傳送資料嗎？", "不會傳送個人資料。每天只檢查一次是否有新版本（可在「工具」中關閉）。"),
-         ("遇到問題？", "工具 → 儲存問題回報記錄，然後到 GitHub 開 issue 並附上 zip 檔。")],
+         ("遇到問題？", "工具 → 儲存問題回報記錄，然後按「以電子郵件傳送」（或把 zip 寄到 support@4dir.net）。GitHub 使用者也可以開 issue。")],
     src="原始碼", issues="回報問題", lic="GPL-3.0 自由軟體。Windows 是 Microsoft 的商標。",
     lang="語言"),
 "ja": dict(
@@ -131,7 +131,7 @@ T = {
     faq_h="よくある質問",
     faq=[("本当に無料？", "はい。4Dir は無料のオープンソース（GPL-3.0）です。広告・アカウント登録・試用期間はありません。"),
          ("データを送信する？", "個人情報は送信しません。1 日 1 回、新しいバージョンがあるかを確認するだけです（ツールメニューでオフにできます）。"),
-         ("問題が起きたら？", "ツール → 問題報告用ログを保存 → できた zip を GitHub の Issue に添付してください。")],
+         ("問題が起きたら？", "ツール → 問題報告用ログを保存 → 通知の「メールで送る」を押すか、zip を support@4dir.net に送ってください。GitHub の Issue でも受け付けます。")],
     src="ソースコード", issues="問題を報告", lic="GPL-3.0 のフリーソフトウェア。Windows は Microsoft の商標です。",
     lang="言語"),
 "es": dict(
@@ -156,7 +156,7 @@ T = {
     faq_h="Preguntas frecuentes",
     faq=[("¿De verdad es gratis?", "Sí. 4Dir es gratuito y de código abierto (GPL-3.0). Sin anuncios, sin cuenta, sin periodo de prueba."),
          ("¿Envía datos?", "Ningún dato personal. Solo comprueba una vez al día si hay una versión nueva (se puede desactivar en Herramientas)."),
-         ("¿Algo salió mal?", "Herramientas → Guardar registro para informe de problemas, y abre un issue en GitHub con el archivo zip.")],
+         ("¿Algo salió mal?", "Herramientas → Guardar registro para informe de problemas y pulsa «Enviar por correo» (o envía el zip a support@4dir.net). En GitHub también puedes abrir un issue.")],
     src="Código fuente", issues="Informar de un problema", lic="Software libre bajo GPL-3.0. Windows es una marca de Microsoft.",
     lang="Idioma"),
 "de": dict(
@@ -181,7 +181,7 @@ T = {
     faq_h="Häufige Fragen",
     faq=[("Ist es wirklich kostenlos?", "Ja. 4Dir ist kostenlos und Open Source (GPL-3.0). Keine Werbung, kein Konto, keine Testphase."),
          ("Sendet es Daten?", "Keine persönlichen Daten. Es prüft nur einmal täglich, ob es eine neue Version gibt (abschaltbar unter Extras)."),
-         ("Probleme?", "Extras → Protokoll für Problembericht speichern, dann auf GitHub ein Issue mit der Zip-Datei eröffnen.")],
+         ("Probleme?", "Extras → Protokoll für Problembericht speichern und „Per E-Mail senden“ drücken (oder die Zip-Datei an support@4dir.net schicken). Auf GitHub geht auch ein Issue.")],
     src="Quellcode", issues="Problem melden", lic="Freie Software unter GPL-3.0. Windows ist eine Marke von Microsoft.",
     lang="Sprache"),
 "fr": dict(
@@ -206,7 +206,7 @@ T = {
     faq_h="Questions fréquentes",
     faq=[("Est-ce vraiment gratuit ?", "Oui. 4Dir est gratuit et open source (GPL-3.0). Pas de publicité, pas de compte, pas de période d'essai."),
          ("Envoie-t-il des données ?", "Aucune donnée personnelle. Il vérifie seulement une fois par jour si une nouvelle version existe (désactivable dans Outils)."),
-         ("Un problème ?", "Outils → Enregistrer le journal pour rapport de problème, puis ouvrez une issue sur GitHub avec le fichier zip.")],
+         ("Un problème ?", "Outils → Enregistrer le journal pour rapport de problème, puis « Envoyer par e-mail » (ou envoyez le zip à support@4dir.net). Sur GitHub, vous pouvez aussi ouvrir une issue.")],
     src="Code source", issues="Signaler un problème", lic="Logiciel libre sous GPL-3.0. Windows est une marque de Microsoft.",
     lang="Langue"),
 "pt-BR": dict(
@@ -231,7 +231,7 @@ T = {
     faq_h="Perguntas frequentes",
     faq=[("É grátis mesmo?", "Sim. O 4Dir é gratuito e de código aberto (GPL-3.0). Sem anúncios, sem conta, sem período de teste."),
          ("Ele envia dados?", "Nenhum dado pessoal. Só verifica uma vez por dia se há versão nova (dá para desligar em Ferramentas)."),
-         ("Deu algum problema?", "Ferramentas → Salvar log para relatório de problema, e abra uma issue no GitHub com o arquivo zip.")],
+         ("Deu algum problema?", "Ferramentas → Salvar log para relatório de problema e clique em “Enviar por e-mail” (ou envie o zip para support@4dir.net). No GitHub também dá para abrir uma issue.")],
     src="Código-fonte", issues="Relatar um problema", lic="Software livre sob GPL-3.0. Windows é uma marca da Microsoft.",
     lang="Idioma"),
 "ru": dict(
@@ -256,7 +256,7 @@ T = {
     faq_h="Частые вопросы",
     faq=[("Это правда бесплатно?", "Да. 4Dir — бесплатная программа с открытым кодом (GPL-3.0). Без рекламы, без регистрации, без пробного периода."),
          ("Отправляет ли он данные?", "Никаких личных данных. Раз в день проверяется только наличие новой версии (можно отключить в меню «Сервис»)."),
-         ("Что-то пошло не так?", "Сервис → Сохранить журнал для отчёта о проблеме, затем создайте issue на GitHub и приложите zip-файл.")],
+         ("Что-то пошло не так?", "Сервис → Сохранить журнал для отчёта о проблеме и нажмите «Отправить по почте» (или пришлите zip на support@4dir.net). Также можно создать issue на GitHub.")],
     src="Исходный код", issues="Сообщить о проблеме", lic="Свободное ПО под GPL-3.0. Windows — товарный знак Microsoft.",
     lang="Язык"),
 }

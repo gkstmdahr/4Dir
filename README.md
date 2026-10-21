@@ -29,6 +29,10 @@ The release zip contains the official python.org embeddable Python, PySide6 (Qt,
 Python 3.13 + `pip install PySide6 pywin32`, then run `4Dir.vbs` (uses `pythonw` on PATH) or `pythonw bin/main.py`.
 Build a release: `python _build/make_release.py` (needs your own `_build/corp_words.txt`, one forbidden word per line).
 
+## Problems / feedback
+
+In 4Dir: **Tools → Save log for problem report → Send by email**, or email the zip to **support@4dir.net**. GitHub users can also open an [issue](https://github.com/gkstmdahr/4Dir/issues/new/choose).
+
 ## Support
 
 4Dir is free and has no ads. If it saves you time, you can support development on the [website](https://4dir.net/#donate).
