@@ -128,26 +128,42 @@ def type_for(name, is_dir):
 
 
 # ---------------------------------------------------------------- 드라이브·특수 폴더 (실제 대상 읽음 → 작업 스레드 전용)
-_KNOWN = [  # (FOLDERID, 기본 이름)
-    ("{B4BFCC3A-DB2C-424C-B029-7FE99A87C641}", "바탕 화면"),
-    ("{374DE290-123F-4565-9164-39C4925E467B}", "다운로드"),
-    ("{FDD39AD0-238F-46AF-ADB4-6C85480369C7}", "문서"),
-    ("{33E28130-4E1E-4676-835A-98395C3BC3BB}", "사진"),
-    ("{18989B1D-99B5-455B-841C-AB7C74E4DDFC}", "동영상"),
-    ("{4BD8D571-6D19-48D3-BE97-422220080E43}", "음악"),
+_KNOWN = [  # (FOLDERID, 기본 이름, User Shell Folders 값 이름)
+    ("{B4BFCC3A-DB2C-424C-B029-7FE99A87C641}", "바탕 화면", "Desktop"),
+    ("{374DE290-123F-4565-9164-39C4925E467B}", "다운로드", "{374DE290-123F-4565-9164-39C4925E467B}"),
+    ("{FDD39AD0-238F-46AF-ADB4-6C85480369C7}", "문서", "Personal"),
+    ("{33E28130-4E1E-4676-835A-98395C3BC3BB}", "사진", "My Pictures"),
+    ("{18989B1D-99B5-455B-841C-AB7C74E4DDFC}", "동영상", "My Video"),
+    ("{4BD8D571-6D19-48D3-BE97-422220080E43}", "음악", "My Music"),
 ]
 
 
+def _user_shell_folder(name):
+    """레지스트리의 현재 위치 (HKCU ...\\User Shell Folders) — 매번 읽음. 없으면 ''"""
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders") as k:
+            return os.path.expandvars(winreg.QueryValueEx(k, name)[0])
+    except OSError:
+        return ""
+
+
 def known_folders():
-    """[(이름, 경로)] — 리디렉션된 실제 경로 (예: 다운로드 = E:\\Downloads)"""
+    """[(이름, 경로)] — 리디렉션된 실제 경로 (예: 다운로드 = E:\\Downloads).
+    v0.9.55: 레지스트리를 먼저 매번 읽음 — SHGetKnownFolderPath 는 프로세스 안에 위치를 기억해서, 4Dir 가 켜진 뒤
+    다른 프로그램이 위치를 바꾸면 옛 위치를 계속 줌(10/21 실측: 다운로드가 바탕 화면으로 잘못 가 있던 때 켠 4Dir 가
+    고친 뒤에도 '내 PC'에 바탕 화면 두 개). 레지스트리 값이 없을 때만 SHGetKnownFolderPath"""
     out = []
     f = ctypes.windll.shell32.SHGetKnownFolderPath
     f.argtypes = [ctypes.POINTER(_GUID), ctypes.c_uint, ctypes.c_void_p, ctypes.POINTER(ctypes.c_wchar_p)]
-    for gid, label in _KNOWN:
-        p = ctypes.c_wchar_p()
-        if f(ctypes.byref(_guid(gid)), 0, None, ctypes.byref(p)) >= 0 and p.value:
-            out.append((label, p.value))
-            ctypes.windll.ole32.CoTaskMemFree(p)
+    for gid, label, regname in _KNOWN:
+        fp = _user_shell_folder(regname)
+        if not fp:
+            p = ctypes.c_wchar_p()
+            if f(ctypes.byref(_guid(gid)), 0, None, ctypes.byref(p)) >= 0 and p.value:
+                fp = p.value
+                ctypes.windll.ole32.CoTaskMemFree(p)
+        if fp:
+            out.append((label, fp))
     return out
 
 
@@ -480,6 +496,19 @@ def compress(folder, names, fmt):
     sec = time.time() - t0
     log.info("압축 완료 %s %.1fMB %.1f초", out, os.path.getsize(out) / 1048576, sec)
     return out, sec
+
+
+def link_target(lnk):
+    """바로 가기(.lnk)의 대상 경로 (v0.9.55). 찾아다니기(Resolve) 안 함 — 적힌 경로만 읽음(빠름, 창 안 뜸).
+    경로가 없는 특수 대상(제어판 등)이거나 읽기 실패면 '' """
+    import pythoncom
+    try:
+        sl = pythoncom.CoCreateInstance(shell.CLSID_ShellLink, None, pythoncom.CLSCTX_INPROC_SERVER, shell.IID_IShellLink)
+        sl.QueryInterface(pythoncom.IID_IPersistFile).Load(lnk, 0)
+        return sl.GetPath(shell.SLGP_RAWPATH)[0] or ""
+    except Exception as ex:
+        log.warning("바로 가기 읽기 실패 %s: %s", lnk, ex)
+        return ""
 
 
 def copy_as_path(paths):

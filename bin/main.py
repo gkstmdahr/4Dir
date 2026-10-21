@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.54"
+QE_VERSION = "0.9.55"
 
 import os
 import sys
@@ -1962,13 +1962,20 @@ class Page(QtWidgets.QWidget):
         fp = self.model_.full(e)
         if e[1]:
             self.navigate(fp)
-        else:
-            log.info("파일 열기 %s", fp)
-            try:
-                os.startfile(fp)
-            except OSError as ex:
-                log.warning("열기 실패 %s : %s", fp, ex)
-                self.status.emit(f"⚠ {ex}")
+            return
+        if fp.lower().endswith(".lnk"):   # 폴더 바로 가기 → 탐색기처럼 이 칸에서 그 폴더로 (v0.9.55, 사용자 요청)
+            tgt = os.path.expandvars(shellops.link_target(fp))
+            if tgt and os.path.isdir(tgt):
+                log.info("폴더 바로 가기 %s → %s", fp, tgt)
+                self.navigate(tgt)
+                return
+            log.info("바로 가기 대상이 폴더 아님(%s) → 윈도우로 열기", tgt or "경로 없음")
+        log.info("파일 열기 %s", fp)
+        try:
+            os.startfile(fp)
+        except OSError as ex:
+            log.warning("열기 실패 %s : %s", fp, ex)
+            self.status.emit(f"⚠ {ex}")
 
     def open_selected(self):
         rows = self.selected_rows()
