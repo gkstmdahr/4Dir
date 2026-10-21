@@ -4,6 +4,9 @@
 
 [Website & download](https://gkstmdahr.github.io/4Dir/) · [Releases](https://github.com/gkstmdahr/4Dir/releases) · [한국어](README.ko.md)
 
+> **Download the release zip from [Releases](https://github.com/gkstmdahr/4Dir/releases/latest)** (`4Dir_v….zip`).
+> The green **Code → Download ZIP** button gives source code only — it won't run without Python 3.12+ and PySide6.
+
 ![4Dir](docs/img/en_1.png)
 
 - **Up to 20 panes** — 1/2/3/4/6 pane layouts with one click, or any grid up to 5 × 4. Tabs in every pane.

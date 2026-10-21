@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 공개 저장소 폴더 만들기 (MAKE_PUBLIC_VER 1.0.0)
+"""4Dir 공개 저장소 폴더 만들기 (MAKE_PUBLIC_VER 1.0.1)
 
 python make_public.py   → 4Dir\\_public\\  (깃허브에 올릴 내용 그대로. .git 폴더는 남기고 나머지를 새로 채움)
 - 올리는 것: 4Dir.vbs, bin 의 소스(.py)·언어·사용법 그림·아이콘, _build 의 만들기 스크립트, docs\\ (사이트), LICENSE, README
@@ -16,7 +16,7 @@ import time
 import shutil
 import subprocess
 
-MAKE_PUBLIC_VER = "1.0.0"
+MAKE_PUBLIC_VER = "1.0.1"
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 BIN = os.path.join(ROOT, "bin")
@@ -68,6 +68,9 @@ README_EN = """# 4Dir
 
 [Website & download]({site}) · [Releases]({repo}/releases) · [한국어](README.ko.md)
 
+> **Download the release zip from [Releases]({repo}/releases/latest)** (`4Dir_v….zip`).
+> The green **Code → Download ZIP** button gives source code only — it won't run without Python 3.12+ and PySide6.
+
 ![4Dir](docs/img/en_1.png)
 
 - **Up to 20 panes** — 1/2/3/4/6 pane layouts with one click, or any grid up to 5 × 4. Tabs in every pane.
@@ -104,6 +107,9 @@ README_KO = """# 4Dir
 **윈도우용 여러 칸 분할 + 탭 파일 관리자 — 무료, 설치 없음, PC 를 무겁게 하지 않음.**
 
 [사이트·받기]({site}ko/) · [배포판]({repo}/releases) · [English](README.md)
+
+> **[배포판(Releases)]({repo}/releases/latest) 에서 zip 을 받으세요** (`4Dir_v….zip`).
+> 초록색 **Code → Download ZIP** 은 소스 코드만 들어 있어서, 파이썬 3.12 이상과 PySide6 가 없으면 실행되지 않습니다.
 
 ![4Dir](docs/img/ko_1.png)
 

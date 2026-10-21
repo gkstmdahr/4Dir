@@ -4,6 +4,9 @@
 
 [사이트·받기](https://gkstmdahr.github.io/4Dir/ko/) · [배포판](https://github.com/gkstmdahr/4Dir/releases) · [English](README.md)
 
+> **[배포판(Releases)](https://github.com/gkstmdahr/4Dir/releases/latest) 에서 zip 을 받으세요** (`4Dir_v….zip`).
+> 초록색 **Code → Download ZIP** 은 소스 코드만 들어 있어서, 파이썬 3.12 이상과 PySide6 가 없으면 실행되지 않습니다.
+
 ![4Dir](docs/img/ko_1.png)
 
 - **최대 20칸** — 1·2·3·4·6칸 버튼 하나로, 또는 가로 5 × 세로 4 까지. 칸마다 탭.
