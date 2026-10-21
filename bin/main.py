@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.55"
+QE_VERSION = "0.9.56"
 
 import os
 import sys
@@ -3021,6 +3021,45 @@ def arrow_icon(way):
 
 
 # ================================================================ 칸 하나 = 머리줄 + (사이드바 | 탭들) + 상태줄
+class PaneTabBar(QtWidgets.QTabBar):
+    """칸의 탭줄. 닫기 단추(×)를 탭 안쪽으로 4px (v0.9.56, 사용자: '× 가 탭 밖으로 나갔다').
+    윈도우 스타일은 단추를 탭 칸 오른쪽 끝 1px 안에 두는데, 우리 탭은 칸 사이 간격(margin-right 2px)이 있어 실제
+    테두리가 2px 안쪽 → 단추가 테두리 위에 걸쳐 밖으로 보였음(측정: 칸 0~79, 단추 63~78, 테두리 77).
+    스타일시트 QTabBar::close-button 위치 규칙·앱 스타일 대리 모두 이 단추엔 안 먹음(실측) → 배치가 끝날 때마다 옮김"""
+    CLOSE_SHIFT = 4
+
+    def __init__(self, *a):
+        super().__init__(*a)
+        # 탭 선택·추가 때 Qt 가 전체 배치 없이 그 탭 단추만 다시 놓음(실측) → 그 직후에도 옮김
+        self.currentChanged.connect(self._fix_later)
+
+    def _fix_later(self, *_):
+        QtCore.QTimer.singleShot(0, self._fix_close_buttons)
+
+    def tabLayoutChange(self):
+        super().tabLayoutChange()
+        self._fix_close_buttons()
+
+    def tabInserted(self, index):
+        super().tabInserted(index)
+        self._fix_later()
+
+    def tabRemoved(self, index):
+        super().tabRemoved(index)
+        self._fix_later()
+
+    def resizeEvent(self, ev):
+        super().resizeEvent(ev)
+        self._fix_later()
+
+    def _fix_close_buttons(self):
+        for i in range(self.count()):
+            b = self.tabButton(i, QtWidgets.QTabBar.RightSide)
+            if b is not None:
+                r = self.tabRect(i)
+                b.move(r.right() - self.CLOSE_SHIFT - b.width(), b.y())
+
+
 class Pane(QtWidgets.QFrame):
     changed = QtCore.Signal()
 
@@ -3122,7 +3161,7 @@ class Pane(QtWidgets.QFrame):
         tl = QtWidgets.QHBoxLayout(tabrow)
         tl.setContentsMargins(4, 3, 4, 0)
         tl.setSpacing(2)
-        self.bar = QtWidgets.QTabBar()
+        self.bar = PaneTabBar()
         self.bar.setTabsClosable(True)
         self.bar.setMovable(True)
         self.bar.setExpanding(False)
@@ -3337,7 +3376,7 @@ class Pane(QtWidgets.QFrame):
     def _tab_image(self, i):
         """끌 때 마우스에 붙는 탭 그림. 탭줄을 그대로 찍으면 QTabBar 가 옮기던 탭이 비켜 그려져 왼쪽 빈칸·잘림(10/6 사용자 보고)
         → 같은 모양 탭줄을 따로 하나 만들어 그 탭만 그림"""
-        tmp = QtWidgets.QTabBar(self.tabrow)   # 같은 부모 = 같은 스타일
+        tmp = PaneTabBar(self.tabrow)   # 같은 부모 = 같은 스타일 (닫기 단추 위치도 같게)
         tmp.setDrawBase(False)
         tmp.setExpanding(False)   # 진짜 탭줄과 같게 (안 하면 탭 옆에 빈 회색 칸이 붙음 — 실측 100px vs 80px)
         tmp.setTabsClosable(self.bar.tabsClosable())
