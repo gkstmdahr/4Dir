@@ -15,6 +15,7 @@ import threading
 import time
 import ctypes
 import struct
+import subprocess
 import functools
 import winreg
 
@@ -438,6 +439,76 @@ def get_clipboard():
     return paths, cut
 
 
+# ---------------------------------------------------------------- 윈도우 11 새 메뉴에만 있는 기능 (v0.9.54)
+# 4Dir 우클릭은 윈도우 클래식 메뉴라 윈도우 11 의 '압축·즐겨찾기에 고정·경로로 복사·터미널에서 열기'가 안 보임(사용자 제보)
+TAR_EXE = os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "System32", "tar.exe")   # 윈도우 내장 bsdtar(libarchive) — 윈도우 11 압축과 같은 엔진
+_ARC_OPTS = {"zip": ["--options", "zip:hdrcharset=UTF-8"],   # 없으면 한글 이름이 CP949 로 들어감(실측)
+             "7z": [], "tar": ["--options", "hdrcharset=UTF-8"]}
+
+
+def compress(folder, names, fmt):
+    """folder 안의 names 를 <첫 항목 이름>.<fmt> 로 압축 (같은 이름 있으면 ' (2)'). 반환 (만든 경로, 걸린 초). 실패 시 OSError"""
+    t0 = time.time()
+    first = names[0]
+    stem = os.path.splitext(first)[0] if os.path.isfile(os.path.join(folder, first)) else first
+    out, i = os.path.join(folder, f"{stem}.{fmt}"), 2
+    while os.path.exists(out):
+        out, i = os.path.join(folder, f"{stem} ({i}).{fmt}"), i + 1
+    log.info("압축 시작 %s ← %d개 %s (%s)", out, len(names), names[:5], fmt)
+    if os.path.exists(TAR_EXE):
+        r = subprocess.run([TAR_EXE, *_ARC_OPTS[fmt], "-a", "-c", "-f", out, "--", *names], cwd=folder,
+                           capture_output=True, creationflags=0x08000000)   # CREATE_NO_WINDOW
+        if r.returncode != 0:
+            err = (r.stderr or b"").decode("mbcs", "replace").strip()
+            if os.path.exists(out):
+                os.remove(out)
+            log.warning("압축 실패 rc=%d %s", r.returncode, err[:500])
+            raise OSError(err.splitlines()[0] if err else f"tar rc={r.returncode}")   # 첫 줄 = 어떤 파일이 왜 실패했는지
+    elif fmt == "zip":   # tar.exe 없는 윈도우(1803 이전) → 파이썬 zip
+        import zipfile
+        with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+            for nm in names:
+                p = os.path.join(folder, nm)
+                if os.path.isdir(p):
+                    for a, _, fs in os.walk(p):
+                        for f in fs:
+                            z.write(os.path.join(a, f), os.path.relpath(os.path.join(a, f), folder))
+                else:
+                    z.write(p, nm)
+    else:
+        raise OSError(T("이 윈도우에는 압축 도구(tar.exe)가 없습니다"))
+    sec = time.time() - t0
+    log.info("압축 완료 %s %.1fMB %.1f초", out, os.path.getsize(out) / 1048576, sec)
+    return out, sec
+
+
+def copy_as_path(paths):
+    """탐색기 '경로로 복사'와 같은 글자: 따옴표로 감싼 전체 경로, 여러 개면 줄바꿈"""
+    QtGui.QGuiApplication.clipboard().setText("\r\n".join(f'"{os.path.normpath(p)}"' for p in paths))
+    log.info("경로로 복사 %d개", len(paths))
+
+
+def shell_verb(path, verb):
+    """윈도우 셸 동사 실행(예: pintohome, pintostartscreen). 실패하면 OSError"""
+    try:
+        shell.ShellExecuteEx(fMask=shellcon.SEE_MASK_INVOKEIDLIST | 0x400, lpVerb=verb, lpFile=path, nShow=win32con.SW_SHOWNORMAL)   # 0x400 = 오류 창 안 띄움
+        log.info("셸 동사 %s %s", verb, path)
+    except Exception as ex:
+        log.warning("셸 동사 실패 %s %s: %s", verb, path, ex)
+        raise OSError(str(ex))
+
+
+def open_terminal(folder):
+    """윈도우 터미널(있으면) 또는 파워셸을 그 폴더에서 엶"""
+    import shutil
+    wt = shutil.which("wt.exe")
+    if wt:
+        subprocess.Popen([wt, "-d", folder.rstrip("\\") + "\\."])   # 끝 \ 가 따옴표를 먹는 wt 문제 피함
+    else:
+        subprocess.Popen(["powershell.exe", "-NoExit"], cwd=folder, creationflags=0x00000010)   # CREATE_NEW_CONSOLE
+    log.info("터미널 열기 %s (%s)", folder, "wt" if wt else "powershell")
+
+
 # ---------------------------------------------------------------- 우클릭 셸 메뉴 (ctypes COM 직접 호출)
 # pywin32 는 IContextMenu2/3 클라이언트가 없어(실측) '새로 만들기/보내기/연결 프로그램' 하위메뉴를 못 채움 → ctypes 로 vtable 직접 호출
 from ctypes import wintypes as _wt
@@ -613,11 +684,27 @@ class ShellMenu:
         # 우리 항목 id 는 펼친 순서대로 EXTRA_BASE+n : extras → tail → newfolder (부르는 쪽 콜백 목록도 같은 순서)
         n = 0
         if extras:
-            # extras 항목: "글자" | "-"(구분선) | ("글자", [하위…]) | {"t": 글자, "off": 흐림, "chk": 체크, "sub": [하위…]}
+            # extras 항목: "글자" | "-"(구분선) | ("글자", [하위…]) | {"t": 글자, "off": 흐림, "chk": 체크, "sub": [하위…],
+            #   "unless": {"verb", …}}  ← 윈도우 메뉴에 이 동사가 이미 있으면 우리 항목은 숨김(번호는 그대로 소비, v0.9.54
+            #   윈도우 11 클래식 메뉴엔 없는 '즐겨찾기에 고정·경로로 복사' 등을 넣되 윈도우 10 에선 겹치지 않게)
             #   하위: "-" | "글자" | {"t", "off", "chk"}
+            shell_verbs = set()
+            for i in range(win32gui.GetMenuItemCount(self.hmenu)):
+                idc = ctypes.windll.user32.GetMenuItemID(self.hmenu, i)
+                if 0 < idc < ShellMenu.EXTRA_BASE:
+                    v = self.verb(idc - 1)
+                    if v:
+                        shell_verbs.add(v.lower())
             win32gui.InsertMenu(self.hmenu, 0, win32con.MF_BYPOSITION | win32con.MF_SEPARATOR, 0, None)
-            for pos, ex in enumerate(extras):
+            pos = -1
+            for ex in extras:
+                pos += 1
                 ex = _menu_spec(ex)
+                if ex is not None and {v.lower() for v in ex.get("unless", ())} & shell_verbs:
+                    log.info("셸메뉴 우리 항목 숨김 (윈도우에 이미 있음) %s", ex["t"])
+                    n += len([t for t in ex["sub"] if _menu_spec(t) is not None]) if "sub" in ex else 1
+                    pos -= 1
+                    continue
                 if ex is None:
                     win32gui.InsertMenu(self.hmenu, pos, win32con.MF_BYPOSITION | win32con.MF_SEPARATOR, 0, None)
                 elif "sub" in ex:

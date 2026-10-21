@@ -566,5 +566,19 @@
  "'{0}' 을(를) 찾지 못했습니다.\n바뀐 것이 없습니다. 찾을 글자를 확인해 주세요.": "Could not find '{0}'.\nNothing was changed. Please check the text to find.",
  "재부팅 후 다시 열기 (켜 둔 채 윈도우를 끄면 다음 로그인 때)": "Reopen after restart (if Windows shuts down while open, reopen at next sign-in)",
  "4Dir 홈페이지": "4Dir website",
- "♥ 후원하기 (개발 응원)": "♥ Support development (donate)"
+ "♥ 후원하기 (개발 응원)": "♥ Support development (donate)",
+ "압축 중: {0}…": "Compressing: {0}…",
+ "터미널에서 열기": "Open in Terminal",
+ "경로로 복사": "Copy as path",
+ "{0} 외 {1}개": "{0} and {1} more",
+ "압축 완료: {0} ({1}초)  ✕": "Compressed: {0} ({1} s)  ✕",
+ "압축": "Compress to",
+ "윈도우 즐겨찾기에 고정": "Pin to Quick access (Windows)",
+ "시작 화면에 고정": "Pin to Start",
+ "⚠ 압축하지 못했습니다: {0}  ✕": "⚠ Could not compress: {0}  ✕",
+ "⚠ 이 윈도우에서는 지원되지 않습니다: {0}": "⚠ Not supported on this Windows: {0}",
+ "ZIP 파일": "ZIP file",
+ "7z 파일": "7z file",
+ "TAR 파일": "TAR file",
+ "이 윈도우에는 압축 도구(tar.exe)가 없습니다": "This Windows has no compression tool (tar.exe)"
 }

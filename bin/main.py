@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.53"
+QE_VERSION = "0.9.54"
 
 import os
 import sys
@@ -2006,6 +2006,33 @@ class Page(QtWidgets.QWidget):
                         info, changed, shellops._CLIP_SEQ[0], info["seq"])
             self.status.emit(T("⚠ 클립보드에 파일이 없습니다"))
 
+    def do_compress(self, fmt):
+        """선택 항목 압축 (윈도우 내장 tar.exe, 뒤 스레드). 끝나면 알림 — 새 파일은 폴더 감시로 목록에 나타남 (v0.9.54)"""
+        folder, names = self.path, self.selected_names()
+        if not names or folder == THIS_PC or is_search(folder):
+            return
+        sg = _undo_signal()   # 화면 스레드에서 만들어 둠 (뒤 스레드는 emit 만)
+        self.status.emit(T("압축 중: {0}…").format(names[0] if len(names) == 1 else T("{0} 외 {1}개").format(names[0], len(names) - 1)))
+        import threading
+
+        def run():
+            try:
+                out, sec = shellops.compress(folder, names, fmt)
+                sg.done.emit(T("압축 완료: {0} ({1}초)  ✕").format(os.path.basename(out), f"{sec:.1f}"))
+            except Exception as ex:
+                log.exception("압축 실패")
+                sg.done.emit(T("⚠ 압축하지 못했습니다: {0}  ✕").format(ex))
+        threading.Thread(target=run, daemon=True, name="compress").start()
+
+    def do_verb(self, paths, verb):
+        """윈도우 셸 동사(즐겨찾기에 고정·시작 화면에 고정) — 실패하면 알림"""
+        for p in paths:
+            try:
+                shellops.shell_verb(p, verb)
+            except OSError:
+                self.status.emit(T("⚠ 이 윈도우에서는 지원되지 않습니다: {0}").format(os.path.basename(p) or p))
+                return
+
     def send_to_other(self, move=False, target=None):
         """선택 항목을 다른 칸(기본: 직전에 쓰던 칸)의 현재 폴더로 복사/이동"""
         ps = self.selected_paths()
@@ -2219,7 +2246,18 @@ class Page(QtWidgets.QWidget):
                 if tg:
                     extras.append((mlabel(T("다른 칸으로 복사"), "send_copy"), [(t, (lambda v=v: self.send_to_other(False, v))) for t, v in tg]))
                     extras.append((mlabel(T("다른 칸으로 이동"), "send_move"), [(t, (lambda v=v: self.send_to_other(True, v))) for t, v in tg]))
-        favs = [((f"{d['group']} ▸ {d['name']}" if d.get("group") else d["name"]), (lambda p=d["path"]: self.navigate(p))) for d in FAV.items]
+            # 윈도우 11 새 메뉴에만 있는 것 (v0.9.54, 사용자 제보) — "unless" = 윈도우 메뉴에 그 동사가 있으면 우리 것은 숨김
+            if self.path != THIS_PC:
+                extras.append((mlabel(T("압축"), None), [(T("ZIP 파일"), lambda: self.do_compress("zip")),
+                                                         (T("7z 파일"), lambda: self.do_compress("7z")),
+                                                         (T("TAR 파일"), lambda: self.do_compress("tar"))]))
+            if dirs:
+                extras.append(({"t": T("윈도우 즐겨찾기에 고정"), "unless": {"pintohome"}}, lambda: self.do_verb(dirs, "pintohome")))
+                extras.append(({"t": T("시작 화면에 고정"), "unless": {"pintostartscreen"}}, lambda: self.do_verb(dirs, "pintostartscreen")))
+            extras.append(({"t": T("경로로 복사"), "unless": {"copyaspath"}}, lambda: shellops.copy_as_path(paths)))
+            if len(paths) == 1 and dirs:
+                extras.append((T("터미널에서 열기"), lambda: shellops.open_terminal(dirs[0])))
+        favs =[((f"{d['group']} ▸ {d['name']}" if d.get("group") else d["name"]), (lambda p=d["path"]: self.navigate(p))) for d in FAV.items]
         if not paths and self.path != THIS_PC:
             favs += [("-", None), (mlabel(T("이 폴더를 ★4Dir 즐겨찾기에 추가"), "add_fav"), lambda: FAV.add(self.path))]
         fav_entry = (QE_FAV, favs or [(T("(비어 있음)"), lambda: None)])
@@ -2238,6 +2276,7 @@ class Page(QtWidgets.QWidget):
                                     for o, lbl in ((Qt.AscendingOrder, T("오름차순")), (Qt.DescendingOrder, T("내림차순")))]
             extras.append((mlabel(T("정렬 기준"), None, "O"), srt))
             extras.append((mlabel(T("새로 고침"), "refresh", "E"), lambda: self.reload("menu")))
+            extras.append((T("터미널에서 열기"), lambda: shellops.open_terminal(self.path)))   # 윈도우 11 빈 곳 메뉴처럼 (v0.9.54)
             extras.append(fav_entry)
             extras.append(("-", None))
             extras.append(({"t": mlabel(T("붙여넣기"), "paste", "P"), "off": not shellops.get_clipboard()[0]}, self.do_paste))
