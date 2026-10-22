@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 사이트 문구 (SITE_TEXT_VER 1.1.0) — make_site.py 가 읽음.
+"""4Dir 사이트 문구 (SITE_TEXT_VER 1.2.0 — 메인 fast 줄 + FAQ 속도 근거, 맨 아래 _FAST) — make_site.py 가 읽음.
 키: 언어 폴더 이름(en 은 사이트 맨 위). {ver} {size} {date} 는 make_site 가 채움."""
 
 LANGS = ["en", "ko", "zh-CN", "zh-TW", "ja", "es", "de", "fr", "pt-BR", "ru"]
@@ -340,3 +340,42 @@ T = {
     home='← Главная 4Dir',
     lang="Язык"),
 }
+
+
+# ---- 1.2.0 (10/22): 메인 '윈도우 탐색기보다 빠르게!!' (사용자 문구) + FAQ 속도 근거 (같은 PC 실측: _dev\bench_explorer.ps1 / bench_4dir.py)
+#      1천 개 폴더 새 창: 4Dir 0.41초 / 탐색기 1.95초, 창 하나 더 열 때 메모리 4Dir ≈10MB / 탐색기 ≈130MB. 수만 개면 차이 줄어듦 — FAQ 에 그대로 적음
+_FAST = {
+    "en": ("Faster than Windows File Explorer!!",
+           "Is it really faster than File Explorer?",
+           "Opening a folder with 1,000 files in a new window took 0.4 s in 4Dir and about 2 s in File Explorer. Opening one more window added about 10 MB of memory in 4Dir and about 130 MB in File Explorer. Measured 5 times each on the same PC (Windows 11, SSD). With tens of thousands of files in one folder the gap gets smaller."),
+    "ko": ("윈도우 탐색기보다 빠르게!!",
+           "탐색기보다 정말 빠른가요?",
+           "파일 1천 개 폴더를 새 창으로 열면 4Dir 0.4초, 탐색기 약 2초 걸렸습니다. 창을 하나 더 열 때 늘어나는 메모리는 4Dir 약 10MB, 탐색기 약 130MB였습니다. 같은 PC(윈도우 11, SSD)에서 5번씩 잰 값입니다. 파일이 수만 개인 폴더에서는 차이가 줄어듭니다."),
+    "zh-CN": ("比 Windows 文件资源管理器更快！！",
+              "真的比文件资源管理器快吗？",
+              "在新窗口中打开含 1,000 个文件的文件夹：4Dir 用时 0.4 秒，文件资源管理器约 2 秒。多开一个窗口增加的内存：4Dir 约 10 MB，文件资源管理器约 130 MB。同一台电脑（Windows 11，SSD）各测 5 次。单个文件夹有数万个文件时差距会变小。"),
+    "zh-TW": ("比 Windows 檔案總管更快！！",
+              "真的比檔案總管快嗎？",
+              "以新視窗開啟含 1,000 個檔案的資料夾：4Dir 0.4 秒，檔案總管約 2 秒。多開一個視窗增加的記憶體：4Dir 約 10 MB，檔案總管約 130 MB。同一台電腦（Windows 11、SSD）各量 5 次。單一資料夾有數萬個檔案時差距會變小。"),
+    "ja": ("Windows エクスプローラーより速い！！",
+           "本当にエクスプローラーより速いの？",
+           "ファイル 1,000 個のフォルダーを新しいウィンドウで開くと、4Dir は 0.4 秒、エクスプローラーは約 2 秒でした。ウィンドウを 1 つ増やしたときのメモリ増加は 4Dir 約 10 MB、エクスプローラー約 130 MB。同じ PC（Windows 11・SSD）で各 5 回測った値です。1 つのフォルダーに数万ファイルあると差は小さくなります。"),
+    "es": ("¡¡Más rápido que el Explorador de archivos de Windows!!",
+           "¿De verdad es más rápido que el Explorador?",
+           "Abrir una carpeta con 1.000 archivos en una ventana nueva tardó 0,4 s en 4Dir y unos 2 s en el Explorador. Abrir una ventana más sumó unos 10 MB de memoria en 4Dir y unos 130 MB en el Explorador. Medido 5 veces en el mismo PC (Windows 11, SSD). Con decenas de miles de archivos en una carpeta la diferencia se reduce."),
+    "de": ("Schneller als der Windows-Explorer!!",
+           "Ist er wirklich schneller als der Explorer?",
+           "Einen Ordner mit 1.000 Dateien in einem neuen Fenster öffnen: 4Dir 0,4 s, Explorer etwa 2 s. Ein weiteres Fenster kostete bei 4Dir etwa 10 MB Speicher, beim Explorer etwa 130 MB. Je 5-mal gemessen auf demselben PC (Windows 11, SSD). Bei Zehntausenden Dateien in einem Ordner wird der Abstand kleiner."),
+    "fr": ("Plus rapide que l'Explorateur de fichiers Windows !!",
+           "Est-il vraiment plus rapide que l'Explorateur ?",
+           "Ouvrir un dossier de 1 000 fichiers dans une nouvelle fenêtre : 0,4 s avec 4Dir, environ 2 s avec l'Explorateur. Une fenêtre de plus : environ 10 Mo de mémoire pour 4Dir, environ 130 Mo pour l'Explorateur. Mesuré 5 fois sur le même PC (Windows 11, SSD). Avec des dizaines de milliers de fichiers dans un dossier, l'écart se réduit."),
+    "pt-BR": ("Mais rápido que o Explorador de Arquivos do Windows!!",
+              "É mesmo mais rápido que o Explorador?",
+              "Abrir uma pasta com 1.000 arquivos em uma nova janela levou 0,4 s no 4Dir e cerca de 2 s no Explorador. Abrir mais uma janela somou cerca de 10 MB de memória no 4Dir e cerca de 130 MB no Explorador. Medido 5 vezes no mesmo PC (Windows 11, SSD). Com dezenas de milhares de arquivos em uma pasta a diferença diminui."),
+    "ru": ("Быстрее Проводника Windows!!",
+           "Он правда быстрее Проводника?",
+           "Папка с 1000 файлов в новом окне: 4Dir — 0,4 с, Проводник — около 2 с. Ещё одно окно: у 4Dir около 10 МБ памяти, у Проводника около 130 МБ. Измерено по 5 раз на одном ПК (Windows 11, SSD). Если в папке десятки тысяч файлов, разница меньше."),
+}
+for _lg, (_fast, _q, _a) in _FAST.items():
+    T[_lg]["fast"] = _fast
+    T[_lg]["faq"] = T[_lg]["faq"][:1] + [(_q, _a)] + T[_lg]["faq"][1:]   # 속도 질문은 '무료' 다음

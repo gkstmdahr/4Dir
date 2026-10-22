@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
-"""4Dir 공개 사이트 만들기 (MAKE_SITE_VER 1.2.0)
+"""4Dir 공개 사이트 만들기 (MAKE_SITE_VER 1.4.1)
 
 python make_site.py [출력 폴더]   (기본: 4Dir\\_site\\out)
 - 문구: site_text.py (10개 언어), 버전별 바뀐 점: changelog.py (1.2.0 — 메인 '바뀐 점' + versions.html 지난 버전 받기), 설정: site_config.json (깃허브 계정·후원 주소)
 - 버전·크기·지문: _release 의 최신 4Dir_v*.zip + .sha256.txt
 - 결과: index.html(영어) + <언어>\\index.html, style.css, img\\, icon.png, version.json(앱 새 버전 알림),
         robots.txt, sitemap.xml, .nojekyll  → 깃허브 무료 페이지(docs 폴더)에 그대로 올림
+- 1.3.0: _site\apps\<이름>\ 의 다른 앱 페이지를 /<이름>/ 로 복사(just-downloader)
+- 1.4.0: 사용법 페이지 <언어>/guide.html (문구 guide_text.py, 그림 bin/guide/<앱언어>/p1..p6.png → img/guide/<앱언어>/). 문구 없는 언어는 페이지·링크 없음
 - 바깥 스크립트·글꼴·추적 코드 없음(사이트 하나로 끝). 광고 없음.
 로그: _build\\make_site_log.txt
 """
@@ -17,7 +19,7 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.2.0"
+MAKE_SITE_VER = "1.4.1"
 SUPPORT = "support@4dir.net"   # 문제 보고 메일 (1.1.1)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -28,6 +30,7 @@ LOGF = os.path.join(HERE, "make_site_log.txt")
 sys.path.insert(0, HERE)
 import site_text as ST  # noqa: E402
 import changelog as CL  # noqa: E402
+import guide_text as GT  # noqa: E402   (1.4.0)
 
 _logf = open(LOGF, "w", encoding="utf-8")
 
@@ -120,15 +123,16 @@ def page(lang, cfg, rel):
 <body>
 <header class="top"><div class="wrap">
 <a class="logo" href="{up}"><img src="{up}icon.png" alt="" width="28" height="28">4Dir</a>
-<label class="lang">{e(t["lang"])} <select onchange="try{{localStorage.setItem('4dir-lang',1)}}catch(e){{}};location.href=this.value">{opts}</select></label>
+{guide_nav(lang)}<label class="lang">{e(t["lang"])} <select onchange="try{{localStorage.setItem('4dir-lang',1)}}catch(e){{}};location.href=this.value">{opts}</select></label>
 </div></header>
 <main class="wrap">
 <section class="hero">
 <h1>{e(t["tagline"])}</h1>
+<p class="fast"><a href="#faq">{e(t["fast"])}</a></p>
 <p class="sub">{e(t["sub"])}</p>
 <p><a class="btn big" href="{dl_url}">⬇ {e(t["dl"].format(**fmt))}</a></p>
 <p class="note">{e(t["dlnote"].format(**fmt))}</p>
-</section>
+{guide_hero(lang)}</section>
 <section class="news"><h2>{e(t["new_h"].format(**fmt))}</h2><ul>{news}</ul><p><a href="versions.html">{e(t["hist_link"])} →</a></p></section>
 <figure class="shot"><img src="{up}img/{img}_1.png" alt="{e(t["shot1"])}" width="1280" height="760"><figcaption>{e(t["shot1"])}</figcaption></figure>
 <section><h2>{e(t["feat_h"])}</h2><div class="grid">{feats}</div></section>
@@ -136,7 +140,7 @@ def page(lang, cfg, rel):
 <section id="install"><h2>{e(t["how_h"])}</h2><ol>{how}</ol><p class="tip">{t["smart"]}</p>
 <h3>{e(t["sha_h"])}</h3><p>{t["sha"].format(**fmt)}</p><p><code class="sha">{sha}</code></p></section>
 {donate}
-<section><h2>{e(t["faq_h"])}</h2>{faq}</section>
+<section id="faq"><h2>{e(t["faq_h"])}</h2>{faq}</section>
 </main>
 <footer><div class="wrap">
 <a href="{repo_url}">{e(t["src"])}</a> · <a href="{repo_url}/issues">{e(t["issues"])}</a> · <a href="mailto:{SUPPORT}">{SUPPORT}</a> · <a href="{repo_url}/releases">v{ver}</a>
@@ -145,6 +149,82 @@ def page(lang, cfg, rel):
 </body>
 </html>
 """
+
+
+def guide_nav(lang):
+    """위쪽 줄 '사용법' 링크 (1.4.0) — 그 언어 사용법 문구가 있을 때만"""
+    g = GT.GUIDE.get(lang)
+    return f'<a class="nav" href="guide.html">{html.escape(g["link"])}</a>' if g else ""
+
+
+def guide_hero(lang):
+    g = GT.GUIDE.get(lang)
+    return f'<p class="note"><a href="guide.html">{html.escape(g["title"])} →</a></p>' if g else ""
+
+
+def guide_page(lang, cfg, rel):
+    """사용법 (1.4.0): 절마다 실제 화면 그림(빨간 번호) + 번호 설명 + 덧붙임"""
+    g, t = GT.GUIDE[lang], ST.T[lang]
+    e = html.escape
+    repo_url = f"https://github.com/{cfg['owner'] or 'OWNER'}/{cfg['repo']}"
+    base = site_base(cfg)
+    up = "" if lang == "en" else "../"
+    glangs = [lg for lg in ST.LANGS if lg in GT.GUIDE]
+    url_of = lambda lg: base + ("" if lg == "en" else lg + "/") + "guide.html"
+    alts = "\n".join(f'<link rel="alternate" hreflang="{lg}" href="{url_of(lg)}">' for lg in glangs)
+    opts = "".join(f'<option value="{up}{"" if lg == "en" else lg + "/"}guide.html"{" selected" if lg == lang else ""}>{e(ST.NAMES[lg])}</option>'
+                   for lg in glangs)
+    img = guide_img_lang(lang)
+    toc = "".join(f'<li><a href="#{s["id"]}">{e(s["h"])}</a></li>' for s in g["sections"]) + f'<li><a href="#etc">{e(g["etc_h"])}</a></li>'
+    secs = []
+    for s in g["sections"]:
+        ps = "".join(f"<p>{x}</p>" for x in s.get("p", []))
+        nums = "".join(f"<li>{x}</li>" for x in s.get("nums", []))   # <b>·<kbd> 허용 (문구는 우리가 씀)
+        after = "".join(f"<p>{x}</p>" for x in s.get("after", []))
+        secs.append(f'<section class="gs" id="{s["id"]}"><h2>{e(s["h"])}</h2>{ps}'
+                    f'<figure class="shot"><img src="{up}img/guide/{img}/p{s["img"]}.png" alt="{e(s["h"])}" loading="lazy"></figure>'
+                    f'<ol class="marks">{nums}</ol>{after}<p class="totop"><a href="#">{e(g["top"])} ↑</a></p></section>')
+    etc = "".join(f"<li>{x}</li>" for x in g["etc"])
+    return f"""<!doctype html>
+<html lang="{lang}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{e(g["title"])} — 4Dir</title>
+<meta name="description" content="{e(g["intro"][:150])}">
+<link rel="canonical" href="{url_of(lang)}">
+{alts}
+<link rel="icon" href="{up}icon.png">
+<link rel="stylesheet" href="{up}style.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+<a class="logo" href="./"><img src="{up}icon.png" alt="" width="28" height="28">4Dir</a>
+<label class="lang">{e(t["lang"])} <select onchange="try{{localStorage.setItem('4dir-lang',1)}}catch(e){{}};location.href=this.value">{opts}</select></label>
+</div></header>
+<main class="wrap guide">
+<p><a href="./">{e(t["home"])}</a></p>
+<h1>{e(g["title"])}</h1>
+<p class="sub">{e(g["intro"])}</p>
+<nav class="toc"><b>{e(g["toc"])}</b><ol>{toc}</ol></nav>
+{"".join(secs)}
+<section class="gs" id="etc"><h2>{e(g["etc_h"])}</h2><ul>{etc}</ul></section>
+</main>
+<footer><div class="wrap">
+<a href="{repo_url}">{e(t["src"])}</a> · <a href="{repo_url}/issues">{e(t["issues"])}</a> · <a href="mailto:{SUPPORT}">{SUPPORT}</a>
+<p>{e(t["lic"])}</p>
+</div></footer>
+</body>
+</html>
+"""
+
+
+def guide_img_lang(lang):
+    """사용법 그림 폴더(앱 언어 코드). 그 언어 그림이 없으면 영어, 그것도 없으면 한국어"""
+    for c in (ST.APP_LANG[lang], "en", "ko"):
+        if os.path.isfile(os.path.join(ROOT, "bin", "guide", c, "p1.png")):
+            return c
+    raise SystemExit("사용법 그림 없음 — make_guide.py 먼저")
 
 
 def versions_page(lang, cfg, rel):
@@ -230,7 +310,15 @@ footer{border-top:1px solid var(--line);padding:24px 0;color:var(--mut);font-siz
 .ver{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:12px 0}.ver ul{margin:8px 0 0;padding-left:20px}
 .vh{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}.vh h3{margin:0;font-size:20px}.date{color:var(--mut);font-size:14px}
 .btn.sm{padding:5px 12px;font-size:14px}a.sha{font-size:13px;color:var(--mut)}.tag{font-size:12px;background:var(--acc);color:#fff;border-radius:10px;padding:1px 8px;vertical-align:middle}
-@media (max-width:600px){.hero{padding:32px 0 16px}.sub{font-size:16px}.grid{grid-template-columns:1fr}}
+.fast{font-size:clamp(18px,2.6vw,24px);font-weight:700;margin:0 0 8px}.fast a{color:var(--acc);text-decoration:none}.fast a:hover{text-decoration:underline}
+.nav{margin-left:auto;margin-right:8px;font-weight:600;text-decoration:none}.nav:hover{text-decoration:underline}
+.guide h1{font-size:clamp(26px,4vw,36px);margin:16px 0 8px}.toc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 18px;margin:16px 0 8px}.toc ol{margin:6px 0 0;padding-left:22px;columns:2;column-gap:32px}
+.gs{margin:48px 0}.gs h2{border-bottom:1px solid var(--line);padding-bottom:6px}.gs .shot{margin:16px 0}
+ol.marks{list-style:none;counter-reset:m;padding-left:0}ol.marks li{counter-increment:m;position:relative;padding-left:34px;margin:10px 0}
+ol.marks li::before{content:counter(m);position:absolute;left:0;top:1px;width:22px;height:22px;border-radius:50%;background:#e03131;color:#fff;font-size:13px;font-weight:700;text-align:center;line-height:22px}
+kbd{display:inline-block;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;font:13px Consolas,monospace;background:var(--card)}
+.totop{text-align:right;font-size:14px}
+@media (max-width:600px){.hero{padding:32px 0 16px}.sub{font-size:16px}.grid{grid-template-columns:1fr}.toc ol{columns:1}}
 """
 
 
@@ -259,22 +347,44 @@ def main():
     for lang in ST.LANGS:
         t = ST.T[lang]
         assert set(t) == set(ST.T["en"]), (lang, set(ST.T["en"]) ^ set(t))
-        assert len(t["feats"]) == 6 and len(t["how"]) == 3 and len(t["faq"]) == 3, lang
+        assert len(t["feats"]) == 6 and len(t["how"]) == 3 and len(t["faq"]) == 4, lang
         d = OUT if lang == "en" else os.path.join(OUT, lang)
         os.makedirs(d, exist_ok=True)
         with open(os.path.join(d, "index.html"), "w", encoding="utf-8", newline="\n") as f:
             f.write(page(lang, cfg, rel))
         with open(os.path.join(d, "versions.html"), "w", encoding="utf-8", newline="\n") as f:
             f.write(versions_page(lang, cfg, rel))
+        if lang in GT.GUIDE:   # 1.4.0 사용법
+            g = GT.GUIDE[lang]
+            assert set(g) == set(GT.GUIDE["ko"]), (lang, set(GT.GUIDE["ko"]) ^ set(g))
+            with open(os.path.join(d, "guide.html"), "w", encoding="utf-8", newline="\n") as f:
+                f.write(guide_page(lang, cfg, rel))
+            src = os.path.join(ROOT, "bin", "guide", guide_img_lang(lang))
+            dst = os.path.join(OUT, "img", "guide", guide_img_lang(lang))
+            if not os.path.isdir(dst):
+                os.makedirs(dst)
+                for i in sorted({s["img"] for s in GT.GUIDE[lang]["sections"]}):   # 1.4.1: 글에 쓰인 그림만 (p7~ 추가)
+                    shutil.copy2(os.path.join(src, f"p{i}.png"), dst)
+            log(f"사용법 {lang} (그림 {guide_img_lang(lang)})")
     open(os.path.join(OUT, "style.css"), "w", encoding="utf-8", newline="\n").write(CSS)
-    shutil.copytree(os.path.join(SITE_SRC, "img"), os.path.join(OUT, "img"))
+    shutil.copytree(os.path.join(SITE_SRC, "img"), os.path.join(OUT, "img"), dirs_exist_ok=True)
+    # 1.3.0: 다른 앱 소개 페이지(_site\apps\<이름>\ → 사이트 /<이름>/) 그대로 복사 — 예: just-downloader. 매번 OUT 을 지우므로 여기서 다시 넣어야 남는다
+    app_urls = []
+    apps = os.path.join(SITE_SRC, "apps")
+    for nm in (sorted(os.listdir(apps)) if os.path.isdir(apps) else []):
+        assert nm not in ST.LANGS and nm not in ("img",), f"앱 폴더 이름 충돌: {nm}"
+        shutil.copytree(os.path.join(apps, nm), os.path.join(OUT, nm))
+        for a, _, fs in os.walk(os.path.join(apps, nm)):
+            app_urls += [os.path.relpath(os.path.join(a, f), apps).replace(os.sep, "/").replace("index.html", "") for f in fs if f.endswith(".html")]
+        log(f"앱 페이지 {nm} 복사")
     log(f"아이콘 {'만듦' if make_icon(os.path.join(OUT, 'icon.png')) else '없음'}")
     owner = cfg["owner"] or "OWNER"
     base = site_base(cfg)
     ver = rel[0]
     json.dump({"version": ver, "page": base, "notes": ""}, open(os.path.join(OUT, "version.json"), "w", encoding="utf-8"))
     open(os.path.join(OUT, "robots.txt"), "w", encoding="utf-8").write(f"User-agent: *\nAllow: /\nSitemap: {base}sitemap.xml\n")
-    urls = "".join(f"<url><loc>{base}{'' if lg == 'en' else lg + '/'}{pg}</loc></url>" for lg in ST.LANGS for pg in ("", "versions.html"))
+    urls = "".join(f"<url><loc>{base}{'' if lg == 'en' else lg + '/'}{pg}</loc></url>" for lg in ST.LANGS for pg in ("", "versions.html") + (("guide.html",) if lg in GT.GUIDE else ()))
+    urls += "".join(f"<url><loc>{base}{u}</loc></url>" for u in sorted(app_urls))   # 1.3.0
     open(os.path.join(OUT, "sitemap.xml"), "w", encoding="utf-8").write(
         f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>\n')
     open(os.path.join(OUT, ".nojekyll"), "w").close()

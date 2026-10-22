@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-"""4Dir 사용법 그림 만들기 (MAKE_GUIDE_VER 1.0.1)
+"""4Dir 사용법 그림 만들기 (MAKE_GUIDE_VER 1.1.0)
 
-python make_guide.py ko   → bin\\guide\\ko\\p1..p6.png (실제 4Dir 화면 + 빨간 번호) + full_p1..6.png (설명 포함 한 장)
+python make_guide.py ko   → bin\\guide\\ko\\p1..p11.png (실제 4Dir 화면 + 빨간 번호) + full_p1..6.png (설명 포함 한 장)
 python make_guide.py en   → bin\\guide\\en\\...
 - 예시 폴더만 씀(%TEMP%\\4dir_guide_demo, 일반 이름) — 회사 경로·파일 없음. 끝나면 지움.
 - 사용자 설정·상태·즐겨찾기는 건드리지 않음(전부 임시 파일).
@@ -21,6 +21,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 BIN = os.path.join(os.path.dirname(HERE), "bin")
 sys.path.insert(0, BIN)
 LOGF = os.path.join(HERE, "make_guide_log.txt")
+import faulthandler  # noqa: E402  (1.1.0: 멈추면 4분 뒤 어디서 멈췄는지 로그에 남기고 끝냄)
+_fh = open(os.path.join(HERE, "make_guide_hang.txt"), "w", encoding="utf-8")
+faulthandler.dump_traceback_later(240, exit=True, file=_fh)
 
 
 def log(msg):
@@ -134,7 +137,7 @@ def until(cond, sec):
 scr = [s for s in app.screens() if "(1)" in s.name()] or [s for s in app.screens() if s is not app.primaryScreen()] or [app.primaryScreen()]
 G = scr[0].availableGeometry()
 w = M.Main()
-w.resize(1100, 640)
+w.resize(1280, 680)   # 1.0.2: 1100 이면 메뉴줄이 넘쳐 전체 검색 칸이 '…' 안으로 숨어 표시 위치가 틀어졌음(v0.9.63 실측)
 w.move(G.x() + 40, G.y() + 40)
 w.show()
 w.activateWindow()
@@ -143,6 +146,7 @@ os.makedirs(OUT, exist_ok=True)
 
 
 def rect_of(widget, pad=2):
+    assert widget.isVisible(), f"표시할 위젯이 화면에 없음(숨겨짐): {widget}"   # 1.0.2: 틀린 상자 대신 멈춤
     tl = widget.mapTo(w, QtCore.QPoint(0, 0))
     return QtCore.QRect(tl, widget.size()).adjusted(-pad, -pad, pad, pad)
 
@@ -335,6 +339,166 @@ p.end()
 pm.save(os.path.join(OUT, "p6.png"))
 log(f"p6.png 저장 {pm.width()}x{pm.height()}")
 dlg.close()
+
+# ---------------------------------------------------------------- 1.1.0: 메뉴는 exec 대신 붙잡아서 그림으로 (화면에 실제로 안 띄움)
+_menus = []
+_RealMenu = QtWidgets.QMenu
+
+
+class _CapMenu(_RealMenu):
+    """exec 하면 띄우지 않고 붙잡아 둠 (QMenu.exec 를 바꿔 끼우는 방식은 PySide 에서 안 먹음 — 10/22 실측: 메뉴가 실제로 떠서 멈춤)"""
+    def exec(self, *a, **k):
+        _menus.append(self)
+
+
+QtWidgets.QMenu = _CapMenu
+
+
+def menu_pm(m):
+    m.ensurePolished()
+    m.adjustSize()
+    return m.grab()
+
+
+def compose(pms, gap=24, pad=16, bg="#ffffff", labels=None):
+    """그림 여러 장을 가로로 붙이고 위에 번호. 반환: (QPixmap, [(번호, QRect)])"""
+    wd = sum(p.width() for p in pms) + gap * (len(pms) - 1) + pad * 2
+    ht = max(p.height() for p in pms) + pad * 2 + 18
+    out = QtGui.QPixmap(wd, ht)
+    out.fill(QtGui.QColor(bg))
+    p = QtGui.QPainter(out)
+    x, marks = pad, []
+    for i, pm in enumerate(pms):
+        p.drawPixmap(x, pad + 18, pm)
+        p.setPen(QtGui.QColor("#cfd4dc"))
+        p.drawRect(x - 1, pad + 17, pm.width() + 1, pm.height() + 1)
+        if labels:
+            p.setPen(QtGui.QColor("#333"))
+            f = p.font()
+            f.setPixelSize(13)
+            f.setBold(True)
+            p.setFont(f)
+            p.drawText(x + 26, pad + 12, labels[i])
+        marks.append((i + 1, QtCore.QRect(x - 2, pad + 16, pm.width() + 4, pm.height() + 4)))
+        x += pm.width() + gap
+    p.end()
+    return out, marks
+
+
+# 7. 즐겨찾기 줄 (묶음 포함) — 창 위쪽만 잘라서
+M.FAV.items = [{"name": "Project", "path": PROJ}, {"name": "Characters", "path": os.path.join(PROJ, "Characters")},
+               {"name": "Hero", "path": os.path.join(PROJ, "Characters", "Hero"), "group": T("캐릭터")},
+               {"name": "Monster", "path": os.path.join(PROJ, "Characters", "Monster"), "group": T("캐릭터")},
+               {"name": "Renders", "path": os.path.join(PROJ, "Renders")}]
+M.FAV.normalize()
+w.favbar.rebuild()
+w.gsearch.clear()   # 앞의 검색 글자가 그림에 남지 않게
+w.set_layout("2h", equalize=True)
+wait(300)
+w.panes[0].view().navigate(PROJ)
+w.panes[1].view().navigate(os.path.join(PROJ, "Characters"))
+wait(600)
+fb = w.favbar
+btns = fb.fav_buttons()
+log(f"즐겨찾기 버튼 {[b.text() for b in btns]}")
+single = next(b for b in btns if not b.property("favGroup"))
+group = next((b for b in btns if b.property("favGroup")), None)
+full = w.grab()
+crop_h = rect_of(fb, 0).bottom() + 120
+base = full.copy(0, 0, full.width(), crop_h)
+fm = [(1, rect_of(single))]
+if group is not None:
+    fm.append((2, rect_of(group)))
+last = btns[-1]
+gap_r = QtCore.QRect(rect_of(last).right() + 8, rect_of(last).top(), 140, rect_of(last).height())
+fm.append((3, gap_r))
+save(7, fm, base=base)
+
+# 8. 위쪽 메뉴 5개 (보기·레이아웃·즐겨찾기·창 저장/불러오기·도구)
+pms, labels = [], []
+for text, filler in ((T("보기"), w._fill_main_view_menu), (T("레이아웃"), w._fill_layout_menu), (T("즐겨찾기"), w._fill_fav_menu),
+                     (T("창 저장/불러오기"), w._fill_session_menu), (T("도구"), w._fill_tool_menu)):
+    m = QtWidgets.QMenu(w)
+    m.setStyleSheet(w.styleSheet())
+    filler(m)
+    pms.append(menu_pm(m))
+    labels.append(text)
+pm8, mk8 = compose(pms, labels=labels)
+save(8, mk8, base=pm8)
+
+# 9. 탭 우클릭 메뉴
+pa = w.panes[0]
+pa.add_tab(os.path.join(PROJ, "Effects"), activate=False)
+wait(300)
+_menus.clear()
+pa._tab_menu(pa.bar.tabRect(0).center())
+tm = _menus[-1]
+tm.setStyleSheet(w.styleSheet())
+tab_pm = menu_pm(tm)
+win = w.grab()
+tr = pa.bar.tabRect(0)
+tr = QtCore.QRect(pa.bar.mapTo(w, tr.topLeft()), tr.size())
+canvas = win.copy(0, 0, win.width(), max(tr.bottom() + 30 + tab_pm.height(), 420))
+p = QtGui.QPainter(canvas)
+mp = QtCore.QPoint(tr.center().x(), tr.bottom() + 6)
+p.fillRect(QtCore.QRect(mp + QtCore.QPoint(4, 4), tab_pm.size()), QtGui.QColor(0, 0, 0, 40))
+p.drawPixmap(mp, tab_pm)
+p.end()
+mr = QtCore.QRect(mp, tab_pm.size()).adjusted(-2, -2, 2, 2)
+save(9, [(1, tr.adjusted(-2, -2, 2, 2)), (2, mr, "right")], base=canvas)
+
+# 10. CPU·GPU 사용량 (위쪽 줄 오른쪽) — 1280 폭이면 메뉴줄이 넘쳐 사용량이 '»' 안으로 숨음 → 이 그림만 넓게
+w.resize(1600, 680)
+wait(300)
+w.set_sysmon(True, save=False)
+wait(1800)
+w._update_mon()
+wait(200)
+if w.mon_label.isVisible() and w.mon_label.text().strip():
+    full = w.grab()
+    base = full.copy(0, 0, full.width(), rect_of(w.favbar, 0).bottom() + 60)
+    save(10, [(1, rect_of(w.mon_label))], base=base)
+    log(f"사용량 글자 {w.mon_label.text()[:80]}")
+else:
+    log("사용량 표시가 안 보임 — p10 건너뜀")
+w.set_sysmon(False, save=False)
+w.resize(1280, 680)
+wait(200)
+
+# 11. 탐색기 점검 (점검은 읽기만, 해결 버튼은 안 누름)
+os.environ["QE_CHECK_DRYRUN"] = "1"
+import explorer_check  # noqa: E402
+explorer_check.DRYRUN = True
+dlg = explorer_check.make_dialog(w)
+dlg.resize(1150, 560)
+dlg.move(G.x() + 60, G.y() + 60)
+dlg.show()
+until(lambda: dlg.btn_run.isEnabled() and dlg.results, 40)
+wait(400)
+log("탐색기 점검 결과: " + " | ".join(r.text()[:90] for r in dlg.results))
+# 그림에서 뺌: 강제종료·앱 업데이트 기록(설치한 프로그램 이름이 나옴 — 개인 정보), 미리보기 모드 글자
+for row in reversed(range(len(dlg.results))):
+    if dlg.results[row].key in ("crash", "appx"):
+        dlg.tbl.removeRow(row)
+        del dlg.results[row]
+from collections import Counter  # noqa: E402
+_n = Counter(r.level for r in dlg.results)
+dlg.status.setText(T('점검 끝 — 문제 {0} · 주의 {1} · 정상 {2}').format(_n.get(explorer_check.BAD, 0), _n.get(explorer_check.WARN, 0), _n.get(explorer_check.OK, 0)))
+wait(200)
+pm = dlg.grab()
+
+
+def drect(wd):
+    return QtCore.QRect(wd.mapTo(dlg, QtCore.QPoint(0, 0)), wd.size()).adjusted(-2, -2, 2, 2)
+
+
+fix_col = QtCore.QRect(dlg.tbl.mapTo(dlg, QtCore.QPoint(dlg.tbl.columnViewportPosition(4), 0)),
+                       QtCore.QSize(dlg.tbl.columnWidth(4), dlg.tbl.height())).adjusted(-2, -2, 2, 2)
+lv = QtCore.QRect(dlg.tbl.mapTo(dlg, QtCore.QPoint(dlg.tbl.columnViewportPosition(2), 0)),
+                  QtCore.QSize(dlg.tbl.columnWidth(2), dlg.tbl.height())).adjusted(-2, -2, 2, 2)
+save(11, [(1, drect(dlg.btn_run)), (2, lv), (3, fix_col), (4, drect(dlg.btn_restart))], base=pm)
+dlg.close()
+QtWidgets.QMenu = _RealMenu
 
 # ---------------------------------------------------------------- 설명까지 한 장 (웹 게시용)
 g = guide.GuideWindow()
