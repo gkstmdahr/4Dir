@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 공개 사이트 만들기 (MAKE_SITE_VER 1.4.1)
+"""4Dir 공개 사이트 만들기 (MAKE_SITE_VER 1.4.2)
 
 python make_site.py [출력 폴더]   (기본: 4Dir\\_site\\out)
 - 문구: site_text.py (10개 언어), 버전별 바뀐 점: changelog.py (1.2.0 — 메인 '바뀐 점' + versions.html 지난 버전 받기), 설정: site_config.json (깃허브 계정·후원 주소)
@@ -19,7 +19,7 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.4.1"
+MAKE_SITE_VER = "1.4.2"
 SUPPORT = "support@4dir.net"   # 문제 보고 메일 (1.1.1)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -311,7 +311,7 @@ footer{border-top:1px solid var(--line);padding:24px 0;color:var(--mut);font-siz
 .vh{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}.vh h3{margin:0;font-size:20px}.date{color:var(--mut);font-size:14px}
 .btn.sm{padding:5px 12px;font-size:14px}a.sha{font-size:13px;color:var(--mut)}.tag{font-size:12px;background:var(--acc);color:#fff;border-radius:10px;padding:1px 8px;vertical-align:middle}
 .fast{font-size:clamp(18px,2.6vw,24px);font-weight:700;margin:0 0 8px}.fast a{color:var(--acc);text-decoration:none}.fast a:hover{text-decoration:underline}
-.nav{margin-left:auto;margin-right:8px;font-weight:600;text-decoration:none}.nav:hover{text-decoration:underline}
+.nav{margin-left:auto;margin-right:8px;font-weight:700;text-decoration:none;color:var(--acc);border:2px solid var(--acc);border-radius:8px;padding:5px 14px;white-space:nowrap}.nav:hover{background:var(--acc);color:#fff}
 .guide h1{font-size:clamp(26px,4vw,36px);margin:16px 0 8px}.toc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 18px;margin:16px 0 8px}.toc ol{margin:6px 0 0;padding-left:22px;columns:2;column-gap:32px}
 .gs{margin:48px 0}.gs h2{border-bottom:1px solid var(--line);padding-bottom:6px}.gs .shot{margin:16px 0}
 ol.marks{list-style:none;counter-reset:m;padding-left:0}ol.marks li{counter-increment:m;position:relative;padding-left:34px;margin:10px 0}
