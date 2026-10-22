@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 공개 사이트 만들기 (MAKE_SITE_VER 1.4.3)
+"""4Dir 공개 사이트 만들기 (MAKE_SITE_VER 1.5.2)
 
 python make_site.py [출력 폴더]   (기본: 4Dir\\_site\\out)
 - 문구: site_text.py (10개 언어), 버전별 바뀐 점: changelog.py (1.2.0 — 메인 '바뀐 점' + versions.html 지난 버전 받기), 설정: site_config.json (깃허브 계정·후원 주소)
@@ -19,7 +19,7 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.4.3"
+MAKE_SITE_VER = "1.5.2"
 SUPPORT = "support@4dir.net"   # 문제 보고 메일 (1.1.1)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -202,7 +202,9 @@ def guide_page(lang, cfg, rel):
 <a class="logo" href="./"><img src="{up}icon.png" alt="" width="28" height="28">4Dir</a>
 <label class="lang">{e(t["lang"])} <select onchange="try{{localStorage.setItem('4dir-lang',1)}}catch(e){{}};location.href=this.value">{opts}</select></label>
 </div></header>
-<main class="wrap guide">
+<div class="gwrap">
+<aside class="side"><nav><b>{e(g["toc"])}</b><ol>{toc}</ol></nav></aside>
+<main class="guide">
 <p><a href="./">{e(t["home"])}</a></p>
 <h1>{e(g["title"])}</h1>
 <p class="sub">{e(g["intro"])}</p>
@@ -210,6 +212,10 @@ def guide_page(lang, cfg, rel):
 {"".join(secs)}
 <section class="gs" id="etc"><h2>{e(g["etc_h"])}</h2><ul>{etc}</ul></section>
 </main>
+</div>
+<script>(function(){{try{{var L=document.querySelectorAll('.side a'),m={{}};L.forEach(function(a){{m[a.getAttribute('href').slice(1)]=a}});
+var io=new IntersectionObserver(function(es){{es.forEach(function(x){{if(x.isIntersecting){{L.forEach(function(a){{a.classList.remove('on')}});var a=m[x.target.id];a&&a.classList.add('on')}}}})}},{{rootMargin:'-20% 0px -70% 0px'}});
+document.querySelectorAll('section.gs').forEach(function(s){{io.observe(s)}})}}catch(e){{}}}})();</script>
 <footer><div class="wrap">
 <a href="{repo_url}">{e(t["src"])}</a> · <a href="{repo_url}/issues">{e(t["issues"])}</a> · <a href="mailto:{SUPPORT}">{SUPPORT}</a>
 <p>{e(t["lic"])}</p>
@@ -313,6 +319,10 @@ footer{border-top:1px solid var(--line);padding:24px 0;color:var(--mut);font-siz
 .btn.sm{padding:5px 12px;font-size:14px}a.sha{font-size:13px;color:var(--mut)}.tag{font-size:12px;background:var(--acc);color:#fff;border-radius:10px;padding:1px 8px;vertical-align:middle}
 .fast{font-size:clamp(18px,2.6vw,24px);font-weight:700;margin:0 0 8px}.fast a{color:var(--acc);text-decoration:none}.fast a:hover{text-decoration:underline}
 .nav{margin-left:auto;margin-right:8px;font-weight:700;text-decoration:none;color:var(--acc);border:2px solid var(--acc);border-radius:8px;padding:5px 14px;white-space:nowrap}.nav:hover{background:var(--acc);color:#fff}
+.gwrap{max-width:1080px;margin:0 auto;padding:0 16px}.side{display:none}
+@media (min-width:1100px){.gwrap{max-width:1360px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:36px}.side{display:block}
+.side nav{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:16px}
+.side ol{margin:6px 0 0;padding-left:20px}.side li{margin:4px 0}.side a{text-decoration:none;color:var(--fg)}.side a:hover{color:var(--acc)}.side a.on{color:var(--acc);font-weight:700}.guide .toc{display:none}}
 .guide h1{font-size:clamp(26px,4vw,36px);margin:16px 0 8px}.toc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 18px;margin:16px 0 8px}.toc ol{margin:6px 0 0;padding-left:22px;columns:2;column-gap:32px}
 .gs{margin:48px 0}.gs h2{border-bottom:1px solid var(--line);padding-bottom:6px}.gs .shot{margin:16px 0}
 ol.marks{list-style:none;counter-reset:m;padding-left:0}ol.marks li{counter-increment:m;position:relative;padding-left:34px;margin:10px 0}
@@ -365,7 +375,12 @@ def main():
             if not os.path.isdir(dst):
                 os.makedirs(dst)
                 for i in sorted({s["img"] for s in GT.GUIDE[lang]["sections"]}):   # 1.4.1: 글에 쓰인 그림만 (p7~ 추가)
-                    shutil.copy2(os.path.join(src, f"p{i}.png"), dst)
+                    f = os.path.join(src, f"p{i}.png")
+                    if not os.path.isfile(f):   # 1.5.2: 그 언어 그림이 없으면(예: SVN 그림은 TortoiseSVN 있는 PC 에서만) 영어 → 한국어 그림
+                        alt = "en" if lang != "ko" and os.path.isfile(os.path.join(ROOT, "bin", "guide", "en", f"p{i}.png")) else "ko"
+                        f = os.path.join(ROOT, "bin", "guide", alt, f"p{i}.png")
+                        log(f"  사용법 그림 p{i} — {guide_img_lang(lang)} 에 없어 {alt} 것으로")
+                    shutil.copy2(f, dst)
             log(f"사용법 {lang} (그림 {guide_img_lang(lang)})")
     open(os.path.join(OUT, "style.css"), "w", encoding="utf-8", newline="\n").write(CSS)
     shutil.copytree(os.path.join(SITE_SRC, "img"), os.path.join(OUT, "img"), dirs_exist_ok=True)
@@ -382,7 +397,10 @@ def main():
     owner = cfg["owner"] or "OWNER"
     base = site_base(cfg)
     ver = rel[0]
-    json.dump({"version": ver, "page": base, "notes": ""}, open(os.path.join(OUT, "version.json"), "w", encoding="utf-8"))
+    # 1.5.0: 앱 새 버전 알림 줄에 나올 바뀐 점 (앱 언어 코드별, 글자만). notes 는 옛 4Dir(영어로 띄움) 때문에 비움
+    strip = lambda x: re.sub(r"<[^>]+>", "", x)
+    notes = {ST.APP_LANG[lg]: " / ".join(strip(x) for x in CL.items(ver, lg)) for lg in ST.LANGS}
+    json.dump({"version": ver, "page": base, "notes": "", "notes_i18n": notes}, open(os.path.join(OUT, "version.json"), "w", encoding="utf-8"), ensure_ascii=False)
     open(os.path.join(OUT, "robots.txt"), "w", encoding="utf-8").write(f"User-agent: *\nAllow: /\nSitemap: {base}sitemap.xml\n")
     urls = "".join(f"<url><loc>{base}{'' if lg == 'en' else lg + '/'}{pg}</loc></url>" for lg in ST.LANGS for pg in ("", "versions.html") + (("guide.html",) if lg in GT.GUIDE else ()))
     urls += "".join(f"<url><loc>{base}{u}</loc></url>" for u in sorted(app_urls))   # 1.3.0

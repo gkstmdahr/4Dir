@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 사용법 그림 만들기 (MAKE_GUIDE_VER 1.1.0)
+"""4Dir 사용법 그림 만들기 (MAKE_GUIDE_VER 1.1.4)
 
 python make_guide.py ko   → bin\\guide\\ko\\p1..p11.png (실제 4Dir 화면 + 빨간 번호) + full_p1..6.png (설명 포함 한 장)
 python make_guide.py en   → bin\\guide\\en\\...
@@ -42,7 +42,7 @@ from PySide6 import QtWidgets, QtCore, QtGui  # noqa: E402
 from PySide6.QtCore import Qt  # noqa: E402
 
 # 예시 폴더: 드라이브 맨 위(주소줄에 사용자 이름·회사 경로가 안 보이게). 이미 있으면(우리 것 아님) 멈춤
-TMP = os.path.splitdrive(BIN)[0] + os.sep + "4Dir_Demo"
+TMP = os.path.splitdrive(BIN)[0] + os.sep + "4Dir_Sample"   # 1.1.1: make_shots·홍보 영상(4Dir_Demo)과 동시에 돌아도 안 부딪히게 따로
 MARK = os.path.join(TMP, ".4dir_guide_demo")
 if os.path.exists(TMP) and not os.path.exists(MARK):
     raise SystemExit(f"{TMP} 가 이미 있음 (4Dir 예시 폴더 아님) — 지우지 않고 멈춤")
@@ -117,11 +117,28 @@ i18n.apply_font(app)
 app.setQuitOnLastWindowClosed(False)
 
 
+def hide_os_cols():
+    """1.1.4: 유형·날짜 열은 윈도우가 OS 언어(이 PC = 한국어)로 주는 글자 → 다른 언어 그림에선 숨김 (make_shots 와 같음)"""
+    try:
+        if LANG == "ko" or "w" not in globals() or not w.isVisible():   # 끝에 창을 닫은 뒤엔 하지 않음
+            return
+    except RuntimeError:   # 창이 이미 지워짐
+        return
+    hide = {T("유형"), T("종류"), T("수정한 날짜"), "유형", "종류", "수정한 날짜"}
+    for p_ in w.panes:
+        for v_ in p_.findChildren(QtWidgets.QTreeView):
+            h_ = v_.header()
+            for c in range(h_.count()):
+                if v_.model() is not None and v_.model().headerData(c, Qt.Horizontal) in hide and not h_.isSectionHidden(c):
+                    h_.hideSection(c)
+
+
 def wait(ms):
     t = time.time()
     while time.time() - t < ms / 1000:
         app.processEvents()
         time.sleep(0.01)
+    hide_os_cols()
 
 
 def until(cond, sec):
@@ -143,6 +160,13 @@ w.show()
 w.activateWindow()
 wait(800)
 os.makedirs(OUT, exist_ok=True)
+for _wd in (1400, 1520, 1640):   # 1.1.2: 메뉴 글자가 긴 언어(es·de·fr)는 1280 이면 전체 검색 칸이 '»' 안으로 숨음 → 보일 때까지 넓힘
+    if w.gsearch.isVisible():
+        break
+    w.resize(_wd, 680)
+    wait(300)
+    log(f"전체 검색 칸이 숨어 창 폭 {_wd}")
+BASE_W = w.width()
 
 
 def rect_of(widget, pad=2):
@@ -387,8 +411,8 @@ def compose(pms, gap=24, pad=16, bg="#ffffff", labels=None):
 
 # 7. 즐겨찾기 줄 (묶음 포함) — 창 위쪽만 잘라서
 M.FAV.items = [{"name": "Project", "path": PROJ}, {"name": "Characters", "path": os.path.join(PROJ, "Characters")},
-               {"name": "Hero", "path": os.path.join(PROJ, "Characters", "Hero"), "group": T("캐릭터")},
-               {"name": "Monster", "path": os.path.join(PROJ, "Characters", "Monster"), "group": T("캐릭터")},
+               {"name": "Hero", "path": os.path.join(PROJ, "Characters", "Hero"), "group": "Game"},
+               {"name": "Monster", "path": os.path.join(PROJ, "Characters", "Monster"), "group": "Game"},
                {"name": "Renders", "path": os.path.join(PROJ, "Renders")}]
 M.FAV.normalize()
 w.favbar.rebuild()
@@ -448,7 +472,7 @@ mr = QtCore.QRect(mp, tab_pm.size()).adjusted(-2, -2, 2, 2)
 save(9, [(1, tr.adjusted(-2, -2, 2, 2)), (2, mr, "right")], base=canvas)
 
 # 10. CPU·GPU 사용량 (위쪽 줄 오른쪽) — 1280 폭이면 메뉴줄이 넘쳐 사용량이 '»' 안으로 숨음 → 이 그림만 넓게
-w.resize(1600, 680)
+w.resize(max(1600, BASE_W + 340), 680)
 wait(300)
 w.set_sysmon(True, save=False)
 wait(1800)
@@ -462,7 +486,7 @@ if w.mon_label.isVisible() and w.mon_label.text().strip():
 else:
     log("사용량 표시가 안 보임 — p10 건너뜀")
 w.set_sysmon(False, save=False)
-w.resize(1280, 680)
+w.resize(BASE_W, 680)
 wait(200)
 
 # 11. 탐색기 점검 (점검은 읽기만, 해결 버튼은 안 누름)

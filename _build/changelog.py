@@ -6,6 +6,18 @@
 ORDER = ["en", "ko", "zh-CN", "zh-TW", "ja", "es", "de", "fr", "pt-BR", "ru"]
 
 CHANGES = [
+("0.9.65", "2026-10-23", [
+    ("The new-version notice now also says what changed, in your language.",
+     "새 버전 알림 줄에 무엇이 바뀌었는지도 화면 언어로 함께 나옵니다.",
+     "新版本提示栏现在会用你的界面语言显示更新内容。",
+     "新版本提示列現在會用你的介面語言顯示更新內容。",
+     "新しいバージョンのお知らせに、変更点も画面の言語で表示されます。",
+     "El aviso de nueva versión ahora también indica qué cambió, en tu idioma.",
+     "Der Hinweis auf eine neue Version zeigt jetzt auch, was sich geändert hat – in deiner Sprache.",
+     "L'avis de nouvelle version indique aussi ce qui a changé, dans votre langue.",
+     "O aviso de nova versão agora também mostra o que mudou, no seu idioma.",
+     "Уведомление о новой версии теперь показывает и список изменений — на вашем языке."),
+]),
 ("0.9.64", "2026-10-22", [
     ("Animated GIFs now play in the <b>preview pane</b> (View → Preview pane, <b>Alt+P</b>).",
      "<b>미리보기 창</b>에서 움직이는 GIF 가 재생됩니다 (보기 → 미리보기 창, <b>Alt+P</b>).",

@@ -28,27 +28,27 @@
 <body>
 <header class="top"><div class="wrap">
 <a class="logo" href=""><img src="icon.png" alt="" width="28" height="28">4Dir</a>
-<label class="lang">Language <select onchange="try{localStorage.setItem('4dir-lang',1)}catch(e){};location.href=this.value"><option value="" selected>English</option><option value="ko/">한국어</option><option value="zh-CN/">简体中文</option><option value="zh-TW/">繁體中文</option><option value="ja/">日本語</option><option value="es/">Español</option><option value="de/">Deutsch</option><option value="fr/">Français</option><option value="pt-BR/">Português (Brasil)</option><option value="ru/">Русский</option></select></label>
+<a class="nav" href="guide.html">How to use</a><label class="lang">Language <select onchange="try{localStorage.setItem('4dir-lang',1)}catch(e){};location.href=this.value"><option value="" selected>English</option><option value="ko/">한국어</option><option value="zh-CN/">简体中文</option><option value="zh-TW/">繁體中文</option><option value="ja/">日本語</option><option value="es/">Español</option><option value="de/">Deutsch</option><option value="fr/">Français</option><option value="pt-BR/">Português (Brasil)</option><option value="ru/">Русский</option></select></label>
 </div></header>
 <main class="wrap">
 <section class="hero">
 <h1>Up to 20 panes. Tabs in every pane. Light on your PC.</h1>
 <p class="fast"><a href="#faq">Faster than Windows File Explorer!!</a></p>
 <p class="sub">A free, portable file manager for Windows 10/11. No installation — unzip and run.</p>
-<p><a class="btn big" href="https://github.com/gkstmdahr/4Dir/releases/download/v0.9.64/4Dir_v0.9.64.zip">⬇ Download 4Dir v0.9.64</a></p>
-<p class="note">Windows 10/11 64-bit · 33 MB · 2026-10-22 · free</p>
-</section>
-<section class="news"><h2>What&#x27;s new in v0.9.64</h2><ul><li>Animated GIFs now play in the <b>preview pane</b> (View → Preview pane, <b>Alt+P</b>).</li></ul><p><a href="versions.html">Older versions &amp; full change history →</a></p></section>
+<p><a class="btn big" href="https://github.com/gkstmdahr/4Dir/releases/download/v0.9.65/4Dir_v0.9.65.zip">⬇ Download 4Dir v0.9.65</a></p>
+<p class="note">Windows 10/11 64-bit · 33 MB · 2026-10-23 · free</p>
+<p><a class="btn line" href="guide.html">📖 How to use 4Dir →</a></p></section>
+<section class="news"><h2>What&#x27;s new in v0.9.65</h2><ul><li>The new-version notice now also says what changed, in your language.</li></ul><p><a href="versions.html">Older versions &amp; full change history →</a></p></section>
 <figure class="shot"><img src="img/en_1.png" alt="4 panes, light theme" width="1280" height="760"><figcaption>4 panes, light theme</figcaption></figure>
 <section><h2>Features</h2><div class="grid"><div class="card"><h3>Up to 20 panes</h3><p>1, 2, 3, 4 or 6 pane layouts with one click, or any grid up to 5 × 4. Every pane has its own tabs.</p></div><div class="card"><h3>Stays out of the way</h3><p>Folders are read directly, without the heavy Windows shell view. No timers or polling when idle — safe to keep open next to 3ds Max, games or other heavy apps.</p></div><div class="card"><h3>Instant search</h3><p>Type to search every file name on your drives. Its own index updates in real time — no admin rights needed.</p></div><div class="card"><h3>SVN status at a glance</h3><p>Modified / added / conflict badges read straight from .svn — folders turn red when something inside changed. Git and Perforce through Windows overlays.</p></div><div class="card"><h3>Feels like Explorer</h3><p>Same keyboard shortcuts, the full Windows right-click menu, drag &amp; drop to and from Explorer and other apps.</p></div><div class="card"><h3>Portable and private</h3><p>Settings stay in the 4Dir folder. Light/dark theme, 10 languages, batch rename, session restore and an Explorer health check built in.</p></div></div></section>
 <figure class="shot"><img src="img/en_2.png" alt="3 panes, dark theme" width="1280" height="760" loading="lazy"><figcaption>3 panes, dark theme</figcaption></figure>
 <section id="install"><h2>How to install</h2><ol><li>Download the zip with the button above (or from GitHub <b>Releases</b>). The green “Code → Download ZIP” on GitHub is source code only and won't run.</li><li>Right-click the zip → Properties → check <b>Unblock</b> → OK. (Otherwise Windows shows a security warning every time.)</li><li>Extract it anywhere and double-click <b>4Dir.vbs</b>.</li></ol><p class="tip">If Windows SmartScreen appears: click <b>More info</b> → <b>Run anyway</b>.</p>
-<h3>Verify the download (optional)</h3><p>In Command Prompt run <code>certutil -hashfile 4Dir_v0.9.64.zip SHA256</code> — the result must match:</p><p><code class="sha">e2fcd2febf4cc85102a62f9468e00e395e7b358967ea98153d24ecf8337a2720</code></p></section>
+<h3>Verify the download (optional)</h3><p>In Command Prompt run <code>certutil -hashfile 4Dir_v0.9.65.zip SHA256</code> — the result must match:</p><p><code class="sha">f9074f18fb38764e7c3226933aa803b5b32628ff9de029f7508cd4418d56ad74</code></p></section>
 <section id="donate"><h2>Support 4Dir</h2><p>4Dir is free and has no ads. If it saves you time, a small donation keeps updates coming.</p><p class="btns"><a class="btn don" href="https://ko-fi.com/4dirofficial" rel="noopener">♥ Ko-fi</a></p></section>
 <section id="faq"><h2>FAQ</h2><details><summary>Is it really free?</summary><p>Yes. 4Dir is free and open source (GPL-3.0). No ads, no account, no trial.</p></details><details><summary>Is it really faster than File Explorer?</summary><p>Opening a folder with 1,000 files in a new window took 0.4 s in 4Dir and about 2 s in File Explorer. Opening one more window added about 10 MB of memory in 4Dir and about 130 MB in File Explorer. Measured 5 times each on the same PC (Windows 11, SSD). With tens of thousands of files in one folder the gap gets smaller.</p></details><details><summary>Does it send any data?</summary><p>No personal data. It only checks once a day whether a new version exists (you can turn this off in Tools).</p></details><details><summary>Something went wrong?</summary><p>Tools → Save log for problem report, then press “Send by email” (or email the zip to support@4dir.net). GitHub users can also open an issue.</p></details></section>
 </main>
 <footer><div class="wrap">
-<a href="https://github.com/gkstmdahr/4Dir">Source code</a> · <a href="https://github.com/gkstmdahr/4Dir/issues">Report a problem</a> · <a href="mailto:support@4dir.net">support@4dir.net</a> · <a href="https://github.com/gkstmdahr/4Dir/releases">v0.9.64</a>
+<a href="https://github.com/gkstmdahr/4Dir">Source code</a> · <a href="https://github.com/gkstmdahr/4Dir/issues">Report a problem</a> · <a href="mailto:support@4dir.net">support@4dir.net</a> · <a href="https://github.com/gkstmdahr/4Dir/releases">v0.9.65</a>
 <p>Free software under GPL-3.0. Windows is a trademark of Microsoft.</p>
 </div></footer>
 </body>

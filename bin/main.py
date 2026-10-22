@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.64"
+QE_VERSION = "0.9.65"
 
 import os
 import sys
@@ -183,7 +183,8 @@ def size_short(b):
 
 
 # ---- 새 버전 알림 (웹에서 받은 사람용). 버전 정보 파일 하나만 읽고, 자동 설치는 안 함. 보내는 정보 없음(4Dir 버전 글자만)
-# 파일 형식: {"version": "0.9.30", "page": "https://.../download", "notes": "바뀐 점 한 줄"}
+# 파일 형식: {"version": "0.9.30", "page": "https://.../download", "notes": "", "notes_i18n": {"ko": "바뀐 점 한 줄", "en": ...}}
+# v0.9.65: 바뀐 점은 화면 언어별(notes_i18n, 앱 언어 코드) — 없으면 notes(옛 형식). notes 는 옛 4Dir 가 영어로 띄우지 않게 비워 둠
 # ★공개 사이트 주소 (v0.9.48) — 비어 있으면 홈페이지·후원 메뉴를 숨기고 새 버전 확인도 안 함
 SITE_URL = "https://4dir.net/"   # 공개 사이트 (10/22 개인 도메인, 깃허브 무료 페이지). 끝에 / 붙일 것. 옛 gkstmdahr.github.io/4Dir/ 는 깃허브가 여기로 넘김
 DONATE_URL = "https://ko-fi.com/4dirofficial"   # 후원 페이지 (10/21 개설). 비어 있으면 사이트의 후원 칸(#donate)
@@ -260,7 +261,7 @@ def _update_done(data, err, manual):
     new = str(data.get("version", ""))
     page = data.get("page") or ""
     if _ver_tuple(new) > _ver_tuple(QE_VERSION):
-        notes = data.get("notes") or ""
+        notes = (data.get("notes_i18n") or {}).get(i18n.lang) or data.get("notes") or ""
         log.info("새 버전 있음 v%s (지금 v%s) %s 건너뛴버전=%r", new, QE_VERSION, page, SETTINGS["update_skip"])
         if not manual and SETTINGS["update_skip"] == new:
             log.info("새 버전 팝업 생략: 사용자가 v%s 를 건너뛰기로 함", new)

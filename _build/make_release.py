@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 배포판 자동 생성 (MAKE_VER 1.4.0)
+"""4Dir 배포판 자동 생성 (MAKE_VER 1.4.1)
 
 결과: <4Dir>\\_release\\4Dir_v<버전>\\  +  4Dir_v<버전>.zip
 구성:
@@ -23,7 +23,7 @@ import urllib.request
 import site
 import subprocess
 
-MAKE_VER = "1.4.0"   # 1.4.0: qgif.dll(GIF 재생) 포함 / 1.3.0: 회사 글자 목록 별도 파일(corp_words.txt, 비공개), 4Dir 본체 GPL-3.0 라이선스 포함, 패키지 정보 없을 때 버전·pywin32 라이선스 대체 / 1.2.5: 소스 백업에 _dev(시험·번역) 포함 / 1.2.4: overlays·overlayorder 가져오기 확인 / 1.2.3: thumbs 가져오기 확인 / 1.2.2: 사용법에 즐겨찾기 정리·탭 끌기·일괄 변경 / 1.2.1: favorg 가져오기 확인 / 1.2.0: 이전 배포판은 _release\백업\배포판 으로 옮김(최근 10개), 버전마다 소스 백업 _release\백업\소스 / 1.1.5: 사용법 그림(bin\guide, 사용법 그림\ko·en) / 1.1.4: batchrename 가져오기 확인 / 1.1.3: 회사 관련 글자 검사(있으면 배포 중단) / 1.1.1: 언어 파일(bin\lang) 포함·영어 안내 / 1.1.0: .pyc 배포, SHA256 지문 파일, 라이선스 문서, 사용법(차단 해제 안내) 갱신
+MAKE_VER = "1.4.1"   # 1.4.1: 프로그램 안 사용법 그림은 ko·en p1~p6 만 / 1.4.0: qgif.dll(GIF 재생) 포함 / 1.3.0: 회사 글자 목록 별도 파일(corp_words.txt, 비공개), 4Dir 본체 GPL-3.0 라이선스 포함, 패키지 정보 없을 때 버전·pywin32 라이선스 대체 / 1.2.5: 소스 백업에 _dev(시험·번역) 포함 / 1.2.4: overlays·overlayorder 가져오기 확인 / 1.2.3: thumbs 가져오기 확인 / 1.2.2: 사용법에 즐겨찾기 정리·탭 끌기·일괄 변경 / 1.2.1: favorg 가져오기 확인 / 1.2.0: 이전 배포판은 _release\백업\배포판 으로 옮김(최근 10개), 버전마다 소스 백업 _release\백업\소스 / 1.1.5: 사용법 그림(bin\guide, 사용법 그림\ko·en) / 1.1.4: batchrename 가져오기 확인 / 1.1.3: 회사 관련 글자 검사(있으면 배포 중단) / 1.1.1: 언어 파일(bin\lang) 포함·영어 안내 / 1.1.0: .pyc 배포, SHA256 지문 파일, 라이선스 문서, 사용법(차단 해제 안내) 갱신
 # PySide6·Qt 라이선스 원문 (LGPLv3 는 GPLv3 를 참조). gnu.org 는 이 네트워크에서 응답 없음(10/2 실측) → SPDX 공식 원문 저장소
 LICENSE_URLS = {"LGPL-3.0.txt": "https://raw.githubusercontent.com/spdx/license-list-data/main/text/LGPL-3.0-only.txt",
                 "GPL-3.0.txt": "https://raw.githubusercontent.com/spdx/license-list-data/main/text/GPL-3.0-only.txt"}
@@ -311,7 +311,18 @@ def main():
                 nimg += 1
         for fn in [x for x in os.listdir(os.path.join(out, "bin", "guide", lg)) if x.startswith("full_p")]:
             os.remove(os.path.join(out, "bin", "guide", lg, fn))   # 프로그램 안에는 화면 그림(pN)만
-    log(f"사용법 그림 {nimg}장 → 사용법 그림 (ko·en)")
+    # 1.4.1: 프로그램 안 사용법 창(guide.py)은 ko·en 의 p1..p6 만 씀 → 사이트용 다른 언어·p7~ 그림은 빼서 zip 을 가볍게
+    gout = os.path.join(out, "bin", "guide")
+    keep = {f"p{i}.png" for i in range(1, 7)}
+    for lg in os.listdir(gout):
+        d = os.path.join(gout, lg)
+        if lg not in ("ko", "en"):
+            shutil.rmtree(d)
+            continue
+        for fn in os.listdir(d):
+            if fn not in keep:
+                os.remove(os.path.join(d, fn))
+    log(f"사용법 그림 {nimg}장 → 사용법 그림 (ko·en), 프로그램 안 그림 ko·en p1~p6 만 ({size_mb(gout):.1f}MB)")
     if not nimg:
         raise SystemExit("사용법 그림 없음 — _build 의 make_guide.py ko / en 먼저 실행")
     pycs = compile_bin(os.path.join(out, "bin"))

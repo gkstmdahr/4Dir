@@ -28,27 +28,27 @@
 <body>
 <header class="top"><div class="wrap">
 <a class="logo" href="../"><img src="../icon.png" alt="" width="28" height="28">4Dir</a>
-<label class="lang">言語 <select onchange="try{localStorage.setItem('4dir-lang',1)}catch(e){};location.href=this.value"><option value="../">English</option><option value="../ko/">한국어</option><option value="../zh-CN/">简体中文</option><option value="../zh-TW/">繁體中文</option><option value="../ja/" selected>日本語</option><option value="../es/">Español</option><option value="../de/">Deutsch</option><option value="../fr/">Français</option><option value="../pt-BR/">Português (Brasil)</option><option value="../ru/">Русский</option></select></label>
+<a class="nav" href="guide.html">使い方</a><label class="lang">言語 <select onchange="try{localStorage.setItem('4dir-lang',1)}catch(e){};location.href=this.value"><option value="../">English</option><option value="../ko/">한국어</option><option value="../zh-CN/">简体中文</option><option value="../zh-TW/">繁體中文</option><option value="../ja/" selected>日本語</option><option value="../es/">Español</option><option value="../de/">Deutsch</option><option value="../fr/">Français</option><option value="../pt-BR/">Português (Brasil)</option><option value="../ru/">Русский</option></select></label>
 </div></header>
 <main class="wrap">
 <section class="hero">
 <h1>最大 20 ペイン。すべてのペインにタブ。PC に軽い。</h1>
 <p class="fast"><a href="#faq">Windows エクスプローラーより速い！！</a></p>
 <p class="sub">Windows 10/11 用の無料ファイルマネージャー。インストール不要、展開してすぐ使えます。</p>
-<p><a class="btn big" href="https://github.com/gkstmdahr/4Dir/releases/download/v0.9.64/4Dir_v0.9.64.zip">⬇ 4Dir v0.9.64 をダウンロード</a></p>
-<p class="note">Windows 10/11 64 ビット · 33 MB · 2026-10-22 · 無料</p>
-</section>
-<section class="news"><h2>v0.9.64 の変更点</h2><ul><li><b>プレビューウィンドウ</b>で動く GIF が再生されます（表示 → プレビューウィンドウ、<b>Alt+P</b>）。</li></ul><p><a href="versions.html">以前のバージョン · すべての変更履歴 →</a></p></section>
+<p><a class="btn big" href="https://github.com/gkstmdahr/4Dir/releases/download/v0.9.65/4Dir_v0.9.65.zip">⬇ 4Dir v0.9.65 をダウンロード</a></p>
+<p class="note">Windows 10/11 64 ビット · 33 MB · 2026-10-23 · 無料</p>
+<p><a class="btn line" href="guide.html">📖 4Dir の使い方 →</a></p></section>
+<section class="news"><h2>v0.9.65 の変更点</h2><ul><li>新しいバージョンのお知らせに、変更点も画面の言語で表示されます。</li></ul><p><a href="versions.html">以前のバージョン · すべての変更履歴 →</a></p></section>
 <figure class="shot"><img src="../img/ja_1.png" alt="4 ペイン・ライトテーマ" width="1280" height="760"><figcaption>4 ペイン・ライトテーマ</figcaption></figure>
 <section><h2>機能</h2><div class="grid"><div class="card"><h3>最大 20 ペイン</h3><p>1・2・3・4・6 ペインをワンクリックで、または最大 5 × 4 の自由なグリッドに。ペインごとに独立したタブ。</p></div><div class="card"><h3>PC を重くしない</h3><p>重い Windows シェルビューを使わず、フォルダーを直接読み込みます。待機中はタイマーもポーリングもなし。3ds Max やゲームなど重いアプリの横で開いたままでも安心です。</p></div><div class="card"><h3>すぐに見つかる検索</h3><p>入力するだけで全ドライブのファイル名を検索。独自インデックスがリアルタイムで更新され、管理者権限は不要です。</p></div><div class="card"><h3>SVN の状態がひと目で</h3><p>.svn を直接読んで変更・追加・競合のバッジを表示。中身が変わったフォルダーは赤に。Git・Perforce は Windows のオーバーレイで表示。</p></div><div class="card"><h3>エクスプローラーと同じ操作感</h3><p>同じショートカットキー、Windows の右クリックメニューそのまま、エクスプローラーや他のアプリとのドラッグ＆ドロップ。</p></div><div class="card"><h3>ポータブルでプライバシーも安心</h3><p>設定は 4Dir フォルダー内だけに保存。ライト/ダーク、10 言語、一括リネーム、セッション復元、エクスプローラー診断を搭載。</p></div></div></section>
 <figure class="shot"><img src="../img/ja_2.png" alt="3 ペイン・ダークテーマ" width="1280" height="760" loading="lazy"><figcaption>3 ペイン・ダークテーマ</figcaption></figure>
 <section id="install"><h2>インストール方法</h2><ol><li>上のボタン（または GitHub の <b>Releases</b>）から zip をダウンロードします。GitHub の緑の「Code → Download ZIP」はソースコードのみで、そのままでは動きません。</li><li>zip を右クリック → プロパティ → <b>許可する</b>にチェック → OK。（しないと毎回セキュリティ警告が表示されます）</li><li>好きな場所に展開して <b>4Dir.vbs</b> をダブルクリック。</li></ol><p class="tip">Windows SmartScreen が表示されたら <b>詳細情報</b> → <b>実行</b> をクリック。</p>
-<h3>ダウンロードの確認（任意）</h3><p>コマンドプロンプトで <code>certutil -hashfile 4Dir_v0.9.64.zip SHA256</code> を実行し、結果が次と一致すれば正規ファイルです：</p><p><code class="sha">e2fcd2febf4cc85102a62f9468e00e395e7b358967ea98153d24ecf8337a2720</code></p></section>
+<h3>ダウンロードの確認（任意）</h3><p>コマンドプロンプトで <code>certutil -hashfile 4Dir_v0.9.65.zip SHA256</code> を実行し、結果が次と一致すれば正規ファイルです：</p><p><code class="sha">f9074f18fb38764e7c3226933aa803b5b32628ff9de029f7508cd4418d56ad74</code></p></section>
 <section id="donate"><h2>4Dir を支援する</h2><p>4Dir は無料で広告もありません。時間の節約になったなら、少額の寄付が次のアップデートの力になります。</p><p class="btns"><a class="btn don" href="https://ko-fi.com/4dirofficial" rel="noopener">♥ Ko-fi</a></p></section>
 <section id="faq"><h2>よくある質問</h2><details><summary>本当に無料？</summary><p>はい。4Dir は無料のオープンソース（GPL-3.0）です。広告・アカウント登録・試用期間はありません。</p></details><details><summary>本当にエクスプローラーより速いの？</summary><p>ファイル 1,000 個のフォルダーを新しいウィンドウで開くと、4Dir は 0.4 秒、エクスプローラーは約 2 秒でした。ウィンドウを 1 つ増やしたときのメモリ増加は 4Dir 約 10 MB、エクスプローラー約 130 MB。同じ PC（Windows 11・SSD）で各 5 回測った値です。1 つのフォルダーに数万ファイルあると差は小さくなります。</p></details><details><summary>データを送信する？</summary><p>個人情報は送信しません。1 日 1 回、新しいバージョンがあるかを確認するだけです（ツールメニューでオフにできます）。</p></details><details><summary>問題が起きたら？</summary><p>ツール → 問題報告用ログを保存 → 通知の「メールで送る」を押すか、zip を support@4dir.net に送ってください。GitHub の Issue でも受け付けます。</p></details></section>
 </main>
 <footer><div class="wrap">
-<a href="https://github.com/gkstmdahr/4Dir">ソースコード</a> · <a href="https://github.com/gkstmdahr/4Dir/issues">問題を報告</a> · <a href="mailto:support@4dir.net">support@4dir.net</a> · <a href="https://github.com/gkstmdahr/4Dir/releases">v0.9.64</a>
+<a href="https://github.com/gkstmdahr/4Dir">ソースコード</a> · <a href="https://github.com/gkstmdahr/4Dir/issues">問題を報告</a> · <a href="mailto:support@4dir.net">support@4dir.net</a> · <a href="https://github.com/gkstmdahr/4Dir/releases">v0.9.65</a>
 <p>GPL-3.0 のフリーソフトウェア。Windows は Microsoft の商標です。</p>
 </div></footer>
 </body>
