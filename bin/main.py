@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.63"
+QE_VERSION = "0.9.64"
 
 import os
 import sys
@@ -4295,6 +4295,7 @@ class PreviewPane(QtWidgets.QFrame):
         lay.addStretch(0)
         self.cur = None      # (경로, mtime) — 지금 보여주는 그림 파일
         self.src = None      # 지금 그림 (QPixmap, 창 크기 바뀌면 다시 맞춤)
+        self.movie = None    # 움직이는 GIF 재생 (v0.9.64, 사용자 요청) — 고른 파일이 바뀌거나 창이 숨으면 멈추고 버림
         self.timer = QtCore.QTimer(self)
         self.timer.setSingleShot(True)
         self.timer.setInterval(120)
@@ -4312,6 +4313,38 @@ class PreviewPane(QtWidgets.QFrame):
     def resizeEvent(self, ev):
         super().resizeEvent(ev)
         self._fit()
+
+    def hideEvent(self, ev):
+        super().hideEvent(ev)
+        self._stop_movie()
+
+    GIF_MAX = 64 * 1048576   # 이보다 큰 GIF 는 움직임 없이 첫 장만 (메모리·CPU)
+
+    def _stop_movie(self):
+        if self.movie is not None:
+            self.movie.stop()
+            self.movie.deleteLater()
+            self.movie = None
+
+    def pause_movie(self, paused):
+        """창 최소화 = 멈춤 (보이지 않는데 돌 필요 없음), 다시 열면 이어서"""
+        if self.movie is not None:
+            self.movie.setPaused(paused)
+
+    def _play_gif(self, path, size):
+        """움직이는 GIF 면 재생하고 True. 한 장짜리·깨진 파일·너무 큰 파일·재생 부품(qgif) 없음 → False (보통 미리보기로)"""
+        if size > self.GIF_MAX or b"gif" not in [bytes(f) for f in QtGui.QMovie.supportedFormats()]:
+            return False
+        m = QtGui.QMovie(path)
+        m.setCacheMode(QtGui.QMovie.CacheNone)
+        if not m.isValid() or m.frameCount() == 1:
+            m.deleteLater()
+            return False
+        self.movie = m
+        m.frameChanged.connect(lambda _i, m=m: m is self.movie and self._set_pic(m.currentPixmap()))
+        m.start()
+        log.info("미리보기 GIF 재생 %s (장면 %d, %s)", path, m.frameCount(), size_short(size))
+        return True
 
     def _on_ready(self, path, px):
         if self.cur and px == self.PX and os.path.normcase(path) == os.path.normcase(self.cur[0]) and self.isVisible():
@@ -4338,6 +4371,9 @@ class PreviewPane(QtWidgets.QFrame):
         if v is None:
             return
         rows = v.selected_rows()
+        if len(rows) == 1 and self.movie is not None and os.path.normcase(self.movie.fileName()) == os.path.normcase(v.model_.full(v.model_.rows[rows[0]])):
+            return   # 같은 GIF 가 재생 중 (선택 글자만 다시 그려진 경우) — 처음부터 다시 틀지 않음
+        self._stop_movie()
         if len(rows) != 1:
             self.cur = None
             self._set_pic(None)
@@ -4360,6 +4396,9 @@ class PreviewPane(QtWidgets.QFrame):
             lines.append(T("수정한 날짜") + ": " + win_datetime(e[3]))
         self.info.setText("\n".join(x for x in lines if x))
         pm = None
+        if not e[1] and e[0].lower().endswith(".gif") and OPTS["thumbnails"] and self._play_gif(path, e[2]):
+            self.cur = None
+            return
         if not e[1] and thumbs.is_image(e[0]) and OPTS["thumbnails"]:
             self.cur = (path, e[3])
             pm = thumbs_service().get(path, e[3], self.PX)   # 없으면 요청 → 다 되면 _on_ready
@@ -4852,7 +4891,9 @@ class Main(QtWidgets.QMainWindow):
             log.warning("사용량 갱신 느림 %.1fms", ms)
 
     def changeEvent(self, ev):
-        # 최소화하면 사용량 갱신 멈춤 (보이지 않는데 돌 필요 없음)
+        # 최소화하면 사용량 갱신·GIF 재생 멈춤 (보이지 않는데 돌 필요 없음)
+        if ev.type() == QtCore.QEvent.WindowStateChange and hasattr(self, "preview"):
+            self.preview.pause_movie(self.isMinimized())
         if ev.type() == QtCore.QEvent.WindowStateChange and hasattr(self, "mon_timer"):
             if self.isMinimized():
                 self.mon_timer.stop()

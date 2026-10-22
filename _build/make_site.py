@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 공개 사이트 만들기 (MAKE_SITE_VER 1.4.2)
+"""4Dir 공개 사이트 만들기 (MAKE_SITE_VER 1.4.3)
 
 python make_site.py [출력 폴더]   (기본: 4Dir\\_site\\out)
 - 문구: site_text.py (10개 언어), 버전별 바뀐 점: changelog.py (1.2.0 — 메인 '바뀐 점' + versions.html 지난 버전 받기), 설정: site_config.json (깃허브 계정·후원 주소)
@@ -19,7 +19,7 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.4.2"
+MAKE_SITE_VER = "1.4.3"
 SUPPORT = "support@4dir.net"   # 문제 보고 메일 (1.1.1)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -159,7 +159,7 @@ def guide_nav(lang):
 
 def guide_hero(lang):
     g = GT.GUIDE.get(lang)
-    return f'<p class="note"><a href="guide.html">{html.escape(g["title"])} →</a></p>' if g else ""
+    return f'<p><a class="btn line" href="guide.html">📖 {html.escape(g["title"])} →</a></p>' if g else ""   # 1.4.3: 글자 링크 → 테두리 버튼 (작아서 안 보임)
 
 
 def guide_page(lang, cfg, rel):
@@ -295,6 +295,7 @@ a{color:var(--acc)}
 .btn{display:inline-block;padding:10px 18px;border-radius:8px;background:var(--acc);color:#fff;text-decoration:none;font-weight:600}
 .btn:hover{background:var(--acc2)}.btn.big{font-size:19px;padding:14px 28px}
 .btn.don{background:var(--don);margin:4px}
+.btn.line{background:transparent;color:var(--acc);border:2px solid var(--acc);padding:8px 20px;font-size:17px}.btn.line:hover{background:var(--acc);color:#fff}
 .shot{margin:24px 0;text-align:center}.shot img{max-width:100%;height:auto;border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.12)}
 figcaption{color:var(--mut);font-size:14px;margin-top:6px}
 section{margin:40px 0}h2{font-size:26px;margin:0 0 16px}

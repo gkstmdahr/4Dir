@@ -6,6 +6,18 @@
 ORDER = ["en", "ko", "zh-CN", "zh-TW", "ja", "es", "de", "fr", "pt-BR", "ru"]
 
 CHANGES = [
+("0.9.64", "2026-10-22", [
+    ("Animated GIFs now play in the <b>preview pane</b> (View → Preview pane, <b>Alt+P</b>).",
+     "<b>미리보기 창</b>에서 움직이는 GIF 가 재생됩니다 (보기 → 미리보기 창, <b>Alt+P</b>).",
+     "<b>预览窗格</b>中可以播放 GIF 动图（查看 → 预览窗格，<b>Alt+P</b>）。",
+     "<b>預覽窗格</b>中可以播放 GIF 動圖（檢視 → 預覽窗格，<b>Alt+P</b>）。",
+     "<b>プレビューウィンドウ</b>で動く GIF が再生されます（表示 → プレビューウィンドウ、<b>Alt+P</b>）。",
+     "Los GIF animados se reproducen en el <b>panel de vista previa</b> (Ver → Panel de vista previa, <b>Alt+P</b>).",
+     "Animierte GIFs werden im <b>Vorschaubereich</b> abgespielt (Ansicht → Vorschaubereich, <b>Alt+P</b>).",
+     "Les GIF animés sont lus dans le <b>volet d'aperçu</b> (Affichage → Volet d'aperçu, <b>Alt+P</b>).",
+     "GIFs animados são reproduzidos no <b>painel de visualização</b> (Exibir → Painel de visualização, <b>Alt+P</b>).",
+     "Анимированные GIF воспроизводятся в <b>панели просмотра</b> (Вид → Панель просмотра, <b>Alt+P</b>)."),
+]),
 ("0.9.63", "2026-10-22", [
     ("New-version notice now shows in the top bar instead of a popup, so it never interrupts your work: <b>Download</b>, <b>Skip this version</b> or ✕.",
      "새 버전 알림이 팝업 대신 위쪽 알림 줄에 떠서 작업을 방해하지 않습니다: <b>받으러 가기</b>, <b>이 버전 건너뛰기</b>, ✕.",
