@@ -15,6 +15,7 @@ a{color:var(--acc)}
 .btn{display:inline-block;padding:10px 18px;border-radius:8px;background:var(--acc);color:#fff;text-decoration:none;font-weight:600}
 .btn:hover{background:var(--acc2)}.btn.big{font-size:19px;padding:14px 28px}
 .btn.don{background:var(--don);margin:4px}
+.btn.line{background:transparent;color:var(--acc);border:2px solid var(--acc);padding:8px 20px;font-size:17px}.btn.line:hover{background:var(--acc);color:#fff}
 .shot{margin:24px 0;text-align:center}.shot img{max-width:100%;height:auto;border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.12)}
 figcaption{color:var(--mut);font-size:14px;margin-top:6px}
 section{margin:40px 0}h2{font-size:26px;margin:0 0 16px}
