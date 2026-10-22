@@ -21,56 +21,42 @@
 <meta property="og:description" content="Pega un enlace y descarga, o toca Descargar sobre el video en el navegador integrado. Gratis, sin anuncios.">
 <meta property="og:image" content="https://4dir.net/just-downloader/img/es_1.webp">
 <meta property="og:type" content="website">
-<link rel="icon" href="../../icon.png">
+<link rel="icon" href="../img/icon.png">
 <link rel="stylesheet" href="../../style.css">
 <style>
-.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:20px;margin:16px 0}
-.steps figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center}
-.steps img,.demo video{width:100%;max-width:270px;height:auto;border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+.logo img{border-radius:6px}.nav.app{margin-left:0;margin-right:auto}.nav.app img{width:18px;height:18px;vertical-align:-3px;margin-right:4px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin:16px 0}
+.steps figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;text-align:center}
+.steps img{width:100%;max-width:270px;height:auto;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.12)}
 .steps figcaption{margin-top:10px;text-align:left}.steps b{display:block;font-size:17px;margin-bottom:4px}.steps figcaption>span{color:var(--mut)}
 .n{display:inline-block;width:26px;height:26px;line-height:26px;border-radius:50%;background:var(--acc);color:#fff;text-align:center;font-weight:700;margin-right:6px;font-size:14px}
-.demo{display:flex;gap:24px;align-items:center;flex-wrap:wrap;justify-content:center;margin:16px 0}.demo p{max-width:420px;margin:0;color:var(--mut)}
+.shot video{width:100%;max-width:300px;height:auto;border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.12)}
 @media (max-width:600px){.steps{grid-template-columns:1fr 1fr;gap:10px}.steps figure{padding:8px}.steps b{font-size:15px}.steps figcaption>span{font-size:13px}}
 </style>
 </head>
 <body>
 <header class="top"><div class="wrap">
-<a class="logo" href="./">just downloader</a>
-<label class="lang">Idioma <select onchange="location.href=this.value"><option value="../">English</option><option value="../ko/">한국어</option><option value="../zh-CN/">简体中文</option><option value="../zh-TW/">繁體中文</option><option value="../ja/">日本語</option><option value="../es/" selected>Español</option><option value="../de/">Deutsch</option><option value="../fr/">Français</option><option value="../pt-BR/">Português (Brasil)</option><option value="../ru/">Русский</option></select></label>
+<a class="logo" href="./"><img src="../img/icon.png" alt="" width="28" height="28">just downloader</a>
+<a class="nav app" href="../../es/"><img src="../../icon.png" alt="">4Dir</a><label class="lang">Idioma <select onchange="location.href=this.value"><option value="../">English</option><option value="../ko/">한국어</option><option value="../zh-CN/">简体中文</option><option value="../zh-TW/">繁體中文</option><option value="../ja/">日本語</option><option value="../es/" selected>Español</option><option value="../de/">Deutsch</option><option value="../fr/">Français</option><option value="../pt-BR/">Português (Brasil)</option><option value="../ru/">Русский</option></select></label>
 </div></header>
 <main class="wrap">
 <section class="hero">
 <h1>Reúne videos de referencia en tu teléfono.</h1>
+<p class="fast"><a href="#how">¡¡Con un enlace basta!!</a></p>
 <p class="sub">Pega un enlace y descarga, o abre la página en el navegador integrado, reproduce el video y toca <b>⬇ Descargar</b> encima.</p>
 <p><a class="btn big" href="https://github.com/gkstmdahr/just-downloader/releases/latest">⬇ Descargar APK</a></p>
 <p class="note">Android 8.0+ · ARM de 64 bits · gratis · sin anuncios · sin cuenta</p>
-</section>
-
-<section><h2>Cómo funciona</h2>
-<div class="steps">
-<figure><img src="../img/es_1.webp" alt="Pantalla de inicio con un campo de enlace y un botón Descargar" width="540" height="1052" loading="lazy"><figcaption><b><span class="n">1</span>Pega un enlace</b><span>Copia el enlace de la página del video, pégalo y toca «Descargar».</span></figcaption></figure>
-<figure><img src="../img/es_3.webp" alt="Navegador integrado con un botón Descargar sobre un video en reproducción" width="540" height="1052" loading="lazy"><figcaption><b><span class="n">2</span>O usa el navegador</b><span>Abre la página, reproduce el video y toca el botón «Descargar» que aparece encima.</span></figcaption></figure>
-<figure><img src="../img/es_2.webp" alt="Lista de descargas con miniaturas" width="540" height="1052" loading="lazy"><figcaption><b><span class="n">3</span>Encuéntralo en «Descargas»</b><span>Se guarda en Movies/VideoRef: también lo verás en la galería y en las apps de edición.</span></figcaption></figure>
-<figure><img src="../img/es_4.webp" alt="Ajustes: modo oscuro, idioma, solo Wi-Fi, calidad" width="540" height="1052" loading="lazy"><figcaption><b><span class="n">4</span>Configúralo una vez</b><span>Solo con Wi-Fi, calidad máxima, formato fácil de editar, 10 idiomas.</span></figcaption></figure>
-</div></section>
-
-<section><h2>Míralo en acción</h2>
-<div class="demo"><video src="../img/demo.mp4" poster="../img/demo_poster.webp" width="540" height="1170" autoplay muted loop playsinline controls></video>
-<p>Pega un enlace, toca «Descargar» y empieza al instante. La descarga sigue con una notificación de progreso aunque salgas de la app o apagues la pantalla. (La app del video está en inglés).</p></div></section>
-
-<section><h2>Funciones</h2><div class="grid">
-<div class="card"><h3>Pega un enlace</h3><p>Funciona con la mayoría de los sitios de video populares.</p></div>
-<div class="card"><h3>Botón «Descargar» sobre los videos</h3><p>En el navegador integrado aparece un botón «Descargar» sobre el video que reproduce la página; funciona en muchos sitios donde el enlace no sirve.</p></div>
-<div class="card"><h3>Listo para editar</h3><p>Se guarda en Movies/VideoRef. «Compatibilidad primero» elige H.264 + AAC para que las apps de edición lo abran sin problemas.</p></div>
-<div class="card"><h3>Sigue en segundo plano</h3><p>Sigue descargando con la pantalla apagada. «Descargar solo con Wi-Fi» y resolución máxima.</p></div>
-<div class="card"><h3>10 idiomas</h3><p>English, 한국어, 简体中文, 繁體中文, 日本語, Español, Deutsch, Français, Português (Brasil), Русский. Tema claro / oscuro.</p></div>
-<div class="card"><h3>No nos envía nada</h3><p>Sin anuncios, sin seguimiento, sin cuenta. <a href="privacy.html">Política de privacidad</a></p></div>
-</div></section>
-<section><h2>Instalación</h2><p>Abre el APK descargado en tu teléfono. Si te lo pide, permite que el navegador o la app de archivos instale apps desconocidas.</p>
-<p>Pronto habrá una edición en Google Play. Por la política de Play admite menos sitios y actualiza su motor de descarga solo con las actualizaciones de la app. Puedes instalar las dos a la vez.</p></section>
-<section><h2>¿Problemas?</h2><p>Ajustes → Ayuda → <b>Informar de un problema</b> prepara un correo a <a href="mailto:support@4dir.net">support@4dir.net</a> con el registro de la app adjunto. Código fuente y reportes: <a href="https://github.com/gkstmdahr/just-downloader">GitHub</a> (GPL‑3.0).</p>
-<p>¿Te gusta? <a href="https://ko-fi.com/4dirofficial">Apóyanos en Ko‑fi</a></p></section>
+<p><a class="btn line" href="#how">📖 Cómo se usa ↓</a></p></section>
+<figure class="shot"><video src="../img/demo.mp4" poster="../img/demo_poster.webp" width="540" height="1170" autoplay muted loop playsinline controls></video><figcaption>Pega un enlace, toca «Descargar» y empieza al instante. La descarga sigue con una notificación de progreso aunque salgas de la app o apagues la pantalla. (La app del video está en inglés).</figcaption></figure>
+<section id="how"><h2>Cómo funciona</h2><div class="steps"><figure><img src="../img/es_1.webp" alt="Pantalla de inicio con un campo de enlace y un botón Descargar" width="540" height="1052" loading="lazy"><figcaption><b><span class="n">1</span>Pega un enlace</b><span>Copia el enlace de la página del video, pégalo y toca «Descargar».</span></figcaption></figure><figure><img src="../img/es_3.webp" alt="Navegador integrado con un botón Descargar sobre un video en reproducción" width="540" height="1052" loading="lazy"><figcaption><b><span class="n">2</span>O usa el navegador</b><span>Abre la página, reproduce el video y toca el botón «Descargar» que aparece encima.</span></figcaption></figure><figure><img src="../img/es_2.webp" alt="Lista de descargas con miniaturas" width="540" height="1052" loading="lazy"><figcaption><b><span class="n">3</span>Encuéntralo en «Descargas»</b><span>Se guarda en Movies/VideoRef: también lo verás en la galería y en las apps de edición.</span></figcaption></figure><figure><img src="../img/es_4.webp" alt="Ajustes: modo oscuro, idioma, solo Wi-Fi, calidad" width="540" height="1052" loading="lazy"><figcaption><b><span class="n">4</span>Configúralo una vez</b><span>Solo con Wi-Fi, calidad máxima, formato fácil de editar, 10 idiomas.</span></figcaption></figure></div></section>
+<section><h2>Funciones</h2><div class="grid"><div class="card"><h3>Pega un enlace</h3><p>Funciona con la mayoría de los sitios de video populares.</p></div><div class="card"><h3>Botón «Descargar» sobre los videos</h3><p>En el navegador integrado aparece un botón «Descargar» sobre el video que reproduce la página; funciona en muchos sitios donde el enlace no sirve.</p></div><div class="card"><h3>Listo para editar</h3><p>Se guarda en Movies/VideoRef. «Compatibilidad primero» elige H.264 + AAC para que las apps de edición lo abran sin problemas.</p></div><div class="card"><h3>Sigue en segundo plano</h3><p>Sigue descargando con la pantalla apagada. «Descargar solo con Wi-Fi» y resolución máxima.</p></div><div class="card"><h3>10 idiomas</h3><p>English, 한국어, 简体中文, 繁體中文, 日本語, Español, Deutsch, Français, Português (Brasil), Русский. Tema claro / oscuro.</p></div><div class="card"><h3>No nos envía nada</h3><p>Sin anuncios, sin seguimiento, sin cuenta.</p></div></div></section>
+<section id="install"><h2>Instalación</h2><ol><li>Descarga el APK con el botón de arriba (o desde <b>Releases</b> en GitHub).</li><li>Abre el APK en tu teléfono.</li><li>Si te lo pide, permite que el navegador o la app de archivos <b>instale apps desconocidas</b> y toca Instalar.</li></ol><p class="tip">Pronto habrá una edición en Google Play. Por la política de Play admite menos sitios y actualiza su motor de descarga solo con las actualizaciones de la app. Puedes instalar las dos a la vez.</p></section>
+<section id="donate"><h2>Apoya just downloader</h2><p>just downloader es gratis y sin anuncios. Si te ahorró tiempo, un pequeño aporte ayuda a la próxima actualización.</p><p class="btns"><a class="btn don" href="https://ko-fi.com/4dirofficial" rel="noopener">♥ Ko-fi</a></p></section>
+<section id="faq"><h2>Preguntas frecuentes</h2><details><summary>¿De verdad es gratis?</summary><p>Sí. Es libre y de código abierto (GPL‑3.0). Sin anuncios, sin registro, sin periodo de prueba.</p></details><details><summary>¿Envía mis datos?</summary><p>No envía datos personales. No llega nada al desarrollador salvo que envíes tú un informe de error. <a href="privacy.html">Política de privacidad</a></p></details><details><summary>¿En qué sitios funciona?</summary><p>En la mayoría de los sitios de video populares basta con el enlace. Si no funciona, abre la página en el navegador integrado, reproduce el video y toca «Descargar» sobre él. Los videos protegidos con DRM (servicios de pago) no se pueden guardar.</p></details><details><summary>¿Algo salió mal?</summary><p>Ajustes → Ayuda → <b>Informar de un problema</b> prepara un correo a <a href="mailto:support@4dir.net">support@4dir.net</a> con el registro de la app adjunto. Si usas GitHub, también puedes abrir una incidencia: <a href="https://github.com/gkstmdahr/just-downloader/issues">GitHub</a>.</p></details></section>
 </main>
-<footer class="wrap"><p class="note">Las pantallas muestran la app con animaciones de ejemplo hechas para esta página. Eres responsable del uso que hagas de los videos descargados. · <a href="privacy.html">Privacidad</a> · <a href="../../es/">4Dir</a></p></footer>
+<footer><div class="wrap">
+<a href="https://github.com/gkstmdahr/just-downloader">Código fuente</a> · <a href="https://github.com/gkstmdahr/just-downloader/issues">Informar de un problema</a> · <a href="mailto:support@4dir.net">support@4dir.net</a> · <a href="privacy.html">Privacidad</a> · <a href="https://github.com/gkstmdahr/just-downloader/releases">GitHub Releases</a>
+<p>Software libre bajo GPL‑3.0. Android es una marca de Google LLC. Las pantallas muestran la app con animaciones de ejemplo hechas para esta página. Eres responsable del uso que hagas de los videos descargados.</p>
+</div></footer>
 </body>
 </html>

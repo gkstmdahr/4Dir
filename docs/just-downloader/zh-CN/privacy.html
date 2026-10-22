@@ -16,52 +16,43 @@
 <link rel="alternate" hreflang="pt-BR" href="https://4dir.net/just-downloader/pt-BR/privacy.html">
 <link rel="alternate" hreflang="ru" href="https://4dir.net/just-downloader/ru/privacy.html">
 <link rel="alternate" hreflang="x-default" href="https://4dir.net/just-downloader/privacy.html">
-<link rel="icon" href="../../icon.png">
+<link rel="icon" href="../img/icon.png">
 <link rel="stylesheet" href="../../style.css">
+<style>
+.logo img{border-radius:6px}.nav.app{margin-left:0;margin-right:auto}.nav.app img{width:18px;height:18px;vertical-align:-3px;margin-right:4px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin:16px 0}
+.steps figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;text-align:center}
+.steps img{width:100%;max-width:270px;height:auto;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.12)}
+.steps figcaption{margin-top:10px;text-align:left}.steps b{display:block;font-size:17px;margin-bottom:4px}.steps figcaption>span{color:var(--mut)}
+.n{display:inline-block;width:26px;height:26px;line-height:26px;border-radius:50%;background:var(--acc);color:#fff;text-align:center;font-weight:700;margin-right:6px;font-size:14px}
+.shot video{width:100%;max-width:300px;height:auto;border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.12)}
+@media (max-width:600px){.steps{grid-template-columns:1fr 1fr;gap:10px}.steps figure{padding:8px}.steps b{font-size:15px}.steps figcaption>span{font-size:13px}}
+</style>
 </head>
 <body>
 <header class="top"><div class="wrap">
-<a class="logo" href="./">just downloader</a>
-<label class="lang">语言 <select onchange="location.href=this.value"><option value="../privacy.html">English</option><option value="../ko/privacy.html">한국어</option><option value="../zh-CN/privacy.html" selected>简体中文</option><option value="../zh-TW/privacy.html">繁體中文</option><option value="../ja/privacy.html">日本語</option><option value="../es/privacy.html">Español</option><option value="../de/privacy.html">Deutsch</option><option value="../fr/privacy.html">Français</option><option value="../pt-BR/privacy.html">Português (Brasil)</option><option value="../ru/privacy.html">Русский</option></select></label>
+<a class="logo" href="./"><img src="../img/icon.png" alt="" width="28" height="28">just downloader</a>
+<a class="nav app" href="../../zh-CN/"><img src="../../icon.png" alt="">4Dir</a><label class="lang">语言 <select onchange="location.href=this.value"><option value="../privacy.html">English</option><option value="../ko/privacy.html">한국어</option><option value="../zh-CN/privacy.html" selected>简体中文</option><option value="../zh-TW/privacy.html">繁體中文</option><option value="../ja/privacy.html">日本語</option><option value="../es/privacy.html">Español</option><option value="../de/privacy.html">Deutsch</option><option value="../fr/privacy.html">Français</option><option value="../pt-BR/privacy.html">Português (Brasil)</option><option value="../ru/privacy.html">Русский</option></select></label>
 </div></header>
 <main class="wrap">
+<p><a href="./">← just downloader</a></p>
 <h1>隐私政策</h1>
 <p class="note">生效日期 2026-10-22。适用于 just downloader 的两个版本（Google Play 版 <code>net.fourdir.justdownloader</code> 和本站版 <code>net.fourdir.justdownloader.full</code>）。</p>
 <p class="note">如本译文与英文版有出入，以英文版为准。 <a href="../privacy.html">English</a></p>
-
-<h2>概要</h2>
-<p>just downloader 不收集个人信息。没有账号、广告、统计分析或追踪，也没有自己的服务器。除非你自己选择通过邮件发送错误报告，否则不会向开发者发送任何内容。</p>
-
-<h2>只保存在你手机上的内容</h2>
-<ul>
-<li><b>下载的视频</b>——保存在 <code>Movies/VideoRef</code>。卸载应用后仍会保留。</li>
-<li><b>设置和最近下载列表</b>——保存在应用的私有存储中。</li>
-<li><b>诊断日志</b>——应用存储中的文本文件，包含你下载的视频地址、错误信息、应用版本和手机型号，仅用于排查问题。卸载应用（或清除应用存储）时会一并删除。</li>
-<li><b>内置浏览器数据</b>——与普通浏览器一样，保存你打开的网站的 Cookie 和缓存。</li>
-</ul>
-
-<h2>网络连接</h2>
-<ul>
-<li>应用会直接连接你打开或粘贴链接的网站，用于显示和下载视频。与普通访问一样，这些网站可能会获得你的 IP 地址和浏览器信息，并适用各网站自己的隐私政策。</li>
-<li><b>“同时发送浏览器登录信息”</b>（默认关闭）：开启后，内置浏览器的 Cookie 会交给手机上的下载程序，以便下载登录后才能看到的视频。不会发送到其他任何地方。</li>
-<li><b>仅本站版</b>：每 7 天从 GitHub（github.com）检查并下载下载程序（yt-dlp）的新版本。Play 版不会这样做。</li>
-</ul>
-
-<h2>错误报告</h2>
-<p>点“<b>报告问题</b>”时会打开你的邮件应用，生成一封发往 <a href="mailto:support@4dir.net">support@4dir.net</a> 的邮件，包含应用版本、手机型号、最近失败的地址，并附上诊断日志。在你在邮件应用中点“发送”之前不会发送任何内容，发送前也可以修改或删除内容。报告仅用于解决问题，不再需要时会删除。</p>
-
-<h2>权限</h2>
-<ul>
-<li>网络和网络状态——用于下载以及“仅在 Wi-Fi 下下载”选项。</li>
-<li>通知和前台服务——用于显示下载进度，并在关闭屏幕后继续下载。</li>
-</ul>
-
-<h2>儿童</h2>
-<p>本应用不面向 13 岁以下儿童，也不会有意收集任何人的信息。</p>
-
-<h2>变更与联系</h2>
-<p>本政策如有变更，将在本页面公布并更新日期。如有疑问：<a href="mailto:support@4dir.net">support@4dir.net</a></p>
+<section><h2>概要</h2><p>just downloader 不收集个人信息。没有账号、广告、统计分析或追踪，也没有自己的服务器。除非你自己选择通过邮件发送错误报告，否则不会向开发者发送任何内容。</p></section>
+<section><h2>只保存在你手机上的内容</h2><ul><li><b>下载的视频</b>——保存在 <code>Movies/VideoRef</code>。卸载应用后仍会保留。</li><li><b>设置和最近下载列表</b>——保存在应用的私有存储中。</li><li><b>诊断日志</b>——应用存储中的文本文件，包含你下载的视频地址、错误信息、应用版本和手机型号，仅用于排查问题。卸载应用（或清除应用存储）时会一并删除。</li><li><b>内置浏览器数据</b>——与普通浏览器一样，保存你打开的网站的 Cookie 和缓存。</li></ul>
+</section>
+<section><h2>网络连接</h2><ul><li>应用会直接连接你打开或粘贴链接的网站，用于显示和下载视频。与普通访问一样，这些网站可能会获得你的 IP 地址和浏览器信息，并适用各网站自己的隐私政策。</li><li><b>“同时发送浏览器登录信息”</b>（默认关闭）：开启后，内置浏览器的 Cookie 会交给手机上的下载程序，以便下载登录后才能看到的视频。不会发送到其他任何地方。</li><li><b>仅本站版</b>：每 7 天从 GitHub（github.com）检查并下载下载程序（yt-dlp）的新版本。Play 版不会这样做。</li></ul>
+</section>
+<section><h2>错误报告</h2><p>点“<b>报告问题</b>”时会打开你的邮件应用，生成一封发往 <a href="mailto:support@4dir.net">support@4dir.net</a> 的邮件，包含应用版本、手机型号、最近失败的地址，并附上诊断日志。在你在邮件应用中点“发送”之前不会发送任何内容，发送前也可以修改或删除内容。报告仅用于解决问题，不再需要时会删除。</p></section>
+<section><h2>权限</h2><ul><li>网络和网络状态——用于下载以及“仅在 Wi-Fi 下下载”选项。</li><li>通知和前台服务——用于显示下载进度，并在关闭屏幕后继续下载。</li></ul>
+</section>
+<section><h2>儿童</h2><p>本应用不面向 13 岁以下儿童，也不会有意收集任何人的信息。</p></section>
+<section><h2>变更与联系</h2><p>本政策如有变更，将在本页面公布并更新日期。如有疑问：<a href="mailto:support@4dir.net">support@4dir.net</a></p></section>
 </main>
-<footer class="wrap"><p class="note"><a href="./">just downloader</a> · <a href="../../zh-CN/">4Dir</a></p></footer>
+<footer><div class="wrap">
+<a href="https://github.com/gkstmdahr/just-downloader">源代码</a> · <a href="https://github.com/gkstmdahr/just-downloader/issues">报告问题</a> · <a href="mailto:support@4dir.net">support@4dir.net</a> · <a href="privacy.html">隐私政策</a> · <a href="https://github.com/gkstmdahr/just-downloader/releases">GitHub Releases</a>
+<p>GPL‑3.0 免费软件。Android 是 Google LLC 的商标。 截图中的视频是为本页面制作的示例动画。下载视频的使用责任由用户自行承担。</p>
+</div></footer>
 </body>
 </html>

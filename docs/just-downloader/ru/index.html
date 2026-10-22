@@ -21,56 +21,42 @@
 <meta property="og:description" content="Вставьте ссылку и скачайте или нажмите «Скачать» над видео во встроенном браузере. Бесплатно, без рекламы.">
 <meta property="og:image" content="https://4dir.net/just-downloader/img/ru_1.webp">
 <meta property="og:type" content="website">
-<link rel="icon" href="../../icon.png">
+<link rel="icon" href="../img/icon.png">
 <link rel="stylesheet" href="../../style.css">
 <style>
-.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:20px;margin:16px 0}
-.steps figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center}
-.steps img,.demo video{width:100%;max-width:270px;height:auto;border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+.logo img{border-radius:6px}.nav.app{margin-left:0;margin-right:auto}.nav.app img{width:18px;height:18px;vertical-align:-3px;margin-right:4px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin:16px 0}
+.steps figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;text-align:center}
+.steps img{width:100%;max-width:270px;height:auto;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.12)}
 .steps figcaption{margin-top:10px;text-align:left}.steps b{display:block;font-size:17px;margin-bottom:4px}.steps figcaption>span{color:var(--mut)}
 .n{display:inline-block;width:26px;height:26px;line-height:26px;border-radius:50%;background:var(--acc);color:#fff;text-align:center;font-weight:700;margin-right:6px;font-size:14px}
-.demo{display:flex;gap:24px;align-items:center;flex-wrap:wrap;justify-content:center;margin:16px 0}.demo p{max-width:420px;margin:0;color:var(--mut)}
+.shot video{width:100%;max-width:300px;height:auto;border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.12)}
 @media (max-width:600px){.steps{grid-template-columns:1fr 1fr;gap:10px}.steps figure{padding:8px}.steps b{font-size:15px}.steps figcaption>span{font-size:13px}}
 </style>
 </head>
 <body>
 <header class="top"><div class="wrap">
-<a class="logo" href="./">just downloader</a>
-<label class="lang">Язык <select onchange="location.href=this.value"><option value="../">English</option><option value="../ko/">한국어</option><option value="../zh-CN/">简体中文</option><option value="../zh-TW/">繁體中文</option><option value="../ja/">日本語</option><option value="../es/">Español</option><option value="../de/">Deutsch</option><option value="../fr/">Français</option><option value="../pt-BR/">Português (Brasil)</option><option value="../ru/" selected>Русский</option></select></label>
+<a class="logo" href="./"><img src="../img/icon.png" alt="" width="28" height="28">just downloader</a>
+<a class="nav app" href="../../ru/"><img src="../../icon.png" alt="">4Dir</a><label class="lang">Язык <select onchange="location.href=this.value"><option value="../">English</option><option value="../ko/">한국어</option><option value="../zh-CN/">简体中文</option><option value="../zh-TW/">繁體中文</option><option value="../ja/">日本語</option><option value="../es/">Español</option><option value="../de/">Deutsch</option><option value="../fr/">Français</option><option value="../pt-BR/">Português (Brasil)</option><option value="../ru/" selected>Русский</option></select></label>
 </div></header>
 <main class="wrap">
 <section class="hero">
 <h1>Собирайте видео-референсы на телефоне.</h1>
+<p class="fast"><a href="#how">Хватит одной ссылки!!</a></p>
 <p class="sub">Вставьте ссылку и скачайте — или откройте страницу во встроенном браузере, запустите видео и нажмите <b>⬇ Скачать</b> поверх него.</p>
 <p><a class="btn big" href="https://github.com/gkstmdahr/just-downloader/releases/latest">⬇ Скачать APK</a></p>
 <p class="note">Android 8.0+ · 64‑бит ARM · бесплатно · без рекламы · без аккаунта</p>
-</section>
-
-<section><h2>Как это работает</h2>
-<div class="steps">
-<figure><img src="../img/ru_1.webp" alt="Главный экран с полем ссылки и кнопкой Скачать" width="540" height="1052" loading="lazy"><figcaption><b><span class="n">1</span>Вставьте ссылку</b><span>Скопируйте ссылку на страницу с видео, вставьте её и нажмите «Скачать».</span></figcaption></figure>
-<figure><img src="../img/ru_3.webp" alt="Встроенный браузер с кнопкой Скачать над воспроизводимым видео" width="540" height="1052" loading="lazy"><figcaption><b><span class="n">2</span>Или через браузер</b><span>Откройте страницу, запустите видео и нажмите кнопку «Скачать» на нём.</span></figcaption></figure>
-<figure><img src="../img/ru_2.webp" alt="Список загрузок с миниатюрами" width="540" height="1052" loading="lazy"><figcaption><b><span class="n">3</span>Найдите в «Загрузки»</b><span>Сохраняется в Movies/VideoRef — видно и в галерее, и в приложениях для монтажа.</span></figcaption></figure>
-<figure><img src="../img/ru_4.webp" alt="Настройки: тёмная тема, язык, только Wi-Fi, качество" width="540" height="1052" loading="lazy"><figcaption><b><span class="n">4</span>Настройте один раз</b><span>Только по Wi-Fi, максимальное качество, удобный для монтажа формат, 10 языков.</span></figcaption></figure>
-</div></section>
-
-<section><h2>Как это выглядит</h2>
-<div class="demo"><video src="../img/demo.mp4" poster="../img/demo_poster.webp" width="540" height="1170" autoplay muted loop playsinline controls></video>
-<p>Вставьте ссылку, нажмите «Скачать» — и загрузка сразу начнётся. Она продолжится с уведомлением о ходе, даже если вы выйдете из приложения или выключите экран. (Приложение в видео на английском.)</p></div></section>
-
-<section><h2>Возможности</h2><div class="grid">
-<div class="card"><h3>Вставьте ссылку</h3><p>Работает с большинством популярных видеосайтов.</p></div>
-<div class="card"><h3>Кнопка «Скачать» на видео</h3><p>Во встроенном браузере над воспроизводимым видео появляется кнопка «Скачать» — помогает на многих сайтах, где ссылка не срабатывает.</p></div>
-<div class="card"><h3>Сразу для монтажа</h3><p>Сохраняется в Movies/VideoRef. «Совместимость важнее» выбирает H.264 + AAC, чтобы монтажные приложения сразу открывали файл.</p></div>
-<div class="card"><h3>Работает в фоне</h3><p>Продолжает загрузку при выключенном экране. «Скачивать только по Wi-Fi», максимальное разрешение.</p></div>
-<div class="card"><h3>10 языков</h3><p>English, 한국어, 简体中文, 繁體中文, 日本語, Español, Deutsch, Français, Português (Brasil), Русский. Светлая / тёмная тема.</p></div>
-<div class="card"><h3>Нам ничего не отправляется</h3><p>Без рекламы, без отслеживания, без аккаунта. <a href="privacy.html">Политика конфиденциальности</a></p></div>
-</div></section>
-<section><h2>Установка</h2><p>Откройте скачанный APK на телефоне. Если появится запрос, разрешите браузеру или файловому менеджеру устанавливать неизвестные приложения.</p>
-<p>Скоро появится версия для Google Play. Из‑за правил Play она поддерживает меньше сайтов и обновляет программу загрузки только вместе с приложением. Обе версии можно установить одновременно.</p></section>
-<section><h2>Проблемы?</h2><p>Настройки → Помощь → <b>Сообщить о проблеме</b> создаёт письмо на <a href="mailto:support@4dir.net">support@4dir.net</a> с журналом приложения во вложении. Исходный код и сообщения об ошибках: <a href="https://github.com/gkstmdahr/just-downloader">GitHub</a> (GPL‑3.0).</p>
-<p>Нравится? <a href="https://ko-fi.com/4dirofficial">Поддержать на Ko‑fi</a></p></section>
+<p><a class="btn line" href="#how">📖 Как пользоваться ↓</a></p></section>
+<figure class="shot"><video src="../img/demo.mp4" poster="../img/demo_poster.webp" width="540" height="1170" autoplay muted loop playsinline controls></video><figcaption>Вставьте ссылку, нажмите «Скачать» — и загрузка сразу начнётся. Она продолжится с уведомлением о ходе, даже если вы выйдете из приложения или выключите экран. (Приложение в видео на английском.)</figcaption></figure>
+<section id="how"><h2>Как это работает</h2><div class="steps"><figure><img src="../img/ru_1.webp" alt="Главный экран с полем ссылки и кнопкой Скачать" width="540" height="1052" loading="lazy"><figcaption><b><span class="n">1</span>Вставьте ссылку</b><span>Скопируйте ссылку на страницу с видео, вставьте её и нажмите «Скачать».</span></figcaption></figure><figure><img src="../img/ru_3.webp" alt="Встроенный браузер с кнопкой Скачать над воспроизводимым видео" width="540" height="1052" loading="lazy"><figcaption><b><span class="n">2</span>Или через браузер</b><span>Откройте страницу, запустите видео и нажмите кнопку «Скачать» на нём.</span></figcaption></figure><figure><img src="../img/ru_2.webp" alt="Список загрузок с миниатюрами" width="540" height="1052" loading="lazy"><figcaption><b><span class="n">3</span>Найдите в «Загрузки»</b><span>Сохраняется в Movies/VideoRef — видно и в галерее, и в приложениях для монтажа.</span></figcaption></figure><figure><img src="../img/ru_4.webp" alt="Настройки: тёмная тема, язык, только Wi-Fi, качество" width="540" height="1052" loading="lazy"><figcaption><b><span class="n">4</span>Настройте один раз</b><span>Только по Wi-Fi, максимальное качество, удобный для монтажа формат, 10 языков.</span></figcaption></figure></div></section>
+<section><h2>Возможности</h2><div class="grid"><div class="card"><h3>Вставьте ссылку</h3><p>Работает с большинством популярных видеосайтов.</p></div><div class="card"><h3>Кнопка «Скачать» на видео</h3><p>Во встроенном браузере над воспроизводимым видео появляется кнопка «Скачать» — помогает на многих сайтах, где ссылка не срабатывает.</p></div><div class="card"><h3>Сразу для монтажа</h3><p>Сохраняется в Movies/VideoRef. «Совместимость важнее» выбирает H.264 + AAC, чтобы монтажные приложения сразу открывали файл.</p></div><div class="card"><h3>Работает в фоне</h3><p>Продолжает загрузку при выключенном экране. «Скачивать только по Wi-Fi», максимальное разрешение.</p></div><div class="card"><h3>10 языков</h3><p>English, 한국어, 简体中文, 繁體中文, 日本語, Español, Deutsch, Français, Português (Brasil), Русский. Светлая / тёмная тема.</p></div><div class="card"><h3>Нам ничего не отправляется</h3><p>Без рекламы, без отслеживания, без аккаунта.</p></div></div></section>
+<section id="install"><h2>Установка</h2><ol><li>Скачайте APK кнопкой выше (или в разделе <b>Releases</b> на GitHub).</li><li>Откройте APK на телефоне.</li><li>Если появится запрос, разрешите браузеру или файловому менеджеру <b>устанавливать неизвестные приложения</b> и нажмите «Установить».</li></ol><p class="tip">Скоро появится версия для Google Play. Из‑за правил Play она поддерживает меньше сайтов и обновляет программу загрузки только вместе с приложением. Обе версии можно установить одновременно.</p></section>
+<section id="donate"><h2>Поддержать just downloader</h2><p>just downloader бесплатен и без рекламы. Если он сэкономил вам время, небольшая поддержка поможет следующему обновлению.</p><p class="btns"><a class="btn don" href="https://ko-fi.com/4dirofficial" rel="noopener">♥ Ko-fi</a></p></section>
+<section id="faq"><h2>Частые вопросы</h2><details><summary>Это правда бесплатно?</summary><p>Да. Бесплатно и с открытым кодом (GPL‑3.0). Без рекламы, регистрации и пробного периода.</p></details><details><summary>Отправляет ли он мои данные?</summary><p>Персональные данные не отправляются. Разработчику ничего не уходит, если вы сами не отправите отчёт об ошибке. <a href="privacy.html">Политика конфиденциальности</a></p></details><details><summary>С какими сайтами работает?</summary><p>С большинством популярных видеосайтов достаточно ссылки. Если не получается, откройте страницу во встроенном браузере, запустите видео и нажмите «Скачать» на нём. Видео с защитой DRM (платные стриминговые сервисы) сохранить нельзя.</p></details><details><summary>Что-то не работает?</summary><p>Настройки → Помощь → <b>Сообщить о проблеме</b> создаёт письмо на <a href="mailto:support@4dir.net">support@4dir.net</a> с журналом приложения во вложении. Пользователи GitHub также могут создать issue: <a href="https://github.com/gkstmdahr/just-downloader/issues">GitHub</a>.</p></details></section>
 </main>
-<footer class="wrap"><p class="note">На экранах — приложение с примерами анимации, сделанными для этой страницы. Вы сами отвечаете за использование скачанных видео. · <a href="privacy.html">Конфиденциальность</a> · <a href="../../ru/">4Dir</a></p></footer>
+<footer><div class="wrap">
+<a href="https://github.com/gkstmdahr/just-downloader">Исходный код</a> · <a href="https://github.com/gkstmdahr/just-downloader/issues">Сообщить о проблеме</a> · <a href="mailto:support@4dir.net">support@4dir.net</a> · <a href="privacy.html">Конфиденциальность</a> · <a href="https://github.com/gkstmdahr/just-downloader/releases">GitHub Releases</a>
+<p>Свободное ПО под GPL‑3.0. Android — товарный знак Google LLC. На экранах — приложение с примерами анимации, сделанными для этой страницы. Вы сами отвечаете за использование скачанных видео.</p>
+</div></footer>
 </body>
 </html>

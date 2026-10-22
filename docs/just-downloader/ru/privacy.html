@@ -16,52 +16,43 @@
 <link rel="alternate" hreflang="pt-BR" href="https://4dir.net/just-downloader/pt-BR/privacy.html">
 <link rel="alternate" hreflang="ru" href="https://4dir.net/just-downloader/ru/privacy.html">
 <link rel="alternate" hreflang="x-default" href="https://4dir.net/just-downloader/privacy.html">
-<link rel="icon" href="../../icon.png">
+<link rel="icon" href="../img/icon.png">
 <link rel="stylesheet" href="../../style.css">
+<style>
+.logo img{border-radius:6px}.nav.app{margin-left:0;margin-right:auto}.nav.app img{width:18px;height:18px;vertical-align:-3px;margin-right:4px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin:16px 0}
+.steps figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;text-align:center}
+.steps img{width:100%;max-width:270px;height:auto;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.12)}
+.steps figcaption{margin-top:10px;text-align:left}.steps b{display:block;font-size:17px;margin-bottom:4px}.steps figcaption>span{color:var(--mut)}
+.n{display:inline-block;width:26px;height:26px;line-height:26px;border-radius:50%;background:var(--acc);color:#fff;text-align:center;font-weight:700;margin-right:6px;font-size:14px}
+.shot video{width:100%;max-width:300px;height:auto;border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.12)}
+@media (max-width:600px){.steps{grid-template-columns:1fr 1fr;gap:10px}.steps figure{padding:8px}.steps b{font-size:15px}.steps figcaption>span{font-size:13px}}
+</style>
 </head>
 <body>
 <header class="top"><div class="wrap">
-<a class="logo" href="./">just downloader</a>
-<label class="lang">Язык <select onchange="location.href=this.value"><option value="../privacy.html">English</option><option value="../ko/privacy.html">한국어</option><option value="../zh-CN/privacy.html">简体中文</option><option value="../zh-TW/privacy.html">繁體中文</option><option value="../ja/privacy.html">日本語</option><option value="../es/privacy.html">Español</option><option value="../de/privacy.html">Deutsch</option><option value="../fr/privacy.html">Français</option><option value="../pt-BR/privacy.html">Português (Brasil)</option><option value="../ru/privacy.html" selected>Русский</option></select></label>
+<a class="logo" href="./"><img src="../img/icon.png" alt="" width="28" height="28">just downloader</a>
+<a class="nav app" href="../../ru/"><img src="../../icon.png" alt="">4Dir</a><label class="lang">Язык <select onchange="location.href=this.value"><option value="../privacy.html">English</option><option value="../ko/privacy.html">한국어</option><option value="../zh-CN/privacy.html">简体中文</option><option value="../zh-TW/privacy.html">繁體中文</option><option value="../ja/privacy.html">日本語</option><option value="../es/privacy.html">Español</option><option value="../de/privacy.html">Deutsch</option><option value="../fr/privacy.html">Français</option><option value="../pt-BR/privacy.html">Português (Brasil)</option><option value="../ru/privacy.html" selected>Русский</option></select></label>
 </div></header>
 <main class="wrap">
+<p><a href="./">← just downloader</a></p>
 <h1>Политика конфиденциальности</h1>
 <p class="note">Действует с 2026-10-22. Относится к обеим версиям just downloader (<code>net.fourdir.justdownloader</code> в Google Play и <code>net.fourdir.justdownloader.full</code> с этого сайта).</p>
 <p class="note">Если этот перевод расходится с английской версией, приоритет имеет английская версия. <a href="../privacy.html">English</a></p>
-
-<h2>Кратко</h2>
-<p>just downloader не собирает персональные данные. Нет аккаунта, рекламы, аналитики и отслеживания, нет и собственного сервера. Разработчику ничего не отправляется, если вы сами не решите отправить отчёт об ошибке по почте.</p>
-
-<h2>Что остаётся на устройстве</h2>
-<ul>
-<li><b>Скачанные видео</b> — сохраняются в <code>Movies/VideoRef</code>. Остаются после удаления приложения.</li>
-<li><b>Настройки и список последних загрузок</b> — в закрытом хранилище приложения.</li>
-<li><b>Диагностический журнал</b> — текстовый файл в хранилище приложения с адресами скачанных видео, сообщениями об ошибках, версией приложения и моделью телефона. Используется только для поиска проблем. Удаляется вместе с приложением (или при очистке его хранилища).</li>
-<li><b>Данные встроенного браузера</b> — файлы cookie и кэш открытых сайтов, как в любом браузере.</li>
-</ul>
-
-<h2>Сетевые подключения</h2>
-<ul>
-<li>Приложение подключается напрямую к сайтам, которые вы открываете или ссылки на которые вставляете, чтобы показывать и скачивать видео. Как при любом посещении, эти сайты могут получить ваш IP-адрес и сведения о браузере; действуют их собственные политики конфиденциальности.</li>
-<li><b>«Передавать данные входа из браузера»</b> (по умолчанию выключено): если включить, cookie встроенного браузера передаются процессу загрузки на вашем телефоне, чтобы скачивать видео, доступные после входа. Больше никуда они не отправляются.</li>
-<li><b>Только полная версия</b>: раз в 7 дней приложение проверяет на GitHub (github.com) новую версию программы загрузки (yt-dlp) и скачивает её. Версия для Play этого не делает.</li>
-</ul>
-
-<h2>Отчёты об ошибках</h2>
-<p>При нажатии <b>Сообщить о проблеме</b> приложение открывает вашу почтовую программу с письмом на <a href="mailto:support@4dir.net">support@4dir.net</a>, где указаны версия приложения, модель телефона, недавние неудачные адреса, а диагностический журнал приложен файлом. Ничего не отправляется, пока вы не нажмёте «Отправить» в почтовом приложении; до этого можно всё изменить или удалить. Отчёты используются только для исправления проблем и удаляются, когда больше не нужны.</p>
-
-<h2>Разрешения</h2>
-<ul>
-<li>Интернет и состояние сети — для загрузки и для параметра «Скачивать только по Wi-Fi».</li>
-<li>Уведомления и фоновая служба — чтобы показывать ход загрузки и продолжать её при выключенном экране.</li>
-</ul>
-
-<h2>Дети</h2>
-<p>Приложение не предназначено для детей младше 13 лет и намеренно не собирает ничьих данных.</p>
-
-<h2>Изменения и контакты</h2>
-<p>Изменения этой политики публикуются на этой странице с новой датой. Вопросы: <a href="mailto:support@4dir.net">support@4dir.net</a></p>
+<section><h2>Кратко</h2><p>just downloader не собирает персональные данные. Нет аккаунта, рекламы, аналитики и отслеживания, нет и собственного сервера. Разработчику ничего не отправляется, если вы сами не решите отправить отчёт об ошибке по почте.</p></section>
+<section><h2>Что остаётся на устройстве</h2><ul><li><b>Скачанные видео</b> — сохраняются в <code>Movies/VideoRef</code>. Остаются после удаления приложения.</li><li><b>Настройки и список последних загрузок</b> — в закрытом хранилище приложения.</li><li><b>Диагностический журнал</b> — текстовый файл в хранилище приложения с адресами скачанных видео, сообщениями об ошибках, версией приложения и моделью телефона. Используется только для поиска проблем. Удаляется вместе с приложением (или при очистке его хранилища).</li><li><b>Данные встроенного браузера</b> — файлы cookie и кэш открытых сайтов, как в любом браузере.</li></ul>
+</section>
+<section><h2>Сетевые подключения</h2><ul><li>Приложение подключается напрямую к сайтам, которые вы открываете или ссылки на которые вставляете, чтобы показывать и скачивать видео. Как при любом посещении, эти сайты могут получить ваш IP-адрес и сведения о браузере; действуют их собственные политики конфиденциальности.</li><li><b>«Передавать данные входа из браузера»</b> (по умолчанию выключено): если включить, cookie встроенного браузера передаются процессу загрузки на вашем телефоне, чтобы скачивать видео, доступные после входа. Больше никуда они не отправляются.</li><li><b>Только полная версия</b>: раз в 7 дней приложение проверяет на GitHub (github.com) новую версию программы загрузки (yt-dlp) и скачивает её. Версия для Play этого не делает.</li></ul>
+</section>
+<section><h2>Отчёты об ошибках</h2><p>При нажатии <b>Сообщить о проблеме</b> приложение открывает вашу почтовую программу с письмом на <a href="mailto:support@4dir.net">support@4dir.net</a>, где указаны версия приложения, модель телефона, недавние неудачные адреса, а диагностический журнал приложен файлом. Ничего не отправляется, пока вы не нажмёте «Отправить» в почтовом приложении; до этого можно всё изменить или удалить. Отчёты используются только для исправления проблем и удаляются, когда больше не нужны.</p></section>
+<section><h2>Разрешения</h2><ul><li>Интернет и состояние сети — для загрузки и для параметра «Скачивать только по Wi-Fi».</li><li>Уведомления и фоновая служба — чтобы показывать ход загрузки и продолжать её при выключенном экране.</li></ul>
+</section>
+<section><h2>Дети</h2><p>Приложение не предназначено для детей младше 13 лет и намеренно не собирает ничьих данных.</p></section>
+<section><h2>Изменения и контакты</h2><p>Изменения этой политики публикуются на этой странице с новой датой. Вопросы: <a href="mailto:support@4dir.net">support@4dir.net</a></p></section>
 </main>
-<footer class="wrap"><p class="note"><a href="./">just downloader</a> · <a href="../../ru/">4Dir</a></p></footer>
+<footer><div class="wrap">
+<a href="https://github.com/gkstmdahr/just-downloader">Исходный код</a> · <a href="https://github.com/gkstmdahr/just-downloader/issues">Сообщить о проблеме</a> · <a href="mailto:support@4dir.net">support@4dir.net</a> · <a href="privacy.html">Конфиденциальность</a> · <a href="https://github.com/gkstmdahr/just-downloader/releases">GitHub Releases</a>
+<p>Свободное ПО под GPL‑3.0. Android — товарный знак Google LLC. На экранах — приложение с примерами анимации, сделанными для этой страницы. Вы сами отвечаете за использование скачанных видео.</p>
+</div></footer>
 </body>
 </html>

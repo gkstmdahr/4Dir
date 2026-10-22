@@ -16,52 +16,43 @@
 <link rel="alternate" hreflang="pt-BR" href="https://4dir.net/just-downloader/pt-BR/privacy.html">
 <link rel="alternate" hreflang="ru" href="https://4dir.net/just-downloader/ru/privacy.html">
 <link rel="alternate" hreflang="x-default" href="https://4dir.net/just-downloader/privacy.html">
-<link rel="icon" href="../../icon.png">
+<link rel="icon" href="../img/icon.png">
 <link rel="stylesheet" href="../../style.css">
+<style>
+.logo img{border-radius:6px}.nav.app{margin-left:0;margin-right:auto}.nav.app img{width:18px;height:18px;vertical-align:-3px;margin-right:4px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin:16px 0}
+.steps figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;text-align:center}
+.steps img{width:100%;max-width:270px;height:auto;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.12)}
+.steps figcaption{margin-top:10px;text-align:left}.steps b{display:block;font-size:17px;margin-bottom:4px}.steps figcaption>span{color:var(--mut)}
+.n{display:inline-block;width:26px;height:26px;line-height:26px;border-radius:50%;background:var(--acc);color:#fff;text-align:center;font-weight:700;margin-right:6px;font-size:14px}
+.shot video{width:100%;max-width:300px;height:auto;border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.12)}
+@media (max-width:600px){.steps{grid-template-columns:1fr 1fr;gap:10px}.steps figure{padding:8px}.steps b{font-size:15px}.steps figcaption>span{font-size:13px}}
+</style>
 </head>
 <body>
 <header class="top"><div class="wrap">
-<a class="logo" href="./">just downloader</a>
-<label class="lang">Langue <select onchange="location.href=this.value"><option value="../privacy.html">English</option><option value="../ko/privacy.html">한국어</option><option value="../zh-CN/privacy.html">简体中文</option><option value="../zh-TW/privacy.html">繁體中文</option><option value="../ja/privacy.html">日本語</option><option value="../es/privacy.html">Español</option><option value="../de/privacy.html">Deutsch</option><option value="../fr/privacy.html" selected>Français</option><option value="../pt-BR/privacy.html">Português (Brasil)</option><option value="../ru/privacy.html">Русский</option></select></label>
+<a class="logo" href="./"><img src="../img/icon.png" alt="" width="28" height="28">just downloader</a>
+<a class="nav app" href="../../fr/"><img src="../../icon.png" alt="">4Dir</a><label class="lang">Langue <select onchange="location.href=this.value"><option value="../privacy.html">English</option><option value="../ko/privacy.html">한국어</option><option value="../zh-CN/privacy.html">简体中文</option><option value="../zh-TW/privacy.html">繁體中文</option><option value="../ja/privacy.html">日本語</option><option value="../es/privacy.html">Español</option><option value="../de/privacy.html">Deutsch</option><option value="../fr/privacy.html" selected>Français</option><option value="../pt-BR/privacy.html">Português (Brasil)</option><option value="../ru/privacy.html">Русский</option></select></label>
 </div></header>
 <main class="wrap">
+<p><a href="./">← just downloader</a></p>
 <h1>Politique de confidentialité</h1>
 <p class="note">En vigueur le 2026-10-22. S’applique aux deux éditions de just downloader (<code>net.fourdir.justdownloader</code> sur Google Play et <code>net.fourdir.justdownloader.full</code> depuis ce site).</p>
 <p class="note">En cas de différence entre cette traduction et la version anglaise, la version anglaise prévaut. <a href="../privacy.html">English</a></p>
-
-<h2>En bref</h2>
-<p>just downloader ne collecte aucune donnée personnelle. Pas de compte, pas de pub, pas de statistiques ni de suivi, et pas de serveur propre. Rien n’est envoyé au développeur, sauf si vous choisissez d’envoyer un rapport d’erreur par e‑mail.</p>
-
-<h2>Ce qui reste sur votre appareil</h2>
-<ul>
-<li><b>Vidéos téléchargées</b> — enregistrées dans <code>Movies/VideoRef</code>. Elles restent après la désinstallation de l’appli.</li>
-<li><b>Paramètres et liste des téléchargements récents</b> — dans le stockage privé de l’appli.</li>
-<li><b>Journal de diagnostic</b> — un fichier texte dans le stockage de l’appli contenant les adresses des vidéos téléchargées, les messages d’erreur, la version de l’appli et le modèle du téléphone. Il sert uniquement à trouver les problèmes et est supprimé à la désinstallation (ou à l’effacement du stockage de l’appli).</li>
-<li><b>Données du navigateur intégré</b> — cookies et cache des sites ouverts, comme tout navigateur.</li>
-</ul>
-
-<h2>Connexions réseau</h2>
-<ul>
-<li>L’appli se connecte directement aux sites que vous ouvrez ou dont vous collez le lien, pour afficher et télécharger les vidéos. Comme lors de toute visite, ces sites peuvent recevoir votre adresse IP et des infos sur le navigateur ; leurs propres politiques de confidentialité s’appliquent.</li>
-<li><b>« Envoyer aussi les infos de connexion du navigateur »</b> (désactivé par défaut) : une fois activé, les cookies du navigateur intégré sont transmis au processus de téléchargement sur votre téléphone pour télécharger les vidéos visibles une fois connecté. Ils ne sont envoyés nulle part ailleurs.</li>
-<li><b>Édition complète uniquement</b> : tous les 7 jours, l’appli vérifie sur GitHub (github.com) s’il existe une nouvelle version de son moteur de téléchargement (yt-dlp) et la télécharge. L’édition Play ne le fait pas.</li>
-</ul>
-
-<h2>Rapports d’erreur</h2>
-<p>Quand vous touchez <b>Signaler un problème</b>, l’appli ouvre votre messagerie avec un e‑mail à <a href="mailto:support@4dir.net">support@4dir.net</a> contenant la version de l’appli, le modèle du téléphone, les adresses récemment en échec et le journal de diagnostic en pièce jointe. Rien n’est envoyé tant que vous n’appuyez pas sur Envoyer dans votre messagerie, et vous pouvez tout modifier ou retirer avant. Les rapports servent uniquement à corriger les problèmes et sont supprimés lorsqu’ils ne sont plus utiles.</p>
-
-<h2>Autorisations</h2>
-<ul>
-<li>Internet et état du réseau — pour télécharger et pour l’option « Télécharger en Wi-Fi uniquement ».</li>
-<li>Notifications et service de premier plan — pour afficher la progression et continuer à télécharger écran éteint.</li>
-</ul>
-
-<h2>Enfants</h2>
-<p>L’appli ne s’adresse pas aux enfants de moins de 13 ans et ne collecte sciemment aucune information auprès de quiconque.</p>
-
-<h2>Modifications et contact</h2>
-<p>Toute modification de cette politique sera publiée sur cette page avec une nouvelle date. Questions : <a href="mailto:support@4dir.net">support@4dir.net</a></p>
+<section><h2>En bref</h2><p>just downloader ne collecte aucune donnée personnelle. Pas de compte, pas de pub, pas de statistiques ni de suivi, et pas de serveur propre. Rien n’est envoyé au développeur, sauf si vous choisissez d’envoyer un rapport d’erreur par e‑mail.</p></section>
+<section><h2>Ce qui reste sur votre appareil</h2><ul><li><b>Vidéos téléchargées</b> — enregistrées dans <code>Movies/VideoRef</code>. Elles restent après la désinstallation de l’appli.</li><li><b>Paramètres et liste des téléchargements récents</b> — dans le stockage privé de l’appli.</li><li><b>Journal de diagnostic</b> — un fichier texte dans le stockage de l’appli contenant les adresses des vidéos téléchargées, les messages d’erreur, la version de l’appli et le modèle du téléphone. Il sert uniquement à trouver les problèmes et est supprimé à la désinstallation (ou à l’effacement du stockage de l’appli).</li><li><b>Données du navigateur intégré</b> — cookies et cache des sites ouverts, comme tout navigateur.</li></ul>
+</section>
+<section><h2>Connexions réseau</h2><ul><li>L’appli se connecte directement aux sites que vous ouvrez ou dont vous collez le lien, pour afficher et télécharger les vidéos. Comme lors de toute visite, ces sites peuvent recevoir votre adresse IP et des infos sur le navigateur ; leurs propres politiques de confidentialité s’appliquent.</li><li><b>« Envoyer aussi les infos de connexion du navigateur »</b> (désactivé par défaut) : une fois activé, les cookies du navigateur intégré sont transmis au processus de téléchargement sur votre téléphone pour télécharger les vidéos visibles une fois connecté. Ils ne sont envoyés nulle part ailleurs.</li><li><b>Édition complète uniquement</b> : tous les 7 jours, l’appli vérifie sur GitHub (github.com) s’il existe une nouvelle version de son moteur de téléchargement (yt-dlp) et la télécharge. L’édition Play ne le fait pas.</li></ul>
+</section>
+<section><h2>Rapports d’erreur</h2><p>Quand vous touchez <b>Signaler un problème</b>, l’appli ouvre votre messagerie avec un e‑mail à <a href="mailto:support@4dir.net">support@4dir.net</a> contenant la version de l’appli, le modèle du téléphone, les adresses récemment en échec et le journal de diagnostic en pièce jointe. Rien n’est envoyé tant que vous n’appuyez pas sur Envoyer dans votre messagerie, et vous pouvez tout modifier ou retirer avant. Les rapports servent uniquement à corriger les problèmes et sont supprimés lorsqu’ils ne sont plus utiles.</p></section>
+<section><h2>Autorisations</h2><ul><li>Internet et état du réseau — pour télécharger et pour l’option « Télécharger en Wi-Fi uniquement ».</li><li>Notifications et service de premier plan — pour afficher la progression et continuer à télécharger écran éteint.</li></ul>
+</section>
+<section><h2>Enfants</h2><p>L’appli ne s’adresse pas aux enfants de moins de 13 ans et ne collecte sciemment aucune information auprès de quiconque.</p></section>
+<section><h2>Modifications et contact</h2><p>Toute modification de cette politique sera publiée sur cette page avec une nouvelle date. Questions : <a href="mailto:support@4dir.net">support@4dir.net</a></p></section>
 </main>
-<footer class="wrap"><p class="note"><a href="./">just downloader</a> · <a href="../../fr/">4Dir</a></p></footer>
+<footer><div class="wrap">
+<a href="https://github.com/gkstmdahr/just-downloader">Code source</a> · <a href="https://github.com/gkstmdahr/just-downloader/issues">Signaler un problème</a> · <a href="mailto:support@4dir.net">support@4dir.net</a> · <a href="privacy.html">Confidentialité</a> · <a href="https://github.com/gkstmdahr/just-downloader/releases">GitHub Releases</a>
+<p>Logiciel libre sous GPL‑3.0. Android est une marque de Google LLC. Les écrans montrent l’appli avec des animations d’exemple créées pour cette page. Vous êtes responsable de l’usage des vidéos téléchargées.</p>
+</div></footer>
 </body>
 </html>

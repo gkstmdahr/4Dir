@@ -16,51 +16,42 @@
 <link rel="alternate" hreflang="pt-BR" href="https://4dir.net/just-downloader/pt-BR/privacy.html">
 <link rel="alternate" hreflang="ru" href="https://4dir.net/just-downloader/ru/privacy.html">
 <link rel="alternate" hreflang="x-default" href="https://4dir.net/just-downloader/privacy.html">
-<link rel="icon" href="../../icon.png">
+<link rel="icon" href="../img/icon.png">
 <link rel="stylesheet" href="../../style.css">
+<style>
+.logo img{border-radius:6px}.nav.app{margin-left:0;margin-right:auto}.nav.app img{width:18px;height:18px;vertical-align:-3px;margin-right:4px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin:16px 0}
+.steps figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;text-align:center}
+.steps img{width:100%;max-width:270px;height:auto;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.12)}
+.steps figcaption{margin-top:10px;text-align:left}.steps b{display:block;font-size:17px;margin-bottom:4px}.steps figcaption>span{color:var(--mut)}
+.n{display:inline-block;width:26px;height:26px;line-height:26px;border-radius:50%;background:var(--acc);color:#fff;text-align:center;font-weight:700;margin-right:6px;font-size:14px}
+.shot video{width:100%;max-width:300px;height:auto;border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.12)}
+@media (max-width:600px){.steps{grid-template-columns:1fr 1fr;gap:10px}.steps figure{padding:8px}.steps b{font-size:15px}.steps figcaption>span{font-size:13px}}
+</style>
 </head>
 <body>
 <header class="top"><div class="wrap">
-<a class="logo" href="./">just downloader</a>
-<label class="lang">언어 <select onchange="location.href=this.value"><option value="../privacy.html">English</option><option value="../ko/privacy.html" selected>한국어</option><option value="../zh-CN/privacy.html">简体中文</option><option value="../zh-TW/privacy.html">繁體中文</option><option value="../ja/privacy.html">日本語</option><option value="../es/privacy.html">Español</option><option value="../de/privacy.html">Deutsch</option><option value="../fr/privacy.html">Français</option><option value="../pt-BR/privacy.html">Português (Brasil)</option><option value="../ru/privacy.html">Русский</option></select></label>
+<a class="logo" href="./"><img src="../img/icon.png" alt="" width="28" height="28">just downloader</a>
+<a class="nav app" href="../../ko/"><img src="../../icon.png" alt="">4Dir</a><label class="lang">언어 <select onchange="location.href=this.value"><option value="../privacy.html">English</option><option value="../ko/privacy.html" selected>한국어</option><option value="../zh-CN/privacy.html">简体中文</option><option value="../zh-TW/privacy.html">繁體中文</option><option value="../ja/privacy.html">日本語</option><option value="../es/privacy.html">Español</option><option value="../de/privacy.html">Deutsch</option><option value="../fr/privacy.html">Français</option><option value="../pt-BR/privacy.html">Português (Brasil)</option><option value="../ru/privacy.html">Русский</option></select></label>
 </div></header>
 <main class="wrap">
+<p><a href="./">← just downloader</a></p>
 <h1>개인정보 처리방침</h1>
 <p class="note">시행일 2026-10-22. just downloader 두 판 모두에 적용됩니다(구글 플레이판 <code>net.fourdir.justdownloader</code>, 이 사이트판 <code>net.fourdir.justdownloader.full</code>).</p>
-
-<h2>요약</h2>
-<p>just downloader 는 개인정보를 수집하지 않습니다. 계정·광고·분석·추적이 없고 자체 서버도 없습니다. 사용자가 직접 메일로 오류 보고를 보내지 않는 한 개발자에게 아무것도 전송되지 않습니다.</p>
-
-<h2>폰 안에만 남는 것</h2>
-<ul>
-<li><b>받은 영상</b> — <code>동영상/VideoRef</code> 에 저장. 앱을 지워도 남습니다.</li>
-<li><b>설정과 최근 받기 목록</b> — 앱 전용 저장 공간.</li>
-<li><b>진단 기록</b> — 앱 저장 공간의 글 파일. 받은 영상 주소, 오류 내용, 앱 버전, 폰 기종이 들어 있으며 문제를 찾는 데만 씁니다. 앱을 지우거나 앱 저장 공간을 비우면 함께 지워집니다.</li>
-<li><b>앱 안 브라우저 데이터</b> — 일반 브라우저처럼 연 사이트의 쿠키와 캐시.</li>
-</ul>
-
-<h2>인터넷 연결</h2>
-<ul>
-<li>앱은 사용자가 연 사이트나 넣은 주소의 사이트에 직접 연결해 영상을 보여 주고 받습니다. 그 사이트는 일반 방문처럼 IP 주소와 브라우저 정보를 받을 수 있으며, 각 사이트의 개인정보 처리방침이 적용됩니다.</li>
-<li><b>'브라우저 로그인 정보 같이 보내기'</b>(기본 꺼짐): 켜면 앱 안 브라우저의 쿠키를 폰 안의 받기 프로그램에 넘겨, 로그인해야 보이는 영상을 받을 수 있게 합니다. 다른 곳으로는 보내지 않습니다.</li>
-<li><b>사이트판만</b>: 7일마다 깃허브(github.com)에서 받기 프로그램(yt-dlp) 새 버전을 확인하고 받습니다. 플레이판은 하지 않습니다.</li>
-</ul>
-
-<h2>오류 보고</h2>
-<p><b>오류 보고</b>를 누르면 메일 앱이 열리고, <a href="mailto:support@4dir.net">support@4dir.net</a> 으로 가는 메일에 앱 버전·폰 기종·최근 실패 주소와 진단 기록 파일이 첨부됩니다. 메일 앱에서 보내기를 누르기 전에는 아무것도 전송되지 않으며, 보내기 전에 내용을 고치거나 뺄 수 있습니다. 받은 보고는 문제 해결에만 쓰고 필요 없어지면 지웁니다.</p>
-
-<h2>권한</h2>
-<ul>
-<li>인터넷·네트워크 상태 — 받기, '와이파이에서만 받기'.</li>
-<li>알림·포그라운드 서비스 — 받기 진행 표시, 화면을 꺼도 계속 받기.</li>
-</ul>
-
-<h2>어린이</h2>
-<p>이 앱은 13세 미만 어린이를 대상으로 하지 않으며, 누구의 정보도 수집하지 않습니다.</p>
-
-<h2>변경과 문의</h2>
-<p>바뀌면 이 페이지에 새 날짜와 함께 올립니다. 문의: <a href="mailto:support@4dir.net">support@4dir.net</a></p>
+<section><h2>요약</h2><p>just downloader 는 개인정보를 수집하지 않습니다. 계정·광고·분석·추적이 없고 자체 서버도 없습니다. 사용자가 직접 메일로 오류 보고를 보내지 않는 한 개발자에게 아무것도 전송되지 않습니다.</p></section>
+<section><h2>폰 안에만 남는 것</h2><ul><li><b>받은 영상</b> — <code>동영상/VideoRef</code> 에 저장. 앱을 지워도 남습니다.</li><li><b>설정과 최근 받기 목록</b> — 앱 전용 저장 공간.</li><li><b>진단 기록</b> — 앱 저장 공간의 글 파일. 받은 영상 주소, 오류 내용, 앱 버전, 폰 기종이 들어 있으며 문제를 찾는 데만 씁니다. 앱을 지우거나 앱 저장 공간을 비우면 함께 지워집니다.</li><li><b>앱 안 브라우저 데이터</b> — 일반 브라우저처럼 연 사이트의 쿠키와 캐시.</li></ul>
+</section>
+<section><h2>인터넷 연결</h2><ul><li>앱은 사용자가 연 사이트나 넣은 주소의 사이트에 직접 연결해 영상을 보여 주고 받습니다. 그 사이트는 일반 방문처럼 IP 주소와 브라우저 정보를 받을 수 있으며, 각 사이트의 개인정보 처리방침이 적용됩니다.</li><li><b>'브라우저 로그인 정보 같이 보내기'</b>(기본 꺼짐): 켜면 앱 안 브라우저의 쿠키를 폰 안의 받기 프로그램에 넘겨, 로그인해야 보이는 영상을 받을 수 있게 합니다. 다른 곳으로는 보내지 않습니다.</li><li><b>사이트판만</b>: 7일마다 깃허브(github.com)에서 받기 프로그램(yt-dlp) 새 버전을 확인하고 받습니다. 플레이판은 하지 않습니다.</li></ul>
+</section>
+<section><h2>오류 보고</h2><p><b>오류 보고</b>를 누르면 메일 앱이 열리고, <a href="mailto:support@4dir.net">support@4dir.net</a> 으로 가는 메일에 앱 버전·폰 기종·최근 실패 주소와 진단 기록 파일이 첨부됩니다. 메일 앱에서 보내기를 누르기 전에는 아무것도 전송되지 않으며, 보내기 전에 내용을 고치거나 뺄 수 있습니다. 받은 보고는 문제 해결에만 쓰고 필요 없어지면 지웁니다.</p></section>
+<section><h2>권한</h2><ul><li>인터넷·네트워크 상태 — 받기, '와이파이에서만 받기'.</li><li>알림·포그라운드 서비스 — 받기 진행 표시, 화면을 꺼도 계속 받기.</li></ul>
+</section>
+<section><h2>어린이</h2><p>이 앱은 13세 미만 어린이를 대상으로 하지 않으며, 누구의 정보도 수집하지 않습니다.</p></section>
+<section><h2>변경과 문의</h2><p>바뀌면 이 페이지에 새 날짜와 함께 올립니다. 문의: <a href="mailto:support@4dir.net">support@4dir.net</a></p></section>
 </main>
-<footer class="wrap"><p class="note"><a href="./">just downloader</a> · <a href="../../ko/">4Dir</a></p></footer>
+<footer><div class="wrap">
+<a href="https://github.com/gkstmdahr/just-downloader">소스 코드</a> · <a href="https://github.com/gkstmdahr/just-downloader/issues">문제 보고</a> · <a href="mailto:support@4dir.net">support@4dir.net</a> · <a href="privacy.html">개인정보 처리방침</a> · <a href="https://github.com/gkstmdahr/just-downloader/releases">깃허브 Releases</a>
+<p>GPL‑3.0 무료 소프트웨어. Android 는 Google LLC 의 상표입니다. 화면 속 영상은 이 페이지용으로 만든 예시 애니메이션입니다. 받은 영상의 사용 책임은 사용자에게 있습니다.</p>
+</div></footer>
 </body>
 </html>
