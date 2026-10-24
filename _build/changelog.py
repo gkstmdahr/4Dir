@@ -6,6 +6,28 @@
 ORDER = ["en", "ko", "zh-CN", "zh-TW", "ja", "es", "de", "fr", "pt-BR", "ru"]
 
 CHANGES = [
+("0.9.67", "2026-10-24", [
+    ("Fixed: in icon and list views, dragging a file selected several files instead of moving it.",
+     "수정: 아이콘·목록 보기에서 파일을 끌면 옮겨지지 않고 여러 개가 선택되던 문제.",
+     "修复：在图标和列表视图中拖动文件时，会选中多个文件而不是移动。",
+     "修正：在圖示和清單檢視中拖曳檔案時，會選取多個檔案而不是移動。",
+     "修正：アイコン・一覧表示でファイルをドラッグすると、移動せずに複数選択されていた問題。",
+     "Corregido: en las vistas de iconos y lista, arrastrar un archivo seleccionaba varios en lugar de moverlo.",
+     "Behoben: In Symbol- und Listenansicht wurden beim Ziehen einer Datei mehrere ausgewählt statt sie zu verschieben.",
+     "Corrigé : en affichage icônes et liste, faire glisser un fichier en sélectionnait plusieurs au lieu de le déplacer.",
+     "Corrigido: nas exibições de ícones e lista, arrastar um arquivo selecionava vários em vez de movê-lo.",
+     "Исправлено: в режимах значков и списка перетаскивание файла выделяло несколько файлов вместо перемещения."),
+    ("While dragging, images show their own picture, and the picture follows from the spot you grabbed — like Windows Explorer.",
+     "끌 때 그림 파일은 원래 그림이 보이고, 처음 잡은 자리 그대로 마우스를 따라옵니다(윈도우 탐색기와 같게).",
+     "拖动时图片文件显示其本身的画面，并从你抓取的位置跟随鼠标——与 Windows 资源管理器相同。",
+     "拖曳時圖片檔案會顯示其本身的畫面，並從你抓取的位置跟隨滑鼠——與 Windows 檔案總管相同。",
+     "ドラッグ中は画像ファイルの実際の絵が表示され、つかんだ位置のままマウスについてきます（エクスプローラーと同じ）。",
+     "Al arrastrar, las imágenes muestran su propio contenido y siguen al ratón desde el punto donde las agarraste, como en el Explorador.",
+     "Beim Ziehen zeigen Bilder ihr eigenes Motiv und folgen der Maus von der Stelle aus, an der du sie gegriffen hast – wie im Explorer.",
+     "Pendant le glisser, les images affichent leur propre aperçu et suivent la souris depuis l'endroit saisi, comme dans l'Explorateur.",
+     "Ao arrastar, as imagens mostram o próprio conteúdo e seguem o mouse a partir do ponto em que você as pegou, como no Explorer.",
+     "При перетаскивании изображения показывают свою картинку и следуют за мышью от точки захвата — как в Проводнике."),
+]),
 ("0.9.66", "2026-10-24", [
     ("Right-click a .webp file → <b>Convert WebP</b> → <b>Save as PNG</b> / <b>Save as JPG</b>. The original file stays as it is.",
      ".webp 파일 우클릭 → <b>WebP 변환</b> → <b>PNG로 저장</b> / <b>JPG로 저장</b>. 원본 파일은 그대로 둡니다.",

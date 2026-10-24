@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.66"
+QE_VERSION = "0.9.67"
 
 import os
 import sys
@@ -1162,8 +1162,9 @@ def drop_hint(text=None, gpos=None):
     DROP_HINT.raise_()
 
 
-def drag_pixmap(icon, n, dpr):
-    """윈도우 탐색기 같은 끌기 그림: 반투명 상자 + 큰 아이콘 + (여러 개면) 파란 개수 표시. 커서는 상자 아래"""
+def drag_pixmap(icon, n, dpr, thumb=False):
+    """윈도우 탐색기 같은 끌기 그림: 반투명 상자 + 큰 아이콘 + (여러 개면) 파란 개수 표시. 커서는 상자 아래.
+    thumb=True 면 그림 미리보기라 상자를 거의 꽉 채움 (v0.9.67)"""
     W, H, B = 96, 96, 14     # 상자 크기, 상자 아래 여백(커서 자리)
     pm = QtGui.QPixmap(int(W * dpr), int((H + B) * dpr))
     pm.setDevicePixelRatio(dpr)
@@ -1174,7 +1175,8 @@ def drag_pixmap(icon, n, dpr):
     p.setBrush(QtGui.QColor(255, 255, 255, 190))
     p.drawRoundedRect(QtCore.QRectF(0.5, 0.5, W - 1, H - 1), 4, 4)
     if icon is not None and not icon.isNull():
-        icon.paint(p, QtCore.QRect((W - 56) // 2, (H - 56) // 2, 56, 56))
+        s_ = 84 if thumb else 56
+        icon.paint(p, QtCore.QRect((W - s_) // 2, (H - s_) // 2, s_, s_))
     if n > 1:
         f = p.font()
         f.setBold(True)
@@ -1273,6 +1275,8 @@ class ViewMixin(DragScrollMixin):
     def startDrag(self, actions):
         """Qt 기본은 고른 줄 전체를 그림으로 끌어 폴더를 가림 → 작은 상자 그림(탐색기와 같게)"""
         idxs = [i for i in self.selectionModel().selectedIndexes() if i.column() == 0]
+        self._drag_started = True
+        log.info("끌기 시작 %s %d개", type(self).__name__, len(idxs))   # 10/24 '하나 끌었는데 여러 개 선택됨' 진단
         if not idxs:
             return
         md = self.model().mimeData(idxs)
@@ -1281,9 +1285,17 @@ class ViewMixin(DragScrollMixin):
         cur = self.currentIndex()
         base = cur.row() if cur.isValid() and any(i.row() == cur.row() for i in idxs) else idxs[0].row()
         e = self.model().rows[base]
-        icon = shellops.icon_for(e[0], e[1], 48, e[6])
-        icon = icon if isinstance(icon, QtGui.QIcon) else QtGui.QIcon(icon)
-        pm, hot = drag_pixmap(icon, len(idxs), self.devicePixelRatioF())
+        # v0.9.67: 그림 파일은 이미 만들어 둔 미리보기를 끌기 그림으로 (사용자 요청: 빈 jpg 아이콘 대신 원래 그림).
+        # 새로 읽지 않음(큰 PSD·max 는 멈칫함) — 없으면 예전처럼 종류 아이콘
+        tpm = thumbs_service().peek(self.model().full(e), e[3]) if not e[1] and thumbs.is_image(e[0]) and OPTS["thumbnails"] else None
+        if tpm is not None and not tpm.isNull():
+            icon = QtGui.QIcon(tpm)
+        else:
+            icon = shellops.icon_for(e[0], e[1], 48, e[6])
+            icon = icon if isinstance(icon, QtGui.QIcon) else QtGui.QIcon(icon)
+        pm, hot = drag_pixmap(icon, len(idxs), self.devicePixelRatioF(), thumb=tpm is not None)
+        log.info("끌기 그림 %s", "미리보기" if tpm is not None else "종류 아이콘")
+        hot = self._grab_hotspot(base, hot)
         drag = QtGui.QDrag(self)
         drag.setMimeData(md)
         drag.setPixmap(pm)
@@ -1325,9 +1337,47 @@ class ViewMixin(DragScrollMixin):
         if not self.page.handle_key(self, ev):
             super().keyPressEvent(ev)
 
+    def _grab_hotspot(self, row, default):
+        """끌기 그림의 커서 자리 = 처음 누른 곳이 항목 안에서 있던 자리 (v0.9.67, 10/24 사용자: 탐색기는 잡은 아이콘 자리에서
+        따라오는데 4Dir 는 그림이 마우스 위로 올라감). 그림 상자 96x96 안으로 비율을 옮김. 누른 곳을 모르면 예전 자리"""
+        pos = getattr(self, "_press_pos", None)
+        if pos is None:
+            return default
+        r = self.visualRect(self.model().index(row, 0))
+        if not r.isValid() or r.width() <= 0 or r.height() <= 0:
+            return default
+        W, H = 96, 96
+        dx, dy = pos.x() - r.left(), pos.y() - r.top()
+        if isinstance(self, QtWidgets.QTreeView):   # 자세히: 줄은 낮고 넓음 → 가로는 왼쪽(아이콘 쪽)부터 그대로, 세로는 가운데 기준
+            hx = max(4, min(W - 4, dx))
+            hy = max(4, min(H - 4, H // 2 + dy - r.height() // 2))
+        else:   # 아이콘·목록: 항목 칸 안의 비율 그대로
+            hx = max(4, min(W - 4, int(dx * W / r.width())))
+            hy = max(4, min(H - 4, int(dy * H / r.height())))
+        return QtCore.QPoint(hx, hy)
+
     def mousePressEvent(self, ev):
+        # 진단 기록 (10/24 사용자: 파일 하나를 끌었는데 여러 개가 선택됨) — 누른 곳이 항목인지, 이미 골라져 있었는지
+        if ev.button() == Qt.LeftButton:
+            pos = ev.position().toPoint()
+            idx = self.indexAt(pos)
+            sm = self.selectionModel()
+            self._drag_started = False
+            self._press_pos = pos   # 끌기 그림을 잡은 자리 기준으로 (v0.9.67, 탐색기와 같게)
+            self._press_sel = len(sm.selectedRows()) if sm else 0
+            log.info("마우스 누름 %s 위치=%d,%d 항목=%s 이미골라짐=%s 고른수=%d", type(self).__name__, pos.x(), pos.y(),
+                     self.model().rows[idx.row()][0] if idx.isValid() and idx.row() < len(self.model().rows) else "(빈 곳)",
+                     bool(idx.isValid() and sm and sm.isSelected(self.model().index(idx.row(), 0))), self._press_sel)
         if not self.page.handle_mouse(self, ev):
             super().mousePressEvent(ev)
+
+    def mouseReleaseEvent(self, ev):
+        super().mouseReleaseEvent(ev)
+        if ev.button() == Qt.LeftButton and hasattr(self, "_press_sel"):
+            sm = self.selectionModel()
+            n = len(sm.selectedRows()) if sm else 0
+            if n != self._press_sel or getattr(self, "_drag_started", False):
+                log.info("마우스 뗌 %s 고른수 %d (누를 때 %d) 끌기=%s", type(self).__name__, n, self._press_sel, getattr(self, "_drag_started", False))
 
     def contextMenuEvent(self, ev):
         if ev.reason() == QtGui.QContextMenuEvent.Keyboard:
@@ -1684,6 +1734,12 @@ class Page(QtWidgets.QWidget):
                 v.setSpacing(4)
                 v.setGridSize(QtCore.QSize(max(px + 40, 90), px + 44))
             v.setIconSize(QtCore.QSize(px, px))
+            # v0.9.67: setMovement(Static)·setViewMode 가 Qt 안에서 '끌기'를 꺼 버림 → 아이콘·목록 보기에서 파일을 끌면
+            # 끌기 대신 사각형 선택이 됨(10/24 사용자 제보 '하나 끌었는데 여러 개 선택', 재현: dragEnabled=False 실측). 다시 켬
+            v.setMovement(QtWidgets.QListView.Static)   # 아이콘 자리 옮기기는 계속 막음
+            v.setDragEnabled(True)
+            v.setDragDropMode(QtWidgets.QAbstractItemView.DragDrop)
+            v.setDefaultDropAction(Qt.CopyAction)
             self.stack.setCurrentWidget(v)
         self.model_.layoutChanged.emit()
         log.debug("보기 방식 %s path=%s", mode, self.path)

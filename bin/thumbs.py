@@ -24,7 +24,7 @@ from ctypes import wintypes
 from PySide6 import QtCore, QtGui
 
 log = logging.getLogger("QE.thumb")
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 IMAGE_EXT = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tga", ".psd", ".dds", ".tif", ".tiff", ".webp", ".ico", ".exr", ".hdr", ".max"}
 CACHE_BYTES = 120 * 1024 * 1024
 
@@ -291,6 +291,22 @@ class Thumbs(QtCore.QObject):
         if len(self.pix) > 1500:
             self.pix.clear()
         return pm
+
+    def peek(self, path, mtime):
+        """이미 만들어 둔 미리보기 중 가장 큰 것 (요청은 안 함) — 끌기 그림용 (thumbs 1.2.0, 4Dir v0.9.67). 없으면 None"""
+        lp = path.lower()
+        best = None
+        for (kp, km, kpx), pm in list(self.pix.items()):
+            if kp == lp and km == mtime and (best is None or kpx > best[0]):
+                best = (kpx, pm)
+        with self.lock:
+            for (kp, km, kpx), img in self.cache.items():
+                if kp == lp and km == mtime and (best is None or kpx > best[0]):
+                    best = (kpx, img)
+        if best is None:
+            return None
+        v = best[1]
+        return v if isinstance(v, QtGui.QPixmap) else QtGui.QPixmap.fromImage(v)
 
     def drop_pending(self, folder):
         """그 폴더를 떠남 → 그 폴더의 아직 안 만든 요청 버림 (다른 칸 요청은 그대로)"""
