@@ -7,6 +7,9 @@ python make_site.py [출력 폴더]   (기본: 4Dir\\_site\\out)
 - 결과: index.html(영어) + <언어>\\index.html, style.css, img\\, icon.png, version.json(앱 새 버전 알림),
         robots.txt, sitemap.xml, .nojekyll  → 깃허브 무료 페이지(docs 폴더)에 그대로 올림
 - 1.3.0: _site\apps\<이름>\ 의 다른 앱 페이지를 /<이름>/ 로 복사(just-downloader)
+- 1.5.5: 순서 바꿈 — just downloader 는 로고 바로 옆(왼쪽 정렬), 사용법은 오른쪽 언어 선택 옆 (사용자 지시)
+- 1.5.4: 폰 폭에서 머리줄이 넘쳐 가로 스크롤 생김 → 두 줄로 내려가게, 언어 글자 숨김(선택 상자만)
+- 1.5.3: 위쪽 머리줄 사용법 버튼 옆에 just downloader 버튼(같은 언어의 /just-downloader/<언어>/ 로) — 메인·사용법·지난 버전 페이지 모두
 - 1.4.0: 사용법 페이지 <언어>/guide.html (문구 guide_text.py, 그림 bin/guide/<앱언어>/p1..p6.png → img/guide/<앱언어>/). 문구 없는 언어는 페이지·링크 없음
 - 바깥 스크립트·글꼴·추적 코드 없음(사이트 하나로 끝). 광고 없음.
 로그: _build\\make_site_log.txt
@@ -19,7 +22,7 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.5.2"
+MAKE_SITE_VER = "1.5.5"
 SUPPORT = "support@4dir.net"   # 문제 보고 메일 (1.1.1)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -123,7 +126,7 @@ def page(lang, cfg, rel):
 <body>
 <header class="top"><div class="wrap">
 <a class="logo" href="{up}"><img src="{up}icon.png" alt="" width="28" height="28">4Dir</a>
-{guide_nav(lang)}<label class="lang">{e(t["lang"])} <select onchange="try{{localStorage.setItem('4dir-lang',1)}}catch(e){{}};location.href=this.value">{opts}</select></label>
+{app_nav(lang, up)}{guide_nav(lang)}<label class="lang">{e(t["lang"])} <select onchange="try{{localStorage.setItem('4dir-lang',1)}}catch(e){{}};location.href=this.value">{opts}</select></label>
 </div></header>
 <main class="wrap">
 <section class="hero">
@@ -155,6 +158,12 @@ def guide_nav(lang):
     """위쪽 줄 '사용법' 링크 (1.4.0) — 그 언어 사용법 문구가 있을 때만"""
     g = GT.GUIDE.get(lang)
     return f'<a class="nav" href="guide.html">{html.escape(g["link"])}</a>' if g else ""
+
+
+def app_nav(lang, up, first=False):
+    """1.5.3: 다른 앱 just downloader 버튼 — 같은 언어 페이지로. 1.5.5: 로고 옆 왼쪽(margin-right:auto 로 나머지를 오른쪽으로 밂), first 는 안 씀"""
+    href = f"{up}just-downloader/" + ("" if lang == "en" else lang + "/")
+    return f'<a class="nav app{" first" if first else ""}" href="{href}">📱 just downloader</a>'
 
 
 def guide_hero(lang):
@@ -200,7 +209,7 @@ def guide_page(lang, cfg, rel):
 <body>
 <header class="top"><div class="wrap">
 <a class="logo" href="./"><img src="{up}icon.png" alt="" width="28" height="28">4Dir</a>
-<label class="lang">{e(t["lang"])} <select onchange="try{{localStorage.setItem('4dir-lang',1)}}catch(e){{}};location.href=this.value">{opts}</select></label>
+{app_nav(lang, up, True)}<label class="lang">{e(t["lang"])} <select onchange="try{{localStorage.setItem('4dir-lang',1)}}catch(e){{}};location.href=this.value">{opts}</select></label>
 </div></header>
 <div class="gwrap">
 <aside class="side"><nav><b>{e(g["toc"])}</b><ol>{toc}</ol></nav></aside>
@@ -267,7 +276,7 @@ def versions_page(lang, cfg, rel):
 <body>
 <header class="top"><div class="wrap">
 <a class="logo" href="./"><img src="{up}icon.png" alt="" width="28" height="28">4Dir</a>
-<label class="lang">{e(t["lang"])} <select onchange="try{{localStorage.setItem('4dir-lang',1)}}catch(e){{}};location.href=this.value">{opts}</select></label>
+{app_nav(lang, up, True)}<label class="lang">{e(t["lang"])} <select onchange="try{{localStorage.setItem('4dir-lang',1)}}catch(e){{}};location.href=this.value">{opts}</select></label>
 </div></header>
 <main class="wrap">
 <p><a href="./">{e(t["home"])}</a></p>
@@ -318,7 +327,7 @@ footer{border-top:1px solid var(--line);padding:24px 0;color:var(--mut);font-siz
 .vh{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}.vh h3{margin:0;font-size:20px}.date{color:var(--mut);font-size:14px}
 .btn.sm{padding:5px 12px;font-size:14px}a.sha{font-size:13px;color:var(--mut)}.tag{font-size:12px;background:var(--acc);color:#fff;border-radius:10px;padding:1px 8px;vertical-align:middle}
 .fast{font-size:clamp(18px,2.6vw,24px);font-weight:700;margin:0 0 8px}.fast a{color:var(--acc);text-decoration:none}.fast a:hover{text-decoration:underline}
-.nav{margin-left:auto;margin-right:8px;font-weight:700;text-decoration:none;color:var(--acc);border:2px solid var(--acc);border-radius:8px;padding:5px 14px;white-space:nowrap}.nav:hover{background:var(--acc);color:#fff}
+.nav{margin-left:auto;margin-right:8px;font-weight:700;text-decoration:none;color:var(--acc);border:2px solid var(--acc);border-radius:8px;padding:5px 14px;white-space:nowrap}.nav:hover{background:var(--acc);color:#fff}.nav.app{margin-left:0;margin-right:auto}.nav.app+.nav{margin-left:0}@media (max-width:600px){.nav{padding:4px 8px;font-size:13px;margin-right:0}.top .wrap{height:auto;flex-wrap:wrap;gap:8px;padding-top:8px;padding-bottom:8px}.lang{font-size:0;margin-left:auto}.lang select{font-size:14px}}
 .gwrap{max-width:1080px;margin:0 auto;padding:0 16px}.side{display:none}
 @media (min-width:1100px){.gwrap{max-width:1360px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:36px}.side{display:block}
 .side nav{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:16px}

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 배포판 자동 생성 (MAKE_VER 1.4.1)
+"""4Dir 배포판 자동 생성 (MAKE_VER 1.5.0)
 
 결과: <4Dir>\\_release\\4Dir_v<버전>\\  +  4Dir_v<버전>.zip
 구성:
@@ -23,7 +23,7 @@ import urllib.request
 import site
 import subprocess
 
-MAKE_VER = "1.4.1"   # 1.4.1: 프로그램 안 사용법 그림은 ko·en p1~p6 만 / 1.4.0: qgif.dll(GIF 재생) 포함 / 1.3.0: 회사 글자 목록 별도 파일(corp_words.txt, 비공개), 4Dir 본체 GPL-3.0 라이선스 포함, 패키지 정보 없을 때 버전·pywin32 라이선스 대체 / 1.2.5: 소스 백업에 _dev(시험·번역) 포함 / 1.2.4: overlays·overlayorder 가져오기 확인 / 1.2.3: thumbs 가져오기 확인 / 1.2.2: 사용법에 즐겨찾기 정리·탭 끌기·일괄 변경 / 1.2.1: favorg 가져오기 확인 / 1.2.0: 이전 배포판은 _release\백업\배포판 으로 옮김(최근 10개), 버전마다 소스 백업 _release\백업\소스 / 1.1.5: 사용법 그림(bin\guide, 사용법 그림\ko·en) / 1.1.4: batchrename 가져오기 확인 / 1.1.3: 회사 관련 글자 검사(있으면 배포 중단) / 1.1.1: 언어 파일(bin\lang) 포함·영어 안내 / 1.1.0: .pyc 배포, SHA256 지문 파일, 라이선스 문서, 사용법(차단 해제 안내) 갱신
+MAKE_VER = "1.5.0"   # 1.5.0: qwebp·qjpeg 포함, imgconvert 가져오기 확인 / 1.4.1: 프로그램 안 사용법 그림은 ko·en p1~p6 만 / 1.4.0: qgif.dll(GIF 재생) 포함 / 1.3.0: 회사 글자 목록 별도 파일(corp_words.txt, 비공개), 4Dir 본체 GPL-3.0 라이선스 포함, 패키지 정보 없을 때 버전·pywin32 라이선스 대체 / 1.2.5: 소스 백업에 _dev(시험·번역) 포함 / 1.2.4: overlays·overlayorder 가져오기 확인 / 1.2.3: thumbs 가져오기 확인 / 1.2.2: 사용법에 즐겨찾기 정리·탭 끌기·일괄 변경 / 1.2.1: favorg 가져오기 확인 / 1.2.0: 이전 배포판은 _release\백업\배포판 으로 옮김(최근 10개), 버전마다 소스 백업 _release\백업\소스 / 1.1.5: 사용법 그림(bin\guide, 사용법 그림\ko·en) / 1.1.4: batchrename 가져오기 확인 / 1.1.3: 회사 관련 글자 검사(있으면 배포 중단) / 1.1.1: 언어 파일(bin\lang) 포함·영어 안내 / 1.1.0: .pyc 배포, SHA256 지문 파일, 라이선스 문서, 사용법(차단 해제 안내) 갱신
 # PySide6·Qt 라이선스 원문 (LGPLv3 는 GPLv3 를 참조). gnu.org 는 이 네트워크에서 응답 없음(10/2 실측) → SPDX 공식 원문 저장소
 LICENSE_URLS = {"LGPL-3.0.txt": "https://raw.githubusercontent.com/spdx/license-list-data/main/text/LGPL-3.0-only.txt",
                 "GPL-3.0.txt": "https://raw.githubusercontent.com/spdx/license-list-data/main/text/GPL-3.0-only.txt"}
@@ -51,7 +51,7 @@ PYSIDE_KEEP = re.compile(r"^(__init__\.py|_config\.py|_git_pyside_version\.py|"
                          r"Qt6(Core|Gui|Widgets|Network)\.dll|"
                          r"(msvcp|vcruntime|concrt)\d*(_\w+)?\.dll)$", re.I)
 PYSIDE_PLUGINS = ["platforms/qwindows.dll", "styles/qmodernwindowsstyle.dll", "imageformats/qico.dll",
-                  "imageformats/qgif.dll"]   # 1.4.0: GIF 움직임 재생(미리보기 창). runtime 에 없으면 _build\qt_plugins 에서 (PyPI PySide6-Essentials 6.11.1 원본)
+                  "imageformats/qgif.dll", "imageformats/qwebp.dll", "imageformats/qjpeg.dll"]   # 1.5.0: webp·jpg (그림 변환 v0.9.66)   # 1.4.0: GIF 움직임 재생(미리보기 창). runtime 에 없으면 _build\qt_plugins 에서 (PyPI PySide6-Essentials 6.11.1 원본)
 QT_PLUGINS_EXTRA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "qt_plugins")
 PYWIN_DIRS = ["win32", "win32com", "win32comext", "pywin32_system32"]
 PYWIN_FILES = ["pywin32.pth", "pywin32.version.txt", "pythoncom.py"]   # pythoncom.py 는 site-packages 바로 아래(실측)
@@ -339,7 +339,7 @@ def main():
     chk = subprocess.run([os.path.join(rt, "python.exe"), "-B", "-c",   # -B: 배포 폴더에 __pycache__ 안 남김
                           "import sys;sys.path.insert(0,r'%s');"
                           "from PySide6 import QtCore,QtGui,QtWidgets,QtNetwork;import win32gui,win32con,pythoncom;"
-                          "from win32com.shell import shell;import i18n,shellops,sysmon,favorites,session,ui_parts,keymap,search_index,explorer_check,svnstat,batchrename,guide,favorg,thumbs,overlays,overlayorder;"
+                          "from win32com.shell import shell;import i18n,shellops,sysmon,favorites,session,ui_parts,keymap,search_index,explorer_check,svnstat,batchrename,guide,favorg,thumbs,overlays,overlayorder,imgconvert;"
                           "print('모듈 OK', sys.version.split()[0], QtCore.qVersion(), search_index.__file__)" % os.path.join(out, "bin")],
                          capture_output=True, text=True, env=env, encoding="utf-8", errors="replace")
     log(f"실행 확인 rc={chk.returncode} {chk.stdout.strip()} {chk.stderr.strip()[-500:]}")

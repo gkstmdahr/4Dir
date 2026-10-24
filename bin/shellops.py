@@ -633,6 +633,74 @@ def _menu_flags(s):
             | (win32con.MF_CHECKED if s.get("chk") else 0))
 
 
+_BRAND = {"bmp": None, "tried": False}
+
+
+def _brand_bitmap():
+    """우클릭 메뉴의 4Dir 항목 표시용 작은 4Dir 아이콘 (v0.9.66, 사용자 요청: 4Dir 가 넣은 항목을 구분).
+    4Dir.ico → 32비트 투명 그림(HBITMAP). 한 번 만들고 계속 씀(16x16 몇 KB). 실패하면 None (아이콘 없이 글자만)"""
+    if _BRAND["tried"]:
+        return _BRAND["bmp"]
+    _BRAND["tried"] = True
+    try:
+        u, g = ctypes.windll.user32, ctypes.windll.gdi32
+        sz = u.GetSystemMetrics(49) or 16   # SM_CXSMICON (화면 배율 반영)
+        ico = os.path.join(os.path.dirname(os.path.abspath(__file__)), "4Dir.ico")
+        u.LoadImageW.restype = ctypes.c_void_p
+        u.LoadImageW.argtypes = [ctypes.c_void_p, ctypes.c_wchar_p, ctypes.c_uint, ctypes.c_int, ctypes.c_int, ctypes.c_uint]
+        hicon = u.LoadImageW(None, ico, 1, sz, sz, 0x10)   # IMAGE_ICON, LR_LOADFROMFILE
+        if not hicon:
+            raise OSError("아이콘 읽기 실패")
+
+        class BIH(ctypes.Structure):
+            _fields_ = [("biSize", ctypes.c_uint32), ("biWidth", ctypes.c_int32), ("biHeight", ctypes.c_int32),
+                        ("biPlanes", ctypes.c_uint16), ("biBitCount", ctypes.c_uint16), ("biCompression", ctypes.c_uint32),
+                        ("biSizeImage", ctypes.c_uint32), ("x", ctypes.c_int32), ("y", ctypes.c_int32),
+                        ("c1", ctypes.c_uint32), ("c2", ctypes.c_uint32)]
+        bih = BIH(ctypes.sizeof(BIH), sz, -sz, 1, 32, 0, 0, 0, 0, 0, 0)
+        bits = ctypes.c_void_p()
+        g.CreateDIBSection.restype = ctypes.c_void_p
+        g.CreateDIBSection.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_uint, ctypes.POINTER(ctypes.c_void_p), ctypes.c_void_p, ctypes.c_uint]
+        g.CreateCompatibleDC.restype = ctypes.c_void_p
+        g.CreateCompatibleDC.argtypes = [ctypes.c_void_p]
+        g.SelectObject.restype = ctypes.c_void_p
+        g.SelectObject.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+        g.DeleteDC.argtypes = [ctypes.c_void_p]
+        u.DrawIconEx.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_uint, ctypes.c_void_p, ctypes.c_uint]
+        u.DestroyIcon.argtypes = [ctypes.c_void_p]
+        dc = g.CreateCompatibleDC(None)
+        bmp = g.CreateDIBSection(dc, ctypes.byref(bih), 0, ctypes.byref(bits), None, 0)
+        old = g.SelectObject(dc, bmp)
+        u.DrawIconEx(dc, 0, 0, hicon, sz, sz, 0, None, 3)   # DI_NORMAL — 빈(투명) 바탕에 그려 투명도 그대로
+        g.SelectObject(dc, old)
+        g.DeleteDC(dc)
+        u.DestroyIcon(hicon)
+        _BRAND["bmp"] = bmp
+        log.info("우클릭 메뉴 4Dir 아이콘 %dpx", sz)
+    except Exception as ex:
+        log.warning("우클릭 메뉴 4Dir 아이콘 못 만듦: %s", ex)
+    return _BRAND["bmp"]
+
+
+class _MII(ctypes.Structure):
+    _fields_ = [("cbSize", ctypes.c_uint), ("fMask", ctypes.c_uint), ("fType", ctypes.c_uint), ("fState", ctypes.c_uint),
+                ("wID", ctypes.c_uint), ("hSubMenu", ctypes.c_void_p), ("hbmpChecked", ctypes.c_void_p),
+                ("hbmpUnchecked", ctypes.c_void_p), ("dwItemData", ctypes.c_void_p), ("dwTypeData", ctypes.c_void_p),
+                ("cch", ctypes.c_uint), ("hbmpItem", ctypes.c_void_p)]
+
+
+def _mark_brand(hmenu, pos):
+    """메뉴 pos 번째 항목 왼쪽에 4Dir 아이콘 (체크 표시 칸과는 따로)"""
+    bmp = _brand_bitmap()
+    if not bmp:
+        return False
+    mii = _MII(ctypes.sizeof(_MII), 0x80)   # MIIM_BITMAP
+    mii.hbmpItem = bmp
+    u = ctypes.windll.user32
+    u.SetMenuItemInfoW.argtypes = [ctypes.c_void_p, ctypes.c_uint, ctypes.c_int, ctypes.POINTER(_MII)]
+    return bool(u.SetMenuItemInfoW(hmenu, pos, True, ctypes.byref(mii)))
+
+
 def _menu_text(h, i):
     b = ctypes.create_unicode_buffer(256)
     ctypes.windll.user32.GetMenuStringW(h, i, b, 256, win32con.MF_BYPOSITION)
@@ -747,15 +815,19 @@ class ShellMenu:
                             win32gui.AppendMenu(sub, _menu_flags(t), ShellMenu.EXTRA_BASE + n, t["t"])
                             n += 1
                     win32gui.InsertMenu(self.hmenu, pos, win32con.MF_BYPOSITION | win32con.MF_POPUP, sub, ex["t"])
+                    _mark_brand(self.hmenu, pos)   # v0.9.66: 4Dir 가 넣은 항목 표시
                 else:
                     win32gui.InsertMenu(self.hmenu, pos, win32con.MF_BYPOSITION | _menu_flags(ex),
                                         ShellMenu.EXTRA_BASE + n, ex["t"])
+                    if not ex.get("chk"):   # 체크 항목은 체크 표시와 겹치지 않게 아이콘 생략
+                        _mark_brand(self.hmenu, pos)
                     n += 1
         if tail:
             # 메뉴 맨 아래에 붙이는 우리 항목
             win32gui.AppendMenu(self.hmenu, win32con.MF_SEPARATOR, 0, "")
             for t in tail:
                 win32gui.AppendMenu(self.hmenu, win32con.MF_STRING, ShellMenu.EXTRA_BASE + n, t)
+                _mark_brand(self.hmenu, win32gui.GetMenuItemCount(self.hmenu) - 1)
                 n += 1
         if newfolder:
             # 윈도우 빈 곳 메뉴의 '새 폴더' (verb 없음 — 글자로 찾음) 를 빼고 그 자리에 우리 항목(예: 되돌리기)

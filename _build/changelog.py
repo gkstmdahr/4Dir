@@ -6,6 +6,28 @@
 ORDER = ["en", "ko", "zh-CN", "zh-TW", "ja", "es", "de", "fr", "pt-BR", "ru"]
 
 CHANGES = [
+("0.9.66", "2026-10-24", [
+    ("Right-click a .webp file → <b>Convert WebP</b> → <b>Save as PNG</b> / <b>Save as JPG</b>. The original file stays as it is.",
+     ".webp 파일 우클릭 → <b>WebP 변환</b> → <b>PNG로 저장</b> / <b>JPG로 저장</b>. 원본 파일은 그대로 둡니다.",
+     "右键单击 .webp 文件 → <b>WebP 转换</b> → <b>另存为 PNG</b> / <b>另存为 JPG</b>。原文件保持不变。",
+     "在 .webp 檔案上按右鍵 → <b>WebP 轉換</b> → <b>另存為 PNG</b> / <b>另存為 JPG</b>。原始檔案保持不變。",
+     ".webp ファイルを右クリック → <b>WebP 変換</b> → <b>PNG で保存</b> / <b>JPG で保存</b>。元のファイルはそのまま残ります。",
+     "Clic derecho en un archivo .webp → <b>Convertir WebP</b> → <b>Guardar como PNG</b> / <b>Guardar como JPG</b>. El archivo original no se toca.",
+     "Rechtsklick auf eine .webp-Datei → <b>WebP konvertieren</b> → <b>Als PNG speichern</b> / <b>Als JPG speichern</b>. Die Originaldatei bleibt erhalten.",
+     "Clic droit sur un fichier .webp → <b>Convertir le WebP</b> → <b>Enregistrer en PNG</b> / <b>Enregistrer en JPG</b>. Le fichier d'origine reste intact.",
+     "Clique com o botão direito em um arquivo .webp → <b>Converter WebP</b> → <b>Salvar como PNG</b> / <b>Salvar como JPG</b>. O arquivo original fica como está.",
+     "Щелчок правой кнопкой по файлу .webp → <b>Преобразовать WebP</b> → <b>Сохранить как PNG</b> / <b>Сохранить как JPG</b>. Исходный файл остаётся без изменений."),
+    ("Items that 4Dir adds to the right-click menu now show a small 4Dir icon.",
+     "4Dir 가 우클릭 메뉴에 넣은 항목에 작은 4Dir 아이콘이 붙어 구분됩니다.",
+     "4Dir 添加到右键菜单中的项目现在带有一个小的 4Dir 图标。",
+     "4Dir 加到右鍵選單中的項目現在帶有一個小的 4Dir 圖示。",
+     "4Dir が右クリックメニューに追加した項目に、小さな 4Dir アイコンが付くようになりました。",
+     "Los elementos que 4Dir añade al menú contextual ahora muestran un pequeño icono de 4Dir.",
+     "Von 4Dir hinzugefügte Einträge im Kontextmenü tragen jetzt ein kleines 4Dir-Symbol.",
+     "Les éléments ajoutés par 4Dir au menu contextuel affichent désormais une petite icône 4Dir.",
+     "Os itens que o 4Dir adiciona ao menu de contexto agora mostram um pequeno ícone do 4Dir.",
+     "Пункты, которые 4Dir добавляет в контекстное меню, теперь отмечены маленьким значком 4Dir."),
+]),
 ("0.9.65", "2026-10-23", [
     ("The new-version notice now also says what changed, in your language.",
      "새 버전 알림 줄에 무엇이 바뀌었는지도 화면 언어로 함께 나옵니다.",

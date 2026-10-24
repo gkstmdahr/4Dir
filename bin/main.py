@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.65"
+QE_VERSION = "0.9.66"
 
 import os
 import sys
@@ -2057,6 +2057,27 @@ class Page(QtWidgets.QWidget):
                 sg.done.emit(T("⚠ 압축하지 못했습니다: {0}  ✕").format(ex))
         threading.Thread(target=run, daemon=True, name="compress").start()
 
+    def do_convert(self, paths, fmt):
+        """WebP 변환 (v0.9.66, 사용자 요청: webp → png·jpg). webp 만 대상(메뉴 이름과 맞춤). 원본은 그대로, 같은 폴더에 새 파일. 뒤 스레드 → 끝나면 알림"""
+        import imgconvert
+        todo = imgconvert.targets_for(imgconvert.webp_only(paths), fmt)
+        if not todo:
+            return
+        sg = _undo_signal()
+        self.status.emit(T("변환 중: {0}…").format(os.path.basename(todo[0]) if len(todo) == 1 else T("{0} 외 {1}개").format(os.path.basename(todo[0]), len(todo) - 1)))
+        log.info("변환 시작 %s %d개: %s", fmt, len(todo), todo[:5])
+        import threading
+
+        def run():
+            made, anim, fails = imgconvert.convert_many(todo, fmt)
+            msg = T("변환 완료: {0} {1}개 만듦").format(fmt.upper(), len(made))
+            if anim:
+                msg += T(" (움직이는 그림 {0}개는 첫 장면만)").format(anim)
+            if fails:
+                msg = ("⚠ " + msg + T(" · 실패 {0}개: {1}").format(len(fails), os.path.basename(fails[0][0]))) if made else T("⚠ 변환하지 못했습니다: {0}").format(fails[0][1])
+            sg.done.emit(msg + "  ✕")
+        threading.Thread(target=run, daemon=True, name="convert").start()
+
     def do_verb(self, paths, verb):
         """윈도우 셸 동사(즐겨찾기에 고정·시작 화면에 고정) — 실패하면 알림"""
         for p in paths:
@@ -2284,6 +2305,11 @@ class Page(QtWidgets.QWidget):
                 extras.append((mlabel(T("압축"), None), [(T("ZIP 파일"), lambda: self.do_compress("zip")),
                                                          (T("7z 파일"), lambda: self.do_compress("7z")),
                                                          (T("TAR 파일"), lambda: self.do_compress("tar"))]))
+                import imgconvert   # WebP 변환 (v0.9.66) — webp 를 골랐을 때만 (사용자: '그림 변환' 은 뭔지 모름 → 이름·대상을 webp 로)
+                conv = [(lbl, (lambda f=f: self.do_convert(paths, f))) for f, lbl in (("png", T("PNG로 저장")), ("jpg", T("JPG로 저장")))
+                        if imgconvert.targets_for(imgconvert.webp_only(paths), f)]
+                if conv and not is_search(self.path):
+                    extras.append((mlabel(T("WebP 변환"), None), conv))
             if dirs:
                 extras.append(({"t": T("윈도우 즐겨찾기에 고정"), "unless": {"pintohome"}}, lambda: self.do_verb(dirs, "pintohome")))
                 extras.append(({"t": T("시작 화면에 고정"), "unless": {"pintostartscreen"}}, lambda: self.do_verb(dirs, "pintostartscreen")))

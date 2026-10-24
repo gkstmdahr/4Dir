@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 사이트용 화면 그림 (MAKE_SHOTS_VER 1.0.2)
+"""4Dir 사이트용 화면 그림 (MAKE_SHOTS_VER 1.1.0)
 
 python make_shots.py <언어코드...>   → _site\\img\\<언어>_1.png (4칸·밝게), <언어>_2.png (3칸·어둡게)
 - make_guide.py 와 같은 방식: 예시 폴더(드라이브 맨 위 4Dir_Demo, 일반 이름)만 쓰고 끝나면 지움.
@@ -14,11 +14,21 @@ import time
 import shutil
 import stat
 
-LANGS = sys.argv[1:] or ["en"]
+# 1.1.0: 선택 옵션 --size 1920x1080 (창 크기), --out 폴더, --themes light (light·dark 중 고르기), --name 파일이름틀({lang}_{n})
+_args = sys.argv[1:]
+OPT = {}
+for _k in ("--size", "--out", "--themes", "--name"):
+    if _k in _args:
+        _i = _args.index(_k)
+        OPT[_k] = _args[_i + 1]
+        del _args[_i:_i + 2]
+LANGS = _args or ["en"]
+SIZE = tuple(int(x) for x in OPT.get("--size", "1280x760").split("x"))
+THEMES = OPT.get("--themes", "light,dark").split(",")
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 BIN = os.path.join(ROOT, "bin")
-OUT = os.path.join(ROOT, "_site", "img")
+OUT = os.path.join(ROOT, OPT["--out"]) if "--out" in OPT else os.path.join(ROOT, "_site", "img")   # 상대 경로는 4Dir 폴더 기준
 sys.path.insert(0, BIN)
 os.chdir(BIN)
 LOGF = os.path.join(HERE, "make_shots_log.txt")
@@ -33,7 +43,7 @@ def log(msg):
 
 if len(LANGS) > 1:   # 열 제목 등은 import 때 번역이 정해짐 → 언어마다 따로 실행 (1.0.2)
     import subprocess
-    bad = [lg for lg in LANGS if subprocess.run([sys.executable, "-u", "-X", "utf8", os.path.abspath(__file__), lg]).returncode]
+    bad = [lg for lg in LANGS if subprocess.run([sys.executable, "-u", "-X", "utf8", os.path.abspath(__file__), lg] + [x for kv in OPT.items() for x in kv]).returncode]
     log(f"전체 끝 — 실패 언어 {bad}")
     sys.exit(1 if bad else 0)
 
@@ -121,7 +131,7 @@ os.makedirs(OUT, exist_ok=True)
 log(f"시작 언어 {LANGS} 예시 {TMP}")
 for lang in LANGS:
     i18n.init(lang)
-    for theme, layout, n in (("light", "4", 1), ("dark", "3", 2)):
+    for theme, layout, n in [x for x in (("light", "4", 1), ("dark", "3", 2)) if x[0] in THEMES]:
         M.SETTINGS["theme_mode"] = theme
         for f in ("state.json",):   # 이전 창의 탭이 이어지지 않게 (1.0.2)
             if os.path.exists(os.path.join(TMP, f)):
@@ -129,7 +139,7 @@ for lang in LANGS:
         rm(os.path.join(TMP, "sessions"))
         w = M.Main()
         w.setAttribute(Qt.WA_ShowWithoutActivating)
-        w.resize(1280, 760)
+        w.resize(*SIZE)
         w.move(-30000, -30000)
         w.show()
         wait(500)
@@ -145,7 +155,7 @@ for lang in LANGS:
         hide_type_col(w)
         w.panes[0].view().tree.setFocus()
         wait(300)
-        out = os.path.join(OUT, f"{lang}_{n}.png")
+        out = os.path.join(OUT, OPT.get("--name", "{lang}_{n}").format(lang=lang, n=n, theme=theme) + ".png")
         pm = w.grab()
         pm.save(out)
         log(f"{lang} {theme} 칸{layout} → {out} {pm.width()}x{pm.height()} {os.path.getsize(out) // 1024}KB")

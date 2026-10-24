@@ -593,5 +593,13 @@
  "새 버전 알림": "Neue Version",
  "새 버전 4Dir v{0} 이 나왔습니다 (지금 v{1})": "4Dir v{0} ist verfügbar (installiert: v{1})",
  "이 버전 건너뛰기": "Diese Version überspringen",
- "나중에": "Später"
+ "나중에": "Später",
+ "변환 중: {0}…": "Konvertiere: {0}…",
+ "변환 완료: {0} {1}개 만듦": "Konvertiert: {1} {0}-Datei(en) erstellt",
+ " (움직이는 그림 {0}개는 첫 장면만)": " (bei {0} animierten Bild(ern) nur das erste Bild)",
+ "⚠ 변환하지 못했습니다: {0}": "⚠ Konvertierung fehlgeschlagen: {0}",
+ " · 실패 {0}개: {1}": " · {0} fehlgeschlagen: {1}",
+ "PNG로 저장": "Als PNG speichern",
+ "JPG로 저장": "Als JPG speichern",
+ "WebP 변환": "WebP konvertieren"
 }
