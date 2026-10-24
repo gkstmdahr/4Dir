@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 사이트 문구 (SITE_TEXT_VER 1.2.1 — 메인 fast 줄 + FAQ 속도 근거, 맨 아래 _FAST) — make_site.py 가 읽음.
+"""4Dir 사이트 문구 (SITE_TEXT_VER 1.2.2 — 메인 fast 줄 + FAQ 속도 근거, 맨 아래 _FAST) — make_site.py 가 읽음.
 키: 언어 폴더 이름(en 은 사이트 맨 위). {ver} {size} {date} 는 make_site 가 채움."""
 
 LANGS = ["en", "ko", "zh-CN", "zh-TW", "ja", "es", "de", "fr", "pt-BR", "ru"]
@@ -12,7 +12,7 @@ T = {
 "en": dict(
     title="4Dir — Multi-pane tabbed file manager for Windows (free, portable)",
     desc="4Dir is a free, portable file manager for Windows: split the window into up to 20 panes, each with its own tabs. Fast search, SVN status, light/dark theme, 10 languages.",
-    tagline="Up to 20 panes. Tabs in every pane. Light on your PC.",
+    tagline="A multi-pane file manager faster than Windows File Explorer!!",
     sub="A free, portable file manager for Windows 10/11. No installation — unzip and run.",
     dl="Download 4Dir v{ver}", dlnote="Windows 10/11 64-bit · {size} · {date} · free",
     shot1="4 panes, light theme", shot2="3 panes, dark theme",
@@ -45,7 +45,7 @@ T = {
 "ko": dict(
     title="4Dir — 윈도우용 여러 칸 분할 + 탭 파일 관리자 (무료·설치 없음)",
     desc="4Dir 는 윈도우용 무료 휴대용 파일 관리자입니다. 창을 최대 20칸으로 나누고 칸마다 탭을 씁니다. 빠른 검색, SVN 상태, 밝게/어둡게, 10개 언어.",
-    tagline="최대 20칸. 칸마다 탭. PC는 가볍게.",
+    tagline="윈도우 탐색기보다 빠른 멀티 탐색기!!",
     sub="윈도우 10/11용 무료 파일 관리자. 설치 없이 압축만 풀고 실행.",
     dl="4Dir v{ver} 받기", dlnote="윈도우 10/11 64비트 · {size} · {date} · 무료",
     shot1="4칸, 밝은 화면", shot2="3칸, 어두운 화면",
@@ -78,7 +78,7 @@ T = {
 "zh-CN": dict(
     title="4Dir — Windows 多窗格标签页文件管理器（免费、便携）",
     desc="4Dir 是一款免费便携的 Windows 文件管理器：窗口最多可分为 20 个窗格，每个窗格都有自己的标签页。快速搜索、SVN 状态、浅色/深色主题、10 种语言。",
-    tagline="最多 20 个窗格。每个窗格都有标签页。轻巧不占资源。",
+    tagline="比 Windows 资源管理器更快的多窗格文件管理器！！",
     sub="适用于 Windows 10/11 的免费文件管理器。无需安装，解压即用。",
     dl="下载 4Dir v{ver}", dlnote="Windows 10/11 64 位 · {size} · {date} · 免费",
     shot1="4 窗格，浅色主题", shot2="3 窗格，深色主题",
@@ -111,7 +111,7 @@ T = {
 "zh-TW": dict(
     title="4Dir — Windows 多窗格分頁檔案管理員（免費、免安裝）",
     desc="4Dir 是免費免安裝的 Windows 檔案管理員：視窗最多可分成 20 個窗格，每個窗格都有自己的分頁。快速搜尋、SVN 狀態、淺色/深色主題、10 種語言。",
-    tagline="最多 20 個窗格。每個窗格都有分頁。輕巧不吃資源。",
+    tagline="比 Windows 檔案總管更快的多窗格檔案管理員！！",
     sub="適用於 Windows 10/11 的免費檔案管理員。免安裝，解壓縮即可使用。",
     dl="下載 4Dir v{ver}", dlnote="Windows 10/11 64 位元 · {size} · {date} · 免費",
     shot1="4 窗格，淺色主題", shot2="3 窗格，深色主題",
@@ -144,7 +144,7 @@ T = {
 "ja": dict(
     title="4Dir — Windows 用マルチペイン・タブ型ファイルマネージャー（無料・インストール不要）",
     desc="4Dir は Windows 用の無料ポータブルファイルマネージャーです。ウィンドウを最大 20 ペインに分割し、ペインごとにタブを使えます。高速検索、SVN 状態表示、ライト/ダーク、10 言語対応。",
-    tagline="最大 20 ペイン。すべてのペインにタブ。PC に軽い。",
+    tagline="Windows エクスプローラーより速いマルチペイン ファイラー！！",
     sub="Windows 10/11 用の無料ファイルマネージャー。インストール不要、展開してすぐ使えます。",
     dl="4Dir v{ver} をダウンロード", dlnote="Windows 10/11 64 ビット · {size} · {date} · 無料",
     shot1="4 ペイン・ライトテーマ", shot2="3 ペイン・ダークテーマ",
@@ -177,7 +177,7 @@ T = {
 "es": dict(
     title="4Dir — Gestor de archivos con varios paneles y pestañas para Windows (gratis, portable)",
     desc="4Dir es un gestor de archivos gratuito y portable para Windows: divide la ventana en hasta 20 paneles, cada uno con sus propias pestañas. Búsqueda rápida, estado SVN, tema claro/oscuro, 10 idiomas.",
-    tagline="Hasta 20 paneles. Pestañas en cada panel. Ligero para tu PC.",
+    tagline="¡¡Un explorador multipanel más rápido que el de Windows!!",
     sub="Gestor de archivos gratuito para Windows 10/11. Sin instalación: descomprime y ejecuta.",
     dl="Descargar 4Dir v{ver}", dlnote="Windows 10/11 64 bits · {size} · {date} · gratis",
     shot1="4 paneles, tema claro", shot2="3 paneles, tema oscuro",
@@ -210,7 +210,7 @@ T = {
 "de": dict(
     title="4Dir — Dateimanager mit mehreren Fenstern und Tabs für Windows (kostenlos, portabel)",
     desc="4Dir ist ein kostenloser, portabler Dateimanager für Windows: Teile das Fenster in bis zu 20 Bereiche, jeder mit eigenen Tabs. Schnelle Suche, SVN-Status, helles/dunkles Design, 10 Sprachen.",
-    tagline="Bis zu 20 Bereiche. Tabs in jedem Bereich. Schont deinen PC.",
+    tagline="Mehrfenster-Dateimanager – schneller als der Windows-Explorer!!",
     sub="Kostenloser Dateimanager für Windows 10/11. Keine Installation – entpacken und starten.",
     dl="4Dir v{ver} herunterladen", dlnote="Windows 10/11 64-Bit · {size} · {date} · kostenlos",
     shot1="4 Bereiche, helles Design", shot2="3 Bereiche, dunkles Design",
@@ -243,7 +243,7 @@ T = {
 "fr": dict(
     title="4Dir — Gestionnaire de fichiers multi-volets à onglets pour Windows (gratuit, portable)",
     desc="4Dir est un gestionnaire de fichiers gratuit et portable pour Windows : divisez la fenêtre en jusqu'à 20 volets, chacun avec ses propres onglets. Recherche rapide, état SVN, thème clair/sombre, 10 langues.",
-    tagline="Jusqu'à 20 volets. Des onglets dans chaque volet. Léger pour votre PC.",
+    tagline="Un explorateur multi-volets plus rapide que celui de Windows !!",
     sub="Gestionnaire de fichiers gratuit pour Windows 10/11. Sans installation : décompressez et lancez.",
     dl="Télécharger 4Dir v{ver}", dlnote="Windows 10/11 64 bits · {size} · {date} · gratuit",
     shot1="4 volets, thème clair", shot2="3 volets, thème sombre",
@@ -276,7 +276,7 @@ T = {
 "pt-BR": dict(
     title="4Dir — Gerenciador de arquivos com vários painéis e abas para Windows (grátis, portátil)",
     desc="4Dir é um gerenciador de arquivos gratuito e portátil para Windows: divida a janela em até 20 painéis, cada um com suas próprias abas. Busca rápida, status do SVN, tema claro/escuro, 10 idiomas.",
-    tagline="Até 20 painéis. Abas em cada painel. Leve para o seu PC.",
+    tagline="Um explorador multipainel mais rápido que o do Windows!!",
     sub="Gerenciador de arquivos gratuito para Windows 10/11. Sem instalação: descompacte e execute.",
     dl="Baixar 4Dir v{ver}", dlnote="Windows 10/11 64 bits · {size} · {date} · grátis",
     shot1="4 painéis, tema claro", shot2="3 painéis, tema escuro",
@@ -309,7 +309,7 @@ T = {
 "ru": dict(
     title="4Dir — многопанельный файловый менеджер с вкладками для Windows (бесплатно, портативно)",
     desc="4Dir — бесплатный портативный файловый менеджер для Windows: разделите окно на 20 панелей, у каждой свои вкладки. Быстрый поиск, статус SVN, светлая/тёмная тема, 10 языков.",
-    tagline="До 20 панелей. Вкладки в каждой панели. Не нагружает ПК.",
+    tagline="Многопанельный проводник — быстрее Проводника Windows!!",
     sub="Бесплатный файловый менеджер для Windows 10/11. Без установки — распакуйте и запустите.",
     dl="Скачать 4Dir v{ver}", dlnote="Windows 10/11 64-бит · {size} · {date} · бесплатно",
     shot1="4 панели, светлая тема", shot2="3 панели, тёмная тема",

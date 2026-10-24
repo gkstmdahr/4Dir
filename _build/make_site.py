@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 공개 사이트 만들기 (MAKE_SITE_VER 1.5.2)
+"""4Dir 공개 사이트 만들기 (MAKE_SITE_VER 1.5.6)
 
 python make_site.py [출력 폴더]   (기본: 4Dir\\_site\\out)
 - 문구: site_text.py (10개 언어), 버전별 바뀐 점: changelog.py (1.2.0 — 메인 '바뀐 점' + versions.html 지난 버전 받기), 설정: site_config.json (깃허브 계정·후원 주소)
@@ -22,7 +22,7 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.5.5"
+MAKE_SITE_VER = "1.5.6"
 SUPPORT = "support@4dir.net"   # 문제 보고 메일 (1.1.1)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -131,7 +131,6 @@ def page(lang, cfg, rel):
 <main class="wrap">
 <section class="hero">
 <h1>{e(t["tagline"])}</h1>
-<p class="fast"><a href="#faq">{e(t["fast"])}</a></p>
 <p class="sub">{e(t["sub"])}</p>
 <p><a class="btn big" href="{dl_url}">⬇ {e(t["dl"].format(**fmt))}</a></p>
 <p class="note">{e(t["dlnote"].format(**fmt))}</p>
