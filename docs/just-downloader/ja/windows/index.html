@@ -30,6 +30,7 @@
 .steps img{width:100%;max-width:270px;height:auto;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.12)}
 .steps figcaption{margin-top:10px;text-align:left}.steps b{display:block;font-size:17px;margin-bottom:4px}.steps figcaption>span{color:var(--mut)}
 .n{display:inline-block;width:26px;height:26px;line-height:26px;border-radius:50%;background:var(--acc);color:#fff;text-align:center;font-weight:700;margin-right:6px;font-size:14px}
+.shot.win img{width:100%;max-width:900px;height:auto;border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.12)}
 .shot video{width:100%;max-width:300px;height:auto;border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.12)}
 @media (max-width:600px){.steps{grid-template-columns:1fr 1fr;gap:10px}.steps figure{padding:8px}.steps b{font-size:15px}.steps figcaption>span{font-size:13px}}
 </style>
@@ -45,7 +46,9 @@
 <p class="sub">動画のリンクを貼るだけで、かんたんにダウンロード。</p>
 <p><a class="btn big" href="https://github.com/gkstmdahr/just-downloader-windows/releases/latest/download/just-downloader-windows.zip">⬇ Windows版をダウンロード</a></p>
 <p class="note">Windows 10/11 · 無料 · インストール不要</p>
-<p><a class="btn line" href="#how">📖 使い方を見る ↓</a> <a class="btn line" href="../">📱 Androidアプリを見る →</a></p></section>
+<p><a class="btn line" href="#how">📖 使い方を見る ↓</a> <a class="btn line" href="../">📱 Androidアプリを見る →</a></p>
+<figure class="shot win"><img src="../../img/win_ja.webp" alt="just downloader Windows版 — PCでどんな動画もダウンロード" width="807" height="680"></figure>
+</section>
 <section id="how"><h2>使い方</h2><p class="note">ソフトは10言語に対応しています。右上の欄で切り替えられます。</p><ol><li><b>リンクを貼る</b> — 動画ページのアドレスをコピーして <b>[＋ リンクを貼り付け]</b>をクリック。複数なら行ごとにコピー、アドレスをウィンドウにドラッグしてもOK。</li><li><b>画質を選べば開始</b> — 画質と「動画」または「音声のみ（mp3）」を選ぶと自動でダウンロードします。<b>[保存フォルダーを開く]</b>でファイルを確認。</li><li><b>リンクでだめなとき</b> — <b>[ログインサイト]</b>をクリック。開いたブラウザで（必要ならログインして）動画を再生し、<b>[ストリーム取得]</b>をクリックすると実際の動画ファイルをダウンロードします。</li><li><b>それでもだめなら録画</b> — <b>[● 録画開始]</b>→ 終わったら <b>[■ 停止・保存]</b>。動画の長さだけ時間がかかり、mp4 で保存されます。</li></ol><ul><li>一部だけ：「区間」に 0:30 ~ 1:45 のように入力（空欄なら全体）。</li><li>字幕：チェックすると字幕（.srt）も保存（ある場合）。</li><li>再生リスト：再生リストのアドレスを入れると「全部 / この動画だけ」を聞きます。</li><li>失敗した項目：一覧で右クリック → <b>[もう一度ダウンロード]</b>。</li><li>ダウンロード中に止める：<b>[■ 中止]</b>。</li></ul></section>
 <section><h2>機能</h2><div class="grid"><div class="card"><h3>リンクを貼るだけ</h3><p>よく使われる動画サイトの多くはリンクを貼るだけでOK。</p></div><div class="card"><h3>ストリーム取得</h3><p>リンクでだめなときはブラウザでページを開いて再生し、「ストリーム取得」を押すと実際の動画ファイルをダウンロードします。</p></div><div class="card"><h3>画面録画</h3><p>ストリームを取得できないときは、再生中の動画を録画できます。コピー防止がかかった有料配信の動画は保存できません。</p></div><div class="card"><h3>速くて控えめ</h3><p>大きなファイルは分割して速くダウンロード。サイトに負担をかけないよう接続数は少なめです。</p></div><div class="card"><h3>ポータブル</h3><p>展開してすぐ実行。設定はソフトのフォルダ内にだけ保存されます。</p></div></div></section>
 <section id="install"><h2>インストール</h2><ol><li>上のボタンから zip ファイルをダウンロードします。</li><li>zip ファイルを右クリック → プロパティ → <b>許可する</b>にチェック → OK。</li><li>好きな場所に展開し、フォルダ内の <b>.vbs</b> ファイルをダブルクリックします。</li></ol><p class="tip">Windows のセキュリティ（SmartScreen）が出たら<b>詳細情報</b> → <b>実行</b>。</p></section>
