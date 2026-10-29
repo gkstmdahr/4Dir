@@ -19,12 +19,18 @@ from ctypes import wintypes
 from PySide6 import QtCore, QtGui
 
 log = logging.getLogger("QE.ovl")
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 
 shell32 = ctypes.windll.shell32
 ole = ctypes.windll.ole32
 user32 = ctypes.windll.user32
 kernel = ctypes.windll.kernel32
+# 1.0.1 (v0.9.72): 인자 형식을 알려 줌 — 안 하면 64비트 아이콘 핸들이 32비트 숫자로 넘어가다 'int too long to convert' 로
+# 멈춰 그 파일 겹침 표시가 빠지고 아이콘도 안 지워졌음(10/29 로그 13번 실측)
+user32.DestroyIcon.argtypes = [wintypes.HICON]
+user32.DestroyIcon.restype = wintypes.BOOL
+shell32.SHGetFileInfoW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, ctypes.c_void_p, wintypes.UINT, wintypes.UINT]
+shell32.SHGetFileInfoW.restype = ctypes.c_size_t
 
 
 class _FI(ctypes.Structure):

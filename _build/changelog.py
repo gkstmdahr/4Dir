@@ -6,6 +6,18 @@
 ORDER = ["en", "ko", "zh-CN", "zh-TW", "ja", "es", "de", "fr", "pt-BR", "ru"]
 
 CHANGES = [
+("0.9.72", "2026-10-29", [
+    ("Fixed: version-control overlay icons (Git, Perforce and others) were sometimes missing on some files.",
+     "수정: 일부 파일에서 버전 관리 표시(Git·Perforce 등 겹침 아이콘)가 가끔 빠지던 문제.",
+     "修复：部分文件上的版本控制叠加图标（Git、Perforce 等）有时不显示的问题。",
+     "修正：部分檔案上的版本控制疊加圖示（Git、Perforce 等）有時不顯示的問題。",
+     "修正：一部のファイルでバージョン管理のオーバーレイアイコン（Git・Perforce など）がときどき表示されなかった問題。",
+     "Corregido: los iconos superpuestos de control de versiones (Git, Perforce y otros) a veces faltaban en algunos archivos.",
+     "Behoben: Overlay-Symbole der Versionsverwaltung (Git, Perforce u. a.) fehlten bei manchen Dateien gelegentlich.",
+     "Corrigé : les icônes de superposition du contrôle de version (Git, Perforce, etc.) manquaient parfois sur certains fichiers.",
+     "Corrigido: os ícones sobrepostos de controle de versão (Git, Perforce e outros) às vezes faltavam em alguns arquivos.",
+     "Исправлено: значки наложения систем контроля версий (Git, Perforce и др.) иногда не показывались у некоторых файлов."),
+]),
 ("0.9.71", "2026-10-29", [
     ("New: press <b>Ctrl+Alt+F</b> anywhere — even in another program — to bring up 4Dir with the search box ready. Change the key in Tools → Shortcuts.",
      "새 기능: 다른 프로그램을 쓰다가도 <b>Ctrl+Alt+F</b> 한 번이면 4Dir 가 앞으로 나오고 전체 검색칸에 바로 입력할 수 있습니다. 키는 도구 → 단축키 설정에서 바꿉니다.",

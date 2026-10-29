@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.71"
+QE_VERSION = "0.9.72"
 
 import os
 import sys
