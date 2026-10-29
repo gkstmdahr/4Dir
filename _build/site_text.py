@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 사이트 문구 (SITE_TEXT_VER 1.2.2 — 메인 fast 줄 + FAQ 속도 근거, 맨 아래 _FAST) — make_site.py 가 읽음.
+"""4Dir 사이트 문구 (SITE_TEXT_VER 1.3.0 — FAQ 회사 사용(맨 아래 _BIZ) · 메인 fast 줄 + FAQ 속도 근거, 맨 아래 _FAST) — make_site.py 가 읽음.
 키: 언어 폴더 이름(en 은 사이트 맨 위). {ver} {size} {date} 는 make_site 가 채움."""
 
 LANGS = ["en", "ko", "zh-CN", "zh-TW", "ja", "es", "de", "fr", "pt-BR", "ru"]
@@ -379,3 +379,20 @@ _FAST = {
 for _lg, (_fast, _q, _a) in _FAST.items():
     T[_lg]["fast"] = _fast
     T[_lg]["faq"] = T[_lg]["faq"][:1] + [(_q, _a)] + T[_lg]["faq"][1:]   # 속도 질문은 '무료' 다음
+
+
+# ---- 1.3.0 (10/29): FAQ '회사에서 써도 되나요?' (다른 앱 사용자 질문에서 — GPL-3.0 은 회사 사용 무료). '무료' 질문 바로 다음
+_BIZ = {
+    "en": ("Can I use it at work?", "Yes. 4Dir is GPL-3.0 free software, so companies can use it for free too, with no license fee or registration. Since it runs without installing, just check that your company allows portable apps."),
+    "ko": ("회사에서 써도 되나요?", "네. GPL-3.0 무료 소프트웨어라 회사에서도 비용·등록 없이 쓸 수 있습니다. 설치 없이 실행하는 프로그램이니, 회사 보안 규정에서 휴대용 프로그램을 허용하는지만 확인해 주세요."),
+    "zh-CN": ("可以在公司使用吗？", "可以。4Dir 是 GPL-3.0 免费软件，公司也可以免费使用，无需授权费或注册。它无需安装即可运行，请确认公司是否允许使用便携软件。"),
+    "zh-TW": ("可以在公司使用嗎？", "可以。4Dir 是 GPL-3.0 免費軟體，公司也能免費使用，不需授權費或註冊。它不需安裝即可執行，請確認公司是否允許使用免安裝軟體。"),
+    "ja": ("会社で使ってもいいですか？", "はい。4Dir は GPL-3.0 のフリーソフトなので、会社でも費用・登録なしで使えます。インストール不要のソフトなので、会社のセキュリティ規定でポータブルソフトが許可されているかだけ確認してください。"),
+    "es": ("¿Puedo usarlo en el trabajo?", "Sí. 4Dir es software libre GPL-3.0, así que las empresas también pueden usarlo gratis, sin licencias ni registro. Como funciona sin instalarse, solo comprueba que tu empresa permita programas portátiles."),
+    "de": ("Darf ich es in der Firma nutzen?", "Ja. 4Dir ist freie Software unter GPL-3.0 und auch für Firmen kostenlos, ohne Lizenzgebühr oder Registrierung. Da es ohne Installation läuft, prüfe nur, ob deine Firma portable Programme erlaubt."),
+    "fr": ("Puis-je l'utiliser au travail ?", "Oui. 4Dir est un logiciel libre sous GPL-3.0 : les entreprises peuvent aussi l'utiliser gratuitement, sans licence ni inscription. Comme il fonctionne sans installation, vérifiez simplement que votre entreprise autorise les logiciels portables."),
+    "pt-BR": ("Posso usar no trabalho?", "Sim. O 4Dir é software livre GPL-3.0, então empresas também podem usar de graça, sem licença nem cadastro. Como ele roda sem instalar, só confira se a sua empresa permite programas portáteis."),
+    "ru": ("Можно ли использовать на работе?", "Да. 4Dir — свободное ПО под GPL-3.0, поэтому компании тоже могут пользоваться им бесплатно, без лицензий и регистрации. Он работает без установки — проверьте только, разрешает ли ваша компания портативные программы."),
+}
+for _lg, _qa in _BIZ.items():
+    T[_lg]["faq"] = T[_lg]["faq"][:1] + [_qa] + T[_lg]["faq"][1:]

@@ -45,6 +45,8 @@ ACTIONS = [
     ("add_fav", T("현재 폴더를 즐겨찾기에 추가"), "Ctrl+D", "window"),
     ("toggle_chrome", T("메뉴·즐겨찾기 접기/펼치기"), "Ctrl+Shift+M", "window"),
     ("toggle_preview", T("미리보기 창 보이기/숨기기"), "Alt+P", "window"),   # 탐색기와 같은 키 (v0.9.58)
+    # v0.9.68: 다른 프로그램을 쓰다가도 이 키 하나로 4Dir 를 앞으로 불러 전체 검색칸에 바로 입력 (윈도우 전역 단축키 RegisterHotKey)
+    ("global_hotkey", T("4Dir 불러서 전체 검색 (다른 프로그램 쓰는 중에도)"), "Ctrl+Alt+F", "global"),
 ] + [(f"pane{i + 1}", T('{0}번 칸으로').format(i + 1), f"Ctrl+{i + 1}", "window") for i in range(6)]
 
 LABEL = {a: lbl for a, lbl, _, _ in ACTIONS}
@@ -102,7 +104,7 @@ class KeyDialog(QtWidgets.QDialog):
         km = current(custom)
         self.edits = {}
         for r, (a, lbl, _d, sc) in enumerate(ACTIONS):
-            it = QtWidgets.QTableWidgetItem(lbl + ("" if sc == "window" else T("  (파일 목록에서)")))
+            it = QtWidgets.QTableWidgetItem(lbl + {"window": "", "view": T("  (파일 목록에서)"), "global": T("  (어디서나)")}[sc])
             it.setFlags(Qt.ItemIsEnabled)
             self.tbl.setItem(r, 0, it)
             eds = []

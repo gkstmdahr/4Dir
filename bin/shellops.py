@@ -538,6 +538,28 @@ def open_terminal(folder):
     log.info("터미널 열기 %s (%s)", folder, "wt" if wt else "powershell")
 
 
+def open_console(kind, folder):
+    """주소창에 cmd / powershell / pwsh 입력 → 그 프로그램을 그 폴더에서 새 창으로 (윈도우 탐색기와 같음)"""
+    import shutil
+    sysd = os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "System32")
+    exe = {"cmd": os.path.join(sysd, "cmd.exe"),   # 지금 폴더의 같은 이름 exe 를 잡지 않게 시스템 경로로 (which 는 현재 폴더부터 찾음)
+           "powershell": os.path.join(sysd, "WindowsPowerShell", "v1.0", "powershell.exe")}.get(kind) \
+        or shutil.which(kind + ".exe", path=os.environ.get("PATH", ""))
+    if not exe or not os.path.isfile(exe):
+        log.warning("주소창 명령 %s: 실행 파일 없음", kind)
+        return False
+    args = [exe] if kind == "cmd" else [exe, "-NoExit"]
+    # 기본 터미널이 윈도우 터미널이면 4Dir(pythonw)에서 새 콘솔로 띄울 때 창이 안 생김(10/29 실측: 프로세스만 살고 창·conhost 없음)
+    # → wt 가 있으면 wt 로 띄움 (탐색기 주소창 cmd 도 윈도우 터미널에서 열림)
+    wt = shutil.which("wt.exe", path=os.environ.get("PATH", ""))
+    if wt:
+        subprocess.Popen([wt, "-d", folder.rstrip("\\") + "\\."] + args)   # 끝 \ 가 따옴표를 먹는 wt 문제 피함
+    else:
+        subprocess.Popen(args, cwd=folder, creationflags=0x00000010)   # CREATE_NEW_CONSOLE
+    log.info("주소창 명령 %s → %s 에서 실행 (%s)", kind, folder, "wt" if wt else "새 콘솔")
+    return True
+
+
 # ---------------------------------------------------------------- 우클릭 셸 메뉴 (ctypes COM 직접 호출)
 # pywin32 는 IContextMenu2/3 클라이언트가 없어(실측) '새로 만들기/보내기/연결 프로그램' 하위메뉴를 못 채움 → ctypes 로 vtable 직접 호출
 from ctypes import wintypes as _wt

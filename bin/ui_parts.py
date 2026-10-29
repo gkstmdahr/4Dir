@@ -184,6 +184,8 @@ QTabBar::tab:hover:!selected {{ background:{F['tab_hover']}; }}
 #topBar QToolButton:pressed, #paneHead QToolButton:pressed, #favPanel QToolButton:pressed {{
     background:{F['crumb_press']}; border:1px solid transparent; border-radius:4px; }}
 #crumbs {{ background:{F['pane_bg']}; border:1px solid {T['border']}; border-radius:2px; }}
+#gsearch {{ background:{F['pane_bg']}; border:1px solid {T['border']}; border-radius:3px; padding:2px 4px; }}
+#gsearch:focus {{ border:2px solid {T['accent']}; padding:1px 3px; }}   /* 검색칸에 커서 있으면 파란 테두리 (v0.9.70 사용자: 커서만으론 안 보임) */
 #crumbs QToolButton {{ padding:0 4px; border:none; border-radius:3px; background:transparent; }}
 #crumbs QToolButton:hover {{ background:{F['crumb_hover']}; }}   /* 윈도우 탐색기처럼 마우스 올리면 회색 */
 #crumbs QToolButton:pressed {{ background:{F['crumb_press']}; }}

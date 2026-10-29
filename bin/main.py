@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.67"
+QE_VERSION = "0.9.71"
 
 import os
 import sys
@@ -197,6 +197,26 @@ def open_link(url, what):
     QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
 
 
+# 새 버전 알림 '받으러 가기'가 열어도 되는 곳 (v0.9.68): version.json 은 바깥에서 받는 파일 → 사이트가 털려
+# page 가 file://…exe 나 다른 사이트로 바뀌어도 누르는 순간 PC 프로그램이 실행되지 않게 (10/29 사용자 승인)
+SAFE_PAGE_HOSTS = {"4dir.net": "/", "www.4dir.net": "/", "github.com": "/gkstmdahr/"}
+
+
+def safe_update_page(page):
+    """https + 우리 사이트·우리 깃허브 주소만 그대로, 그 밖은 SITE_URL 로 바꿔 열고 기록"""
+    from urllib.parse import urlsplit
+    try:
+        u = urlsplit(str(page or "").strip())
+        prefix = SAFE_PAGE_HOSTS.get((u.hostname or "").lower())
+        if u.scheme == "https" and prefix and (u.path or "/").startswith(prefix) and not u.username and not u.password \
+                and u.port in (None, 443):
+            return u.geturl()
+    except ValueError:
+        pass
+    log.warning("새 버전 알림: 허용 안 된 주소 %r → %s 를 대신 엶", page, SITE_URL)
+    return SITE_URL
+
+
 class _UpdateSig(QtCore.QObject):
     done = QtCore.Signal(object, object, bool)   # 결과 dict | None, 오류 글자 | None, 수동 여부
 
@@ -275,8 +295,9 @@ def show_update_notice(w, new, notes, page):
     """v0.9.63: 새 버전 알림 = 위쪽 알림 줄 (10/22 사용자 요청: 작업 중 팝업은 불편) — 작업을 막지 않고 누를 때까지 남음.
     받으러 가기 = 페이지 열기 / 이 버전 건너뛰기 = 그 버전은 자동 확인 때 다시 안 알림 / 알림 글자(✕) 누름 = 나중에(다음 날 다시)"""
     def get():
-        log.info("새 버전 알림: 받으러 가기 v%s %s", new, page)
-        QtGui.QDesktopServices.openUrl(QtCore.QUrl(page))
+        url = safe_update_page(page)
+        log.info("새 버전 알림: 받으러 가기 v%s %s", new, url)
+        QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
 
     def skip():
         log.info("새 버전 알림: v%s 건너뛰기", new)
@@ -1881,6 +1902,14 @@ class Page(QtWidgets.QWidget):
             self.model_.sort(self.model_.sort_col, self.model_.sort_order)   # 폴더 아래 찾기: 다 모은 뒤 정렬
         else:
             self.model_.set_entries(path, entries)
+            if is_search(path) and not entries and not err:
+                # 빠른 검색 0개: 네트워크·구글드라이브 등은 처음엔 검색 범위 밖이라 '고장'처럼 보임 → 이유와 범위 설정 안내 (v0.9.68, 10/29)
+                main = main_of(self)
+                log.info("전체 검색 0개 '%s' → 범위 안내", parse_search(path)[0])
+                if main is not None:
+                    main.show_notice(T("'{0}' 을(를) 찾지 못했습니다. 네트워크·구글드라이브 같은 곳은 처음엔 검색 범위에 없습니다  ✕")
+                                     .format(parse_search(path)[0]), sticky=False, ms=12000,
+                                     action=(T("검색 범위 설정…"), main.open_search_roots))
         names = {e[0]: i for i, e in enumerate(self.model_.rows)}
         v, sm = self.view(), self.sel
         if self.pending_edit and self.pending_edit in names:
@@ -3654,6 +3683,15 @@ class Pane(QtWidgets.QFrame):
         v = self.view()
         if not v:
             return
+        cmd = t.lower()
+        if cmd.endswith(".exe"):
+            cmd = cmd[:-4]
+        if cmd in ("cmd", "powershell", "pwsh") and not os.path.exists(t):   # 탐색기처럼 주소창에 cmd → 지금 폴더에서 (v0.9.70)
+            here = v.path if os.path.isdir(v.path) else os.path.expanduser("~")
+            shellops.open_console(cmd, here)
+            self.addr.setText(disp_path(v.path))
+            self._crumb_back()
+            return
         if not t or t in (THIS_PC, T(THIS_PC)):
             v.navigate(THIS_PC)
         elif os.path.isfile(t):
@@ -4686,6 +4724,8 @@ class Main(QtWidgets.QMainWindow):
         log.info("전체 검색 '%s' (칸 %d)", q, pane.idx + 1)
 
     def focus_global_search(self):
+        if not self.searchbar.isVisible():   # 메뉴줄을 접어 둔 상태면 펼쳐야 검색칸에 커서가 들어감
+            self.set_chrome_collapsed(False)
         self.gsearch.setFocus()
         self.gsearch.selectAll()
 
@@ -4828,7 +4868,13 @@ class Main(QtWidgets.QMainWindow):
         self.notice_act2.clicked.connect(self._notice_act2_clicked)
         self._notice_fn2 = None
         self._notice_fn = None
-        tb.addSeparator()
+        # 전체 검색칸부터 끝까지는 따로 된 줄(같은 높이 오른쪽) — 창이 좁아도 검색칸이 '»' 안으로 숨지 않게 (v0.9.70: Ctrl+Alt+F 로 불러도 커서를 못 넣던 문제)
+        tb = QtWidgets.QToolBar(T("전체 검색"))
+        tb.setObjectName("topBar")
+        tb.setMovable(False)
+        tb.setIconSize(QtCore.QSize(22, 18))
+        self.addToolBar(tb)
+        self.searchbar = tb
         self.gsearch = QtWidgets.QLineEdit()
         self.gsearch.setObjectName("gsearch")
         self.gsearch.setPlaceholderText(T("🔎 전체 검색 (Ctrl+Shift+F)"))
@@ -5052,6 +5098,7 @@ class Main(QtWidgets.QMainWindow):
             SETTINGS["keys"] = dlg.result_keys
             for w in WINDOWS or [self]:
                 w.apply_keys()
+            hotkey_register()   # 어디서나 단축키도 새 키로
             self.show_notice(T("단축키를 저장했습니다  ✕"), ms=1000)
 
     def toggle_breadcrumb(self):
@@ -5283,6 +5330,7 @@ class Main(QtWidgets.QMainWindow):
     def set_chrome_collapsed(self, on, save=True):
         """상단 메뉴줄 + 즐겨찾기 바 접기 → 칸 위에 얇은 줄 하나만 (누르거나 Ctrl+Shift+M 으로 다시 펼침)"""
         self.topbar.setVisible(not on)
+        self.searchbar.setVisible(not on)
         self.favbar.setVisible(not on)
         self.chrome_strip.setVisible(on)
         if save:
@@ -5960,6 +6008,8 @@ eports.
             FAV.listeners.remove(self.favbar.rebuild)
         if self in WINDOWS:
             WINDOWS.remove(self)
+        if HOTKEY["hwnd"] == int(self.winId()):   # 어디서나 단축키를 받던 창 → 남은 창으로 옮김 (마지막 창이면 해제)
+            hotkey_register()
         if last:   # 마지막 창 → 프로그램 전체 정리 (색인·SVN 감시)
             for tw in QtWidgets.QApplication.topLevelWidgets():   # 이름 일괄 변경·사용법 창도 같이 (남은 프로세스 없게)
                 if tw.__class__.__name__ in ("BatchRename", "GuideWindow", "FavOrganizer", "OverlayOrder") and tw.isVisible():
@@ -5982,6 +6032,9 @@ eports.
                 on_session_end()
             elif m == 0x0016 and not ctypes.wintypes.MSG.from_address(int(message)).wParam:   # WM_ENDSESSION(FALSE) = 취소됨
                 on_session_end_cancelled()
+            elif m == WM_HOTKEY and ctypes.wintypes.MSG.from_address(int(message)).wParam == HOTKEY["id"]:
+                QtCore.QTimer.singleShot(0, on_hotkey)
+                return True, 0
         except Exception:
             log.exception("종료 알림 처리 실패")
         if shellops.ShellMenu.current is not None:
@@ -5994,6 +6047,70 @@ eports.
             except Exception:
                 log.exception("메뉴 메시지 전달 실패")
         return super().nativeEvent(et, message)
+
+
+# ---------------------------------------------------------------- 어디서나 단축키 (v0.9.68, 10/29 사용자: Everything 처럼 키 하나로 불러 검색)
+HOTKEY = {"hwnd": 0, "id": 0x4D31, "key": ""}
+WM_HOTKEY = 0x0312
+_HK_MODS = {Qt.ControlModifier: 0x2, Qt.AltModifier: 0x1, Qt.ShiftModifier: 0x4, Qt.MetaModifier: 0x8}
+
+
+def _hotkey_vk(seq):
+    """'Ctrl+Alt+F' → (MOD_*, VK). 글자·숫자·F1~F24·Space 만 (그 밖은 None)"""
+    ks = QtGui.QKeySequence(seq)
+    if ks.isEmpty():
+        return None
+    kc = ks[0]
+    key, mods = kc.key(), kc.keyboardModifiers()
+    m = 0
+    for q, w_ in _HK_MODS.items():
+        if mods & q:
+            m |= w_
+    k = int(key.value if hasattr(key, "value") else key)
+    if Qt.Key_A.value <= k <= Qt.Key_Z.value or Qt.Key_0.value <= k <= Qt.Key_9.value:
+        vk = k
+    elif Qt.Key_F1.value <= k <= Qt.Key_F24.value:
+        vk = 0x70 + (k - Qt.Key_F1.value)
+    elif k == Qt.Key_Space.value:
+        vk = 0x20
+    else:
+        return None
+    return (m, vk) if m else None   # 조합키 없는 전역 단축키는 다른 프로그램 입력을 가로채므로 안 받음
+
+
+def hotkey_register():
+    """보이는 첫 창에 전역 단축키 등록 (창이 닫히거나 키를 바꾸면 다시). 실패(다른 프로그램이 이미 씀)는 기록만"""
+    u = ctypes.windll.user32
+    if HOTKEY["hwnd"]:
+        u.UnregisterHotKey(ctypes.c_void_p(HOTKEY["hwnd"]), HOTKEY["id"])
+        HOTKEY["hwnd"] = 0
+    keys = keymap.current(SETTINGS["keys"]).get("global_hotkey") or []
+    w = next((x for x in WINDOWS if x.isVisible()), None)
+    if not keys or w is None:
+        HOTKEY["key"] = ""
+        log.info("어디서나 단축키 없음 (키 %s, 창 %s)", keys, bool(w))
+        return False
+    mv = _hotkey_vk(keys[0])
+    if mv is None:
+        log.warning("어디서나 단축키 %s 는 쓸 수 없는 조합 (Ctrl/Alt/Shift/Win + 글자·숫자·F키·Space)", keys[0])
+        return False
+    hwnd = int(w.winId())
+    ok = bool(u.RegisterHotKey(ctypes.c_void_p(hwnd), HOTKEY["id"], mv[0] | 0x4000, mv[1]))   # 0x4000 = MOD_NOREPEAT
+    if ok:
+        HOTKEY.update(hwnd=hwnd, key=keys[0])
+    log.info("어디서나 단축키 %s 등록 %s%s", keys[0], "성공" if ok else "실패",
+             "" if ok else f" (다른 프로그램이 이미 쓰는 중, 오류 {ctypes.GetLastError()})")
+    return ok
+
+
+def on_hotkey():
+    """마지막에 쓴 창을 앞으로 + 전체 검색칸 (글자 전체 선택 → 바로 입력)"""
+    w = WINDOWS[-1] if WINDOWS else None
+    if w is None:
+        return
+    log.info("어디서나 단축키 → 창 앞으로 + 전체 검색칸")
+    w.bring_front()
+    w.focus_global_search()
 
 
 # ---------------------------------------------------------------- 윈도우 종료·재부팅 (10/12 사용자: 켜 둔 채 재부팅하면 다시 열려야 함)
@@ -6110,6 +6227,7 @@ def main():
     w = Main(crashed=crashed)
     w.show()
     w.start_single_server()   # 먼저 뜬 창이 이름을 차지 → 다음 실행(창 하나만 모드)이 이 창을 앞으로 부름
+    hotkey_register()         # 어디서나 단축키 (v0.9.68)
     if arg_path:
         w.pane().add_tab(arg_path)
     for ws in getattr(w, "pending_windows", []):   # 지난번 한꺼번에 닫힌 창들도 그대로 다시

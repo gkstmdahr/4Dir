@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 공개 사이트 만들기 (MAKE_SITE_VER 1.5.6)
+"""4Dir 공개 사이트 만들기 (MAKE_SITE_VER 1.5.7 — FAQ 5개)
 
 python make_site.py [출력 폴더]   (기본: 4Dir\\_site\\out)
 - 문구: site_text.py (10개 언어), 버전별 바뀐 점: changelog.py (1.2.0 — 메인 '바뀐 점' + versions.html 지난 버전 받기), 설정: site_config.json (깃허브 계정·후원 주소)
@@ -22,7 +22,7 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.5.6"
+MAKE_SITE_VER = "1.5.7"
 SUPPORT = "support@4dir.net"   # 문제 보고 메일 (1.1.1)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -366,7 +366,7 @@ def main():
     for lang in ST.LANGS:
         t = ST.T[lang]
         assert set(t) == set(ST.T["en"]), (lang, set(ST.T["en"]) ^ set(t))
-        assert len(t["feats"]) == 6 and len(t["how"]) == 3 and len(t["faq"]) == 4, lang
+        assert len(t["feats"]) == 6 and len(t["how"]) == 3 and len(t["faq"]) == 5, lang
         d = OUT if lang == "en" else os.path.join(OUT, lang)
         os.makedirs(d, exist_ok=True)
         with open(os.path.join(d, "index.html"), "w", encoding="utf-8", newline="\n") as f:

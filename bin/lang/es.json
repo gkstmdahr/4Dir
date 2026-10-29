@@ -601,5 +601,8 @@
  " · 실패 {0}개: {1}": " · {0} con error: {1}",
  "PNG로 저장": "Guardar como PNG",
  "JPG로 저장": "Guardar como JPG",
- "WebP 변환": "Convertir WebP"
+ "WebP 변환": "Convertir WebP",
+ "'{0}' 을(를) 찾지 못했습니다. 네트워크·구글드라이브 같은 곳은 처음엔 검색 범위에 없습니다  ✕": "No se encontró '{0}'. Las unidades de red, Google Drive y similares no están en el ámbito de búsqueda al principio  ✕",
+ "4Dir 불러서 전체 검색 (다른 프로그램 쓰는 중에도)": "Traer 4Dir y buscar (incluso usando otro programa)",
+ "  (어디서나)": "  (en cualquier lugar)"
 }
