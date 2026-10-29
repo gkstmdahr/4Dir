@@ -11,7 +11,7 @@ python make_site.py [출력 폴더]   (기본: 4Dir\\_site\\out)
 - 1.5.4: 폰 폭에서 머리줄이 넘쳐 가로 스크롤 생김 → 두 줄로 내려가게, 언어 글자 숨김(선택 상자만)
 - 1.5.3: 위쪽 머리줄 사용법 버튼 옆에 just downloader 버튼(같은 언어의 /just-downloader/<언어>/ 로) — 메인·사용법·지난 버전 페이지 모두
 - 1.4.0: 사용법 페이지 <언어>/guide.html (문구 guide_text.py, 그림 bin/guide/<앱언어>/p1..p6.png → img/guide/<앱언어>/). 문구 없는 언어는 페이지·링크 없음
-- 바깥 스크립트·글꼴·추적 코드 없음(사이트 하나로 끝). 광고 없음.
+- 바깥 글꼴·광고 없음. 방문 통계만 클라우드플레어 웹 분석(쿠키 없음, 개인 정보 안 남김 — site_config 의 cf_beacon, 1.6.0 10/29 사용자 요청: 광고 판단용 접속량).
 로그: _build\\make_site_log.txt
 """
 import os
@@ -22,7 +22,7 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.5.7"
+MAKE_SITE_VER = "1.6.0"
 SUPPORT = "support@4dir.net"   # 문제 보고 메일 (1.1.1)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -241,6 +241,16 @@ def guide_img_lang(lang):
     raise SystemExit("사용법 그림 없음 — make_guide.py 먼저")
 
 
+def _beacon(html_, cfg):
+    """방문 통계 (1.6.0): 클라우드플레어 웹 분석 코드를 </body> 앞에. 쿠키 없음. cf_beacon 없으면 그대로"""
+    tok = (cfg.get("cf_beacon") or "").strip()
+    if not tok or "</body>" not in html_:
+        return html_
+    tag = ("<script defer src='https://static.cloudflareinsights.com/beacon.min.js' "
+           f"data-cf-beacon='{{\"token\": \"{tok}\"}}'></script>")
+    return html_.replace("</body>", tag + chr(10) + "</body>", 1)
+
+
 def versions_page(lang, cfg, rel):
     """지난 버전 받기 + 버전별 바뀐 점 (1.2.0). 받기 = 깃허브 릴리스의 각 버전 zip"""
     t = ST.T[lang]
@@ -370,14 +380,14 @@ def main():
         d = OUT if lang == "en" else os.path.join(OUT, lang)
         os.makedirs(d, exist_ok=True)
         with open(os.path.join(d, "index.html"), "w", encoding="utf-8", newline="\n") as f:
-            f.write(page(lang, cfg, rel))
+            f.write(_beacon(page(lang, cfg, rel), cfg))
         with open(os.path.join(d, "versions.html"), "w", encoding="utf-8", newline="\n") as f:
-            f.write(versions_page(lang, cfg, rel))
+            f.write(_beacon(versions_page(lang, cfg, rel), cfg))
         if lang in GT.GUIDE:   # 1.4.0 사용법
             g = GT.GUIDE[lang]
             assert set(g) == set(GT.GUIDE["ko"]), (lang, set(GT.GUIDE["ko"]) ^ set(g))
             with open(os.path.join(d, "guide.html"), "w", encoding="utf-8", newline="\n") as f:
-                f.write(guide_page(lang, cfg, rel))
+                f.write(_beacon(guide_page(lang, cfg, rel), cfg))
             src = os.path.join(ROOT, "bin", "guide", guide_img_lang(lang))
             dst = os.path.join(OUT, "img", "guide", guide_img_lang(lang))
             if not os.path.isdir(dst):
