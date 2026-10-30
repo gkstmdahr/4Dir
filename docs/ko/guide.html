@@ -22,7 +22,7 @@
 <body>
 <header class="top"><div class="wrap">
 <a class="logo" href="./"><img src="../icon.png" alt="" width="28" height="28">4Dir</a>
-<a class="nav app first" href="../just-downloader/ko/">📱 just downloader</a><label class="lang">언어 <select onchange="try{localStorage.setItem('4dir-lang',1)}catch(e){};location.href=this.value"><option value="../guide.html">English</option><option value="../ko/guide.html" selected>한국어</option><option value="../zh-CN/guide.html">简体中文</option><option value="../zh-TW/guide.html">繁體中文</option><option value="../ja/guide.html">日本語</option><option value="../es/guide.html">Español</option><option value="../de/guide.html">Deutsch</option><option value="../fr/guide.html">Français</option><option value="../pt-BR/guide.html">Português (Brasil)</option><option value="../ru/guide.html">Русский</option></select></label>
+<a class="nav app first" href="../just-downloader/ko/">📱 just downloader</a><a class="nav board" href="https://github.com/gkstmdahr/4Dir/discussions">💬 게시판</a><label class="lang">언어 <select onchange="try{localStorage.setItem('4dir-lang',1)}catch(e){};location.href=this.value"><option value="../guide.html">English</option><option value="../ko/guide.html" selected>한국어</option><option value="../zh-CN/guide.html">简体中文</option><option value="../zh-TW/guide.html">繁體中文</option><option value="../ja/guide.html">日本語</option><option value="../es/guide.html">Español</option><option value="../de/guide.html">Deutsch</option><option value="../fr/guide.html">Français</option><option value="../pt-BR/guide.html">Português (Brasil)</option><option value="../ru/guide.html">Русский</option></select></label>
 </div></header>
 <div class="gwrap">
 <aside class="side"><nav><b>목차</b><ol><li><a href="#screen">화면 둘러보기</a></li><li><a href="#panes">칸과 탭 쓰기</a></li><li><a href="#tabmenu">탭 우클릭 메뉴</a></li><li><a href="#files">파일 옮기기·복사</a></li><li><a href="#fav">즐겨찾기</a></li><li><a href="#search">찾기</a></li><li><a href="#menus">위쪽 메뉴 한눈에</a></li><li><a href="#svn">SVN 쓰는 분이라면</a></li><li><a href="#keys">단축키 바꾸기</a></li><li><a href="#monitor">CPU·GPU 사용량 보기</a></li><li><a href="#check">탐색기 점검 (Explorer Check)</a></li><li><a href="#etc">그 밖에</a></li></ol></nav></aside>
@@ -39,7 +39,7 @@
 var io=new IntersectionObserver(function(es){es.forEach(function(x){if(x.isIntersecting){L.forEach(function(a){a.classList.remove('on')});var a=m[x.target.id];a&&a.classList.add('on')}})},{rootMargin:'-20% 0px -70% 0px'});
 document.querySelectorAll('section.gs').forEach(function(s){io.observe(s)})}catch(e){}})();</script>
 <footer><div class="wrap">
-<a href="https://github.com/gkstmdahr/4Dir">소스 코드</a> · <a href="https://github.com/gkstmdahr/4Dir/issues">문제 보고</a> · <a href="mailto:support@4dir.net">support@4dir.net</a>
+<a href="https://github.com/gkstmdahr/4Dir">소스 코드</a> · <a href="https://github.com/gkstmdahr/4Dir/issues">문제 보고</a> · <a href="mailto:support@4dir.net">support@4dir.net</a> · <a href="../code-signing.html">Code signing policy</a>
 <p>GPL-3.0 무료 소프트웨어. Windows 는 Microsoft 의 상표입니다.</p>
 </div></footer>
 <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "f27a6860fa474599b9edc51f5f12448f"}'></script>

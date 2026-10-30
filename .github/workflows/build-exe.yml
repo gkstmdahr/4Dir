@@ -1,0 +1,24 @@
+name: Build 4Dir.exe
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Build launcher (Windows built-in .NET Framework csc.exe)
+        run: python -X utf8 _build/make_launcher.py out
+      - name: Show file version
+        shell: pwsh
+        run: (Get-Item out/4Dir.exe).VersionInfo | Format-List ProductName,ProductVersion,FileVersion
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 4Dir-exe
+          path: out/4Dir.exe

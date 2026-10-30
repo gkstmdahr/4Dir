@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-"""4Dir 배포판 자동 생성 (MAKE_VER 1.5.0)
+"""4Dir 배포판 자동 생성 (MAKE_VER 1.6.0)
 
 결과: <4Dir>\\_release\\4Dir_v<버전>\\  +  4Dir_v<버전>.zip
 구성:
   4Dir.vbs        실행기 (runtime\\pythonw.exe 사용)
   사용법.txt
+  お読みください.txt     일본어 설명서 (1.6.0)
   bin\\                   프로그램 (*.pyc 컴파일본만 — 원본 .py 는 넣지 않음, 탐색기 점검.vbs) — 개인 파일(상태·즐겨찾기·세션·로그·설정·백업) 제외
   licenses\\              함께 들어가는 파이썬·PySide6(Qt)·pywin32 라이선스 문서
 _release 에 함께 생기는 것: 4Dir_v<버전>.zip.sha256.txt (정품 확인용 지문), 웹게시_안내_v<버전>.txt
@@ -23,7 +24,7 @@ import urllib.request
 import site
 import subprocess
 
-MAKE_VER = "1.5.0"   # 1.5.0: qwebp·qjpeg 포함, imgconvert 가져오기 확인 / 1.4.1: 프로그램 안 사용법 그림은 ko·en p1~p6 만 / 1.4.0: qgif.dll(GIF 재생) 포함 / 1.3.0: 회사 글자 목록 별도 파일(corp_words.txt, 비공개), 4Dir 본체 GPL-3.0 라이선스 포함, 패키지 정보 없을 때 버전·pywin32 라이선스 대체 / 1.2.5: 소스 백업에 _dev(시험·번역) 포함 / 1.2.4: overlays·overlayorder 가져오기 확인 / 1.2.3: thumbs 가져오기 확인 / 1.2.2: 사용법에 즐겨찾기 정리·탭 끌기·일괄 변경 / 1.2.1: favorg 가져오기 확인 / 1.2.0: 이전 배포판은 _release\백업\배포판 으로 옮김(최근 10개), 버전마다 소스 백업 _release\백업\소스 / 1.1.5: 사용법 그림(bin\guide, 사용법 그림\ko·en) / 1.1.4: batchrename 가져오기 확인 / 1.1.3: 회사 관련 글자 검사(있으면 배포 중단) / 1.1.1: 언어 파일(bin\lang) 포함·영어 안내 / 1.1.0: .pyc 배포, SHA256 지문 파일, 라이선스 문서, 사용법(차단 해제 안내) 갱신
+MAKE_VER = "1.6.0"   # 1.6.0: 일본어 설명서 お読みください.txt (Vector 掲載基準) / 1.5.0: qwebp·qjpeg 포함, imgconvert 가져오기 확인 / 1.4.1: 프로그램 안 사용법 그림은 ko·en p1~p6 만 / 1.4.0: qgif.dll(GIF 재생) 포함 / 1.3.0: 회사 글자 목록 별도 파일(corp_words.txt, 비공개), 4Dir 본체 GPL-3.0 라이선스 포함, 패키지 정보 없을 때 버전·pywin32 라이선스 대체 / 1.2.5: 소스 백업에 _dev(시험·번역) 포함 / 1.2.4: overlays·overlayorder 가져오기 확인 / 1.2.3: thumbs 가져오기 확인 / 1.2.2: 사용법에 즐겨찾기 정리·탭 끌기·일괄 변경 / 1.2.1: favorg 가져오기 확인 / 1.2.0: 이전 배포판은 _release\백업\배포판 으로 옮김(최근 10개), 버전마다 소스 백업 _release\백업\소스 / 1.1.5: 사용법 그림(bin\guide, 사용법 그림\ko·en) / 1.1.4: batchrename 가져오기 확인 / 1.1.3: 회사 관련 글자 검사(있으면 배포 중단) / 1.1.1: 언어 파일(bin\lang) 포함·영어 안내 / 1.1.0: .pyc 배포, SHA256 지문 파일, 라이선스 문서, 사용법(차단 해제 안내) 갱신
 # PySide6·Qt 라이선스 원문 (LGPLv3 는 GPLv3 를 참조). gnu.org 는 이 네트워크에서 응답 없음(10/2 실측) → SPDX 공식 원문 저장소
 LICENSE_URLS = {"LGPL-3.0.txt": "https://raw.githubusercontent.com/spdx/license-list-data/main/text/LGPL-3.0-only.txt",
                 "GPL-3.0.txt": "https://raw.githubusercontent.com/spdx/license-list-data/main/text/GPL-3.0-only.txt"}
@@ -296,6 +297,8 @@ def main():
         raise SystemExit(f"개인 파일이 섞였습니다: {leaked}")
     with open(os.path.join(out, "사용법.txt"), "w", encoding="utf-8-sig") as f:
         f.write(USAGE.format(ver=ver))
+    with open(os.path.join(out, "お読みください.txt"), "w", encoding="utf-8-sig") as f:
+        f.write(USAGE_JA.format(ver=ver))
     # 사용법 그림 (설명까지 한 장 — 웹 게시용): bin/guide/<언어>/full_pN.png → 사용법 그림/<언어>/사용법_N.png
     gdir = os.path.join(BIN, "guide")
     nimg = 0
@@ -440,6 +443,64 @@ USAGE = """4Dir v{ver} — 여러 칸 분할(최대 20칸) + 탭 파일 관리�
 
 [라이선스]
   함께 들어 있는 파이썬·PySide6(Qt)·pywin32 의 라이선스는 licenses 폴더에 있습니다.
+"""
+
+# 1.6.0: 일본어 설명서 — Vector 掲載基準(概要·連絡先·取り扱い種別·動作環境·インストール/アンインストール·外部通信の明記)을 채움
+USAGE_JA = """4Dir v{ver} — 最大20分割・各ペインにタブを持つファイラー
+
+■概要
+1つのウィンドウを最大20ペイン(5×4)まで分割でき、どのペインにも独立したタブがあるファイラーです。
+3ds Max などの重いアプリの横で使っても軽く動くように作りました。
+- 1・2・3・4・6分割はボタン1つ、格子ボタンで横×縦を自由に指定
+- 自前の索引による、入力と同時のファイル名検索(管理者権限不要)
+- 画像・PSD・3ds Max ファイルのサムネイル、プレビューウィンドウ、動く GIF の再生
+- Windows の右クリックメニューをそのまま使用。ZIP/7z/TAR 圧縮、WebP → PNG/JPG 変換
+- SVN の状態表示、エクスプローラーとのドラッグ&ドロップ、一括リネーム、セッション復元
+- Ctrl+Alt+F でどのアプリからでも全体検索
+- ライト/ダーク表示、10言語(日本語を含む)
+
+■取り扱い種別
+フリーソフト(オープンソース、GNU GPL v3)。広告なし、アカウント不要。
+
+■動作環境
+Windows 10 / 11(64ビット)。Python は同梱しているため、別途必要なソフトはありません。
+
+■インストール
+1. 展開する前に、ダウンロードした zip を右クリック > プロパティ > 下の「許可する」にチェック > OK。
+   (これをしないと 4Dir.vbs を実行するたびに Windows のセキュリティ警告が出ます)
+2. このフォルダーを好きな場所(例: D:\\Tools\\4Dir)にフォルダーごとコピーします。
+   (ネットワークドライブ上で直接実行せず、自分の PC にコピーして使ってください)
+3. 4Dir.vbs をダブルクリックすると起動します。
+4. 表示言語: 表示 > 言語(初期値は Windows の表示言語。再起動で反映)
+
+■アンインストール
+このフォルダーをフォルダーごと削除すれば完了です。レジストリやシステムには何も残しません。
+(「プログラムの追加と削除」には表示されません)
+
+■主な操作
+- Ctrl+T 新しいタブ、Ctrl+W タブを閉じる、Ctrl+Shift+T 閉じたタブを開き直す
+- Ctrl+Shift+F 全体検索(初回のみ索引作成に数分)、検索範囲は ツール > 検索範囲
+- Ctrl+F 現在のフォルダーで名前を絞り込み、F2(複数選択時) 一括で名前を変更
+- F6 隣のペインへコピー、Shift+F6 移動、Ctrl+D お気に入りに追加
+- タブをほかのペインへドラッグで移動、ウィンドウの外へドラッグで新しいウィンドウ
+- 詳しい使い方(画像付き): https://4dir.net/ja/guide.html
+
+■外部への通信について(誤検出の可能性)
+- 起動時に1日1回、新しいバージョンがあるかを確認します(4dir.net のバージョン情報ファイルを読むだけ)。
+  ツール > 「起動時に新しいバージョンを確認（1日1回）」でオフにできます。個人情報は送信しません。
+- まだコード署名がないため、初回に SmartScreen が表示されることがあります。
+- 実行には同梱の Python(python.org 公式の署名付き配布物)を使い、exe は新たに作っていません。
+
+■連絡先
+作者: gkstmdahr
+メール: support@4dir.net
+紹介ページ: https://4dir.net/ja/
+ソースコード: https://github.com/gkstmdahr/4Dir
+問題が起きたら: ツール > 問題報告用ログを保存 → 4Dir フォルダー内 reports にできた zip を送ってください。
+
+■同梱しているほかの著作物
+Python(PSF License)、PySide6 / Qt 6(GNU LGPL v3)、pywin32(PSF License)。
+いずれも使用が許可されているもので、ライセンス文書は licenses フォルダーにあります。
 """
 
 LICENSE_NOTE = """4Dir 에 함께 들어 있는 구성 요소와 라이선스

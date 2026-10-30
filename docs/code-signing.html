@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4Dir - Code signing policy</title>
+<meta name="description" content="How 4Dir release files are built and signed, who approves them, and what data 4Dir sends.">
+<link rel="canonical" href="https://4dir.net/code-signing.html">
+<link rel="icon" href="icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+<a class="logo" href="./"><img src="icon.png" alt="" width="28" height="28">4Dir</a>
+</div></header>
+<main class="wrap">
+<p><a href="./">Home</a></p>
+<section><h1>Code signing policy</h1>
+<p>Free code signing provided by <a href="https://signpath.io">SignPath.io</a>, certificate by <a href="https://signpath.org">SignPath Foundation</a>.</p>
+<p class="tip">Status: applying to SignPath Foundation. Until it is approved, release files are <b>not</b> signed by this program —
+check the SHA256 fingerprint shown on the download page instead.</p>
+<h2>What is signed</h2>
+<ul>
+<li><code>4Dir.exe</code> — the small starter program in the release zip. It only starts the bundled Python with 4Dir's program files
+(the same job as <code>4Dir.vbs</code>). Source: <a href="https://github.com/gkstmdahr/4Dir/blob/main/launcher/4Dir_launcher.cs">launcher/4Dir_launcher.cs</a>.</li>
+<li>It is built by GitHub Actions directly from the public source code (<a href="https://github.com/gkstmdahr/4Dir/actions">build logs</a>,
+workflow <a href="https://github.com/gkstmdahr/4Dir/blob/main/.github/workflows/build-exe.yml">build-exe.yml</a>). Files built on a personal PC are never signed.</li>
+<li>The bundled Python runtime (<code>python.exe</code>, <code>pythonw.exe</code>) is the official build, already signed by the Python Software Foundation.
+Third-party components keep their own licenses (see the <code>licenses</code> folder in the zip).</li>
+</ul>
+<h2>Team roles</h2>
+<ul>
+<li>Committers and reviewers: <a href="https://github.com/gkstmdahr">gkstmdahr</a></li>
+<li>Approvers: <a href="https://github.com/gkstmdahr">gkstmdahr</a> — every signing request is approved by hand, one release at a time.</li>
+</ul>
+<p>All accounts used for the source code, builds and signing use multi-factor authentication.</p>
+<h2 id="privacy">Privacy policy</h2>
+<p>This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.</p>
+<p>The only network access is the new-version check: once a day 4Dir reads <code>https://4dir.net/version.json</code> (a small public file; nothing about you or your files is sent).
+Turn it off in <b>Tools &gt; Check for new version at startup (once a day)</b>. There is no telemetry, no ads and no account.</p>
+</section>
+</main>
+<footer><div class="wrap">
+<a href="https://github.com/gkstmdahr/4Dir">Source code</a> · <a href="https://github.com/gkstmdahr/4Dir/issues">Issues</a> · <a href="mailto:support@4dir.net">support@4dir.net</a>
+</div></footer>
+<script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "f27a6860fa474599b9edc51f5f12448f"}'></script>
+</body>
+</html>

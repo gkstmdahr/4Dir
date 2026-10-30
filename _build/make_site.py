@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 공개 사이트 만들기 (MAKE_SITE_VER 1.5.7 — FAQ 5개)
+"""4Dir 공개 사이트 만들기 (MAKE_SITE_VER 1.8.0 — 머리줄 게시판 버튼)
 
 python make_site.py [출력 폴더]   (기본: 4Dir\\_site\\out)
 - 문구: site_text.py (10개 언어), 버전별 바뀐 점: changelog.py (1.2.0 — 메인 '바뀐 점' + versions.html 지난 버전 받기), 설정: site_config.json (깃허브 계정·후원 주소)
@@ -7,6 +7,8 @@ python make_site.py [출력 폴더]   (기본: 4Dir\\_site\\out)
 - 결과: index.html(영어) + <언어>\\index.html, style.css, img\\, icon.png, version.json(앱 새 버전 알림),
         robots.txt, sitemap.xml, .nojekyll  → 깃허브 무료 페이지(docs 폴더)에 그대로 올림
 - 1.3.0: _site\apps\<이름>\ 의 다른 앱 페이지를 /<이름>/ 로 복사(just-downloader)
+- 1.8.0: 머리줄에 💬 게시판 버튼(10개 언어) → 깃허브 토론 게시판 github.com/gkstmdahr/4Dir/discussions (사용자 10/30)
+- 1.7.0: code-signing.html (영어 한 장: 서명 정책·역할·개인 정보 — SignPath 신청 조건) + 모든 페이지 바닥글에 링크
 - 1.5.5: 순서 바꿈 — just downloader 는 로고 바로 옆(왼쪽 정렬), 사용법은 오른쪽 언어 선택 옆 (사용자 지시)
 - 1.5.4: 폰 폭에서 머리줄이 넘쳐 가로 스크롤 생김 → 두 줄로 내려가게, 언어 글자 숨김(선택 상자만)
 - 1.5.3: 위쪽 머리줄 사용법 버튼 옆에 just downloader 버튼(같은 언어의 /just-downloader/<언어>/ 로) — 메인·사용법·지난 버전 페이지 모두
@@ -22,7 +24,7 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.6.0"
+MAKE_SITE_VER = "1.8.0"
 SUPPORT = "support@4dir.net"   # 문제 보고 메일 (1.1.1)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -126,7 +128,7 @@ def page(lang, cfg, rel):
 <body>
 <header class="top"><div class="wrap">
 <a class="logo" href="{up}"><img src="{up}icon.png" alt="" width="28" height="28">4Dir</a>
-{app_nav(lang, up)}{guide_nav(lang)}<label class="lang">{e(t["lang"])} <select onchange="try{{localStorage.setItem('4dir-lang',1)}}catch(e){{}};location.href=this.value">{opts}</select></label>
+{app_nav(lang, up)}{guide_nav(lang)}{board_nav(lang)}<label class="lang">{e(t["lang"])} <select onchange="try{{localStorage.setItem('4dir-lang',1)}}catch(e){{}};location.href=this.value">{opts}</select></label>
 </div></header>
 <main class="wrap">
 <section class="hero">
@@ -145,7 +147,7 @@ def page(lang, cfg, rel):
 <section id="faq"><h2>{e(t["faq_h"])}</h2>{faq}</section>
 </main>
 <footer><div class="wrap">
-<a href="{repo_url}">{e(t["src"])}</a> · <a href="{repo_url}/issues">{e(t["issues"])}</a> · <a href="mailto:{SUPPORT}">{SUPPORT}</a> · <a href="{repo_url}/releases">v{ver}</a>
+<a href="{repo_url}">{e(t["src"])}</a> · <a href="{repo_url}/issues">{e(t["issues"])}</a> · <a href="mailto:{SUPPORT}">{SUPPORT}</a> · <a href="{repo_url}/releases">v{ver}</a> · <a href="{up}code-signing.html">Code signing policy</a>
 <p>{e(t["lic"])}</p>
 </div></footer>
 </body>
@@ -157,6 +159,16 @@ def guide_nav(lang):
     """위쪽 줄 '사용법' 링크 (1.4.0) — 그 언어 사용법 문구가 있을 때만"""
     g = GT.GUIDE.get(lang)
     return f'<a class="nav" href="guide.html">{html.escape(g["link"])}</a>' if g else ""
+
+
+BOARD_URL = "https://github.com/gkstmdahr/4Dir/discussions"   # 1.8.0: 깃허브 토론 게시판
+BOARD = {"en": "Community", "ko": "게시판", "zh-CN": "社区", "zh-TW": "社群", "ja": "掲示板", "es": "Comunidad",
+         "de": "Forum", "fr": "Communauté", "pt-BR": "Comunidade", "ru": "Форум"}
+
+
+def board_nav(lang):
+    """1.8.0: 위쪽 줄 '게시판' 버튼 — 사용법 옆, 깃허브 토론 게시판으로"""
+    return f'<a class="nav board" href="{BOARD_URL}">💬 {html.escape(BOARD.get(lang, BOARD["en"]))}</a>'
 
 
 def app_nav(lang, up, first=False):
@@ -208,7 +220,7 @@ def guide_page(lang, cfg, rel):
 <body>
 <header class="top"><div class="wrap">
 <a class="logo" href="./"><img src="{up}icon.png" alt="" width="28" height="28">4Dir</a>
-{app_nav(lang, up, True)}<label class="lang">{e(t["lang"])} <select onchange="try{{localStorage.setItem('4dir-lang',1)}}catch(e){{}};location.href=this.value">{opts}</select></label>
+{app_nav(lang, up, True)}{board_nav(lang)}<label class="lang">{e(t["lang"])} <select onchange="try{{localStorage.setItem('4dir-lang',1)}}catch(e){{}};location.href=this.value">{opts}</select></label>
 </div></header>
 <div class="gwrap">
 <aside class="side"><nav><b>{e(g["toc"])}</b><ol>{toc}</ol></nav></aside>
@@ -225,8 +237,63 @@ def guide_page(lang, cfg, rel):
 var io=new IntersectionObserver(function(es){{es.forEach(function(x){{if(x.isIntersecting){{L.forEach(function(a){{a.classList.remove('on')}});var a=m[x.target.id];a&&a.classList.add('on')}}}})}},{{rootMargin:'-20% 0px -70% 0px'}});
 document.querySelectorAll('section.gs').forEach(function(s){{io.observe(s)}})}}catch(e){{}}}})();</script>
 <footer><div class="wrap">
-<a href="{repo_url}">{e(t["src"])}</a> · <a href="{repo_url}/issues">{e(t["issues"])}</a> · <a href="mailto:{SUPPORT}">{SUPPORT}</a>
+<a href="{repo_url}">{e(t["src"])}</a> · <a href="{repo_url}/issues">{e(t["issues"])}</a> · <a href="mailto:{SUPPORT}">{SUPPORT}</a> · <a href="{up}code-signing.html">Code signing policy</a>
 <p>{e(t["lic"])}</p>
+</div></footer>
+</body>
+</html>
+"""
+
+
+def signing_page(cfg):
+    """코드 서명 정책 (1.7.0, 영어 한 장 — SignPath Foundation 무료 서명 신청 조건: 서명 정책·역할·개인 정보 문구가 사이트에 있어야 함)"""
+    repo_url = f"https://github.com/{cfg['owner'] or 'OWNER'}/{cfg['repo']}"
+    owner = cfg["owner"] or "OWNER"
+    base = site_base(cfg)
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4Dir - Code signing policy</title>
+<meta name="description" content="How 4Dir release files are built and signed, who approves them, and what data 4Dir sends.">
+<link rel="canonical" href="{base}code-signing.html">
+<link rel="icon" href="icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+<a class="logo" href="./"><img src="icon.png" alt="" width="28" height="28">4Dir</a>
+</div></header>
+<main class="wrap">
+<p><a href="./">Home</a></p>
+<section><h1>Code signing policy</h1>
+<p>Free code signing provided by <a href="https://signpath.io">SignPath.io</a>, certificate by <a href="https://signpath.org">SignPath Foundation</a>.</p>
+<p class="tip">Status: applying to SignPath Foundation. Until it is approved, release files are <b>not</b> signed by this program —
+check the SHA256 fingerprint shown on the download page instead.</p>
+<h2>What is signed</h2>
+<ul>
+<li><code>4Dir.exe</code> — the small starter program in the release zip. It only starts the bundled Python with 4Dir's program files
+(the same job as <code>4Dir.vbs</code>). Source: <a href="{repo_url}/blob/main/launcher/4Dir_launcher.cs">launcher/4Dir_launcher.cs</a>.</li>
+<li>It is built by GitHub Actions directly from the public source code (<a href="{repo_url}/actions">build logs</a>,
+workflow <a href="{repo_url}/blob/main/.github/workflows/build-exe.yml">build-exe.yml</a>). Files built on a personal PC are never signed.</li>
+<li>The bundled Python runtime (<code>python.exe</code>, <code>pythonw.exe</code>) is the official build, already signed by the Python Software Foundation.
+Third-party components keep their own licenses (see the <code>licenses</code> folder in the zip).</li>
+</ul>
+<h2>Team roles</h2>
+<ul>
+<li>Committers and reviewers: <a href="https://github.com/{owner}">{owner}</a></li>
+<li>Approvers: <a href="https://github.com/{owner}">{owner}</a> — every signing request is approved by hand, one release at a time.</li>
+</ul>
+<p>All accounts used for the source code, builds and signing use multi-factor authentication.</p>
+<h2 id="privacy">Privacy policy</h2>
+<p>This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.</p>
+<p>The only network access is the new-version check: once a day 4Dir reads <code>{base}version.json</code> (a small public file; nothing about you or your files is sent).
+Turn it off in <b>Tools &gt; Check for new version at startup (once a day)</b>. There is no telemetry, no ads and no account.</p>
+</section>
+</main>
+<footer><div class="wrap">
+<a href="{repo_url}">Source code</a> · <a href="{repo_url}/issues">Issues</a> · <a href="mailto:{SUPPORT}">{SUPPORT}</a>
 </div></footer>
 </body>
 </html>
@@ -285,7 +352,7 @@ def versions_page(lang, cfg, rel):
 <body>
 <header class="top"><div class="wrap">
 <a class="logo" href="./"><img src="{up}icon.png" alt="" width="28" height="28">4Dir</a>
-{app_nav(lang, up, True)}<label class="lang">{e(t["lang"])} <select onchange="try{{localStorage.setItem('4dir-lang',1)}}catch(e){{}};location.href=this.value">{opts}</select></label>
+{app_nav(lang, up, True)}{board_nav(lang)}<label class="lang">{e(t["lang"])} <select onchange="try{{localStorage.setItem('4dir-lang',1)}}catch(e){{}};location.href=this.value">{opts}</select></label>
 </div></header>
 <main class="wrap">
 <p><a href="./">{e(t["home"])}</a></p>
@@ -294,7 +361,7 @@ def versions_page(lang, cfg, rel):
 </section>
 </main>
 <footer><div class="wrap">
-<a href="{repo_url}">{e(t["src"])}</a> · <a href="{repo_url}/releases">GitHub Releases</a> · <a href="mailto:{SUPPORT}">{SUPPORT}</a>
+<a href="{repo_url}">{e(t["src"])}</a> · <a href="{repo_url}/releases">GitHub Releases</a> · <a href="mailto:{SUPPORT}">{SUPPORT}</a> · <a href="{up}code-signing.html">Code signing policy</a>
 <p>{e(t["lic"])}</p>
 </div></footer>
 </body>
@@ -336,7 +403,7 @@ footer{border-top:1px solid var(--line);padding:24px 0;color:var(--mut);font-siz
 .vh{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}.vh h3{margin:0;font-size:20px}.date{color:var(--mut);font-size:14px}
 .btn.sm{padding:5px 12px;font-size:14px}a.sha{font-size:13px;color:var(--mut)}.tag{font-size:12px;background:var(--acc);color:#fff;border-radius:10px;padding:1px 8px;vertical-align:middle}
 .fast{font-size:clamp(18px,2.6vw,24px);font-weight:700;margin:0 0 8px}.fast a{color:var(--acc);text-decoration:none}.fast a:hover{text-decoration:underline}
-.nav{margin-left:auto;margin-right:8px;font-weight:700;text-decoration:none;color:var(--acc);border:2px solid var(--acc);border-radius:8px;padding:5px 14px;white-space:nowrap}.nav:hover{background:var(--acc);color:#fff}.nav.app{margin-left:0;margin-right:auto}.nav.app+.nav{margin-left:0}@media (max-width:600px){.nav{padding:4px 8px;font-size:13px;margin-right:0}.top .wrap{height:auto;flex-wrap:wrap;gap:8px;padding-top:8px;padding-bottom:8px}.lang{font-size:0;margin-left:auto}.lang select{font-size:14px}}
+.nav{margin-left:auto;margin-right:8px;font-weight:700;text-decoration:none;color:var(--acc);border:2px solid var(--acc);border-radius:8px;padding:5px 14px;white-space:nowrap}.nav:hover{background:var(--acc);color:#fff}.nav.app{margin-left:0;margin-right:auto}.nav.app+.nav{margin-left:0}.nav+.nav.board{margin-left:0}.nav.app+.nav.board{margin-left:auto}@media (max-width:600px){.nav{padding:4px 8px;font-size:13px;margin-right:0}.top .wrap{height:auto;flex-wrap:wrap;gap:8px;padding-top:8px;padding-bottom:8px}.lang{font-size:0;margin-left:auto}.lang select{font-size:14px}}
 .gwrap{max-width:1080px;margin:0 auto;padding:0 16px}.side{display:none}
 @media (min-width:1100px){.gwrap{max-width:1360px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:36px}.side{display:block}
 .side nav{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:16px}
@@ -400,6 +467,9 @@ def main():
                         log(f"  사용법 그림 p{i} — {guide_img_lang(lang)} 에 없어 {alt} 것으로")
                     shutil.copy2(f, dst)
             log(f"사용법 {lang} (그림 {guide_img_lang(lang)})")
+    with open(os.path.join(OUT, "code-signing.html"), "w", encoding="utf-8", newline="\n") as f:   # 1.7.0
+        f.write(_beacon(signing_page(cfg), cfg))
+    log("코드 서명 정책 code-signing.html")
     open(os.path.join(OUT, "style.css"), "w", encoding="utf-8", newline="\n").write(CSS)
     shutil.copytree(os.path.join(SITE_SRC, "img"), os.path.join(OUT, "img"), dirs_exist_ok=True)
     # 1.3.0: 다른 앱 소개 페이지(_site\apps\<이름>\ → 사이트 /<이름>/) 그대로 복사 — 예: just-downloader. 매번 OUT 을 지우므로 여기서 다시 넣어야 남는다
@@ -422,6 +492,7 @@ def main():
     open(os.path.join(OUT, "robots.txt"), "w", encoding="utf-8").write(f"User-agent: *\nAllow: /\nSitemap: {base}sitemap.xml\n")
     urls = "".join(f"<url><loc>{base}{'' if lg == 'en' else lg + '/'}{pg}</loc></url>" for lg in ST.LANGS for pg in ("", "versions.html") + (("guide.html",) if lg in GT.GUIDE else ()))
     urls += "".join(f"<url><loc>{base}{u}</loc></url>" for u in sorted(app_urls))   # 1.3.0
+    urls += f"<url><loc>{base}code-signing.html</loc></url>"   # 1.7.0
     open(os.path.join(OUT, "sitemap.xml"), "w", encoding="utf-8").write(
         f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>\n')
     open(os.path.join(OUT, ".nojekyll"), "w").close()

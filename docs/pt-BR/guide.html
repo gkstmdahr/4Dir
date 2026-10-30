@@ -22,7 +22,7 @@
 <body>
 <header class="top"><div class="wrap">
 <a class="logo" href="./"><img src="../icon.png" alt="" width="28" height="28">4Dir</a>
-<a class="nav app first" href="../just-downloader/pt-BR/">📱 just downloader</a><label class="lang">Idioma <select onchange="try{localStorage.setItem('4dir-lang',1)}catch(e){};location.href=this.value"><option value="../guide.html">English</option><option value="../ko/guide.html">한국어</option><option value="../zh-CN/guide.html">简体中文</option><option value="../zh-TW/guide.html">繁體中文</option><option value="../ja/guide.html">日本語</option><option value="../es/guide.html">Español</option><option value="../de/guide.html">Deutsch</option><option value="../fr/guide.html">Français</option><option value="../pt-BR/guide.html" selected>Português (Brasil)</option><option value="../ru/guide.html">Русский</option></select></label>
+<a class="nav app first" href="../just-downloader/pt-BR/">📱 just downloader</a><a class="nav board" href="https://github.com/gkstmdahr/4Dir/discussions">💬 Comunidade</a><label class="lang">Idioma <select onchange="try{localStorage.setItem('4dir-lang',1)}catch(e){};location.href=this.value"><option value="../guide.html">English</option><option value="../ko/guide.html">한국어</option><option value="../zh-CN/guide.html">简体中文</option><option value="../zh-TW/guide.html">繁體中文</option><option value="../ja/guide.html">日本語</option><option value="../es/guide.html">Español</option><option value="../de/guide.html">Deutsch</option><option value="../fr/guide.html">Français</option><option value="../pt-BR/guide.html" selected>Português (Brasil)</option><option value="../ru/guide.html">Русский</option></select></label>
 </div></header>
 <div class="gwrap">
 <aside class="side"><nav><b>Índice</b><ol><li><a href="#screen">A janela principal</a></li><li><a href="#panes">Painéis e guias</a></li><li><a href="#tabmenu">Menu de clique direito das guias</a></li><li><a href="#files">Mover e copiar arquivos</a></li><li><a href="#fav">Favoritos</a></li><li><a href="#search">Pesquisar</a></li><li><a href="#menus">Os menus de cima, num relance</a></li><li><a href="#svn">Se você usa SVN</a></li><li><a href="#keys">Mudar os atalhos</a></li><li><a href="#monitor">Ver o uso de CPU e GPU</a></li><li><a href="#check">Diagnóstico do Explorador (Explorer Check)</a></li><li><a href="#etc">Outras coisas</a></li></ol></nav></aside>
@@ -39,7 +39,7 @@
 var io=new IntersectionObserver(function(es){es.forEach(function(x){if(x.isIntersecting){L.forEach(function(a){a.classList.remove('on')});var a=m[x.target.id];a&&a.classList.add('on')}})},{rootMargin:'-20% 0px -70% 0px'});
 document.querySelectorAll('section.gs').forEach(function(s){io.observe(s)})}catch(e){}})();</script>
 <footer><div class="wrap">
-<a href="https://github.com/gkstmdahr/4Dir">Código-fonte</a> · <a href="https://github.com/gkstmdahr/4Dir/issues">Relatar um problema</a> · <a href="mailto:support@4dir.net">support@4dir.net</a>
+<a href="https://github.com/gkstmdahr/4Dir">Código-fonte</a> · <a href="https://github.com/gkstmdahr/4Dir/issues">Relatar um problema</a> · <a href="mailto:support@4dir.net">support@4dir.net</a> · <a href="../code-signing.html">Code signing policy</a>
 <p>Software livre sob GPL-3.0. Windows é uma marca da Microsoft.</p>
 </div></footer>
 <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "f27a6860fa474599b9edc51f5f12448f"}'></script>

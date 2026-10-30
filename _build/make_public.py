@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 공개 저장소 폴더 만들기 (MAKE_PUBLIC_VER 1.0.4)
+"""4Dir 공개 저장소 폴더 만들기 (MAKE_PUBLIC_VER 1.0.5)
 
 python make_public.py   → 4Dir\\_public\\  (깃허브에 올릴 내용 그대로. .git 폴더는 남기고 나머지를 새로 채움)
 - 올리는 것: 4Dir.vbs, bin 의 소스(.py)·언어·사용법 그림·아이콘, _build 의 만들기 스크립트, docs\\ (사이트), LICENSE, README
@@ -16,7 +16,7 @@ import time
 import shutil
 import subprocess
 
-MAKE_PUBLIC_VER = "1.0.4"
+MAKE_PUBLIC_VER = "1.0.5"
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 BIN = os.path.join(ROOT, "bin")
@@ -27,7 +27,33 @@ sys.path.insert(0, HERE)
 BIN_SKIP_DIRS = {"__pycache__", "log", "sessions", "workspaces", "index"}
 BIN_SKIP_FILES = re.compile(r"(4Dir_(state|favorites|settings).*|.*\.running|.*\.tmp|.*백업.*)$", re.I)
 BUILD_FILES = ["make_release.py", "make_release.bat", "make_guide.py", "make_shots.py", "make_site.py", "site_text.py", "changelog.py",
-               "make_public.py"]
+               "make_public.py", "make_launcher.py"]
+# 1.0.5: 4Dir.exe 를 깃허브가 공개 소스로 직접 빌드 (코드 서명 SignPath 조건 — 서명할 파일은 자동 빌드 결과여야 함)
+WORKFLOW = """name: Build 4Dir.exe
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Build launcher (Windows built-in .NET Framework csc.exe)
+        run: python -X utf8 _build/make_launcher.py out
+      - name: Show file version
+        shell: pwsh
+        run: (Get-Item out/4Dir.exe).VersionInfo | Format-List ProductName,ProductVersion,FileVersion
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 4Dir-exe
+          path: out/4Dir.exe
+"""
 _logf = open(LOGF, "w", encoding="utf-8")
 
 
@@ -60,6 +86,7 @@ _build/cache/
 _build/*_log.txt
 _build/corp_words.txt
 _site/out/
+out/
 """
 
 ISSUE_TEMPLATE = """name: Problem report
@@ -248,6 +275,12 @@ def main():
         if os.path.exists(os.path.join(HERE, f)):
             shutil.copy2(os.path.join(HERE, f), os.path.join(OUT, "_build", f))
     log(f"_build {len(os.listdir(os.path.join(OUT, '_build')))}개 복사 (corp_words.txt 제외)")
+    os.makedirs(os.path.join(OUT, "launcher"))
+    shutil.copy2(os.path.join(ROOT, "launcher", "4Dir_launcher.cs"), os.path.join(OUT, "launcher", "4Dir_launcher.cs"))
+    wdir = os.path.join(OUT, ".github", "workflows")
+    os.makedirs(wdir, exist_ok=True)
+    open(os.path.join(wdir, "build-exe.yml"), "w", encoding="utf-8", newline="\n").write(WORKFLOW)
+    log("launcher 원본 + 깃허브 자동 빌드(.github\\workflows\\build-exe.yml) 넣음")
 
     r = subprocess.run([sys.executable, "-u", "-X", "utf8", os.path.join(HERE, "make_site.py"), os.path.join(OUT, "docs")],
                        capture_output=True, text=True, encoding="utf-8", errors="replace")

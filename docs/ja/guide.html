@@ -22,7 +22,7 @@
 <body>
 <header class="top"><div class="wrap">
 <a class="logo" href="./"><img src="../icon.png" alt="" width="28" height="28">4Dir</a>
-<a class="nav app first" href="../just-downloader/ja/">📱 just downloader</a><label class="lang">言語 <select onchange="try{localStorage.setItem('4dir-lang',1)}catch(e){};location.href=this.value"><option value="../guide.html">English</option><option value="../ko/guide.html">한국어</option><option value="../zh-CN/guide.html">简体中文</option><option value="../zh-TW/guide.html">繁體中文</option><option value="../ja/guide.html" selected>日本語</option><option value="../es/guide.html">Español</option><option value="../de/guide.html">Deutsch</option><option value="../fr/guide.html">Français</option><option value="../pt-BR/guide.html">Português (Brasil)</option><option value="../ru/guide.html">Русский</option></select></label>
+<a class="nav app first" href="../just-downloader/ja/">📱 just downloader</a><a class="nav board" href="https://github.com/gkstmdahr/4Dir/discussions">💬 掲示板</a><label class="lang">言語 <select onchange="try{localStorage.setItem('4dir-lang',1)}catch(e){};location.href=this.value"><option value="../guide.html">English</option><option value="../ko/guide.html">한국어</option><option value="../zh-CN/guide.html">简体中文</option><option value="../zh-TW/guide.html">繁體中文</option><option value="../ja/guide.html" selected>日本語</option><option value="../es/guide.html">Español</option><option value="../de/guide.html">Deutsch</option><option value="../fr/guide.html">Français</option><option value="../pt-BR/guide.html">Português (Brasil)</option><option value="../ru/guide.html">Русский</option></select></label>
 </div></header>
 <div class="gwrap">
 <aside class="side"><nav><b>目次</b><ol><li><a href="#screen">画面の見かた</a></li><li><a href="#panes">分割とタブ</a></li><li><a href="#tabmenu">タブの右クリック メニュー</a></li><li><a href="#files">ファイルの移動・コピー</a></li><li><a href="#fav">お気に入り</a></li><li><a href="#search">検索</a></li><li><a href="#menus">上のメニューのまとめ</a></li><li><a href="#svn">SVN を使っている方へ</a></li><li><a href="#keys">ショートカットを変える</a></li><li><a href="#monitor">CPU・GPU 使用率を見る</a></li><li><a href="#check">エクスプローラー診断 (Explorer Check)</a></li><li><a href="#etc">そのほか</a></li></ol></nav></aside>
@@ -39,7 +39,7 @@
 var io=new IntersectionObserver(function(es){es.forEach(function(x){if(x.isIntersecting){L.forEach(function(a){a.classList.remove('on')});var a=m[x.target.id];a&&a.classList.add('on')}})},{rootMargin:'-20% 0px -70% 0px'});
 document.querySelectorAll('section.gs').forEach(function(s){io.observe(s)})}catch(e){}})();</script>
 <footer><div class="wrap">
-<a href="https://github.com/gkstmdahr/4Dir">ソースコード</a> · <a href="https://github.com/gkstmdahr/4Dir/issues">問題を報告</a> · <a href="mailto:support@4dir.net">support@4dir.net</a>
+<a href="https://github.com/gkstmdahr/4Dir">ソースコード</a> · <a href="https://github.com/gkstmdahr/4Dir/issues">問題を報告</a> · <a href="mailto:support@4dir.net">support@4dir.net</a> · <a href="../code-signing.html">Code signing policy</a>
 <p>GPL-3.0 のフリーソフトウェア。Windows は Microsoft の商標です。</p>
 </div></footer>
 <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "f27a6860fa474599b9edc51f5f12448f"}'></script>
