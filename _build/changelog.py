@@ -1,11 +1,23 @@
 # -*- coding: utf-8 -*-
-"""4Dir 버전별 바뀐 점 (CHANGELOG_VER 1.0.2 — 0.9.71 항목 10/29 (0.9.68~0.9.70 은 공개 안 해서 0.9.71 에 합침)) — make_site.py 가 읽어 메인 '새로 바뀐 점' + 지난 버전 페이지를 만듦.
+"""4Dir 버전별 바뀐 점 (CHANGELOG_VER 1.0.3 — 0.9.73 4Dir.exe 10/30 · 0.9.71 항목 10/29 (0.9.68~0.9.70 은 공개 안 해서 0.9.71 에 합침)) — make_site.py 가 읽어 메인 '새로 바뀐 점' + 지난 버전 페이지를 만듦.
 새 버전을 낼 때마다 맨 위에 한 줄 추가 (최신이 맨 위). 날짜는 한국 시간 기준 릴리스 날짜.
 항목 하나 = 10개 언어 글자 묶음 (순서: en ko zh-CN zh-TW ja es de fr pt-BR ru). <b> 만 허용."""
 
 ORDER = ["en", "ko", "zh-CN", "zh-TW", "ja", "es", "de", "fr", "pt-BR", "ru"]
 
 CHANGES = [
+("0.9.73", "2026-10-30", [
+    ("New: start 4Dir with <b>4Dir.exe</b>. If SmartScreen or antivirus blocks it, <b>4Dir.vbs</b> still does the same job. (Code signing for 4Dir.exe has been applied for.)",
+     "새 기능: <b>4Dir.exe</b> 로 실행합니다. 윈도우 보안(SmartScreen)·백신에 막히면 예전처럼 <b>4Dir.vbs</b> 로 실행하면 됩니다(하는 일은 같음). 4Dir.exe 코드 서명은 신청 중입니다.",
+     "新功能：用 <b>4Dir.exe</b> 启动。如果被 SmartScreen 或杀毒软件拦截，仍可用 <b>4Dir.vbs</b> 启动（作用相同）。4Dir.exe 的代码签名正在申请中。",
+     "新功能：用 <b>4Dir.exe</b> 啟動。如果被 SmartScreen 或防毒軟體攔截，仍可用 <b>4Dir.vbs</b> 啟動（作用相同）。4Dir.exe 的程式碼簽章正在申請中。",
+     "新機能：<b>4Dir.exe</b> で起動できます。SmartScreen やウイルス対策ソフトに止められた場合は、これまでどおり <b>4Dir.vbs</b> で起動できます（働きは同じ）。4Dir.exe のコード署名は申請中です。",
+     "Nuevo: inicia 4Dir con <b>4Dir.exe</b>. Si SmartScreen o el antivirus lo bloquean, <b>4Dir.vbs</b> hace lo mismo. La firma de código de 4Dir.exe está solicitada.",
+     "Neu: 4Dir mit <b>4Dir.exe</b> starten. Blockieren SmartScreen oder der Virenscanner sie, erledigt <b>4Dir.vbs</b> dasselbe. Die Code-Signatur für 4Dir.exe ist beantragt.",
+     "Nouveau : lancez 4Dir avec <b>4Dir.exe</b>. Si SmartScreen ou l'antivirus le bloque, <b>4Dir.vbs</b> fait la même chose. La signature de code de 4Dir.exe est demandée.",
+     "Novo: inicie o 4Dir com o <b>4Dir.exe</b>. Se o SmartScreen ou o antivírus bloquear, o <b>4Dir.vbs</b> faz o mesmo. A assinatura de código do 4Dir.exe foi solicitada.",
+     "Новое: запускайте 4Dir через <b>4Dir.exe</b>. Если SmartScreen или антивирус его блокирует, <b>4Dir.vbs</b> делает то же самое. Подпись кода для 4Dir.exe запрошена."),
+]),
 ("0.9.72", "2026-10-29", [
     ("Fixed: version-control overlay icons (Git, Perforce and others) were sometimes missing on some files.",
      "수정: 일부 파일에서 버전 관리 표시(Git·Perforce 등 겹침 아이콘)가 가끔 빠지던 문제.",

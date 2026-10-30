@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-"""4Dir 배포판 자동 생성 (MAKE_VER 1.6.0)
+"""4Dir 배포판 자동 생성 (MAKE_VER 1.7.0)
 
 결과: <4Dir>\\_release\\4Dir_v<버전>\\  +  4Dir_v<버전>.zip
 구성:
-  4Dir.vbs        실행기 (runtime\\pythonw.exe 사용)
+  4Dir.exe        실행기 (1.7.0, launcher\\4Dir_launcher.cs — runtime\\pythonw.exe 로 bin\\main.pyc 실행)
+  4Dir.vbs        같은 일을 하는 예비 실행기 (exe 가 막힐 때)
   사용법.txt
   お読みください.txt     일본어 설명서 (1.6.0)
   bin\\                   프로그램 (*.pyc 컴파일본만 — 원본 .py 는 넣지 않음, 탐색기 점검.vbs) — 개인 파일(상태·즐겨찾기·세션·로그·설정·백업) 제외
@@ -11,7 +12,7 @@
 _release 에 함께 생기는 것: 4Dir_v<버전>.zip.sha256.txt (정품 확인용 지문), 웹게시_안내_v<버전>.txt
 백업: 이전 배포판 → _release\백업\배포판 (최근 10개), 버전마다 소스 → _release\백업\소스 (지우지 않음)
   runtime\\               python.org 공식 휴대용 파이썬(파이썬 재단 서명) + PySide6(필요한 Qt 만) + pywin32
-보안: exe 를 새로 만들지 않음, PowerShell 안 씀, 서명된 python 실행 파일만 사용.
+보안: exe 는 작은 실행기 하나뿐(원본 공개, 서명 신청 중), PowerShell 안 씀, 파이썬은 서명된 공식 실행 파일.
 로그: _build\\build_log.txt
 """
 import os
@@ -24,7 +25,7 @@ import urllib.request
 import site
 import subprocess
 
-MAKE_VER = "1.6.0"   # 1.6.0: 일본어 설명서 お読みください.txt (Vector 掲載基準) / 1.5.0: qwebp·qjpeg 포함, imgconvert 가져오기 확인 / 1.4.1: 프로그램 안 사용법 그림은 ko·en p1~p6 만 / 1.4.0: qgif.dll(GIF 재생) 포함 / 1.3.0: 회사 글자 목록 별도 파일(corp_words.txt, 비공개), 4Dir 본체 GPL-3.0 라이선스 포함, 패키지 정보 없을 때 버전·pywin32 라이선스 대체 / 1.2.5: 소스 백업에 _dev(시험·번역) 포함 / 1.2.4: overlays·overlayorder 가져오기 확인 / 1.2.3: thumbs 가져오기 확인 / 1.2.2: 사용법에 즐겨찾기 정리·탭 끌기·일괄 변경 / 1.2.1: favorg 가져오기 확인 / 1.2.0: 이전 배포판은 _release\백업\배포판 으로 옮김(최근 10개), 버전마다 소스 백업 _release\백업\소스 / 1.1.5: 사용법 그림(bin\guide, 사용법 그림\ko·en) / 1.1.4: batchrename 가져오기 확인 / 1.1.3: 회사 관련 글자 검사(있으면 배포 중단) / 1.1.1: 언어 파일(bin\lang) 포함·영어 안내 / 1.1.0: .pyc 배포, SHA256 지문 파일, 라이선스 문서, 사용법(차단 해제 안내) 갱신
+MAKE_VER = "1.7.0"   # 1.7.0: 4Dir.exe 실행기 포함(사용법은 exe 우선, vbs 예비) / 1.6.0: 일본어 설명서 お読みください.txt (Vector 掲載基準) / 1.5.0: qwebp·qjpeg 포함, imgconvert 가져오기 확인 / 1.4.1: 프로그램 안 사용법 그림은 ko·en p1~p6 만 / 1.4.0: qgif.dll(GIF 재생) 포함 / 1.3.0: 회사 글자 목록 별도 파일(corp_words.txt, 비공개), 4Dir 본체 GPL-3.0 라이선스 포함, 패키지 정보 없을 때 버전·pywin32 라이선스 대체 / 1.2.5: 소스 백업에 _dev(시험·번역) 포함 / 1.2.4: overlays·overlayorder 가져오기 확인 / 1.2.3: thumbs 가져오기 확인 / 1.2.2: 사용법에 즐겨찾기 정리·탭 끌기·일괄 변경 / 1.2.1: favorg 가져오기 확인 / 1.2.0: 이전 배포판은 _release\백업\배포판 으로 옮김(최근 10개), 버전마다 소스 백업 _release\백업\소스 / 1.1.5: 사용법 그림(bin\guide, 사용법 그림\ko·en) / 1.1.4: batchrename 가져오기 확인 / 1.1.3: 회사 관련 글자 검사(있으면 배포 중단) / 1.1.1: 언어 파일(bin\lang) 포함·영어 안내 / 1.1.0: .pyc 배포, SHA256 지문 파일, 라이선스 문서, 사용법(차단 해제 안내) 갱신
 # PySide6·Qt 라이선스 원문 (LGPLv3 는 GPLv3 를 참조). gnu.org 는 이 네트워크에서 응답 없음(10/2 실측) → SPDX 공식 원문 저장소
 LICENSE_URLS = {"LGPL-3.0.txt": "https://raw.githubusercontent.com/spdx/license-list-data/main/text/LGPL-3.0-only.txt",
                 "GPL-3.0.txt": "https://raw.githubusercontent.com/spdx/license-list-data/main/text/GPL-3.0-only.txt"}
@@ -290,6 +291,12 @@ def main():
     # 3. 프로그램
     copy_tree(BIN, os.path.join(out, "bin"), skip_dirs=BIN_SKIP_DIRS, skip_re=BIN_SKIP_FILES)
     shutil.copy2(os.path.join(ROOT, "4Dir.vbs"), os.path.join(out, "4Dir.vbs"))
+    # 1.7.0: 4Dir.exe 실행기 (vbs 와 같은 일, 코드 서명 대상) — make_launcher.py 로 만들어 넣음
+    r = subprocess.run([sys.executable, "-X", "utf8", os.path.join(HERE, "make_launcher.py"), out],
+                       capture_output=True, text=True, encoding="utf-8", errors="replace")
+    log("실행기: " + (r.stdout.strip().splitlines() or ["?"])[-1])
+    if r.returncode != 0 or not os.path.exists(os.path.join(out, "4Dir.exe")):
+        raise SystemExit("4Dir.exe 만들기 실패 — _build/make_launcher_log.txt 확인\n" + r.stdout + r.stderr)
     shipped = sorted(os.listdir(os.path.join(out, "bin")))
     log(f"bin 파일: {shipped}")
     leaked = [f for f in shipped if BIN_SKIP_FILES.match(f)]
@@ -401,19 +408,22 @@ USAGE = """4Dir v{ver} — 여러 칸 분할(최대 20칸) + 탭 파일 관리�
 
 [English quick start]
   1. Before extracting: right-click the downloaded zip > Properties > check 'Unblock' > OK.
-  2. Copy this folder anywhere on your PC and double-click 4Dir.vbs. No installation, no Python needed.
+  2. Copy this folder anywhere on your PC and double-click 4Dir.exe. No installation, no Python needed.
+     (If 4Dir.exe is blocked by SmartScreen or antivirus, 4Dir.vbs does the same job.)
   3. Language: View > Language (follows the Windows display language by default; restart 4Dir to apply).
      Tabs: drag a tab to another pane to move it, or outside the window to open a new window. Favorites > Organize favorites.
   4. Problems: Tools > 'Save log for problem report' creates a zip in the 4Dir 'reports' folder (opened for you) — please send it.
 
 [설치]
   0. (인터넷에서 받은 경우) 압축을 풀기 전에 zip 파일 우클릭 > 속성 > 아래쪽 '차단 해제' 체크 > 확인.
-     이걸 안 하면 4Dir.vbs 를 실행할 때마다 윈도우 '보안 경고' 창이 뜹니다.
-     (이미 풀었다면: 4Dir.vbs 우클릭 > 속성 > '차단 해제' 체크)
+     이걸 안 하면 실행할 때마다 윈도우 '보안 경고' 창이 뜹니다.
+     (이미 풀었다면: 4Dir.exe·4Dir.vbs 우클릭 > 속성 > '차단 해제' 체크)
   1. 이 폴더를 원하는 곳(예: D:\\Tools\\4Dir)에 통째로 복사합니다. 설치 과정은 없습니다.
      (네트워크 드라이브에서 바로 실행하지 말고 내 PC 로 복사해서 쓰세요.)
-  2. 4Dir.vbs 를 더블클릭하면 실행됩니다. 파이썬 설치 필요 없음(runtime 폴더에 들어 있음).
-  3. 바탕화면 바로가기: 4Dir.vbs 우클릭 > 보내기 > 바탕 화면에 바로 가기 만들기.
+  2. 4Dir.exe 를 더블클릭하면 실행됩니다. 파이썬 설치 필요 없음(runtime 폴더에 들어 있음).
+     (4Dir.exe 가 윈도우 보안(SmartScreen)·백신에 막히면 4Dir.vbs 로 실행 — 하는 일은 같음.
+      SmartScreen 창이 뜨면 '추가 정보' > '실행'.)
+  3. 바탕화면 바로가기: 4Dir.exe 우클릭 > 보내기 > 바탕 화면에 바로 가기 만들기.
   지우기: 이 폴더를 통째로 지우면 끝입니다(레지스트리·시스템에 남기는 것 없음).
 
 [자주 쓰는 기능]
@@ -467,10 +477,11 @@ Windows 10 / 11(64ビット)。Python は同梱しているため、別途必要
 
 ■インストール
 1. 展開する前に、ダウンロードした zip を右クリック > プロパティ > 下の「許可する」にチェック > OK。
-   (これをしないと 4Dir.vbs を実行するたびに Windows のセキュリティ警告が出ます)
+   (これをしないと実行するたびに Windows のセキュリティ警告が出ます)
 2. このフォルダーを好きな場所(例: D:\\Tools\\4Dir)にフォルダーごとコピーします。
    (ネットワークドライブ上で直接実行せず、自分の PC にコピーして使ってください)
-3. 4Dir.vbs をダブルクリックすると起動します。
+3. 4Dir.exe をダブルクリックすると起動します。
+   (4Dir.exe が SmartScreen やウイルス対策ソフトに止められた場合は、同じ働きの 4Dir.vbs で起動できます)
 4. 表示言語: 表示 > 言語(初期値は Windows の表示言語。再起動で反映)
 
 ■アンインストール
@@ -489,7 +500,7 @@ Windows 10 / 11(64ビット)。Python は同梱しているため、別途必要
 - 起動時に1日1回、新しいバージョンがあるかを確認します(4dir.net のバージョン情報ファイルを読むだけ)。
   ツール > 「起動時に新しいバージョンを確認（1日1回）」でオフにできます。個人情報は送信しません。
 - まだコード署名がないため、初回に SmartScreen が表示されることがあります。
-- 実行には同梱の Python(python.org 公式の署名付き配布物)を使い、exe は新たに作っていません。
+- 4Dir.exe は同梱の Python(python.org 公式の署名付き配布物)を起動するだけの小さなプログラムで、ソースを公開しています(GitHub の launcher フォルダー)。
 
 ■連絡先
 作者: gkstmdahr
@@ -520,7 +531,7 @@ LICENSE_NOTE = """4Dir 에 함께 들어 있는 구성 요소와 라이선스
 
 4Dir 본체(bin 폴더)는 위 구성 요소를 사용하는 별도 프로그램입니다.
 
-4. 4Dir 본체 — bin 폴더, 4Dir.vbs
+4. 4Dir 본체 — bin 폴더, 4Dir.exe, 4Dir.vbs
    라이선스: GNU GPL v3 — 4Dir_GPL-3.0.txt (자유 소프트웨어, 원본 소스는 공개 저장소)
 """
 
@@ -530,7 +541,7 @@ WEB_NOTE = """[웹 게시용] 4Dir v{ver}
 정품 확인 지문(SHA256): {digest}
 
 --- 다운로드 페이지에 적을 문구 (복사해서 쓰세요) ---
-4Dir v{ver} — 여러 칸 분할 + 탭 파일 관리자 (설치 없음, 압축 풀고 4Dir.vbs 실행)
+4Dir v{ver} — 여러 칸 분할 + 탭 파일 관리자 (설치 없음, 압축 풀고 4Dir.exe 실행)
 
 설치 전에: 받은 zip 파일 우클릭 > 속성 > '차단 해제' 체크 > 확인 → 그다음 압축 풀기.
   (안 하면 실행할 때마다 윈도우 보안 경고 창이 뜹니다)
