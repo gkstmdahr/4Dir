@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-"""4Dir 배포판 자동 생성 (MAKE_VER 1.7.0)
+"""4Dir 배포판 자동 생성 (MAKE_VER 1.8.0)
 
 결과: <4Dir>\\_release\\4Dir_v<버전>\\  +  4Dir_v<버전>.zip
 구성:
   4Dir.exe        실행기 (1.7.0, launcher\\4Dir_launcher.cs — runtime\\pythonw.exe 로 bin\\main.pyc 실행)
   4Dir.vbs        같은 일을 하는 예비 실행기 (exe 가 막힐 때)
-  사용법.txt
-  お読みください.txt     일본어 설명서 (1.6.0)
+  README.txt·사용법.txt·お読みください.txt 등 10개   언어별 사용법 (1.8.0, 파일 이름도 그 언어 — usage_text.py, 일본어는 1.6.0 Vector 기준)
+  Guide\\<언어 이름>\\       사용법 그림 6장씩, 10개 언어 (1.8.0)
   bin\\                   프로그램 (*.pyc 컴파일본만 — 원본 .py 는 넣지 않음, 탐색기 점검.vbs) — 개인 파일(상태·즐겨찾기·세션·로그·설정·백업) 제외
   licenses\\              함께 들어가는 파이썬·PySide6(Qt)·pywin32 라이선스 문서
 _release 에 함께 생기는 것: 4Dir_v<버전>.zip.sha256.txt (정품 확인용 지문), 웹게시_안내_v<버전>.txt
@@ -25,7 +25,10 @@ import urllib.request
 import site
 import subprocess
 
-MAKE_VER = "1.7.0"   # 1.7.0: 4Dir.exe 실행기 포함(사용법은 exe 우선, vbs 예비) / 1.6.0: 일본어 설명서 お読みください.txt (Vector 掲載基準) / 1.5.0: qwebp·qjpeg 포함, imgconvert 가져오기 확인 / 1.4.1: 프로그램 안 사용법 그림은 ko·en p1~p6 만 / 1.4.0: qgif.dll(GIF 재생) 포함 / 1.3.0: 회사 글자 목록 별도 파일(corp_words.txt, 비공개), 4Dir 본체 GPL-3.0 라이선스 포함, 패키지 정보 없을 때 버전·pywin32 라이선스 대체 / 1.2.5: 소스 백업에 _dev(시험·번역) 포함 / 1.2.4: overlays·overlayorder 가져오기 확인 / 1.2.3: thumbs 가져오기 확인 / 1.2.2: 사용법에 즐겨찾기 정리·탭 끌기·일괄 변경 / 1.2.1: favorg 가져오기 확인 / 1.2.0: 이전 배포판은 _release\백업\배포판 으로 옮김(최근 10개), 버전마다 소스 백업 _release\백업\소스 / 1.1.5: 사용법 그림(bin\guide, 사용법 그림\ko·en) / 1.1.4: batchrename 가져오기 확인 / 1.1.3: 회사 관련 글자 검사(있으면 배포 중단) / 1.1.1: 언어 파일(bin\lang) 포함·영어 안내 / 1.1.0: .pyc 배포, SHA256 지문 파일, 라이선스 문서, 사용법(차단 해제 안내) 갱신
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import usage_text   # 1.8.0: 언어별 사용법 글
+
+MAKE_VER = "1.8.0"   # 1.8.0: 사용법 10개 언어 파일(이름도 그 언어)·Guide\<언어> 그림 10개 언어, 한국어 사용법에서 영어 부분 뺌 / 1.7.0: 4Dir.exe 실행기 포함(사용법은 exe 우선, vbs 예비) / 1.6.0: 일본어 설명서 お読みください.txt (Vector 掲載基準) / 1.5.0: qwebp·qjpeg 포함, imgconvert 가져오기 확인 / 1.4.1: 프로그램 안 사용법 그림은 ko·en p1~p6 만 / 1.4.0: qgif.dll(GIF 재생) 포함 / 1.3.0: 회사 글자 목록 별도 파일(corp_words.txt, 비공개), 4Dir 본체 GPL-3.0 라이선스 포함, 패키지 정보 없을 때 버전·pywin32 라이선스 대체 / 1.2.5: 소스 백업에 _dev(시험·번역) 포함 / 1.2.4: overlays·overlayorder 가져오기 확인 / 1.2.3: thumbs 가져오기 확인 / 1.2.2: 사용법에 즐겨찾기 정리·탭 끌기·일괄 변경 / 1.2.1: favorg 가져오기 확인 / 1.2.0: 이전 배포판은 _release\백업\배포판 으로 옮김(최근 10개), 버전마다 소스 백업 _release\백업\소스 / 1.1.5: 사용법 그림(bin\guide, 사용법 그림\ko·en) / 1.1.4: batchrename 가져오기 확인 / 1.1.3: 회사 관련 글자 검사(있으면 배포 중단) / 1.1.1: 언어 파일(bin\lang) 포함·영어 안내 / 1.1.0: .pyc 배포, SHA256 지문 파일, 라이선스 문서, 사용법(차단 해제 안내) 갱신
 # PySide6·Qt 라이선스 원문 (LGPLv3 는 GPLv3 를 참조). gnu.org 는 이 네트워크에서 응답 없음(10/2 실측) → SPDX 공식 원문 저장소
 LICENSE_URLS = {"LGPL-3.0.txt": "https://raw.githubusercontent.com/spdx/license-list-data/main/text/LGPL-3.0-only.txt",
                 "GPL-3.0.txt": "https://raw.githubusercontent.com/spdx/license-list-data/main/text/GPL-3.0-only.txt"}
@@ -302,25 +305,35 @@ def main():
     leaked = [f for f in shipped if BIN_SKIP_FILES.match(f)]
     if leaked:
         raise SystemExit(f"개인 파일이 섞였습니다: {leaked}")
-    with open(os.path.join(out, "사용법.txt"), "w", encoding="utf-8-sig") as f:
-        f.write(USAGE.format(ver=ver))
-    with open(os.path.join(out, "お読みください.txt"), "w", encoding="utf-8-sig") as f:
-        f.write(USAGE_JA.format(ver=ver))
-    # 사용법 그림 (설명까지 한 장 — 웹 게시용): bin/guide/<언어>/full_pN.png → 사용법 그림/<언어>/사용법_N.png
+    # 1.8.0: 사용법 10개 언어 — 파일 이름을 그 언어로(usage_text.FILES), 맨 아래에 다른 언어 파일 목록
+    texts = dict(usage_text.TEXT, ko=USAGE, ja=USAGE_JA)
+    others = usage_text.others_block()
+    for lg, fn, _ in usage_text.FILES:
+        with open(os.path.join(out, fn), "w", encoding="utf-8-sig") as f:
+            f.write(texts[lg].format(ver=ver, others=others))
+    log(f"사용법 {len(usage_text.FILES)}개 언어: {[x[1] for x in usage_text.FILES]}")
+    # 사용법 그림 (설명까지 한 장): bin/guide/<언어>/full_pN.png → Guide/<그 언어 이름>/4Dir_guide_N.png
+    # 1.8.0: ko·en 만 → 10개 언어, 폴더 이름도 그 언어로(English·한국어·日本語 …)
     gdir = os.path.join(BIN, "guide")
-    nimg = 0
-    for lg in ("ko", "en"):
+    nimg, glangs = 0, []
+    for lg, _, gname in usage_text.FILES:
         src = os.path.join(gdir, lg)
-        if not os.path.isdir(src):
+        fulls = sorted(x for x in os.listdir(src) if x.startswith("full_p") and x.endswith(".png")) if os.path.isdir(src) else []
+        if not fulls:
+            log(f"  사용법 그림 없음: {lg} (make_guide.py {lg} 필요)")
             continue
-        dst = os.path.join(out, "사용법 그림", lg)
+        dst = os.path.join(out, "Guide", gname)
         os.makedirs(dst, exist_ok=True)
-        for fn in sorted(os.listdir(src)):
-            if fn.startswith("full_p") and fn.endswith(".png"):
-                shutil.copy2(os.path.join(src, fn), os.path.join(dst, ("사용법_" if lg == "ko" else "guide_") + fn[6:]))
-                nimg += 1
-        for fn in [x for x in os.listdir(os.path.join(out, "bin", "guide", lg)) if x.startswith("full_p")]:
-            os.remove(os.path.join(out, "bin", "guide", lg, fn))   # 프로그램 안에는 화면 그림(pN)만
+        for fn in fulls:
+            shutil.copy2(os.path.join(src, fn), os.path.join(dst, "4Dir_guide_" + fn[6:]))
+            nimg += 1
+        glangs.append(lg)
+    for lg in os.listdir(os.path.join(out, "bin", "guide")):
+        d = os.path.join(out, "bin", "guide", lg)
+        for fn in [x for x in os.listdir(d) if x.startswith("full_p")]:
+            os.remove(os.path.join(d, fn))   # 프로그램 안에는 화면 그림(pN)만
+    if len(glangs) != len(usage_text.FILES):
+        raise SystemExit(f"사용법 그림 언어 부족: {glangs}")
     # 1.4.1: 프로그램 안 사용법 창(guide.py)은 ko·en 의 p1..p6 만 씀 → 사이트용 다른 언어·p7~ 그림은 빼서 zip 을 가볍게
     gout = os.path.join(out, "bin", "guide")
     keep = {f"p{i}.png" for i in range(1, 7)}
@@ -332,7 +345,7 @@ def main():
         for fn in os.listdir(d):
             if fn not in keep:
                 os.remove(os.path.join(d, fn))
-    log(f"사용법 그림 {nimg}장 → 사용법 그림 (ko·en), 프로그램 안 그림 ko·en p1~p6 만 ({size_mb(gout):.1f}MB)")
+    log(f"사용법 그림 {nimg}장 → Guide ({len(glangs)}개 언어), 프로그램 안 그림 ko·en p1~p6 만 ({size_mb(gout):.1f}MB)")
     if not nimg:
         raise SystemExit("사용법 그림 없음 — _build 의 make_guide.py ko / en 먼저 실행")
     pycs = compile_bin(os.path.join(out, "bin"))
@@ -406,14 +419,6 @@ def main():
 
 USAGE = """4Dir v{ver} — 여러 칸 분할(최대 20칸) + 탭 파일 관리자 (3ds Max 와 같이 써도 느려지지 않게 만듦)
 
-[English quick start]
-  1. Before extracting: right-click the downloaded zip > Properties > check 'Unblock' > OK.
-  2. Copy this folder anywhere on your PC and double-click 4Dir.exe. No installation, no Python needed.
-     (If 4Dir.exe is blocked by SmartScreen or antivirus, 4Dir.vbs does the same job.)
-  3. Language: View > Language (follows the Windows display language by default; restart 4Dir to apply).
-     Tabs: drag a tab to another pane to move it, or outside the window to open a new window. Favorites > Organize favorites.
-  4. Problems: Tools > 'Save log for problem report' creates a zip in the 4Dir 'reports' folder (opened for you) — please send it.
-
 [설치]
   0. (인터넷에서 받은 경우) 압축을 풀기 전에 zip 파일 우클릭 > 속성 > 아래쪽 '차단 해제' 체크 > 확인.
      이걸 안 하면 실행할 때마다 윈도우 '보안 경고' 창이 뜹니다.
@@ -451,8 +456,14 @@ USAGE = """4Dir v{ver} — 여러 칸 분할(최대 20칸) + 탭 파일 관리�
   도구 > '문제 보고용 로그 저장' 을 누르면 4Dir 폴더 안 reports 에 zip 파일이 생기고 탐색기로 보여 줍니다. 그 파일을 보내 주세요.
   (4Dir 가 아예 안 열리면 bin\\log 폴더를 통째로 보내 주세요.)
 
-[라이선스]
-  함께 들어 있는 파이썬·PySide6(Qt)·pywin32 의 라이선스는 licenses 폴더에 있습니다.
+  연락: support@4dir.net / 게시판: https://github.com/gkstmdahr/4Dir/discussions
+
+[더 보기]
+  사이트(그림 있는 사용법): https://4dir.net
+  화면별 그림: Guide\\한국어 폴더
+  4Dir 는 무료 오픈소스(GPL-3.0)입니다. 함께 들어 있는 파이썬·PySide6(Qt)·pywin32 의 라이선스는 licenses 폴더에 있습니다.
+
+{others}
 """
 
 # 1.6.0: 일본어 설명서 — Vector 掲載基準(概要·連絡先·取り扱い種別·動作環境·インストール/アンインストール·外部通信の明記)을 채움
@@ -512,6 +523,9 @@ Windows 10 / 11(64ビット)。Python は同梱しているため、別途必要
 ■同梱しているほかの著作物
 Python(PSF License)、PySide6 / Qt 6(GNU LGPL v3)、pywin32(PSF License)。
 いずれも使用が許可されているもので、ライセンス文書は licenses フォルダーにあります。
+画面ごとの画像: Guide\\日本語 フォルダー
+
+{others}
 """
 
 LICENSE_NOTE = """4Dir 에 함께 들어 있는 구성 요소와 라이선스

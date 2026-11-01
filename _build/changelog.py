@@ -6,6 +6,18 @@
 ORDER = ["en", "ko", "zh-CN", "zh-TW", "ja", "es", "de", "fr", "pt-BR", "ru"]
 
 CHANGES = [
+("0.9.74", "2026-11-01", [
+    ("New: the download now has a guide in all 10 languages - README.txt, 사용법.txt, お読みください.txt, 使用说明.txt, Anleitung.txt and more, each named in its own language - plus guide pictures for every language in the Guide folder.",
+     "새 기능: 받은 파일에 10개 언어 사용법이 들어 있습니다. README.txt·사용법.txt·お読みください.txt·使用说明.txt·Anleitung.txt 등 파일 이름도 그 언어로 되어 있고, Guide 폴더에 언어별 사용법 그림이 있습니다.",
+     "新功能：下载包内附 10 种语言的使用说明（README.txt、使用说明.txt、お読みください.txt、Anleitung.txt 等，文件名也是该语言），Guide 文件夹中有各语言的说明图片。",
+     "新功能：下載包內附 10 種語言的使用說明（README.txt、使用說明.txt、お読みください.txt、Anleitung.txt 等，檔名也是該語言），Guide 資料夾中有各語言的說明圖片。",
+     "新機能：ダウンロードしたファイルに 10 言語の説明書が入りました（README.txt・お読みください.txt・使用说明.txt・Anleitung.txt など、ファイル名もその言語）。Guide フォルダーに言語ごとの説明画像もあります。",
+     "Nuevo: la descarga incluye la guía en los 10 idiomas (README.txt, Léame.txt, 使用说明.txt, Anleitung.txt, etc., cada archivo con el nombre en su idioma) y las imágenes de la guía de cada idioma en la carpeta Guide.",
+     "Neu: Der Download enthält die Anleitung in allen 10 Sprachen (README.txt, Anleitung.txt, Léame.txt, 使用说明.txt usw., jeweils in der eigenen Sprache benannt) und im Ordner Guide die Anleitungsbilder für jede Sprache.",
+     "Nouveau : le téléchargement contient le guide dans les 10 langues (README.txt, Lisez-moi.txt, Anleitung.txt, 使用说明.txt, etc., chacun nommé dans sa langue) et les images du guide pour chaque langue dans le dossier Guide.",
+     "Novo: o download traz o guia nos 10 idiomas (README.txt, Leia-me.txt, Anleitung.txt, 使用说明.txt etc., cada arquivo com o nome no próprio idioma) e as imagens do guia de cada idioma na pasta Guide.",
+     "Новое: в загрузке есть инструкция на всех 10 языках (README.txt, Инструкция.txt, Anleitung.txt, 使用说明.txt и др., у каждого файла имя на своём языке) и картинки инструкции для каждого языка в папке Guide."),
+]),
 ("0.9.73", "2026-10-30", [
     ("New: start 4Dir with <b>4Dir.exe</b>. If SmartScreen or antivirus blocks it, <b>4Dir.vbs</b> still does the same job. (Code signing for 4Dir.exe has been applied for.)",
      "새 기능: <b>4Dir.exe</b> 로 실행합니다. 윈도우 보안(SmartScreen)·백신에 막히면 예전처럼 <b>4Dir.vbs</b> 로 실행하면 됩니다(하는 일은 같음). 4Dir.exe 코드 서명은 신청 중입니다.",
