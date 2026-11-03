@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.74"
+QE_VERSION = "0.9.86"
 
 import os
 import sys
@@ -412,6 +412,9 @@ import keymap  # noqa: E402
 import search_index  # noqa: E402
 import svnstat  # noqa: E402
 import thumbs  # noqa: E402
+import shellprops  # noqa: E402  (v0.9.75 정렬용 셸 속성)
+import vfiles  # noqa: E402  (v0.9.75 아웃룩 첨부 등 가상 파일 끌어 놓기)
+import olehook  # noqa: E402  (v0.9.78 끌어 놓기 원래 데이터 직접 받기 — 웹 아웃룩 본문 이미지·여러 개)
 import overlays  # noqa: E402
 import i18n  # noqa: E402
 from i18n import T  # noqa: E402  (화면 문구 번역)
@@ -450,7 +453,14 @@ MAX_COLS, MAX_ROWS = 5, 4   # 직접 지정 최대 가로 5 x 세로 4 = 20칸
 VIEW_MODES = [("details", T("자세히"), 16), ("list", T("목록"), 16), ("small", T("작은 아이콘"), 16),
               ("medium", T("보통 아이콘"), 48), ("large", T("큰 아이콘"), 96), ("xlarge", T("아주 큰 아이콘"), 256)]
 MODE_PX = {k: px for k, _, px in VIEW_MODES}
-SORT_COLS = [(0, T("이름")), (1, T("수정한 날짜")), (2, T("유형")), (3, T("크기"))]
+# 정렬 기준 메뉴 (v0.9.75 사용자 의견 — 탐색기 순서). 10 이상 = 열이 없는 정렬(셸 속성, shellprops.py), 4 = 위치 열
+SORT_COLS = [(0, T("이름")), (5, T("날짜")), (2, T("유형")), (3, T("크기")), (6, T("길이")), (7, T("만든 날짜")),
+             (1, T("수정한 날짜")), (4, T("파일 위치")), (8, T("미디어 작성 날짜")), (9, T("사진 크기"))]
+# v0.9.76: 정렬 기준 = 열 번호 (열 5~9 추가, 머리글 우클릭으로 보이기). 0.9.75 에 저장된 열 없는 정렬 번호 10~14 → 새 열 번호
+OLD_SORT = {10: 5, 11: 6, 12: 7, 13: 8, 14: 9}
+PROP_SORTS = {5: "item_date", 6: "duration", 8: "media_date", 9: "pixels"}   # 뒤에서 셸 속성을 읽어야 하는 정렬
+PROP_COLS = {5: "item_date", 6: "duration", 8: "media_date", 9: "dims"}       # 그 값을 보여 주는 열
+OPT_COLS = [1, 2, 3, 5, 6, 7, 8, 9]   # 머리글 우클릭에서 켜고 끄는 열 (이름은 항상, 위치는 검색 결과에서만)
 FAV = favorites.Favorites()
 # 우클릭 메뉴에서 윈도우 자체의 '즐겨찾기에 추가(F)'(탐색기 빠른 실행 고정)와 헷갈리지 않게 ★QE 표시
 QE_FAV = T("★ 4Dir 즐겨찾기")
@@ -763,7 +773,15 @@ POOL.setMaxThreadCount(4)
 
 
 # ================================================================ 목록 모델
-COLS = [T("이름"), T("수정한 날짜"), T("유형"), T("크기"), T("위치")]   # 위치 = 검색 결과에서만 보임
+COLS = [T("이름"), T("수정한 날짜"), T("유형"), T("크기"), T("위치"),   # 위치 = 검색 결과에서만 보임
+        T("날짜"), T("길이"), T("만든 날짜"), T("미디어 작성 날짜"), T("사진 크기")]   # v0.9.76: 머리글 우클릭으로 보이기 (기본 숨김)
+COL_WIDTH = (322, 145, 120, 80, 320, 145, 80, 145, 145, 100)
+
+
+def fmt_duration(sec):
+    """길이 표시 (탐색기와 같은 시:분:초)"""
+    s = int(round(sec))
+    return f"{s // 3600:02d}:{s % 3600 // 60:02d}:{s % 60:02d}"
 
 
 class DirModel(QtCore.QAbstractTableModel):
@@ -849,6 +867,26 @@ class DirModel(QtCore.QAbstractTableModel):
                 return "" if e[2] < 0 else win_kbsize(e[2])
             if c == 4:
                 return os.path.dirname(e[5]) if e[5] and not e[7] else ""
+            if c == 7:
+                ct = 0 if e[7] else shellprops.created(self.full(e), e[3])
+                return win_datetime(ct) if ct else ""
+            if c in PROP_COLS:   # v0.9.76 셸 속성 열 — 아직 안 읽었으면 빈칸 + 뒤에서 읽기
+                if e[1] or e[7]:
+                    return win_datetime(e[3]) if c == 5 and e[3] else ""
+                d = shellprops.cached(self.full(e), e[3])
+                if d is None:
+                    self._want_props()
+                    return win_datetime(e[3]) if c == 5 and e[3] else ""
+                v = d.get(PROP_COLS[c])
+                if c == 5:
+                    return win_datetime(v or e[3]) if (v or e[3]) else ""
+                if v is None:
+                    return ""
+                if c == 6:
+                    return fmt_duration(v)
+                if c == 8:
+                    return win_datetime(v)
+                return f"{v[0]} x {v[1]}"
         elif role == Qt.EditRole and c == 0:
             return e[0]
         elif role == Qt.DecorationRole and c == 0:
@@ -863,7 +901,7 @@ class DirModel(QtCore.QAbstractTableModel):
                     pm.setDevicePixelRatio(max(1.0, pm.width() / max(1, self.icon_px)))
                     return pm
             return shellops.icon_for(e[0], e[1], self.icon_px, e[6])
-        elif role == Qt.TextAlignmentRole and c == 3:
+        elif role == Qt.TextAlignmentRole and c in (3, 6):
             return int(Qt.AlignRight | Qt.AlignVCenter)
         elif role == Qt.ForegroundRole and (e[4] & HIDDEN_MASK):
             return QtGui.QColor(140, 140, 140)
@@ -916,6 +954,50 @@ class DirModel(QtCore.QAbstractTableModel):
         self.all = self._sorted(self.all)
         self.rows = self._filtered(self.all)
 
+    propsLoaded = QtCore.Signal(str, int)
+
+    def _load_props(self, items):
+        """정렬용 셸 속성을 뒤 스레드에서 읽고 → 같은 폴더·같은 정렬이면 다시 정렬 (v0.9.75)"""
+        if getattr(self, "_props_busy", None) == self.path:
+            return
+        self._props_busy = path = self.path
+        col = self.sort_col
+        if not getattr(self, "_props_hooked", False):
+            self._props_hooked = True
+            self.propsLoaded.connect(self._props_done)
+        log.info("정렬용 속성 뒤에서 읽기 시작 %s %d개 (정렬 %d)", path, len(items), col)
+        import threading
+
+        def work():
+            try:
+                shellprops.prefetch(items)
+            except Exception:
+                log.exception("정렬용 속성 읽기 실패")
+            try:
+                self.propsLoaded.emit(path, col)
+            except RuntimeError:   # 탭이 닫혀 모델이 없어짐
+                pass
+        threading.Thread(target=work, daemon=True, name="sortprops").start()
+
+    def _props_done(self, path, col):
+        self._props_busy = None
+        if path != self.path:
+            return
+        if self.sort_col in PROP_SORTS:
+            log.info("정렬용 속성 다 읽음 → 다시 정렬 %s", path)
+            self.sort(self.sort_col, self.sort_order)
+        elif self.rows:   # 열 표시만 (v0.9.76)
+            self.dataChanged.emit(self.index(0, 5), self.index(len(self.rows) - 1, len(COLS) - 1), [Qt.DisplayRole])
+
+    def _want_props(self):
+        """속성 열이 보이는데 아직 안 읽은 파일 → 이 폴더 미디어 파일을 한 번에 뒤에서 읽기 (v0.9.76)"""
+        if getattr(self, "_props_busy", None) == self.path:
+            return
+        items = [(self.full(e), e[3]) for e in self.all if not e[1] and not e[7]
+                 and shellprops.cached(self.full(e), e[3]) is None]
+        if items:
+            self._load_props(items)
+
     def _filtered(self, rows):
         """빠른 필터: 이름에 글자 포함(대소문자 무시). * ? 가 있으면 와일드카드."""
         f = self.filter.strip().lower()
@@ -946,7 +1028,34 @@ class DirModel(QtCore.QAbstractTableModel):
         if self.path == THIS_PC:
             return list(rows)
         c, rev = self.sort_col, self.sort_order == Qt.DescendingOrder
-        if c == 1:
+        if c in PROP_SORTS:   # v0.9.75: 날짜·길이·미디어 작성 날짜·사진 크기 — 읽어 둔 값으로 정렬, 없는 건 뒤에서 읽고 다시 정렬
+            field, missing = PROP_SORTS[c], []
+
+            def key(e, field=field, missing=missing):
+                if e[1]:
+                    v = None
+                else:
+                    p = self.full(e)
+                    d = shellprops.cached(p, e[3])
+                    if d is None:
+                        missing.append((p, e[3]))
+                        d = {}
+                    v = d.get(field)
+                if c == 5:
+                    return v or e[3]   # 날짜: 찍은 날짜 등 (없으면 수정한 날짜) = 탐색기 '날짜'
+                # 값 없는 파일(폴더·문서 등)은 오름·내림 모두 맨 뒤
+                return ((v is None) if not rev else (v is not None)), v or 0, shellops.natural_key(e[0])
+            dated = c == 5
+            out = (sorted(rows, key=key, reverse=rev) if dated and not OPTS["date_folders_first"] else
+                   sorted((e for e in rows if e[1]), key=key, reverse=rev) + sorted((e for e in rows if not e[1]), key=key, reverse=rev))
+            if missing:
+                self._load_props(missing)
+            return out
+        if c == 7:   # 만든 날짜
+            key = lambda e: shellprops.created(self.full(e), e[3])
+            if not OPTS["date_folders_first"]:
+                return sorted(rows, key=key, reverse=rev)
+        elif c == 1:
             key = lambda e: e[3]
         elif c == 2:
             key = lambda e: (shellops.type_for(e[0], e[1]).lower(), shellops.natural_key(e[0]))
@@ -1393,6 +1502,9 @@ class ViewMixin(DragScrollMixin):
             super().mousePressEvent(ev)
 
     def mouseReleaseEvent(self, ev):
+        if getattr(self, "_eat_release", None) == ev.button():
+            self._eat_release = None   # 마우스 버튼 지정으로 처리한 누름의 뗌 (v0.9.83)
+            return
         super().mouseReleaseEvent(ev)
         if ev.button() == Qt.LeftButton and hasattr(self, "_press_sel"):
             sm = self.selectionModel()
@@ -1400,7 +1512,22 @@ class ViewMixin(DragScrollMixin):
             if n != self._press_sel or getattr(self, "_drag_started", False):
                 log.info("마우스 뗌 %s 고른수 %d (누를 때 %d) 끌기=%s", type(self).__name__, n, self._press_sel, getattr(self, "_drag_started", False))
 
+    def mouseDoubleClickEvent(self, ev):
+        if keymap.mouse_action(SETTINGS["mouse"], keymap.mouse_combo(ev.button(), ev.modifiers())) != keymap.BUILTIN:
+            return   # 마우스 버튼 지정(v0.9.83): 빠르게 두 번 눌러도 기능은 한 번만
+        # 빈 곳 더블클릭 → 상위 폴더 (옵션, v0.9.81 사용자 의견: 한 번 클릭은 선택 해제로 씀 → 더블클릭으로)
+        if (ev.button() == Qt.LeftButton and SETTINGS["empty_click_up"] and ev.modifiers() == Qt.NoModifier
+                and not self.indexAt(ev.position().toPoint()).isValid()
+                and self.state() != QtWidgets.QAbstractItemView.EditingState and not is_search(self.page.path)):
+            log.info("빈 곳 더블클릭 → 상위 폴더 %s", self.page.path)
+            QtCore.QTimer.singleShot(0, self.page.go_up)
+            return
+        super().mouseDoubleClickEvent(ev)
+
     def contextMenuEvent(self, ev):
+        if getattr(self, "_eat_ctx", False) and ev.reason() != QtGui.QContextMenuEvent.Keyboard:
+            self._eat_ctx = False   # 오른쪽 버튼에 다른 기능 지정 (v0.9.83)
+            return
         if ev.reason() == QtGui.QContextMenuEvent.Keyboard:
             cur = self.currentIndex()
             if cur.isValid() and self.selectionModel().isSelected(cur):
@@ -1427,13 +1554,17 @@ class ViewMixin(DragScrollMixin):
         super().wheelEvent(ev)
 
     def dragEnterEvent(self, ev):
-        if ev.mimeData().hasUrls() and self.page.path != THIS_PC and not is_search(self.page.path):
+        md = ev.mimeData()
+        if (md.hasUrls() or vfiles.has_virtual(md)) and self.page.path != THIS_PC and not is_search(self.page.path):   # v0.9.75 아웃룩 첨부 등 가상 파일
             ev.acceptProposedAction()
         else:
+            if not md.hasUrls():
+                log.info("끌기 받지 않음 — 형식 %s", list(md.formats())[:12])   # 아웃룩 등 실측용
             ev.ignore()
 
     def dragMoveEvent(self, ev):
-        if not ev.mimeData().hasUrls() or self.page.path == THIS_PC or is_search(self.page.path):
+        md = ev.mimeData()
+        if not (md.hasUrls() or vfiles.has_virtual(md)) or self.page.path == THIS_PC or is_search(self.page.path):
             ev.ignore()
             drop_hint(None)
             self._set_drop_row(-1)
@@ -1479,6 +1610,17 @@ class ViewMixin(DragScrollMixin):
     def closeEditor(self, editor, hint):
         super().closeEditor(editor, hint)
         self.page.editor_closed()
+
+
+def toggle_column(c):
+    """머리글 우클릭에서 열 켜고 끄기 → 모든 창·칸·탭에 (v0.9.76)"""
+    cols = [x for x in SETTINGS["columns"] if x != c] if c in SETTINGS["columns"] else SETTINGS["columns"] + [c]
+    SETTINGS["columns"] = [x for x in OPT_COLS if x in cols]
+    log.info("보일 열 %s", SETTINGS["columns"])
+    for w in WINDOWS:
+        for p in w.panes:
+            for v in p.views():
+                v.apply_columns()
 
 
 def _in_active_pane(w):
@@ -1581,10 +1723,15 @@ class DetailView(ViewMixin, QtWidgets.QTreeView):
     def event(self, ev):
         t = ev.type()
         if t == QtCore.QEvent.ContextMenu and ev.reason() != QtGui.QContextMenuEvent.Keyboard and self._in_gutter(ev.pos()):
+            if getattr(self, "_eat_ctx", False):
+                self._eat_ctx = False
+                return True
             log.debug("목록 빈 띠 우클릭 → 폴더 메뉴")
             self.page.context_menu(self, ev)   # 빈 곳 = 폴더 메뉴
             return True
         if t == QtCore.QEvent.MouseButtonPress and self._in_gutter(ev.position().toPoint()):
+            if self.page.mouse_override(self, ev, QtCore.QPoint(-1, -1)):   # 빈 띠 = 빈 곳
+                return True
             if ev.button() == Qt.LeftButton and not (ev.modifiers() & (Qt.ControlModifier | Qt.ShiftModifier)):
                 self.selectionModel().clearSelection()   # 탐색기: 빈 곳 클릭 = 선택 해제
             self.setFocus()
@@ -1689,14 +1836,17 @@ class Page(QtWidgets.QWidget):
         self.tree.sortByColumn(0, Qt.AscendingOrder)
         h = self.tree.header()
         h.setStretchLastSection(False)
-        for c, w in enumerate((322, 145, 120, 80, 320)):   # 탐색기 기본 폭과 같게 (10/6 캡처 실측: 이름 322·날짜 145·유형 120·크기 80)
+        for c, w in enumerate(COL_WIDTH):   # 탐색기 기본 폭과 같게 (10/6 캡처 실측: 이름 322·날짜 145·유형 120·크기 80)
             h.resizeSection(c, w)
+        h.setContextMenuPolicy(Qt.CustomContextMenu)   # v0.9.76: 머리글 우클릭 = 보일 열 고르기 (탐색기와 같게)
+        h.customContextMenuRequested.connect(self._header_menu)
         if not SETTINGS["dark"]:   # 머리줄 글자 = 탐색기와 같은 파란 회색 (실측 #4c607a)
             pal = h.palette()
             for role in (QtGui.QPalette.ButtonText, QtGui.QPalette.WindowText, QtGui.QPalette.Text):
                 pal.setColor(role, QtGui.QColor("#4c607a"))
             h.setPalette(pal)
         self.tree.setColumnHidden(4, True)   # '위치' 열 = 검색 결과에서만
+        self.apply_columns()
         self.tree.doubleClicked.connect(self._activate)
 
         self.icons = IconView()
@@ -1766,7 +1916,33 @@ class Page(QtWidgets.QWidget):
         log.debug("보기 방식 %s path=%s", mode, self.path)
 
     def set_sort(self, col, order):
-        self.tree.sortByColumn(col, order)  # 모델 정렬 + 머리글 표시
+        col = OLD_SORT.get(col, col)   # 0.9.75 의 열 없는 정렬 번호 → 열 번호 (v0.9.76)
+        self.tree.sortByColumn(col, order)  # 모델 정렬 + 머리글 표시 (숨긴 열이면 표시만 안 보임)
+
+    def apply_columns(self):
+        """보일 열 (전역 설정 columns, v0.9.76 머리글 우클릭). 위치(4)는 검색 결과에서만"""
+        shown = set(SETTINGS["columns"])
+        for c in OPT_COLS:
+            self.tree.setColumnHidden(c, c not in shown)
+        self.tree.setColumnHidden(4, not is_search(getattr(self, "path", "")))
+
+    def _header_menu(self, pos):
+        self.header_menu().exec(self.tree.header().mapToGlobal(pos))
+
+    def header_menu(self):
+        """머리글 우클릭 메뉴 (보일 열 고르기) — 띄우지 않고 만들기만 (시험에서도 씀)"""
+        m = QtWidgets.QMenu(self)
+        shown = set(SETTINGS["columns"])
+        for c in OPT_COLS:
+            a = m.addAction(COLS[c], lambda c=c: toggle_column(c))
+            a.setCheckable(True)
+            a.setChecked(c in shown)
+        a = m.addAction(COLS[0])   # 이름은 항상 (탐색기와 같게 끌 수 없음)
+        a.setCheckable(True)
+        a.setChecked(True)
+        a.setEnabled(False)
+        m.insertAction(m.actions()[0], a)
+        return m
 
     # ---------------------------------------------------------- 탭별 정렬·열 너비 (다시 켜도·자동 기록에서도 그대로)
     def view_state(self):
@@ -1787,7 +1963,8 @@ class Page(QtWidgets.QWidget):
                         w = new_default[c]
                     h.resizeSection(c, int(w))
             col, order = vs.get("sort") or [0, 0]
-            if 0 <= int(col) < h.count():
+            col = OLD_SORT.get(int(col), int(col))   # 0.9.75 저장 번호 10~14 → 열 5~9
+            if 0 <= col < h.count():
                 self.set_sort(int(col), Qt.SortOrder(int(order)))
         except Exception:
             log.exception("탭 정렬·열 너비 복원 실패 %s", vs)
@@ -2288,6 +2465,10 @@ class Page(QtWidgets.QWidget):
         act = VIEW_KEYS.get(keymap.event_key(ev))
         if not act:
             return False
+        return self.run_action(act)
+
+    def run_action(self, act):
+        """파일 목록 기능 실행 (단축키·마우스 버튼 공용) → 처리했으면 True"""
         if act == "open":
             self.open_selected()
         elif act == "open_new_tab":
@@ -2326,8 +2507,45 @@ class Page(QtWidgets.QWidget):
             return False
         return True
 
+    def mouse_override(self, view, ev, pos):
+        """v0.9.83 마우스 버튼 지정: 이 조합에 기능이 지정돼 있으면 실행하고 True (기본 동작이면 False).
+        pos = 목록 안 누른 자리(그 자리 파일을 고르고 실행) / None = 목록 밖(지금 고른 것 그대로)"""
+        combo = keymap.mouse_combo(ev.button(), ev.modifiers())
+        act = keymap.mouse_action(SETTINGS["mouse"], combo)
+        if act == keymap.BUILTIN:
+            return False
+        if pos is not None:
+            idx = view.indexAt(pos)
+            if idx.isValid():
+                if not self.sel.isSelected(self.model_.index(idx.row(), 0)):   # 누른 파일을 고름 (탐색기 우클릭과 같게)
+                    self.sel.select(self.model_.index(idx.row(), 0), QtCore.QItemSelectionModel.ClearAndSelect | QtCore.QItemSelectionModel.Rows)
+                self.sel.setCurrentIndex(self.model_.index(idx.row(), 0), QtCore.QItemSelectionModel.NoUpdate)   # view.setCurrentIndex 는 고른 것을 그 하나로 바꿈(실측)
+            else:
+                self.sel.clearSelection()   # 빈 곳 = 지금 폴더에 (새 폴더·붙여넣기 등)
+        log.info("마우스 %s → %s (자리 %s, 고른 것 %d)", combo, act, None if pos is None else (pos.x(), pos.y()), len(self.selected_paths()))
+        view._eat_release = ev.button()   # 뒤따라오는 뗌도 버림 (Qt 가 뗄 때 그 자리 하나만 다시 고름 — 실측)
+        if ev.button() == Qt.RightButton:
+            view._eat_ctx = True   # 뒤따라오는 우클릭 메뉴 신호는 버림
+        if act == keymap.MENU:
+            gp = view.viewport().mapToGlobal(pos if pos is not None else QtCore.QPoint(10, 10))
+            cev = QtGui.QContextMenuEvent(QtGui.QContextMenuEvent.Mouse, view.viewport().mapFromGlobal(gp), gp)
+            QtCore.QTimer.singleShot(0, lambda: self.context_menu(view, cev))
+        elif act != keymap.NONE:
+            def run():
+                if keymap.SCOPE.get(act) == "window":
+                    m = main_of(self)
+                    fn = m.win_actions.get(act) if m is not None else None
+                    if fn:
+                        fn()
+                elif not self.run_action(act):
+                    log.warning("마우스 기능 실행 못 함 %s", act)
+            QtCore.QTimer.singleShot(0, run)   # 누름 처리 안에서 대화상자(삭제 확인 등)를 띄우지 않게
+        return True
+
     def handle_mouse(self, view, ev):
         # 마우스 뒤로/앞으로는 Main.eventFilter 가 창 전체에서 처리
+        if self.mouse_override(view, ev, ev.position().toPoint()):
+            return True
         if ev.button() == Qt.MiddleButton:
             idx = view.indexAt(ev.position().toPoint())
             if idx.isValid() and self.model_.rows[idx.row()][1]:
@@ -2412,6 +2630,8 @@ class Page(QtWidgets.QWidget):
             # 빈 곳: 윈도우 탐색기 빈 곳 메뉴 순서 (10/8 사용자 확정) — 새 폴더 · 보기 · 정렬 기준 · 새로 고침 · ★4Dir 즐겨찾기
             # ─ 붙여넣기(복사한 것 없으면 흐림) ─ 윈도우 항목들(윈도우 '새 폴더' 자리에 되돌리기) … 속성
             v = self
+            if pane and not pane.tabrow.isVisibleTo(pane):   # v0.9.78: 탭 줄을 숨겨 + 버튼이 없을 때만 (마우스로도 새 탭)
+                extras.append((mlabel(T("새 탭"), "new_tab"), lambda: pane.add_tab(self.path, focus=True)))
             extras.append((mlabel(T("새 폴더"), "new_folder", "N"), self.do_new_folder))
             if pane:
                 extras.append((mlabel(T("보기"), None, "V"), [({"t": lbl, "chk": pane.mode == k}, (lambda k=k: pane.set_mode(k))) for k, lbl, _ in VIEW_MODES]))
@@ -2540,9 +2760,39 @@ class Page(QtWidgets.QWidget):
     def drop(self, view, ev):
         srcs = [u.toLocalFile() for u in ev.mimeData().urls() if u.isLocalFile()]
         tgt = self._drop_target(view, ev)
+        if not srcs and vfiles.has_virtual(ev.mimeData()):   # v0.9.75: 아웃룩 첨부 등 가상 파일 → 내용을 받아 저장
+            try:
+                saved, why = vfiles.save(ev.mimeData(), tgt)
+            except Exception as ex:
+                log.exception("가상 파일 저장 실패 → %s", tgt)
+                saved, why = [], str(ex)
+            if why == "multi":
+                self.status.emit(T("⚠ 여러 개를 한꺼번에 끌어 놓을 수 없습니다 — 하나씩 끌어 놓아 주세요"))
+            elif why == "partial":   # v0.9.78: 여러 개 중 일부만 내용을 못 받음
+                self.status.emit(T("⚠ 일부 파일은 내용을 받지 못해 저장하지 않았습니다 (로그에 기록)"))
+            elif why == "preview":   # v0.9.81: 웹 아웃룩 첨부를 끌면 원본 대신 미리보기 그림(png)만 옴 → v0.9.82 저장 안 함. 다른 파일과 같이 끌면 상태 줄이 덮이므로 알림 줄로
+                msg = T("⚠ 웹 메일 첨부는 원본을 받을 수 없어 저장하지 않았습니다 — 메일에서 다운로드하세요")
+                self.status.emit(msg)
+                main = main_of(self)
+                if main is not None:
+                    main.show_notice(msg, sticky=False, ms=12000)
+            elif why == "empty":   # v0.9.77: 웹 아웃룩 본문 이미지 등 — 내용이 비어 옴
+                self.status.emit(T("⚠ 내용을 받지 못해 저장하지 않았습니다 — 웹 메일 본문 이미지는 우클릭 → 다른 이름으로 저장"))
+            elif why:
+                self.status.emit(T("⚠ 끌어 놓은 파일을 저장하지 못했습니다 (로그에 기록)"))
+            if saved and os.path.normcase(tgt) == os.path.normcase(self.path):
+                names = [os.path.basename(p) for p in saved]
+                self.keep_sel = (names, self.view().verticalScrollBar().value(), names[0], -1)   # 저장한 파일을 골라 둠
+                self.reload("vfile")
+            ev.setDropAction(Qt.CopyAction)
+            ev.accept()
+            return
         move = self.drop_action(view, ev) == Qt.MoveAction
         srcs = [s for s in srcs if os.path.normcase(os.path.normpath(s)) != os.path.normcase(tgt)]
         log.info("드롭 %s n=%d -> %s", "이동" if move else "복사", len(srcs), tgt)
+        if not srcs:   # v0.9.79: 받을 파일이 없는 끌기(웹 이미지 등) — 무엇이 왔는지 남김
+            md = ev.mimeData()
+            log.info("드롭할 파일 없음 — 형식 %s / 주소 %s", md.formats(), [u.toString()[:200] for u in md.urls()[:3]])
         if srcs:
             self.file_op(srcs, tgt, move, select_in=self if os.path.normcase(tgt) == os.path.normcase(self.path) else None)
         # 원본 쪽(탐색기 등)이 따로 지우지 않도록 '복사'로 응답 — 이동은 우리가 직접 처리함
@@ -3164,6 +3414,7 @@ class PaneTabBar(QtWidgets.QTabBar):
     테두리가 2px 안쪽 → 단추가 테두리 위에 걸쳐 밖으로 보였음(측정: 칸 0~79, 단추 63~78, 테두리 77).
     스타일시트 QTabBar::close-button 위치 규칙·앱 스타일 대리 모두 이 단추엔 안 먹음(실측) → 배치가 끝날 때마다 옮김"""
     CLOSE_SHIFT = 4
+    countChanged = QtCore.Signal()   # 탭 수가 바뀜 (v0.9.75: 탭 하나면 탭줄 숨김 옵션)
 
     def __init__(self, *a):
         super().__init__(*a)
@@ -3180,10 +3431,12 @@ class PaneTabBar(QtWidgets.QTabBar):
     def tabInserted(self, index):
         super().tabInserted(index)
         self._fix_later()
+        self.countChanged.emit()
 
     def tabRemoved(self, index):
         super().tabRemoved(index)
         self._fix_later()
+        self.countChanged.emit()
 
     def resizeEvent(self, ev):
         super().resizeEvent(ev)
@@ -3334,6 +3587,7 @@ class Pane(QtWidgets.QFrame):
         self.bar.installEventFilter(self)
         tabrow.installEventFilter(self)
         self.tabrow = tabrow
+        self.bar.countChanged.connect(self.update_tabrow)
 
         self.bar.setContextMenuPolicy(Qt.CustomContextMenu)
         self.bar.customContextMenuRequested.connect(self._tab_menu)
@@ -3598,6 +3852,12 @@ class Pane(QtWidgets.QFrame):
                 break
         return w
 
+    def update_tabrow(self):
+        """탭이 하나뿐이면 탭줄 숨김 (옵션, v0.9.75). 새 탭은 Ctrl+T · 가운데 클릭 · 우클릭 '새 탭에서 열기'"""
+        show = not (SETTINGS["hide_single_tab"] and self.bar.count() <= 1)
+        if self.tabrow.isVisibleTo(self) != show:
+            self.tabrow.setVisible(show)
+
     def close_tab(self, i):
         if self.bar.count() <= 1:
             return  # 칸마다 최소 1개
@@ -3822,6 +4082,13 @@ class Pane(QtWidgets.QFrame):
             a = show.addAction(lbl, lambda key=key: main.toggle_opt(key) if main is not None else None)
             a.setCheckable(True)
             a.setChecked(OPTS[key])
+        show.addSeparator()   # v0.9.75 사용자 의견 (옵션)
+        for key, lbl in (("hide_single_tab", T("탭이 하나면 탭 줄 숨기기 (새 탭: Ctrl+T)")),
+                         ("empty_click_up", T("빈 곳을 더블클릭하면 상위 폴더로")),
+                         ("keep_favbar", T("메뉴줄을 접어도 즐겨찾기 줄은 보이기"))):
+            a = show.addAction(lbl, lambda key=key: main.toggle_setting(key) if main is not None else None)
+            a.setCheckable(True)
+            a.setChecked(bool(SETTINGS[key]))
 
     def fill_sort_menu(self, m):
         m.clear()
@@ -5055,6 +5322,22 @@ class Main(QtWidgets.QMainWindow):
             for p in self.panes:
                 if p.filt.isVisible() and not any(x is obj or x.isAncestorOf(obj) for x in (p.filt, p.btn_find, p.btn_deep)):
                     p.close_filter_if_empty()
+        if t == QtCore.QEvent.MouseButtonPress and ev.button() in (Qt.BackButton, Qt.ForwardButton) and \
+                keymap.mouse_action(SETTINGS["mouse"], keymap.mouse_combo(ev.button(), ev.modifiers())) != keymap.BUILTIN:
+            w = obj if isinstance(obj, QtWidgets.QWidget) else None
+            if w is None or w.window() is not self:
+                return super().eventFilter(obj, ev)
+            p = w
+            while p is not None and not isinstance(p, Pane):
+                p = p.parentWidget()
+            pg = (p or self.pane()).view()
+            if pg is None:
+                return True
+            lv = pg.view()
+            vp = lv.viewport()
+            inside = vp is w or vp.isAncestorOf(w)   # 목록 안에서 눌렀으면 그 자리 파일에, 밖이면 지금 고른 것에
+            pg.mouse_override(lv, ev, vp.mapFromGlobal(ev.globalPosition().toPoint()) if inside else None)
+            return True
         if t == QtCore.QEvent.MouseButtonPress and ev.button() in (Qt.BackButton, Qt.ForwardButton):
             kind, back = T("마우스 버튼"), ev.button() == Qt.BackButton
         elif t == QtCore.QEvent.KeyPress and ev.key() in (Qt.Key_Back, Qt.Key_Forward):
@@ -5093,9 +5376,11 @@ class Main(QtWidgets.QMainWindow):
         log.info("단축키 적용: 창 %d개, 목록 %d개, 바꾼 것 %s", len(self.shortcuts), len(VIEW_KEYS), SETTINGS["keys"])
 
     def open_keys(self):
-        dlg = keymap.KeyDialog(SETTINGS["keys"], self)
+        dlg = keymap.KeyDialog(SETTINGS["keys"], self, mouse=SETTINGS["mouse"])
         if dlg.exec() and dlg.result_keys is not None:
             SETTINGS["keys"] = dlg.result_keys
+            SETTINGS["mouse"] = dlg.result_mouse or {}
+            log.info("마우스 버튼 지정 %s", SETTINGS["mouse"])
             for w in WINDOWS or [self]:
                 w.apply_keys()
             hotkey_register()   # 어디서나 단축키도 새 키로
@@ -5331,7 +5616,7 @@ class Main(QtWidgets.QMainWindow):
         """상단 메뉴줄 + 즐겨찾기 바 접기 → 칸 위에 얇은 줄 하나만 (누르거나 Ctrl+Shift+M 으로 다시 펼침)"""
         self.topbar.setVisible(not on)
         self.searchbar.setVisible(not on)
-        self.favbar.setVisible(not on)
+        self.favbar.setVisible(not on or bool(SETTINGS["keep_favbar"]))   # v0.9.75: 접어도 즐겨찾기는 남길 수 있음
         self.chrome_strip.setVisible(on)
         if save:
             SETTINGS["chrome_collapsed"] = on
@@ -5779,6 +6064,17 @@ eports.
         log.info("레이아웃 %s", key)
         self.save_timer.start()
 
+    def toggle_setting(self, key):
+        """켜고 끄는 전역 설정 (v0.9.75 사용자 의견: 탭 하나면 탭줄 숨김 · 빈 곳 클릭 상위 폴더 · 메뉴줄 접어도 즐겨찾기 남김)"""
+        SETTINGS[key] = not SETTINGS[key]
+        log.info("설정 %s=%s", key, SETTINGS[key])
+        if key == "hide_single_tab":
+            for p in self.all_panes():
+                p.update_tabrow()
+        elif key == "keep_favbar":
+            for w in WINDOWS or [self]:
+                w.set_chrome_collapsed(bool(SETTINGS["chrome_collapsed"]), save=False)
+
     def toggle_opt(self, key):
         OPTS[key] = not OPTS[key]
         log.info("보기 옵션 %s=%s", key, OPTS[key])
@@ -5970,6 +6266,7 @@ eports.
         if not getattr(self, "_relaunch_set", False):   # 작업표시줄 고정 → 4Dir 실행기로 (창마다 한 번)
             self._relaunch_set = True
             set_taskbar_relaunch(self)
+        olehook.install(int(self.winId()))   # v0.9.78: 창이 다시 만들어지면(항상 위 등) 새 창에 다시 끼움
 
     def closeEvent(self, ev):
         last = not [w for w in WINDOWS if w is not self]

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 공개 사이트 만들기 (MAKE_SITE_VER 1.8.0 — 머리줄 게시판 버튼)
+"""4Dir 공개 사이트 만들기 (MAKE_SITE_VER 1.9.0 — 코드 서명 페이지 = 서명 없음)
 
 python make_site.py [출력 폴더]   (기본: 4Dir\\_site\\out)
 - 문구: site_text.py (10개 언어), 버전별 바뀐 점: changelog.py (1.2.0 — 메인 '바뀐 점' + versions.html 지난 버전 받기), 설정: site_config.json (깃허브 계정·후원 주소)
@@ -7,6 +7,7 @@ python make_site.py [출력 폴더]   (기본: 4Dir\\_site\\out)
 - 결과: index.html(영어) + <언어>\\index.html, style.css, img\\, icon.png, version.json(앱 새 버전 알림),
         robots.txt, sitemap.xml, .nojekyll  → 깃허브 무료 페이지(docs 폴더)에 그대로 올림
 - 1.3.0: _site\apps\<이름>\ 의 다른 앱 페이지를 /<이름>/ 로 복사(just-downloader)
+- 1.9.0: code-signing.html 을 '서명 없음'으로 (SignPath Foundation 거절 10/31, 유료는 법인만 — 사용자 11/3 "서명 없음으로 고쳐"). SignPath 문구·서명 승인 역할 삭제, 빌드 방식·SHA256 확인·개인 정보는 유지
 - 1.8.0: 머리줄에 💬 게시판 버튼(10개 언어) → 깃허브 토론 게시판 github.com/gkstmdahr/4Dir/discussions (사용자 10/30)
 - 1.7.0: code-signing.html (영어 한 장: 서명 정책·역할·개인 정보 — SignPath 신청 조건) + 모든 페이지 바닥글에 링크
 - 1.5.5: 순서 바꿈 — just downloader 는 로고 바로 옆(왼쪽 정렬), 사용법은 오른쪽 언어 선택 옆 (사용자 지시)
@@ -24,7 +25,7 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.8.0"
+MAKE_SITE_VER = "1.8.1"
 SUPPORT = "support@4dir.net"   # 문제 보고 메일 (1.1.1)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -246,7 +247,7 @@ document.querySelectorAll('section.gs').forEach(function(s){{io.observe(s)}})}}c
 
 
 def signing_page(cfg):
-    """코드 서명 정책 (1.7.0, 영어 한 장 — SignPath Foundation 무료 서명 신청 조건: 서명 정책·역할·개인 정보 문구가 사이트에 있어야 함)"""
+    """코드 서명 정책 (1.7.0 SignPath 신청용 → 1.9.0 서명 없음: 빌드 방식·SHA256 확인·개인 정보)"""
     repo_url = f"https://github.com/{cfg['owner'] or 'OWNER'}/{cfg['repo']}"
     owner = cfg["owner"] or "OWNER"
     base = site_base(cfg)
@@ -256,7 +257,7 @@ def signing_page(cfg):
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>4Dir - Code signing policy</title>
-<meta name="description" content="How 4Dir release files are built and signed, who approves them, and what data 4Dir sends.">
+<meta name="description" content="4Dir release files are not code-signed: how they are built, how to check them, and what data 4Dir sends.">
 <link rel="canonical" href="{base}code-signing.html">
 <link rel="icon" href="icon.png">
 <link rel="stylesheet" href="style.css">
@@ -268,24 +269,22 @@ def signing_page(cfg):
 <main class="wrap">
 <p><a href="./">Home</a></p>
 <section><h1>Code signing policy</h1>
-<p>Free code signing provided by <a href="https://signpath.io">SignPath.io</a>, certificate by <a href="https://signpath.org">SignPath Foundation</a>.</p>
-<p class="tip">Status: applying to SignPath Foundation. Until it is approved, release files are <b>not</b> signed by this program —
-check the SHA256 fingerprint shown on the download page instead.</p>
-<h2>What is signed</h2>
+<p class="tip">Status: release files are <b>not</b> code-signed. Windows may show a SmartScreen warning the first time you run 4Dir
+(<b>More info &gt; Run anyway</b>). To make sure the file is genuine, check the SHA256 fingerprint shown on the download page and on
+<a href="{repo_url}/releases">GitHub Releases</a>.</p>
+<h2>How release files are built</h2>
 <ul>
 <li><code>4Dir.exe</code> — the small starter program in the release zip. It only starts the bundled Python with 4Dir's program files
 (the same job as <code>4Dir.vbs</code>). Source: <a href="{repo_url}/blob/main/launcher/4Dir_launcher.cs">launcher/4Dir_launcher.cs</a>.</li>
 <li>It is built by GitHub Actions directly from the public source code (<a href="{repo_url}/actions">build logs</a>,
-workflow <a href="{repo_url}/blob/main/.github/workflows/build-exe.yml">build-exe.yml</a>). Files built on a personal PC are never signed.</li>
-<li>The bundled Python runtime (<code>python.exe</code>, <code>pythonw.exe</code>) is the official build, already signed by the Python Software Foundation.
+workflow <a href="{repo_url}/blob/main/.github/workflows/build-exe.yml">build-exe.yml</a>).</li>
+<li>The bundled Python runtime (<code>python.exe</code>, <code>pythonw.exe</code>) is the official build, signed by the Python Software Foundation.
 Third-party components keep their own licenses (see the <code>licenses</code> folder in the zip).</li>
 </ul>
-<h2>Team roles</h2>
+<h2>Maintainer</h2>
 <ul>
-<li>Committers and reviewers: <a href="https://github.com/{owner}">{owner}</a></li>
-<li>Approvers: <a href="https://github.com/{owner}">{owner}</a> — every signing request is approved by hand, one release at a time.</li>
+<li><a href="https://github.com/{owner}">{owner}</a> — writes, reviews and publishes every release.</li>
 </ul>
-<p>All accounts used for the source code, builds and signing use multi-factor authentication.</p>
 <h2 id="privacy">Privacy policy</h2>
 <p>This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.</p>
 <p>The only network access is the new-version check: once a day 4Dir reads <code>{base}version.json</code> (a small public file; nothing about you or your files is sent).
@@ -486,7 +485,7 @@ def main():
     base = site_base(cfg)
     ver = rel[0]
     # 1.5.0: 앱 새 버전 알림 줄에 나올 바뀐 점 (앱 언어 코드별, 글자만). notes 는 옛 4Dir(영어로 띄움) 때문에 비움
-    strip = lambda x: re.sub(r"<[^>]+>", "", x)
+    strip = lambda x: html.unescape(re.sub(r"<[^>]+>", "", x))   # 1.8.1: &gt; 같은 글자 표시도 풀어서 (앱 알림은 HTML 아님)
     notes = {ST.APP_LANG[lg]: " / ".join(strip(x) for x in CL.items(ver, lg)) for lg in ST.LANGS}
     json.dump({"version": ver, "page": base, "notes": "", "notes_i18n": notes}, open(os.path.join(OUT, "version.json"), "w", encoding="utf-8"), ensure_ascii=False)
     open(os.path.join(OUT, "robots.txt"), "w", encoding="utf-8").write(f"User-agent: *\nAllow: /\nSitemap: {base}sitemap.xml\n")

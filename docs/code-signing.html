@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>4Dir - Code signing policy</title>
-<meta name="description" content="How 4Dir release files are built and signed, who approves them, and what data 4Dir sends.">
+<meta name="description" content="4Dir release files are not code-signed: how they are built, how to check them, and what data 4Dir sends.">
 <link rel="canonical" href="https://4dir.net/code-signing.html">
 <link rel="icon" href="icon.png">
 <link rel="stylesheet" href="style.css">
@@ -16,24 +16,22 @@
 <main class="wrap">
 <p><a href="./">Home</a></p>
 <section><h1>Code signing policy</h1>
-<p>Free code signing provided by <a href="https://signpath.io">SignPath.io</a>, certificate by <a href="https://signpath.org">SignPath Foundation</a>.</p>
-<p class="tip">Status: applying to SignPath Foundation. Until it is approved, release files are <b>not</b> signed by this program —
-check the SHA256 fingerprint shown on the download page instead.</p>
-<h2>What is signed</h2>
+<p class="tip">Status: release files are <b>not</b> code-signed. Windows may show a SmartScreen warning the first time you run 4Dir
+(<b>More info &gt; Run anyway</b>). To make sure the file is genuine, check the SHA256 fingerprint shown on the download page and on
+<a href="https://github.com/gkstmdahr/4Dir/releases">GitHub Releases</a>.</p>
+<h2>How release files are built</h2>
 <ul>
 <li><code>4Dir.exe</code> — the small starter program in the release zip. It only starts the bundled Python with 4Dir's program files
 (the same job as <code>4Dir.vbs</code>). Source: <a href="https://github.com/gkstmdahr/4Dir/blob/main/launcher/4Dir_launcher.cs">launcher/4Dir_launcher.cs</a>.</li>
 <li>It is built by GitHub Actions directly from the public source code (<a href="https://github.com/gkstmdahr/4Dir/actions">build logs</a>,
-workflow <a href="https://github.com/gkstmdahr/4Dir/blob/main/.github/workflows/build-exe.yml">build-exe.yml</a>). Files built on a personal PC are never signed.</li>
-<li>The bundled Python runtime (<code>python.exe</code>, <code>pythonw.exe</code>) is the official build, already signed by the Python Software Foundation.
+workflow <a href="https://github.com/gkstmdahr/4Dir/blob/main/.github/workflows/build-exe.yml">build-exe.yml</a>).</li>
+<li>The bundled Python runtime (<code>python.exe</code>, <code>pythonw.exe</code>) is the official build, signed by the Python Software Foundation.
 Third-party components keep their own licenses (see the <code>licenses</code> folder in the zip).</li>
 </ul>
-<h2>Team roles</h2>
+<h2>Maintainer</h2>
 <ul>
-<li>Committers and reviewers: <a href="https://github.com/gkstmdahr">gkstmdahr</a></li>
-<li>Approvers: <a href="https://github.com/gkstmdahr">gkstmdahr</a> — every signing request is approved by hand, one release at a time.</li>
+<li><a href="https://github.com/gkstmdahr">gkstmdahr</a> — writes, reviews and publishes every release.</li>
 </ul>
-<p>All accounts used for the source code, builds and signing use multi-factor authentication.</p>
 <h2 id="privacy">Privacy policy</h2>
 <p>This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.</p>
 <p>The only network access is the new-version check: once a day 4Dir reads <code>https://4dir.net/version.json</code> (a small public file; nothing about you or your files is sent).

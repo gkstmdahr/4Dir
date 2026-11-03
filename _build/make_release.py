@@ -28,7 +28,7 @@ import subprocess
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import usage_text   # 1.8.0: 언어별 사용법 글
 
-MAKE_VER = "1.8.0"   # 1.8.0: 사용법 10개 언어 파일(이름도 그 언어)·Guide\<언어> 그림 10개 언어, 한국어 사용법에서 영어 부분 뺌 / 1.7.0: 4Dir.exe 실행기 포함(사용법은 exe 우선, vbs 예비) / 1.6.0: 일본어 설명서 お読みください.txt (Vector 掲載基準) / 1.5.0: qwebp·qjpeg 포함, imgconvert 가져오기 확인 / 1.4.1: 프로그램 안 사용법 그림은 ko·en p1~p6 만 / 1.4.0: qgif.dll(GIF 재생) 포함 / 1.3.0: 회사 글자 목록 별도 파일(corp_words.txt, 비공개), 4Dir 본체 GPL-3.0 라이선스 포함, 패키지 정보 없을 때 버전·pywin32 라이선스 대체 / 1.2.5: 소스 백업에 _dev(시험·번역) 포함 / 1.2.4: overlays·overlayorder 가져오기 확인 / 1.2.3: thumbs 가져오기 확인 / 1.2.2: 사용법에 즐겨찾기 정리·탭 끌기·일괄 변경 / 1.2.1: favorg 가져오기 확인 / 1.2.0: 이전 배포판은 _release\백업\배포판 으로 옮김(최근 10개), 버전마다 소스 백업 _release\백업\소스 / 1.1.5: 사용법 그림(bin\guide, 사용법 그림\ko·en) / 1.1.4: batchrename 가져오기 확인 / 1.1.3: 회사 관련 글자 검사(있으면 배포 중단) / 1.1.1: 언어 파일(bin\lang) 포함·영어 안내 / 1.1.0: .pyc 배포, SHA256 지문 파일, 라이선스 문서, 사용법(차단 해제 안내) 갱신
+MAKE_VER = "1.9.0"   # 1.9.0: 사용법 파일 맨 위에 이번 버전 바뀐 점(changelog) / 1.8.0: 사용법 10개 언어 파일(이름도 그 언어)·Guide\<언어> 그림 10개 언어, 한국어 사용법에서 영어 부분 뺌 / 1.7.0: 4Dir.exe 실행기 포함(사용법은 exe 우선, vbs 예비) / 1.6.0: 일본어 설명서 お読みください.txt (Vector 掲載基準) / 1.5.0: qwebp·qjpeg 포함, imgconvert 가져오기 확인 / 1.4.1: 프로그램 안 사용법 그림은 ko·en p1~p6 만 / 1.4.0: qgif.dll(GIF 재생) 포함 / 1.3.0: 회사 글자 목록 별도 파일(corp_words.txt, 비공개), 4Dir 본체 GPL-3.0 라이선스 포함, 패키지 정보 없을 때 버전·pywin32 라이선스 대체 / 1.2.5: 소스 백업에 _dev(시험·번역) 포함 / 1.2.4: overlays·overlayorder 가져오기 확인 / 1.2.3: thumbs 가져오기 확인 / 1.2.2: 사용법에 즐겨찾기 정리·탭 끌기·일괄 변경 / 1.2.1: favorg 가져오기 확인 / 1.2.0: 이전 배포판은 _release\백업\배포판 으로 옮김(최근 10개), 버전마다 소스 백업 _release\백업\소스 / 1.1.5: 사용법 그림(bin\guide, 사용법 그림\ko·en) / 1.1.4: batchrename 가져오기 확인 / 1.1.3: 회사 관련 글자 검사(있으면 배포 중단) / 1.1.1: 언어 파일(bin\lang) 포함·영어 안내 / 1.1.0: .pyc 배포, SHA256 지문 파일, 라이선스 문서, 사용법(차단 해제 안내) 갱신
 # PySide6·Qt 라이선스 원문 (LGPLv3 는 GPLv3 를 참조). gnu.org 는 이 네트워크에서 응답 없음(10/2 실측) → SPDX 공식 원문 저장소
 LICENSE_URLS = {"LGPL-3.0.txt": "https://raw.githubusercontent.com/spdx/license-list-data/main/text/LGPL-3.0-only.txt",
                 "GPL-3.0.txt": "https://raw.githubusercontent.com/spdx/license-list-data/main/text/GPL-3.0-only.txt"}
@@ -236,6 +236,21 @@ def backup_source(ver):
     log(f"소스 백업 {zp} ({n}개, {size_mb(zp):.1f}MB)")
 
 
+NEWS_HEAD = {"en": "What's new in v{ver}", "ko": "v{ver} 에서 바뀐 점", "ja": "v{ver} の変更点", "zh_CN": "v{ver} 更新内容",
+             "zh_TW": "v{ver} 更新內容", "de": "Neu in v{ver}", "es": "Novedades de la v{ver}", "fr": "Nouveautés de la v{ver}",
+             "pt_BR": "Novidades da v{ver}", "ru": "Что нового в v{ver}"}
+
+
+def news_block(lg, ver):
+    """1.9.0: 사용법 파일 맨 위에 이번 버전 바뀐 점 (changelog.py 맨 위 항목 = 사이트 '바뀐 점'과 같은 글)"""
+    import changelog
+    if not changelog.CHANGES or changelog.CHANGES[0][0] != ver:
+        raise SystemExit(f"changelog.py 맨 위({changelog.CHANGES[0][0]})가 v{ver} 이 아님 — 바뀐 점 먼저 적을 것")
+    items = changelog.items(ver, lg.replace("_", "-"))
+    lines = [re.sub(r"<[^>]+>", "", x).replace("&gt;", ">").replace("&lt;", "<").replace("&amp;", "&") for x in items]
+    return "[" + NEWS_HEAD[lg].format(ver=ver) + "]\n" + "".join(f"  - {x}\n" for x in lines) + "\n"
+
+
 def main():
     global _logf
     # 화면 출력 인코딩이 한글을 못 받는 환경(파이프 등)에서도 멈추지 않게 — 10/2 출력 없이 끝난 적 있음
@@ -310,7 +325,7 @@ def main():
     others = usage_text.others_block()
     for lg, fn, _ in usage_text.FILES:
         with open(os.path.join(out, fn), "w", encoding="utf-8-sig") as f:
-            f.write(texts[lg].format(ver=ver, others=others))
+            f.write(news_block(lg, ver) + texts[lg].format(ver=ver, others=others))
     log(f"사용법 {len(usage_text.FILES)}개 언어: {[x[1] for x in usage_text.FILES]}")
     # 사용법 그림 (설명까지 한 장): bin/guide/<언어>/full_pN.png → Guide/<그 언어 이름>/4Dir_guide_N.png
     # 1.8.0: ko·en 만 → 10개 언어, 폴더 이름도 그 언어로(English·한국어·日本語 …)

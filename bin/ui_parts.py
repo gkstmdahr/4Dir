@@ -67,6 +67,11 @@ class Settings:
                      "keys": {},             # 바꾼 단축키만 {기능: "Ctrl+X; F7"} (keymap.py)
                      "search_roots": None,   # 검색 범위 [{path, on}] (None = 기본: 로컬 NTFS 드라이브)
                      "chrome_collapsed": False,   # 상단 메뉴줄+즐겨찾기 바 접음 (Ctrl+Shift+M)
+                     "keep_favbar": True,         # 메뉴줄을 접어도 즐겨찾기 줄은 남김 (v0.9.75 사용자 의견)
+                     "hide_single_tab": False,    # 칸에 탭이 하나뿐이면 탭 줄 숨김 (v0.9.75, 옵션)
+                     "mouse": {},                 # 마우스 버튼 지정 {"Ctrl+middle": 기능} — 기본 동작과 다른 것만 (v0.9.83)
+                     "empty_click_up": True,      # 목록 빈 곳을 더블클릭하면 상위 폴더로 (v0.9.75 옵션, v0.9.82 기본 켬)
+                     "columns": [1, 2, 3],        # 자세히 보기에 보일 열 (v0.9.76 머리글 우클릭; 1 수정한 날짜·2 유형·3 크기·5 날짜·6 길이·7 만든 날짜·8 미디어 작성 날짜·9 사진 크기)
                      "lang": None}           # 화면 언어 코드 (None = 윈도우 표시 언어 따름, i18n.py) — 다시 시작하면 적용
         if os.path.exists(path):
             try:
@@ -76,7 +81,7 @@ class Settings:
                     self.data[tk].update({k: v for k, v in d.get(tk, {}).items() if k in THEME_KEYS})
                 if "theme_mode" not in d and d.get("dark"):   # 0.6.2 이전: 다크 모드 켜둔 사람은 '어둡게' 유지
                     self.data["theme_mode"] = "dark"
-                for k in ("theme_mode", "dark", "fav_expanded", "on_top", "allow_multi", "sysmon", "breadcrumb", "keys", "search_roots", "lang", "chrome_collapsed", "batch_rename", "guide_shown", "update_check", "update_last", "update_skip", "resume_after_reboot"):
+                for k in ("theme_mode", "dark", "fav_expanded", "on_top", "allow_multi", "sysmon", "breadcrumb", "keys", "search_roots", "lang", "chrome_collapsed", "batch_rename", "guide_shown", "update_check", "update_last", "update_skip", "resume_after_reboot", "keep_favbar", "hide_single_tab", "empty_click_up", "columns", "mouse"):
                     if k in d:
                         self.data[k] = d[k]
             except Exception:
