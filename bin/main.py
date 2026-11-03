@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.86"
+QE_VERSION = "0.9.87"
 
 import os
 import sys
@@ -403,6 +403,8 @@ def set_taskbar_relaunch(w):
     except Exception:
         log.exception("작업표시줄 고정 정보 설정 실패")
 
+import carryover  # noqa: E402  (v0.9.87 새 버전 폴더 첫 실행 때 이전 버전 설정 가져오기 — 설정 읽는 모듈보다 먼저)
+carryover.run(BIN_DIR)
 import shellops  # noqa: E402  (로그 설정 뒤에 import)
 import favorg  # noqa: E402
 import favorites  # noqa: E402

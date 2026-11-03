@@ -1,4 +1,6 @@
-// 4Dir launcher (exe) v1.0.0 — 4Dir.vbs 와 같은 일을 하는 작은 실행 파일 (코드 서명용)
+// 4Dir launcher (exe) v1.1.0 — 4Dir.vbs 와 같은 일을 하는 작은 실행 파일 (코드 서명용)
+// - 1.1.0: 다른 폴더의 바로가기 링크(심볼릭 링크 — winget 휴대용 설치 방식)로 실행돼도 진짜 4Dir 폴더를 찾음
+//   (전엔 링크가 있는 폴더에서 bin 을 찾아 '프로그램 파일을 찾을 수 없음' 안내 창, 11/3 재현)
 // - 1) 함께 들어 있는 runtime\pythonw.exe (배포판)
 //   2) 없으면 PATH 의 pythonw.exe — 4Dir 를 돌릴 수 있을 때만 (Python 3.12+ 와 PySide6)
 //   3) 그것도 없으면 안내 창(한국어 / 영어) + 받기 페이지 — 조용히 실패하지 않음
@@ -11,6 +13,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
 
@@ -25,7 +28,7 @@ using System.Windows.Forms;
 
 static class Launcher
 {
-    const string LAUNCHER_VER = "1.0.0";
+    const string LAUNCHER_VER = "1.1.0";
     const string DL_URL = "https://github.com/gkstmdahr/4Dir/releases/latest";
     static string dir;
     static bool ko;
@@ -71,6 +74,31 @@ static class Launcher
         return 1;
     }
 
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    static extern IntPtr CreateFileW(string name, uint access, uint share, IntPtr sa, uint disp, uint flags, IntPtr tmpl);
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    static extern uint GetFinalPathNameByHandleW(IntPtr h, StringBuilder buf, uint len, uint flags);
+    [DllImport("kernel32.dll")]
+    static extern bool CloseHandle(IntPtr h);
+
+    // 1.1.0: 링크를 따라간 진짜 경로 (링크가 아니면 그대로). 실패하면 원래 경로
+    static string RealPath(string p)
+    {
+        IntPtr h = CreateFileW(p, 0, 7, IntPtr.Zero, 3, 0x02000000, IntPtr.Zero);   // 읽기 권한 없이 열기만, 공유 전부, OPEN_EXISTING, BACKUP_SEMANTICS
+        if (h == new IntPtr(-1)) return p;
+        try
+        {
+            var sb = new StringBuilder(1024);
+            uint n = GetFinalPathNameByHandleW(h, sb, (uint)sb.Capacity, 0);
+            if (n == 0 || n >= sb.Capacity) return p;
+            string r = sb.ToString();
+            if (r.StartsWith(@"\\?\UNC\")) r = @"\\" + r.Substring(8);
+            else if (r.StartsWith(@"\\?\")) r = r.Substring(4);
+            return r;
+        }
+        finally { CloseHandle(h); }
+    }
+
     static string FindPy()
     {
         string path = Environment.GetEnvironmentVariable("PATH") ?? "";
@@ -92,9 +120,11 @@ static class Launcher
     [STAThread]
     static int Main()
     {
-        dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        string self = Assembly.GetExecutingAssembly().Location;
+        string real = RealPath(self);
+        dir = Path.GetDirectoryName(real);
         ko = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ko";
-        L("launcher " + LAUNCHER_VER + " in " + dir);
+        L("launcher " + LAUNCHER_VER + " in " + dir + (string.Equals(real, self, StringComparison.OrdinalIgnoreCase) ? "" : " (via link " + self + ")"));
 
         string app = Path.Combine(dir, "bin", "main.py");
         if (!File.Exists(app)) app = Path.Combine(dir, "bin", "main.pyc");

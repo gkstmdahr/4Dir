@@ -1,11 +1,33 @@
 # -*- coding: utf-8 -*-
-"""4Dir 버전별 바뀐 점 (CHANGELOG_VER 1.0.15 — 0.9.86 짧게 고침 11/3 (사용자 '간단명료하게') · 0.9.86 11/3 (0.9.85 공개 전이라 합침, 겹치면 옮김+되돌리기) · 0.9.85 11/3 (0.9.84 공개 전이라 합침, 겹침 알림 기능 칸) · 0.9.84 11/3 (0.9.83 공개 전이라 합침, 마우스 탭 키보드처럼) · 0.9.83 11/3 (0.9.82 공개 전이라 합침, 마우스 버튼 항목 추가) · 0.9.82 11/3 (0.9.81 공개 전이라 합침) · 0.9.81 11/3 (0.9.80 공개 전이라 합침) · 0.9.80 11/2 (0.9.79 공개 전이라 합침) · 0.9.79 11/2 (0.9.78 공개 전이라 합침) · 0.9.78 11/2 (0.9.77 공개 전이라 합침) · 0.9.77 11/2 (0.9.76 공개 전이라 합침) · 0.9.76 11/2 (0.9.75 는 공개 안 해서 합침) · 0.9.73 4Dir.exe 10/30 · 0.9.71 항목 10/29 (0.9.68~0.9.70 은 공개 안 해서 0.9.71 에 합침)) — make_site.py 가 읽어 메인 '새로 바뀐 점' + 지난 버전 페이지를 만듦.
+"""4Dir 버전별 바뀐 점 (CHANGELOG_VER 1.0.16 — 0.9.87 11/4 설정 이어받기·링크 실행 · 0.9.86 짧게 고침 11/3 (사용자 '간단명료하게') · 0.9.86 11/3 (0.9.85 공개 전이라 합침, 겹치면 옮김+되돌리기) · 0.9.85 11/3 (0.9.84 공개 전이라 합침, 겹침 알림 기능 칸) · 0.9.84 11/3 (0.9.83 공개 전이라 합침, 마우스 탭 키보드처럼) · 0.9.83 11/3 (0.9.82 공개 전이라 합침, 마우스 버튼 항목 추가) · 0.9.82 11/3 (0.9.81 공개 전이라 합침) · 0.9.81 11/3 (0.9.80 공개 전이라 합침) · 0.9.80 11/2 (0.9.79 공개 전이라 합침) · 0.9.79 11/2 (0.9.78 공개 전이라 합침) · 0.9.78 11/2 (0.9.77 공개 전이라 합침) · 0.9.77 11/2 (0.9.76 공개 전이라 합침) · 0.9.76 11/2 (0.9.75 는 공개 안 해서 합침) · 0.9.73 4Dir.exe 10/30 · 0.9.71 항목 10/29 (0.9.68~0.9.70 은 공개 안 해서 0.9.71 에 합침)) — make_site.py 가 읽어 메인 '새로 바뀐 점' + 지난 버전 페이지를 만듦.
 새 버전을 낼 때마다 맨 위에 한 줄 추가 (최신이 맨 위). 날짜는 한국 시간 기준 릴리스 날짜.
 항목 하나 = 10개 언어 글자 묶음 (순서: en ko zh-CN zh-TW ja es de fr pt-BR ru). <b> 만 허용."""
 
 ORDER = ["en", "ko", "zh-CN", "zh-TW", "ja", "es", "de", "fr", "pt-BR", "ru"]
 
 CHANGES = [
+("0.9.87", "2026-11-04", [
+    ("<b>Settings carry over</b>: a new version folder copies settings, favorites and open tabs from the previous 4Dir folder next to it on first start.",
+     "<b>설정 이어받기</b>: 새 버전 폴더를 처음 실행하면 옆에 있는 이전 4Dir 폴더의 설정·즐겨찾기·열린 탭을 가져옵니다.",
+     "<b>沿用设置</b>：新版本文件夹首次启动时，会从旁边的旧 4Dir 文件夹复制设置、收藏和打开的标签。",
+     "<b>沿用設定</b>：新版本資料夾首次啟動時，會從旁邊的舊 4Dir 資料夾複製設定、我的最愛和開啟的分頁。",
+     "<b>設定の引き継ぎ</b>：新しいバージョンのフォルダーを初めて起動すると、隣の旧 4Dir フォルダーから設定・お気に入り・開いていたタブをコピーします。",
+     "<b>Ajustes conservados</b>: la carpeta de una versión nueva copia en el primer inicio los ajustes, favoritos y pestañas de la carpeta 4Dir anterior que está al lado.",
+     "<b>Einstellungen übernehmen</b>: Ein neuer Versionsordner übernimmt beim ersten Start Einstellungen, Favoriten und offene Tabs aus dem vorherigen 4Dir-Ordner daneben.",
+     "<b>Réglages conservés</b> : au premier lancement, le dossier d'une nouvelle version copie les réglages, favoris et onglets du dossier 4Dir précédent situé à côté.",
+     "<b>Configurações mantidas</b>: a pasta de uma nova versão copia, na primeira execução, as configurações, favoritos e abas da pasta 4Dir anterior ao lado.",
+     "<b>Перенос настроек</b>: папка новой версии при первом запуске копирует настройки, избранное и открытые вкладки из соседней папки прежней версии 4Dir."),
+    ("<b>4Dir.exe works through links</b>: it now starts when run from a shortcut link in another folder (as winget does).",
+     "<b>링크로도 실행</b>: 다른 폴더의 바로가기 링크로 4Dir.exe 를 실행해도 뜹니다 (winget 설치 방식).",
+     "<b>可通过链接启动</b>：从其他文件夹的链接运行 4Dir.exe 也能启动（winget 的安装方式）。",
+     "<b>可透過連結啟動</b>：從其他資料夾的連結執行 4Dir.exe 也能啟動（winget 的安裝方式）。",
+     "<b>リンクからも起動</b>：別フォルダーのリンクから 4Dir.exe を実行しても起動します（winget の方式）。",
+     "<b>Funciona desde enlaces</b>: 4Dir.exe ya arranca desde un enlace en otra carpeta (como hace winget).",
+     "<b>Start über Verknüpfungen</b>: 4Dir.exe startet jetzt auch über einen Link in einem anderen Ordner (wie bei winget).",
+     "<b>Lancement via un lien</b> : 4Dir.exe démarre désormais depuis un lien placé dans un autre dossier (comme winget).",
+     "<b>Funciona por atalho</b>: o 4Dir.exe agora abre a partir de um link em outra pasta (como o winget faz).",
+     "<b>Запуск по ссылке</b>: 4Dir.exe теперь запускается и по ссылке из другой папки (как делает winget)."),
+]),
 ("0.9.86", "2026-11-03", [
     ("<b>Mouse button actions</b>: Tools &gt; Shortcuts &gt; Mouse. A key or button already in use moves to the new action; Undo brings it back.",
      "<b>마우스 버튼에 기능 지정</b>: 도구 &gt; 단축키 설정 &gt; 마우스. 이미 쓰는 키·버튼은 새 기능으로 옮기고, 되돌리기로 복구.",
