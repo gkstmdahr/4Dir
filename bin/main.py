@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.93"
+QE_VERSION = "0.9.94"
 
 import os
 import sys
@@ -403,6 +403,8 @@ def set_taskbar_relaunch(w):
     except Exception:
         log.exception("작업표시줄 고정 정보 설정 실패")
 
+import backup  # noqa: E402  (v0.9.94 설정 가져오기 — 준비된 백업을 설정 읽기 전에 바꿔 넣음)
+RESTORED = backup.apply_pending(BIN_DIR)
 import carryover  # noqa: E402  (v0.9.87 새 버전 폴더 첫 실행 때 이전 버전 설정 가져오기 — 설정 읽는 모듈보다 먼저)
 carryover.run(BIN_DIR)
 import shellops  # noqa: E402  (로그 설정 뒤에 import)
@@ -421,6 +423,7 @@ import overlays  # noqa: E402
 import i18n  # noqa: E402
 import foldersize  # noqa: E402  (v0.9.89 폴더 크기)
 import labels  # noqa: E402  (v0.9.89 색 라벨·탭 색)
+import cloud  # noqa: E402  (v0.9.94 원드라이브 등 동기화 폴더 상태 열)
 import palette  # noqa: E402  (v0.9.89 명령 찾기)
 import hashview  # noqa: E402  (v0.9.89 확인값 SHA256)
 from i18n import T  # noqa: E402  (화면 문구 번역)
@@ -464,10 +467,10 @@ MODE_PX = {k: px for k, _, px in VIEW_MODES}
 SORT_COLS = [(0, T("이름")), (5, T("날짜")), (2, T("유형")), (3, T("크기")), (6, T("길이")), (7, T("만든 날짜")),
              (1, T("수정한 날짜")), (4, T("파일 위치")), (8, T("미디어 작성 날짜")), (9, T("사진 크기"))]
 # v0.9.76: 정렬 기준 = 열 번호 (열 5~9 추가, 머리글 우클릭으로 보이기). 0.9.75 에 저장된 열 없는 정렬 번호 10~14 → 새 열 번호
-OLD_SORT = {10: 5, 11: 6, 12: 7, 13: 8, 14: 9}
+OLD_SORT = {11: 6, 12: 7, 13: 8, 14: 9}   # v0.9.94: 10 은 이제 상태 열 — 0.9.75(공개 안 함) 의 10(날짜) 변환은 뺌
 PROP_SORTS = {5: "item_date", 6: "duration", 8: "media_date", 9: "pixels"}   # 뒤에서 셸 속성을 읽어야 하는 정렬
 PROP_COLS = {5: "item_date", 6: "duration", 8: "media_date", 9: "dims"}       # 그 값을 보여 주는 열
-OPT_COLS = [1, 2, 3, 5, 6, 7, 8, 9]   # 머리글 우클릭에서 켜고 끄는 열 (이름은 항상, 위치는 검색 결과에서만)
+OPT_COLS = [10, 1, 2, 3, 5, 6, 7, 8, 9]   # 10 = 상태(v0.9.94, 동기화 폴더에서만 보임 — 설정 status_col)   # 머리글 우클릭에서 켜고 끄는 열 (이름은 항상, 위치는 검색 결과에서만)
 FAV = favorites.Favorites()
 # 우클릭 메뉴에서 윈도우 자체의 '즐겨찾기에 추가(F)'(탐색기 빠른 실행 고정)와 헷갈리지 않게 ★QE 표시
 QE_FAV = T("★ 4Dir 즐겨찾기")
@@ -782,8 +785,9 @@ POOL.setMaxThreadCount(4)
 
 # ================================================================ 목록 모델
 COLS = [T("이름"), T("수정한 날짜"), T("유형"), T("크기"), T("위치"),   # 위치 = 검색 결과에서만 보임
-        T("날짜"), T("길이"), T("만든 날짜"), T("미디어 작성 날짜"), T("사진 크기")]   # v0.9.76: 머리글 우클릭으로 보이기 (기본 숨김)
-COL_WIDTH = (322, 145, 120, 80, 320, 145, 80, 145, 145, 100)
+        T("날짜"), T("길이"), T("만든 날짜"), T("미디어 작성 날짜"), T("사진 크기"),   # v0.9.76: 머리글 우클릭으로 보이기 (기본 숨김)
+        T("상태")]   # v0.9.94: 원드라이브 등 동기화 폴더 상태 (탐색기처럼 이름 바로 오른쪽)
+COL_WIDTH = (322, 145, 120, 80, 320, 145, 80, 145, 145, 100, 46)
 
 
 def fmt_duration(sec):
@@ -843,6 +847,7 @@ class DirModel(QtCore.QAbstractTableModel):
         self.icon_px = 16
         self.svn = {}      # 이름 → SVN 상태 (svnstat.folder_status, 따로 늦게 채움)
         self.cmp = {}      # 이름 → 두 칸 비교 결과 (v0.9.89, Main.compare_panes) — 다시 읽으면 지움
+        self.cloud = None       # 동기화 폴더(원드라이브 등) 안이면 그 등록 이름 (v0.9.94 상태 열)
         self.group_on = False   # 자세히 보기일 때만 날짜 묶음 (v0.9.90, Page.set_mode) — 아이콘 보기는 묶지 않음
         self.n_groups = 0       # rows 안 묶음 제목 줄 수 (항목 수 셀 때 뺌)
         self.thumbs_on = False   # 아이콘 보기 + 미리보기 켬 → 그림 파일은 미리보기 (thumbs.py)
@@ -882,6 +887,7 @@ class DirModel(QtCore.QAbstractTableModel):
         if self.ovl_on and OVL is not None:
             OVL.forget(path)
         self.path, self.all = path, entries
+        self.cloud = cloud.root_of(path) if path and path != THIS_PC and not is_search(path) else None
         self._sort()
         self.endResetModel()
 
@@ -941,6 +947,9 @@ class DirModel(QtCore.QAbstractTableModel):
                 return f"{v[0]} x {v[1]}"
         elif role == Qt.EditRole and c == 0:
             return e[0]
+        elif c == 10 and self.cloud and role in (Qt.DecorationRole, Qt.ToolTipRole):   # 동기화 상태 (v0.9.94)
+            st = cloud.state(e[4])
+            return cloud.icon(st, self.icon_px if self.icon_px <= 20 else 16) if role == Qt.DecorationRole else cloud.STATES[st][1]
         elif role == Qt.DecorationRole and c == 0:
             if self.thumbs_on and not e[1] and thumbs.is_image(e[0]):
                 pm = thumbs_service().get(self.full(e), e[3], self.thumb_px)
@@ -977,15 +986,18 @@ class DirModel(QtCore.QAbstractTableModel):
             return e[5]
         return None
 
+    # v0.9.94: Qt 가 폴더 열 때 줄마다 flags 를 부름(3만 줄 = 6만 번, 실측) — 매번 enum OR 하면 1.4초 → 미리 만든 값 돌려줌
+    _F_ROW = Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemNeverHasChildren | Qt.ItemIsDragEnabled
+    _F_NAME = _F_ROW | Qt.ItemIsEditable
+
     def flags(self, idx):
-        if idx.isValid() and idx.row() < len(self.rows) and is_group(self.rows[idx.row()]):
+        r = idx.row()
+        if r < 0:
+            return Qt.NoItemFlags
+        rows = self.rows
+        if r < len(rows) and rows[r][0][:1] == GROUP_MARK:
             return Qt.NoItemFlags   # 묶음 제목: 못 고름·키보드 이동도 건너뜀
-        f = super().flags(idx)
-        if idx.isValid():
-            f |= Qt.ItemIsDragEnabled
-            if idx.column() == 0 and self.path != THIS_PC:
-                f |= Qt.ItemIsEditable
-        return f
+        return self._F_NAME if idx.column() == 0 and self.path != THIS_PC else self._F_ROW
 
     def setData(self, idx, value, role=Qt.EditRole):
         if role != Qt.EditRole or idx.column() != 0:
@@ -1154,6 +1166,8 @@ class DirModel(QtCore.QAbstractTableModel):
             key = lambda e: e[2]
         elif c == 4:
             key = lambda e: ((os.path.dirname(e[5]) if e[5] else "").lower(), shellops.natural_key(e[0]))
+        elif c == 10:   # 상태: 클라우드에만 → 이 PC → 항상 유지
+            key = lambda e: (cloud.STATES[cloud.state(e[4])][0], shellops.natural_key(e[0]))
         else:
             key = lambda e: shellops.natural_key(e[0])
         if c == 1 and not OPTS["date_folders_first"]:
@@ -1729,9 +1743,12 @@ class ViewMixin(DragScrollMixin):
 
 
 def toggle_column(c):
-    """머리글 우클릭에서 열 켜고 끄기 → 모든 창·칸·탭에 (v0.9.76)"""
-    cols = [x for x in SETTINGS["columns"] if x != c] if c in SETTINGS["columns"] else SETTINGS["columns"] + [c]
-    SETTINGS["columns"] = [x for x in OPT_COLS if x in cols]
+    """머리글 우클릭에서 열 켜고 끄기 → 모든 창·칸·탭에 (v0.9.76). 10(상태)은 설정 status_col 로 (v0.9.94)"""
+    if c == 10:
+        SETTINGS["status_col"] = not SETTINGS["status_col"]
+    else:
+        cols = [x for x in SETTINGS["columns"] if x != c] if c in SETTINGS["columns"] else SETTINGS["columns"] + [c]
+        SETTINGS["columns"] = [x for x in OPT_COLS if x in cols and x != 10]
     log.info("보일 열 %s", SETTINGS["columns"])
     for w in WINDOWS:
         for p in w.panes:
@@ -1917,6 +1934,7 @@ class Page(QtWidgets.QWidget):
     pathChanged = QtCore.Signal(str)
     status = QtCore.Signal(str)
     openInNewTab = QtCore.Signal(str)
+    openLocation = QtCore.Signal(str, str)   # v0.9.94 Ctrl+Enter: 파일의 폴더 위치를 새 탭으로 (폴더, 고를 이름)
     fsizeFound = QtCore.Signal(int, str, object)   # (gen, 폴더 이름, 크기) — 폴더 크기 작업 스레드에서 (v0.9.89)
     fsizeDone = QtCore.Signal(int)
 
@@ -1980,6 +1998,7 @@ class Page(QtWidgets.QWidget):
                 pal.setColor(role, QtGui.QColor("#4c607a"))
             h.setPalette(pal)
         self.tree.setColumnHidden(4, True)   # '위치' 열 = 검색 결과에서만
+        h.moveSection(h.visualIndex(10), 1)  # 상태 열은 탐색기처럼 이름 바로 오른쪽 (v0.9.94)
         self.apply_columns()
         self.tree.doubleClicked.connect(self._activate)
 
@@ -2073,8 +2092,11 @@ class Page(QtWidgets.QWidget):
         """보일 열 (전역 설정 columns, v0.9.76 머리글 우클릭). 위치(4)는 검색 결과에서만"""
         shown = set(SETTINGS["columns"])
         for c in OPT_COLS:
-            self.tree.setColumnHidden(c, c not in shown)
+            if c != 10:
+                self.tree.setColumnHidden(c, c not in shown)
         self.tree.setColumnHidden(4, not is_search(getattr(self, "path", "")))
+        # 상태 열: 동기화 폴더(원드라이브 등) 안에서만, 설정 status_col 켬일 때 (탐색기와 같게 그 폴더에서만 보임)
+        self.tree.setColumnHidden(10, not (SETTINGS["status_col"] and self.model_.cloud))
 
     def _header_menu(self, pos):
         self.header_menu().exec(self.tree.header().mapToGlobal(pos))
@@ -2084,9 +2106,9 @@ class Page(QtWidgets.QWidget):
         m = QtWidgets.QMenu(self)
         shown = set(SETTINGS["columns"])
         for c in OPT_COLS:
-            a = m.addAction(COLS[c], lambda c=c: toggle_column(c))
+            a = m.addAction(T("상태 (원드라이브 등 동기화 폴더에서)") if c == 10 else COLS[c], lambda c=c: toggle_column(c))
             a.setCheckable(True)
-            a.setChecked(c in shown)
+            a.setChecked(bool(SETTINGS["status_col"]) if c == 10 else c in shown)
         a = m.addAction(COLS[0])   # 이름은 항상 (탐색기와 같게 끌 수 없음)
         a.setCheckable(True)
         a.setChecked(True)
@@ -2236,6 +2258,7 @@ class Page(QtWidgets.QWidget):
             self.model_.sort(self.model_.sort_col, self.model_.sort_order)   # 폴더 아래 찾기: 다 모은 뒤 정렬
         else:
             self.model_.set_entries(path, entries)
+            self.apply_columns()   # 상태 열: 동기화 폴더에서만 (v0.9.94)
             if is_search(path) and not entries and not err:
                 # 빠른 검색 0개: 네트워크·구글드라이브 등은 처음엔 검색 범위 밖이라 '고장'처럼 보임 → 이유와 범위 설정 안내 (v0.9.68, 10/29)
                 main = main_of(self)
@@ -2671,6 +2694,7 @@ class Page(QtWidgets.QWidget):
             for p in self.selected_paths():
                 if os.path.isdir(p):
                     self.openInNewTab.emit(p)
+            self.open_location(new_tab=True, files_only=True)   # v0.9.94: 파일이면 그 폴더 위치 (Everything 경로 열기처럼)
         elif act == "up":
             self.go_up()
         elif act == "back":
@@ -2749,6 +2773,32 @@ class Page(QtWidgets.QWidget):
             return
         dlg = hashview.HashDialog(ps, main_of(self) or self)
         dlg.show()
+
+    def location_of(self, p):
+        """파일의 '폴더 위치' (v0.9.94): 바로 가기(.lnk) = 대상이 있는 폴더·대상 이름, 검색 결과 = 그 파일 폴더·이름.
+        지금 폴더 안 일반 파일이면 None (이미 그 위치)"""
+        if p.lower().endswith(".lnk"):
+            tgt = os.path.expandvars(shellops.link_target(p) or "")
+            if tgt and os.path.exists(tgt):
+                return (tgt, None) if os.path.isdir(tgt) else (os.path.dirname(tgt), os.path.basename(tgt))
+            return None
+        loc = os.path.dirname(p)
+        if self.path and os.path.normcase(loc) == os.path.normcase(self.path):
+            return None
+        return loc, os.path.basename(p)
+
+    def open_location(self, new_tab=False, files_only=False):
+        """고른 파일의 폴더 위치 열기 + 그 파일 고름 (v0.9.94 사용자 의견: Everything '경로 열기')"""
+        ps = [p for p in self.selected_paths() if not (files_only and os.path.isdir(p))]
+        loc = next((x for x in (self.location_of(p) for p in ps) if x), None)
+        if loc is None:
+            return False
+        log.info("폴더 위치 열기 %s → %s (새 탭 %s)", ps[:1], loc, new_tab)
+        if new_tab:
+            self.openLocation.emit(loc[0], loc[1] or "")
+        else:
+            self.navigate(loc[0], select=loc[1])
+        return True
 
     def pick_label(self, paths):
         """색 라벨 직접 고르기 (v0.9.90) — 탭 색과 같은 윈도우 색 고르기 창"""
@@ -2871,6 +2921,8 @@ class Page(QtWidgets.QWidget):
                         if imgconvert.targets_for(imgconvert.webp_only(paths), f)]
                 if conv and not is_search(self.path):
                     extras.append((mlabel(T("WebP 변환"), None), conv))
+            if len(paths) == 1 and paths[0].lower().endswith(".lnk") and self.location_of(paths[0]):   # v0.9.94
+                extras.insert(0, (mlabel(T("대상 위치 열기"), None), lambda: self.open_location(new_tab=False)))
             if self.path != THIS_PC:   # 색 라벨 (v0.9.89) — 4Dir 안에만 저장
                 cur = {LABELS.get(p) for p in paths}
                 own = next(iter(cur)) if len(cur) == 1 and next(iter(cur)) and next(iter(cur)) not in labels.TAB_HEX else ""
@@ -4066,6 +4118,7 @@ class Pane(QtWidgets.QFrame):
         v.status.connect(lambda s, v=v: v is self.view() and (self.stat.setText(s), self.stat.setToolTip(getattr(v, "status_tip", ""))))
         v.status.connect(lambda s, v=v: v is self.view() and self._poke_preview())   # 선택·폴더가 바뀌면 상태 글자가 바뀜 (v0.9.58)
         v.openInNewTab.connect(lambda p: self.add_tab(p, activate=False))
+        v.openLocation.connect(self._open_location_tab)
         hd = v.tree.header()   # 정렬·열 너비가 바뀌면 상태 저장 예약(2초 뒤 한 번)
         hd.sortIndicatorChanged.connect(lambda *_: self.changed.emit())
         hd.sectionResized.connect(lambda *_: self.changed.emit())
@@ -4081,6 +4134,11 @@ class Pane(QtWidgets.QFrame):
         log.info("탭 추가 pane=%d path=%s (탭 %d개)", self.idx, v.path, self.bar.count())
         self.changed.emit()
         return v
+
+    def _open_location_tab(self, folder, name):
+        """Ctrl+Enter 로 파일의 폴더 위치를 새 탭으로 (v0.9.94) — 그 탭으로 가서 파일 고름"""
+        v = self.add_tab(folder, activate=True)
+        v.pending_select = name or None
 
     def tab_drag(self, key, press):
         """탭을 마우스에 붙여 끌기. 놓은 곳(커서 위치)으로 판단: 다른 칸 → 그 칸으로 옮김, 4Dir 창 밖 → 새 창"""
@@ -6381,6 +6439,10 @@ class Main(QtWidgets.QMainWindow):
         m.addAction(mlabel(T("명령 찾기…"), "palette"), self.open_palette)
         m.addAction(T("단축키 설정…"), self.open_keys)
         m.addAction(T("검색 범위 설정…"), self.open_search_roots)
+        m.addSeparator()   # v0.9.94 사용자 11/4: 포맷 뒤 그대로 되돌리기
+        m.addAction(T("설정 내보내기 (백업 파일로 저장)…"), self.export_settings)
+        m.addAction(T("설정 가져오기 (백업 파일에서 되돌리기)…"), self.import_settings)
+        m.addSeparator()
         m.addAction(T("로그 폴더 열기"), lambda: os.startfile(LOG_DIR))
         m.addAction(T("문제 보고용 로그 저장… (4Dir 폴더의 reports 에 zip)"), self.save_report)
         m.addAction(T("겹침 아이콘 순서 정리 (윈도우)…"), self.open_overlay_order)
@@ -6399,6 +6461,44 @@ class Main(QtWidgets.QMainWindow):
             if SITE_URL:
                 m.addAction(T("4Dir 홈페이지"), lambda: open_link(SITE_URL, "홈페이지"))
             m.addAction(T("♥ 후원하기 (개발 응원)"), lambda: open_link(DONATE_URL or SITE_URL + "#donate", "후원"))
+
+    def export_settings(self, dest=None):
+        """설정 전체 내보내기 (v0.9.94): 보기·단축키·즐겨찾기·창과 탭(탭 색 포함)·색 라벨·창 구성 → zip 하나"""
+        self.save_state()
+        if dest is None:
+            start = os.path.join(os.path.expanduser("~"), "Documents", time.strftime("4Dir_settings_%Y%m%d.zip"))
+            dest, _f = QtWidgets.QFileDialog.getSaveFileName(self, T("설정 내보내기"), start, "zip (*.zip)")
+            if not dest:
+                return None
+        try:
+            n = backup.export_zip(BIN_DIR, dest, QE_VERSION)
+        except Exception as ex:
+            log.exception("설정 내보내기 실패 %s", dest)
+            QtWidgets.QMessageBox.warning(self, T("설정 내보내기"), T("저장하지 못했습니다.\n{0}").format(ex))
+            return None
+        self.show_notice(T("설정을 저장했습니다 ({0}개 파일): {1}").format(n, dest) + "  ✕", ms=10000)
+        return dest
+
+    def import_settings(self, src=None, restart=True):
+        """설정 가져오기 (v0.9.94): 백업 zip → 다음 시작 때 적용 → 4Dir 다시 시작. 지금 설정은 bin\\restore_backup 에 보관"""
+        if src is None:
+            src, _f = QtWidgets.QFileDialog.getOpenFileName(self, T("설정 가져오기"), os.path.join(os.path.expanduser("~"), "Documents"),
+                                                            "zip (*.zip)")
+            if not src:
+                return False
+        info = backup.read_manifest(src)
+        if info is None:
+            QtWidgets.QMessageBox.warning(self, T("설정 가져오기"), T("4Dir 설정 백업 파일이 아닙니다.\n{0}").format(src))
+            return False
+        if restart and QtWidgets.QMessageBox.question(
+                self, T("설정 가져오기"),
+                T("이 백업으로 모든 설정을 바꾸고 4Dir 를 다시 시작합니다.\n\n백업: v{0} · {1}\n\n지금 설정은 4Dir 폴더의 bin\\restore_backup 에 따로 보관합니다.")
+                .format(info.get("version", "?"), info.get("saved", "?"))) != QtWidgets.QMessageBox.Yes:
+            return False
+        backup.stage_restore(BIN_DIR, src)
+        if restart:
+            restart_app()
+        return True
 
     def save_report(self):
         """로그·설정·화면 상태·버전 정보를 zip 하나로 4Dir 폴더의 reports 에 저장 → 사용자는 이 파일만 보내면 됨.
@@ -6945,6 +7045,21 @@ def hotkey_register():
     return ok
 
 
+def restart_app():
+    """4Dir 다시 시작 (v0.9.94 설정 가져오기): 이 프로세스가 끝나길 기다렸다 같은 방법으로 다시 띄우는 작은 도우미 → 창 전부 닫음.
+    도우미는 띄우고 바로 끝남(남는 프로세스 없음)"""
+    exe, script = sys.executable, os.path.abspath(sys.argv[0])
+    code = ("import ctypes,subprocess,sys;k=ctypes.windll.kernel32;h=k.OpenProcess(0x100000,0,%d);"
+            "h and k.WaitForSingleObject(h,30000);subprocess.Popen([%r,%r],cwd=%r)") % (os.getpid(), exe, script, BIN_DIR)
+    try:
+        subprocess.Popen([exe, "-c", code], cwd=BIN_DIR, creationflags=0x00000008 | 0x00000200)   # DETACHED | NEW_GROUP
+        log.info("다시 시작 도우미 띄움 %s %s", exe, script)
+    except Exception:
+        log.exception("다시 시작 도우미 실패 — 창만 닫음")
+    for w in list(WINDOWS):
+        w.close()
+
+
 def on_hotkey():
     """마지막에 쓴 창을 앞으로 + 전체 검색칸 (글자 전체 선택 → 바로 입력)"""
     w = WINDOWS[-1] if WINDOWS else None
@@ -7068,6 +7183,8 @@ def main():
     FAV.load()
     w = Main(crashed=crashed)
     w.show()
+    if RESTORED:   # v0.9.94 설정 가져오기 적용됨
+        w.show_notice(T("설정을 가져왔습니다. 이전 설정은 bin\\restore_backup 에 보관했습니다  ✕"), ms=12000)
     w.start_single_server()   # 먼저 뜬 창이 이름을 차지 → 다음 실행(창 하나만 모드)이 이 창을 앞으로 부름
     hotkey_register()         # 어디서나 단축키 (v0.9.68)
     if arg_path:

@@ -1,11 +1,53 @@
 # -*- coding: utf-8 -*-
-"""4Dir 버전별 바뀐 점 (CHANGELOG_VER 1.0.22 — 0.9.93 11/4 (0.9.88~0.9.92 공개 전이라 합침, +레이아웃 16종·고르기 창·글자 메뉴 뺌·검색칸 자리, 새 도구 7개+빈 띠+색 13색·직접 고르기+날짜별 묶기+3칸 왼쪽 1+오른쪽 2+비교 깜빡임) · 0.9.88 11/4 닫을 때 바로 끝남 · 0.9.87 11/4 설정 이어받기·링크 실행 · 0.9.86 짧게 고침 11/3 (사용자 '간단명료하게') · 0.9.86 11/3 (0.9.85 공개 전이라 합침, 겹치면 옮김+되돌리기) · 0.9.85 11/3 (0.9.84 공개 전이라 합침, 겹침 알림 기능 칸) · 0.9.84 11/3 (0.9.83 공개 전이라 합침, 마우스 탭 키보드처럼) · 0.9.83 11/3 (0.9.82 공개 전이라 합침, 마우스 버튼 항목 추가) · 0.9.82 11/3 (0.9.81 공개 전이라 합침) · 0.9.81 11/3 (0.9.80 공개 전이라 합침) · 0.9.80 11/2 (0.9.79 공개 전이라 합침) · 0.9.79 11/2 (0.9.78 공개 전이라 합침) · 0.9.78 11/2 (0.9.77 공개 전이라 합침) · 0.9.77 11/2 (0.9.76 공개 전이라 합침) · 0.9.76 11/2 (0.9.75 는 공개 안 해서 합침) · 0.9.73 4Dir.exe 10/30 · 0.9.71 항목 10/29 (0.9.68~0.9.70 은 공개 안 해서 0.9.71 에 합침)) — make_site.py 가 읽어 메인 '새로 바뀐 점' + 지난 버전 페이지를 만듦.
+"""4Dir 버전별 바뀐 점 (CHANGELOG_VER 1.0.23 — 0.9.94 11/4 상태 열·Ctrl+Enter 위치·설정 내보내기/가져오기·큰 폴더 빨라짐 · 0.9.93 11/4 (0.9.88~0.9.92 공개 전이라 합침, +레이아웃 16종·고르기 창·글자 메뉴 뺌·검색칸 자리, 새 도구 7개+빈 띠+색 13색·직접 고르기+날짜별 묶기+3칸 왼쪽 1+오른쪽 2+비교 깜빡임) · 0.9.88 11/4 닫을 때 바로 끝남 · 0.9.87 11/4 설정 이어받기·링크 실행 · 0.9.86 짧게 고침 11/3 (사용자 '간단명료하게') · 0.9.86 11/3 (0.9.85 공개 전이라 합침, 겹치면 옮김+되돌리기) · 0.9.85 11/3 (0.9.84 공개 전이라 합침, 겹침 알림 기능 칸) · 0.9.84 11/3 (0.9.83 공개 전이라 합침, 마우스 탭 키보드처럼) · 0.9.83 11/3 (0.9.82 공개 전이라 합침, 마우스 버튼 항목 추가) · 0.9.82 11/3 (0.9.81 공개 전이라 합침) · 0.9.81 11/3 (0.9.80 공개 전이라 합침) · 0.9.80 11/2 (0.9.79 공개 전이라 합침) · 0.9.79 11/2 (0.9.78 공개 전이라 합침) · 0.9.78 11/2 (0.9.77 공개 전이라 합침) · 0.9.77 11/2 (0.9.76 공개 전이라 합침) · 0.9.76 11/2 (0.9.75 는 공개 안 해서 합침) · 0.9.73 4Dir.exe 10/30 · 0.9.71 항목 10/29 (0.9.68~0.9.70 은 공개 안 해서 0.9.71 에 합침)) — make_site.py 가 읽어 메인 '새로 바뀐 점' + 지난 버전 페이지를 만듦.
 새 버전을 낼 때마다 맨 위에 한 줄 추가 (최신이 맨 위). 날짜는 한국 시간 기준 릴리스 날짜.
 항목 하나 = 10개 언어 글자 묶음 (순서: en ko zh-CN zh-TW ja es de fr pt-BR ru). <b> 만 허용."""
 
 ORDER = ["en", "ko", "zh-CN", "zh-TW", "ja", "es", "de", "fr", "pt-BR", "ru"]
 
 CHANGES = [
+("0.9.94", "2026-11-04", [
+    ('<b>Status column</b> in OneDrive and other synced folders: online-only, on this device, always kept (like Explorer).',
+     '<b>상태 열</b>: 원드라이브 등 동기화 폴더에서 클라우드에만·이 PC 에 있음·항상 유지를 탐색기처럼 표시.',
+     '<b>状态列</b>：在 OneDrive 等同步文件夹中显示仅云端、在此设备上、始终保留（与资源管理器相同）。',
+     '<b>狀態欄</b>：在 OneDrive 等同步資料夾中顯示僅雲端、在此裝置上、一律保留（與檔案總管相同）。',
+     '<b>状態列</b>：OneDrive などの同期フォルダーで、クラウドのみ・このデバイス・常に保持をエクスプローラーと同じように表示。',
+     '<b>Columna Estado</b> en OneDrive y otras carpetas sincronizadas: solo en línea, en este dispositivo, siempre conservado.',
+     '<b>Statusspalte</b> in OneDrive und anderen synchronisierten Ordnern: nur online, auf diesem Gerät, immer behalten.',
+     '<b>Colonne Statut</b> dans OneDrive et autres dossiers synchronisés : en ligne uniquement, sur cet appareil, toujours conservé.',
+     '<b>Coluna Status</b> no OneDrive e outras pastas sincronizadas: só online, neste dispositivo, sempre mantido.',
+     '<b>Столбец «Состояние»</b> в OneDrive и других синхронизируемых папках: только в сети, на устройстве, всегда хранить.'),
+    ("<b>Ctrl+Enter on a file</b> opens its folder location in a new tab (search results and shortcuts), like Everything's Open Path.",
+     '<b>파일에서 Ctrl+Enter</b> = 그 파일이 있는 폴더를 새 탭으로 열고 고름 (검색 결과·바로 가기) — Everything 의 경로 열기처럼.',
+     '<b>在文件上按 Ctrl+Enter</b>：在新标签页中打开其所在文件夹（搜索结果与快捷方式），如 Everything 的打开路径。',
+     '<b>在檔案上按 Ctrl+Enter</b>：在新索引標籤中開啟其所在資料夾（搜尋結果與捷徑），如 Everything 的開啟路徑。',
+     '<b>ファイルで Ctrl+Enter</b>：その場所を新しいタブで開いて選択（検索結果・ショートカット）— Everything のパスを開くと同様。',
+     '<b>Ctrl+Intro en un archivo</b> abre su carpeta en una pestaña nueva (resultados de búsqueda y accesos directos).',
+     '<b>Strg+Enter auf einer Datei</b> öffnet ihren Ordner in einem neuen Tab (Suchergebnisse und Verknüpfungen).',
+     '<b>Ctrl+Entrée sur un fichier</b> ouvre son dossier dans un nouvel onglet (résultats de recherche et raccourcis).',
+     '<b>Ctrl+Enter em um arquivo</b> abre a pasta dele em nova aba (resultados de pesquisa e atalhos).',
+     '<b>Ctrl+Enter на файле</b> открывает его папку в новой вкладке (результаты поиска и ярлыки).'),
+    ('<b>Export / import settings</b> (Tools): view options, shortcuts, favorites, windows and tabs (with colors), color labels — handy after reinstalling Windows.',
+     '<b>설정 내보내기·가져오기</b> (도구 메뉴): 보기·단축키·즐겨찾기·창과 탭(색 포함)·색 라벨을 파일 하나로 — 포맷 뒤 그대로 되돌리기.',
+     '<b>导出/导入设置</b>（工具）：视图、快捷键、收藏夹、窗口与标签（含颜色）、颜色标签 — 重装系统后一键恢复。',
+     '<b>匯出/匯入設定</b>（工具）：檢視、快速鍵、我的最愛、視窗與索引標籤（含色彩）、色彩標籤 — 重灌後一次還原。',
+     '<b>設定のエクスポート・インポート</b>（ツール）：表示・ショートカット・お気に入り・ウィンドウとタブ（色も）・カラーラベル — 再インストール後もそのまま。',
+     '<b>Exportar/importar configuración</b> (Herramientas): vista, atajos, favoritos, ventanas y pestañas (con colores), etiquetas de color.',
+     '<b>Einstellungen exportieren/importieren</b> (Extras): Ansicht, Tastenkürzel, Favoriten, Fenster und Tabs (mit Farben), Farbmarkierungen.',
+     '<b>Exporter/importer les paramètres</b> (Outils) : affichage, raccourcis, favoris, fenêtres et onglets (avec couleurs), étiquettes de couleur.',
+     '<b>Exportar/importar configurações</b> (Ferramentas): exibição, atalhos, favoritos, janelas e abas (com cores), rótulos de cor.',
+     '<b>Экспорт/импорт настроек</b> (Инструменты): вид, сочетания клавиш, избранное, окна и вкладки (с цветами), цветные метки.'),
+    ('<b>Faster</b>: large folders open about twice as fast (30,000 files: 1.3 s → 0.5 s).',
+     '<b>빨라짐</b>: 큰 폴더 열기 약 2배 (3만 개 1.3초 → 0.5초).',
+     '<b>更快</b>：大文件夹打开速度约提升一倍（3 万个文件：1.3 秒 → 0.5 秒）。',
+     '<b>更快</b>：大型資料夾開啟速度約提升一倍（3 萬個檔案：1.3 秒 → 0.5 秒）。',
+     '<b>高速化</b>：大きなフォルダーの表示が約 2 倍速（3 万ファイル：1.3 秒 → 0.5 秒）。',
+     '<b>Más rápido</b>: las carpetas grandes abren casi el doble de rápido (30.000 archivos: 1,3 s → 0,5 s).',
+     '<b>Schneller</b>: große Ordner öffnen etwa doppelt so schnell (30.000 Dateien: 1,3 s → 0,5 s).',
+     "<b>Plus rapide</b> : les grands dossiers s'ouvrent environ deux fois plus vite (30 000 fichiers : 1,3 s → 0,5 s).",
+     '<b>Mais rápido</b>: pastas grandes abrem cerca de duas vezes mais rápido (30.000 arquivos: 1,3 s → 0,5 s).',
+     '<b>Быстрее</b>: большие папки открываются примерно вдвое быстрее (30 000 файлов: 1,3 с → 0,5 с).'),
+]),
 ("0.9.93", "2026-11-04", [
     ("<b>Group by date</b> (Today, Yesterday, This week…) like Windows Explorer — View &gt; Show to turn on.",
      "<b>날짜별로 묶기</b> (오늘·어제·이번 주…) — 윈도우 탐색기처럼. 보기 &gt; 표시에서 켜기.",

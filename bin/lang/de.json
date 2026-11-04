@@ -711,5 +711,20 @@
  "4칸 (왼쪽 3 + 오른쪽 1)": "4 Bereiche (3 links + 1 rechts)",
  "4칸 (왼쪽 1 + 오른쪽 3)": "4 Bereiche (1 links + 3 rechts)",
  "4칸 (위 3 + 아래 1)": "4 Bereiche (3 oben + 1 unten)",
- "4칸 (위 1 + 아래 3)": "4 Bereiche (1 oben + 3 unten)"
+ "4칸 (위 1 + 아래 3)": "4 Bereiche (1 oben + 3 unten)",
+ "상태 (원드라이브 등 동기화 폴더에서)": "Status (in OneDrive und anderen synchronisierten Ordnern)",
+ "클라우드에만 있음 (열면 내려받음)": "Nur online verfügbar (wird beim Öffnen geladen)",
+ "이 PC 에 있음": "Auf diesem Gerät verfügbar",
+ "항상 이 PC 에 유지": "Immer auf diesem Gerät",
+ "대상 위치 열기": "Zielort öffnen",
+ "폴더를 새 탭으로 열기 (파일이면 그 폴더 위치)": "Ordner in neuem Tab öffnen (Datei: ihr Speicherort)",
+ "설정 내보내기 (백업 파일로 저장)…": "Einstellungen exportieren (Sicherungsdatei)…",
+ "설정 가져오기 (백업 파일에서 되돌리기)…": "Einstellungen importieren (aus Sicherung wiederherstellen)…",
+ "설정 내보내기": "Einstellungen exportieren",
+ "설정 가져오기": "Einstellungen importieren",
+ "설정을 저장했습니다 ({0}개 파일): {1}": "Einstellungen gespeichert ({0} Dateien): {1}",
+ "4Dir 설정 백업 파일이 아닙니다.\n{0}": "Keine 4Dir-Einstellungssicherung.\n{0}",
+ "저장하지 못했습니다.\n{0}": "Speichern nicht möglich.\n{0}",
+ "이 백업으로 모든 설정을 바꾸고 4Dir 를 다시 시작합니다.\n\n백업: v{0} · {1}\n\n지금 설정은 4Dir 폴더의 bin\\restore_backup 에 따로 보관합니다.": "Alle Einstellungen werden durch diese Sicherung ersetzt und 4Dir startet neu.\n\nSicherung: v{0} · {1}\n\nDie aktuellen Einstellungen bleiben in bin\\restore_backup im 4Dir-Ordner.",
+ "설정을 가져왔습니다. 이전 설정은 bin\\restore_backup 에 보관했습니다  ✕": "Einstellungen importiert. Die vorherigen liegen in bin\\restore_backup  ✕"
 }

@@ -16,7 +16,7 @@ log = logging.getLogger("QE.keys")
 # (기능 id, 표시 이름, 기본 키, 범위)
 ACTIONS = [
     ("open", T("열기"), "Return; Enter", "view"),
-    ("open_new_tab", T("폴더를 새 탭으로 열기"), "Ctrl+Return; Ctrl+Enter", "view"),
+    ("open_new_tab", T("폴더를 새 탭으로 열기 (파일이면 그 폴더 위치)"), "Ctrl+Return; Ctrl+Enter", "view"),   # v0.9.94 Everything 경로 열기처럼
     ("up", T("상위 폴더"), "Backspace; Alt+Up", "view"),
     ("back", T("뒤로"), "Alt+Left", "view"),
     ("fwd", T("앞으로"), "Alt+Right", "view"),

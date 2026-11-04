@@ -5,6 +5,8 @@ bin/log/
 bin/sessions/
 bin/workspaces/
 bin/index/
+bin/restore_backup/
+bin/_restore_pending/
 reports/
 __pycache__/
 *.pyc

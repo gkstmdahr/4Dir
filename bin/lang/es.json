@@ -711,5 +711,20 @@
  "4칸 (왼쪽 3 + 오른쪽 1)": "4 paneles (3 izquierda + 1 derecha)",
  "4칸 (왼쪽 1 + 오른쪽 3)": "4 paneles (1 izquierda + 3 derecha)",
  "4칸 (위 3 + 아래 1)": "4 paneles (3 arriba + 1 abajo)",
- "4칸 (위 1 + 아래 3)": "4 paneles (1 arriba + 3 abajo)"
+ "4칸 (위 1 + 아래 3)": "4 paneles (1 arriba + 3 abajo)",
+ "상태 (원드라이브 등 동기화 폴더에서)": "Estado (en OneDrive y otras carpetas sincronizadas)",
+ "클라우드에만 있음 (열면 내려받음)": "Disponible cuando hay conexión (se descarga al abrir)",
+ "이 PC 에 있음": "Disponible en este dispositivo",
+ "항상 이 PC 에 유지": "Siempre en este dispositivo",
+ "대상 위치 열기": "Abrir ubicación de destino",
+ "폴더를 새 탭으로 열기 (파일이면 그 폴더 위치)": "Abrir carpeta en pestaña nueva (archivo: su ubicación)",
+ "설정 내보내기 (백업 파일로 저장)…": "Exportar configuración (guardar copia)…",
+ "설정 가져오기 (백업 파일에서 되돌리기)…": "Importar configuración (restaurar copia)…",
+ "설정 내보내기": "Exportar configuración",
+ "설정 가져오기": "Importar configuración",
+ "설정을 저장했습니다 ({0}개 파일): {1}": "Configuración guardada ({0} archivos): {1}",
+ "4Dir 설정 백업 파일이 아닙니다.\n{0}": "No es una copia de configuración de 4Dir.\n{0}",
+ "저장하지 못했습니다.\n{0}": "No se pudo guardar.\n{0}",
+ "이 백업으로 모든 설정을 바꾸고 4Dir 를 다시 시작합니다.\n\n백업: v{0} · {1}\n\n지금 설정은 4Dir 폴더의 bin\\restore_backup 에 따로 보관합니다.": "Se reemplazará toda la configuración con esta copia y se reiniciará 4Dir.\n\nCopia: v{0} · {1}\n\nLa configuración actual se guarda en bin\\restore_backup dentro de la carpeta de 4Dir.",
+ "설정을 가져왔습니다. 이전 설정은 bin\\restore_backup 에 보관했습니다  ✕": "Configuración importada. La anterior está en bin\\restore_backup  ✕"
 }
