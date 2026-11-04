@@ -38,6 +38,7 @@ ACTIONS = [
     ("new_window", T("새 창"), "Ctrl+N", "window"),
     ("new_tab", T("새 탭"), "Ctrl+T", "window"),
     ("close_tab", T("탭 닫기"), "Ctrl+W", "window"),
+    ("lock_tab", T("탭 잠금/잠금 해제"), "", "window"),   # v0.9.95 (기본 키 없음 — 단축키 설정에서)
     ("reopen_tab", T("닫은 탭 다시 열기"), "Ctrl+Shift+T", "window"),
     ("next_tab", T("다음 탭"), "Ctrl+Tab", "window"),
     ("prev_tab", T("이전 탭"), "Ctrl+Shift+Tab", "window"),

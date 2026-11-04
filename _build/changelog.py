@@ -1,11 +1,33 @@
 # -*- coding: utf-8 -*-
-"""4Dir 버전별 바뀐 점 (CHANGELOG_VER 1.0.23 — 0.9.94 11/4 상태 열·Ctrl+Enter 위치·설정 내보내기/가져오기·큰 폴더 빨라짐 · 0.9.93 11/4 (0.9.88~0.9.92 공개 전이라 합침, +레이아웃 16종·고르기 창·글자 메뉴 뺌·검색칸 자리, 새 도구 7개+빈 띠+색 13색·직접 고르기+날짜별 묶기+3칸 왼쪽 1+오른쪽 2+비교 깜빡임) · 0.9.88 11/4 닫을 때 바로 끝남 · 0.9.87 11/4 설정 이어받기·링크 실행 · 0.9.86 짧게 고침 11/3 (사용자 '간단명료하게') · 0.9.86 11/3 (0.9.85 공개 전이라 합침, 겹치면 옮김+되돌리기) · 0.9.85 11/3 (0.9.84 공개 전이라 합침, 겹침 알림 기능 칸) · 0.9.84 11/3 (0.9.83 공개 전이라 합침, 마우스 탭 키보드처럼) · 0.9.83 11/3 (0.9.82 공개 전이라 합침, 마우스 버튼 항목 추가) · 0.9.82 11/3 (0.9.81 공개 전이라 합침) · 0.9.81 11/3 (0.9.80 공개 전이라 합침) · 0.9.80 11/2 (0.9.79 공개 전이라 합침) · 0.9.79 11/2 (0.9.78 공개 전이라 합침) · 0.9.78 11/2 (0.9.77 공개 전이라 합침) · 0.9.77 11/2 (0.9.76 공개 전이라 합침) · 0.9.76 11/2 (0.9.75 는 공개 안 해서 합침) · 0.9.73 4Dir.exe 10/30 · 0.9.71 항목 10/29 (0.9.68~0.9.70 은 공개 안 해서 0.9.71 에 합침)) — make_site.py 가 읽어 메인 '새로 바뀐 점' + 지난 버전 페이지를 만듦.
+"""4Dir 버전별 바뀐 점 (CHANGELOG_VER 1.0.24 — 0.9.95 11/5 탭 잠금·드라이브 꽂기 반영 · 0.9.94 11/4 상태 열·Ctrl+Enter 위치·설정 내보내기/가져오기·큰 폴더 빨라짐 · 0.9.93 11/4 (0.9.88~0.9.92 공개 전이라 합침, +레이아웃 16종·고르기 창·글자 메뉴 뺌·검색칸 자리, 새 도구 7개+빈 띠+색 13색·직접 고르기+날짜별 묶기+3칸 왼쪽 1+오른쪽 2+비교 깜빡임) · 0.9.88 11/4 닫을 때 바로 끝남 · 0.9.87 11/4 설정 이어받기·링크 실행 · 0.9.86 짧게 고침 11/3 (사용자 '간단명료하게') · 0.9.86 11/3 (0.9.85 공개 전이라 합침, 겹치면 옮김+되돌리기) · 0.9.85 11/3 (0.9.84 공개 전이라 합침, 겹침 알림 기능 칸) · 0.9.84 11/3 (0.9.83 공개 전이라 합침, 마우스 탭 키보드처럼) · 0.9.83 11/3 (0.9.82 공개 전이라 합침, 마우스 버튼 항목 추가) · 0.9.82 11/3 (0.9.81 공개 전이라 합침) · 0.9.81 11/3 (0.9.80 공개 전이라 합침) · 0.9.80 11/2 (0.9.79 공개 전이라 합침) · 0.9.79 11/2 (0.9.78 공개 전이라 합침) · 0.9.78 11/2 (0.9.77 공개 전이라 합침) · 0.9.77 11/2 (0.9.76 공개 전이라 합침) · 0.9.76 11/2 (0.9.75 는 공개 안 해서 합침) · 0.9.73 4Dir.exe 10/30 · 0.9.71 항목 10/29 (0.9.68~0.9.70 은 공개 안 해서 0.9.71 에 합침)) — make_site.py 가 읽어 메인 '새로 바뀐 점' + 지난 버전 페이지를 만듦.
 새 버전을 낼 때마다 맨 위에 한 줄 추가 (최신이 맨 위). 날짜는 한국 시간 기준 릴리스 날짜.
 항목 하나 = 10개 언어 글자 묶음 (순서: en ko zh-CN zh-TW ja es de fr pt-BR ru). <b> 만 허용."""
 
 ORDER = ["en", "ko", "zh-CN", "zh-TW", "ja", "es", "de", "fr", "pt-BR", "ru"]
 
 CHANGES = [
+("0.9.95", "2026-11-05", [
+    ("<b>Lock tab</b>: right-click a tab &gt; Lock tab. Folders opened from a locked tab (🔒) open in a new tab next to it.",
+     "<b>탭 잠금</b>: 탭 우클릭 &gt; 탭 잠금. 잠긴 탭(🔒)에서 폴더를 열면 바로 옆 새 탭으로 열립니다.",
+     "<b>锁定标签</b>：右键单击标签 &gt; 锁定标签。在锁定的标签（🔒）中打开文件夹时，会在旁边的新标签中打开。",
+     "<b>鎖定分頁</b>：在分頁上按右鍵 &gt; 鎖定分頁。在鎖定的分頁（🔒）中開啟資料夾時，會在旁邊的新分頁中開啟。",
+     "<b>タブのロック</b>：タブを右クリック &gt; タブをロック。ロックしたタブ（🔒）でフォルダーを開くと、隣の新しいタブで開きます。",
+     "<b>Bloquear pestaña</b>: clic derecho en una pestaña &gt; Bloquear pestaña. Las carpetas abiertas desde una pestaña bloqueada (🔒) se abren en una pestaña nueva a su lado.",
+     "<b>Tab sperren</b>: Rechtsklick auf einen Tab &gt; Tab sperren. Ordner aus einem gesperrten Tab (🔒) öffnen sich in einem neuen Tab daneben.",
+     "<b>Verrouiller l'onglet</b> : clic droit sur un onglet &gt; Verrouiller l'onglet. Les dossiers ouverts depuis un onglet verrouillé (🔒) s'ouvrent dans un nouvel onglet à côté.",
+     "<b>Bloquear aba</b>: clique com o botão direito na aba &gt; Bloquear aba. Pastas abertas de uma aba bloqueada (🔒) abrem em uma nova aba ao lado.",
+     "<b>Закрепить вкладку</b>: правый щелчок по вкладке &gt; Закрепить вкладку. Папки из закреплённой вкладки (🔒) открываются в новой вкладке рядом."),
+    ("<b>USB and external drives</b> appear in This PC as soon as you plug them in, and disappear when removed.",
+     "<b>USB·외장 드라이브</b>: 꽂으면 바로 내 PC 에 나오고, 빼면 사라집니다.",
+     "<b>USB 和外部驱动器</b>：插入后立即显示在“此电脑”中，拔出后消失。",
+     "<b>USB 與外接磁碟</b>：插入後立即顯示在「本機」中，拔出後消失。",
+     "<b>USB・外付けドライブ</b>：挿すとすぐ PC に表示され、取り外すと消えます。",
+     "<b>USB y discos externos</b>: aparecen en Este equipo nada más conectarlos y desaparecen al quitarlos.",
+     "<b>USB- und externe Laufwerke</b> erscheinen sofort unter Dieser PC, wenn sie eingesteckt werden, und verschwinden beim Entfernen.",
+     "<b>Clés USB et disques externes</b> : ils apparaissent dans Ce PC dès qu'on les branche et disparaissent quand on les retire.",
+     "<b>USB e unidades externas</b> aparecem em Este Computador assim que conectadas e somem ao remover.",
+     "<b>USB и внешние диски</b> появляются в «Этот компьютер» сразу после подключения и исчезают после извлечения."),
+]),
 ("0.9.94", "2026-11-04", [
     ('<b>Status column</b> in OneDrive and other synced folders: online-only, on this device, always kept (like Explorer).',
      '<b>상태 열</b>: 원드라이브 등 동기화 폴더에서 클라우드에만·이 PC 에 있음·항상 유지를 탐색기처럼 표시.',

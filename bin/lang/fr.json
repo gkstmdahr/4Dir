@@ -726,5 +726,9 @@
  "4Dir 설정 백업 파일이 아닙니다.\n{0}": "Ce n'est pas une sauvegarde des paramètres de 4Dir.\n{0}",
  "저장하지 못했습니다.\n{0}": "Impossible d'enregistrer.\n{0}",
  "이 백업으로 모든 설정을 바꾸고 4Dir 를 다시 시작합니다.\n\n백업: v{0} · {1}\n\n지금 설정은 4Dir 폴더의 bin\\restore_backup 에 따로 보관합니다.": "Tous les paramètres seront remplacés par cette sauvegarde et 4Dir redémarrera.\n\nSauvegarde: v{0} · {1}\n\nLes paramètres actuels sont conservés dans bin\\restore_backup du dossier 4Dir.",
- "설정을 가져왔습니다. 이전 설정은 bin\\restore_backup 에 보관했습니다  ✕": "Paramètres importés. Les précédents sont dans bin\\restore_backup  ✕"
+ "설정을 가져왔습니다. 이전 설정은 bin\\restore_backup 에 보관했습니다  ✕": "Paramètres importés. Les précédents sont dans bin\\restore_backup  ✕",
+ "🔒 잠긴 탭이라 새 탭으로 열었습니다": "🔒 Onglet verrouillé : ouvert dans un nouvel onglet",
+ "다른 탭 모두 닫기 (잠긴 탭은 남김)": "Fermer tous les autres onglets (garder les verrouillés)",
+ "탭 잠금 (다른 폴더는 새 탭으로)": "Verrouiller l'onglet (autres dossiers dans un nouvel onglet)",
+ "탭 잠금/잠금 해제": "Verrouiller/déverrouiller l'onglet"
 }

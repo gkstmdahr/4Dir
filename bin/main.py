@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.94"
+QE_VERSION = "0.9.95"
 
 import os
 import sys
@@ -1935,6 +1935,8 @@ class Page(QtWidgets.QWidget):
     status = QtCore.Signal(str)
     openInNewTab = QtCore.Signal(str)
     openLocation = QtCore.Signal(str, str)   # v0.9.94 Ctrl+Enter: 파일의 폴더 위치를 새 탭으로 (폴더, 고를 이름)
+    lockedNav = QtCore.Signal(str, object)   # v0.9.95 잠긴 탭에서 다른 폴더로 가려 함 → 새 탭으로 (폴더, 고를 이름)
+    lockChanged = QtCore.Signal()            # v0.9.95 탭 잠금이 바뀜 → 탭 글자(🔒) 다시
     fsizeFound = QtCore.Signal(int, str, object)   # (gen, 폴더 이름, 크기) — 폴더 크기 작업 스레드에서 (v0.9.89)
     fsizeDone = QtCore.Signal(int)
 
@@ -1964,6 +1966,8 @@ class Page(QtWidgets.QWidget):
         self.fsizeDone.connect(self._on_fsize_done)
         self._fsize_job = None
         self.tab_color = ""   # 탭 색 (v0.9.89, labels.TAB_COLORS 이름 또는 '#rrggbb') — 탭 상태에 저장
+        self.locked = False   # 탭 잠금 (v0.9.95, 사용자 의견 '토탈 커맨더처럼') — 다른 폴더는 새 탭으로, 탭 상태에 저장
+        self.from_locked = False   # 잠긴 탭 때문에 열린 새 탭 — 다른 폴더로 갈 때까지 상태줄 앞에 안내
         self.search_info = ""
         self._token = [False]   # 진행 중인 읽기/찾기 취소용
         self.watcher = None
@@ -2120,13 +2124,22 @@ class Page(QtWidgets.QWidget):
     def view_state(self):
         h = self.tree.header()
         return {"sort": [self.model_.sort_col, int(self.model_.sort_order.value)],
-                "cols": [h.sectionSize(c) for c in range(h.count())], "color": self.tab_color}
+                "cols": [h.sectionSize(c) for c in range(h.count())], "color": self.tab_color, "locked": self.locked}
+
+    def set_locked(self, on):
+        on = bool(on)
+        if on != self.locked:
+            self.locked = on
+            log.info("탭 %s %s", "잠금" if on else "잠금 해제", self.path)
+            self.lockChanged.emit()
 
     def apply_view_state(self, vs):
         if not vs:
             return
         if labels.tab_hex(vs.get("color")):   # 이름 또는 직접 고른 '#rrggbb' (v0.9.90)
             self.tab_color = vs["color"]
+        if vs.get("locked"):
+            self.set_locked(True)
         try:
             h = self.tree.header()
             old_default = {0: 280, 1: 125, 3: 85}    # v0.9.30 까지 기본 폭 → 손대지 않은 열이면 탐색기 기본 폭으로 (날짜가 길어져 잘리지 않게)
@@ -2150,6 +2163,10 @@ class Page(QtWidgets.QWidget):
             log.info("이동 실패(폴더 아님) %s", path)
             self.status.emit(T('⚠ 폴더를 찾을 수 없습니다: {0}').format(path))
             return False
+        if self.locked and self.path and path != self.path:   # 잠긴 탭은 그 폴더에 그대로 → 새 탭으로 (v0.9.95)
+            log.info("잠긴 탭 %s → 새 탭으로 %s", self.path, path)
+            self.lockedNav.emit(path, select)
+            return False
         if record and self.path and self.path != path:
             self.back.append(self.path)
             self.fwd.clear()
@@ -2157,6 +2174,8 @@ class Page(QtWidgets.QWidget):
         self.path = path
         self.pending_select = select
         if old != path:
+            if old:
+                self.from_locked = False
             self.model_.filter = ""   # 다른 폴더로 가면 빠른 필터 해제
             if THUMBS is not None and old:
                 THUMBS.drop_pending(old)   # 떠난 폴더의 아직 안 만든 미리보기 요청은 버림
@@ -2168,6 +2187,8 @@ class Page(QtWidgets.QWidget):
         return True
 
     def go_back(self):
+        if self.back and self.locked:   # 잠긴 탭: 기록은 그대로 두고 그 폴더를 새 탭으로
+            return self.navigate(self.back[-1], record=False)
         if self.back:
             cur = self.path
             p = self.back.pop()
@@ -2175,6 +2196,8 @@ class Page(QtWidgets.QWidget):
             self.navigate(p, record=False, select=os.path.basename(cur) if os.path.dirname(cur) == p else None)
 
     def go_fwd(self):
+        if self.fwd and self.locked:
+            return self.navigate(self.fwd[-1], record=False)
         if self.fwd:
             self.back.append(self.path)
             self.navigate(self.fwd.pop(), record=False)
@@ -3425,10 +3448,22 @@ class Sidebar(DragScrollMixin, QtWidgets.QTreeWidget):
         for d in items:
             self.fav_root.addChild(self._folder_item(d["name"], d["path"], shellops.icon_for("", True, 16)))
 
+    def refresh_pc(self):
+        POOL.start(PcInfoJob(self.sig))
+
     def _fill_pc(self, rows):
+        # 다시 읽을 때(드라이브 꽂기/빼기, v0.9.95)는 그대로인 항목을 남겨 펼쳐 둔 것이 접히지 않게
+        old = {self.pc_root.child(i).data(0, PATH_ROLE): self.pc_root.child(i) for i in range(self.pc_root.childCount())}
+        exp = [p for p, it in old.items() if it.isExpanded()]
         self.pc_root.takeChildren()
         for label, path, idx in rows:
-            self.pc_root.addChild(self._folder_item(label, path, shellops.icon_for("", True, 16, idx)))
+            it = old.get(path)
+            self.pc_root.addChild(it if it is not None else self._folder_item(label, path, shellops.icon_for("", True, 16, idx)))
+            if it is not None and it.text(0) != label:
+                it.setText(0, label)
+        for p in exp:
+            if p in old and old[p].treeWidget() is self:
+                old[p].setExpanded(True)
         if getattr(self, "_reveal_path", None):
             self.reveal(self._reveal_path)       # 내 PC 목록이 늦게 와서 미뤄 둔 것
 
@@ -4054,10 +4089,15 @@ class Pane(QtWidgets.QFrame):
             def close_others():
                 keep = self.bar.tabData(i)
                 for j in reversed(range(self.bar.count())):
-                    if self.bar.tabData(j) != keep:
+                    k = self.bar.tabData(j)
+                    if k != keep and not self.pages[k].locked:   # 잠긴 탭은 남김 (v0.9.95)
                         self.close_tab(j)
-            m.addAction(T("다른 탭 모두 닫기"), close_others)
+            m.addAction(T("다른 탭 모두 닫기 (잠긴 탭은 남김)"), close_others)
             pg = self.pages.get(self.bar.tabData(i))
+            if pg is not None:   # 탭 잠금 (v0.9.95) — 잠긴 탭에서 다른 폴더를 열면 새 탭으로
+                a = m.addAction(mlabel(T("탭 잠금 (다른 폴더는 새 탭으로)"), "lock_tab"), lambda: self.toggle_lock(i))
+                a.setCheckable(True)
+                a.setChecked(pg.locked)
             if pg is not None:   # 탭 색 (v0.9.89 사용자 11/4)
                 cm = m.addMenu(T("탭 색"))
                 for k, lbl, strong in labels.TAB_COLORS:   # v0.9.90 13색 + 직접 고르기
@@ -4115,10 +4155,13 @@ class Pane(QtWidgets.QFrame):
         key = id(v)
         self.pages[key] = v
         v.pathChanged.connect(lambda p, v=v: self._on_path(v, p))
-        v.status.connect(lambda s, v=v: v is self.view() and (self.stat.setText(s), self.stat.setToolTip(getattr(v, "status_tip", ""))))
+        v.status.connect(lambda s, v=v: v is self.view() and (self.stat.setText(T("🔒 잠긴 탭이라 새 탭으로 열었습니다") + "  ·  " + s if v.from_locked else s),
+                                                             self.stat.setToolTip(getattr(v, "status_tip", ""))))
         v.status.connect(lambda s, v=v: v is self.view() and self._poke_preview())   # 선택·폴더가 바뀌면 상태 글자가 바뀜 (v0.9.58)
         v.openInNewTab.connect(lambda p: self.add_tab(p, activate=False))
         v.openLocation.connect(self._open_location_tab)
+        v.lockedNav.connect(lambda p, s, v=v: self._locked_open(v, p, s))
+        v.lockChanged.connect(lambda v=v: (self._on_path(v, v.path), self.changed.emit()))
         hd = v.tree.header()   # 정렬·열 너비가 바뀌면 상태 저장 예약(2초 뒤 한 번)
         hd.sortIndicatorChanged.connect(lambda *_: self.changed.emit())
         hd.sectionResized.connect(lambda *_: self.changed.emit())
@@ -4134,6 +4177,27 @@ class Pane(QtWidgets.QFrame):
         log.info("탭 추가 pane=%d path=%s (탭 %d개)", self.idx, v.path, self.bar.count())
         self.changed.emit()
         return v
+
+    @staticmethod
+    def tab_text(v):
+        return ("🔒 " if v.locked else "") + tab_title(v.path)
+
+    def _locked_open(self, v, path, select=None):
+        """잠긴 탭에서 다른 폴더로 가려 함 (v0.9.95) → 그 탭 바로 오른쪽에 새 탭으로 열고 그쪽으로"""
+        i = next((k for k in range(self.bar.count()) if self.bar.tabData(k) == id(v)), -1)
+        nv = self.add_tab(path, activate=True)
+        nv.pending_select = select
+        if 0 <= i < self.bar.count() - 2:
+            self.bar.moveTab(self.bar.count() - 1, i + 1)
+        nv.tree.setFocus(Qt.OtherFocusReason)
+        nv.from_locked = True
+        self.stat.setText(T("🔒 잠긴 탭이라 새 탭으로 열었습니다"))
+
+    def toggle_lock(self, i=None):
+        i = self.bar.currentIndex() if i is None else i
+        v = self.pages.get(self.bar.tabData(i))
+        if v is not None:
+            v.set_locked(not v.locked)
 
     def _open_location_tab(self, folder, name):
         """Ctrl+Enter 로 파일의 폴더 위치를 새 탭으로 (v0.9.94) — 그 탭으로 가서 파일 고름"""
@@ -4236,6 +4300,7 @@ class Pane(QtWidgets.QFrame):
             return
         nv = tgt.add_tab(v.path, activate=True)
         nv.tab_color = v.tab_color   # 탭 색도 따라감 (v0.9.89)
+        nv.set_locked(v.locked)      # 잠금도 (v0.9.95)
         if 0 <= at < tgt.bar.count() - 1:
             tgt.bar.moveTab(tgt.bar.count() - 1, at)
         main = main_of(tgt)
@@ -4262,6 +4327,8 @@ class Pane(QtWidgets.QFrame):
         w.move(gpos.x() - 60, gpos.y() - 15)
         if v.tab_color and w.pane().view() is not None:
             w.pane().view().tab_color = v.tab_color
+        if v.locked and w.pane().view() is not None:
+            w.pane().view().set_locked(True)
         for i in range(self.bar.count()):
             if self.bar.tabData(i) == key and self.bar.count() > 1:
                 self.close_tab(i)
@@ -4305,7 +4372,7 @@ class Pane(QtWidgets.QFrame):
     def _on_path(self, v, p):
         for i in range(self.bar.count()):
             if self.bar.tabData(i) == id(v):
-                self.bar.setTabText(i, tab_title(p))
+                self.bar.setTabText(i, self.tab_text(v))
                 self.bar.setTabToolTip(i, disp_path(p))
                 self.bar.updateGeometry()
         if v is self.view():
@@ -5284,6 +5351,10 @@ class Main(QtWidgets.QMainWindow):
         self.save_timer.setSingleShot(True)
         self.save_timer.setInterval(2000)
         self.save_timer.timeout.connect(self.save_state)
+        self._drive_timer = QtCore.QTimer(self)   # 드라이브 꽂기/빼기 알림을 0.6초 묶어 '내 PC' 다시 읽기 (v0.9.95)
+        self._drive_timer.setSingleShot(True)
+        self._drive_timer.setInterval(600)
+        self._drive_timer.timeout.connect(self.refresh_drives)
         self.setWindowIcon(ui_parts.app_icon())
         self.setAcceptDrops(True)   # 끌고 온 탭 받기 (목록·사이드바가 안 받는 끌기는 여기까지 올라옴)
         self.apply_theme(app_wide=not WINDOWS)
@@ -5365,6 +5436,7 @@ class Main(QtWidgets.QMainWindow):
             "new_tab": lambda: self.pane().add_tab(self.pane().view().path, focus=True),
             "new_window": lambda: self.open_window(self.pane().view().path if self.pane().view() else THIS_PC),
             "close_tab": lambda: self.pane().close_tab(self.pane().bar.currentIndex()),
+            "lock_tab": lambda: self.pane().toggle_lock(),
             "reopen_tab": lambda: self.reopen_tab(),
             "focus_filter": lambda: self.pane().focus_filter(),
             "global_search": lambda: self.focus_global_search(),
@@ -5874,6 +5946,18 @@ class Main(QtWidgets.QMainWindow):
         log.info("경로 버튼(브레드크럼) %s", SETTINGS["breadcrumb"])
 
     # ---------------------------------------------------------- 닫은 탭 다시 열기 / 다른 칸
+    def refresh_drives(self):
+        """드라이브가 생기거나 없어짐 (v0.9.95) → '내 PC' 를 보고 있는 탭과 탐색 창의 '내 PC' 아래를 다시 읽음"""
+        n = 0
+        for p in self.panes:
+            for v in p.views():
+                if v.path == THIS_PC:
+                    v.reload(reason="drive")
+                    n += 1
+            if p.side is not None:
+                p.side.refresh_pc()
+        log.info("드라이브 바뀜 → 내 PC 탭 %d개 다시 읽음, 드라이브 %s", n, os.listdrives())
+
     def reopen_tab(self, k=None, pane=None):
         if not self.closed_tabs:
             return
@@ -6977,6 +7061,13 @@ eports.
             elif m == WM_HOTKEY and ctypes.wintypes.MSG.from_address(int(message)).wParam == HOTKEY["id"]:
                 QtCore.QTimer.singleShot(0, on_hotkey)
                 return True, 0
+            elif m == 0x0219:    # WM_DEVICECHANGE — USB·외장 드라이브 꽂기/빼기 (v0.9.95, 사용자 의견 '내 PC에 외장 드라이브 안 보임')
+                msg = ctypes.wintypes.MSG.from_address(int(message))
+                if msg.wParam in (0x8000, 0x8004) and msg.lParam and ctypes.c_uint32.from_address(msg.lParam + 4).value == 2:   # 도착/제거 완료, 볼륨
+                    mask = ctypes.c_uint32.from_address(msg.lParam + 12).value
+                    log.info("드라이브 %s %s", "꽂음" if msg.wParam == 0x8000 else "뺌",
+                             "".join(chr(65 + i) for i in range(26) if mask >> i & 1))
+                    self._drive_timer.start()
         except Exception:
             log.exception("종료 알림 처리 실패")
         if shellops.ShellMenu.current is not None:

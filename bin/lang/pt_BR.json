@@ -726,5 +726,9 @@
  "4Dir 설정 백업 파일이 아닙니다.\n{0}": "Não é um backup de configurações do 4Dir.\n{0}",
  "저장하지 못했습니다.\n{0}": "Não foi possível salvar.\n{0}",
  "이 백업으로 모든 설정을 바꾸고 4Dir 를 다시 시작합니다.\n\n백업: v{0} · {1}\n\n지금 설정은 4Dir 폴더의 bin\\restore_backup 에 따로 보관합니다.": "Todas as configurações serão substituídas por este backup e o 4Dir será reiniciado.\n\nBackup: v{0} · {1}\n\nAs configurações atuais ficam guardadas em bin\\restore_backup na pasta do 4Dir.",
- "설정을 가져왔습니다. 이전 설정은 bin\\restore_backup 에 보관했습니다  ✕": "Configurações importadas. As anteriores estão em bin\\restore_backup  ✕"
+ "설정을 가져왔습니다. 이전 설정은 bin\\restore_backup 에 보관했습니다  ✕": "Configurações importadas. As anteriores estão em bin\\restore_backup  ✕",
+ "🔒 잠긴 탭이라 새 탭으로 열었습니다": "🔒 Aba bloqueada: aberta em uma nova aba",
+ "다른 탭 모두 닫기 (잠긴 탭은 남김)": "Fechar todas as outras abas (manter as bloqueadas)",
+ "탭 잠금 (다른 폴더는 새 탭으로)": "Bloquear aba (outras pastas em nova aba)",
+ "탭 잠금/잠금 해제": "Bloquear/desbloquear aba"
 }
