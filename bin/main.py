@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.87"
+QE_VERSION = "0.9.93"
 
 import os
 import sys
@@ -419,6 +419,10 @@ import vfiles  # noqa: E402  (v0.9.75 아웃룩 첨부 등 가상 파일 끌어 
 import olehook  # noqa: E402  (v0.9.78 끌어 놓기 원래 데이터 직접 받기 — 웹 아웃룩 본문 이미지·여러 개)
 import overlays  # noqa: E402
 import i18n  # noqa: E402
+import foldersize  # noqa: E402  (v0.9.89 폴더 크기)
+import labels  # noqa: E402  (v0.9.89 색 라벨·탭 색)
+import palette  # noqa: E402  (v0.9.89 명령 찾기)
+import hashview  # noqa: E402  (v0.9.89 확인값 SHA256)
 from i18n import T  # noqa: E402  (화면 문구 번역)
 
 VIEW_KEYS = {}   # 파일 목록 단축키 {키: 기능} — Main.apply_keys 가 채움
@@ -446,6 +450,7 @@ WATCH_DELAY_MS = 500
 # 전역 보기 옵션 (모든 칸 공통)
 OPTS = {"show_hidden": False, "show_ext": True, "checkboxes": False,
         "date_folders_first": False,
+        "date_groups": False,   # v0.9.90 날짜별로 묶기 (오늘·어제·이번 주…, 윈도우 탐색기 '그룹화' 와 같게)
         "svn_status": True,
         "thumbnails": True,
         "vcs_overlay": True}   # vcs_overlay = SVN 아닌 폴더에서 윈도우 겹침 아이콘(Git·Perforce 등) 표시   # thumbnails = 아이콘 보기에서 그림 미리보기 / 날짜 정렬 때 폴더를 위로 모을지 (기본: 섞어서 날짜순 = 윈도우와 같음)
@@ -483,6 +488,7 @@ SERVER = None          # 하나만 실행용 통신 (창이 아니라 프로그�
 THUMBS = None          # 그림 미리보기 (thumbs.Thumbs, 처음 필요할 때 만듦, 모든 창이 같이 씀)
 THUMB_MODES = ("small", "medium", "large", "xlarge")   # 미리보기를 보여줄 보기 방식 (자세히·목록은 안 함)
 MODELS = []            # 미리보기 완성 알림을 받을 목록 모델들 (약한 참조 대신 닫힐 때 빠짐)
+LABELS = labels.Store(os.path.join(BIN_DIR, "4Dir_labels.json"))   # 색 라벨 (v0.9.89) — 4Dir 안에만 저장
 
 
 def thumbs_service():
@@ -786,6 +792,44 @@ def fmt_duration(sec):
     return f"{s // 3600:02d}:{s % 3600 // 60:02d}:{s % 60:02d}"
 
 
+# 두 칸 비교 (v0.9.89): 결과 → (글자색, 풍선 도움말). 이쪽에만·이쪽이 새것 = 굵게 + 골라 둠 (F6 으로 반대쪽에 복사)
+CMP_KIND = {"only": ("#1a7f37", T("두 칸 비교: 이쪽에만 있음")),
+            "newer": ("#c2410c", T("두 칸 비교: 이쪽이 더 새것")),
+            "older": ("#8a8f98", T("두 칸 비교: 반대쪽이 더 새것")),
+            "diff": ("#7c3aed", T("두 칸 비교: 날짜는 같고 크기가 다름"))}
+
+
+GROUP_MARK = "\0"   # 날짜 묶음 제목 줄 (v0.9.90): 이름 앞 글자 — 파일 이름엔 못 쓰는 글자라 실제 파일과 안 겹침
+
+
+def is_group(e):
+    return e[0][:1] == GROUP_MARK
+
+
+def date_bucket(ts, now=None):
+    """수정한 날짜 → (순서, 묶음 이름). 윈도우 탐색기 '날짜별 그룹' 과 같은 칸: 오늘·어제·이번 주·지난주·이번 달·지난달·올해·오래전.
+    주 시작 요일은 윈도우 지역 설정(QLocale)"""
+    if not ts:
+        return 8, T("날짜 없음")
+    now = time.time() if now is None else now
+    lt = time.localtime(now)
+    today = time.mktime((lt.tm_year, lt.tm_mon, lt.tm_mday, 0, 0, 0, 0, 0, -1))
+    day = 86400
+    first = QtCore.QLocale().firstDayOfWeek().value   # 1=월 … 7=일
+    back = (lt.tm_wday + 1 - first) % 7               # 오늘이 주 시작에서 며칠째
+    week = today - back * day
+    month = time.mktime((lt.tm_year, lt.tm_mon, 1, 0, 0, 0, 0, 0, -1))
+    pm = (lt.tm_year, lt.tm_mon - 1) if lt.tm_mon > 1 else (lt.tm_year - 1, 12)
+    last_month = time.mktime((pm[0], pm[1], 1, 0, 0, 0, 0, 0, -1))
+    year = time.mktime((lt.tm_year, 1, 1, 0, 0, 0, 0, 0, -1))
+    for i, (start, name) in enumerate(((today, T("오늘")), (today - day, T("어제")), (week, T("이번 주")),
+                                       (week - 7 * day, T("지난주")), (month, T("이번 달")), (last_month, T("지난달")),
+                                       (year, T("올해")))):
+        if ts >= start:
+            return i, name
+    return 7, T("오래전")
+
+
 class DirModel(QtCore.QAbstractTableModel):
     renamed = QtCore.Signal(str, str)
 
@@ -798,6 +842,9 @@ class DirModel(QtCore.QAbstractTableModel):
         self.sort_col, self.sort_order = 0, Qt.AscendingOrder
         self.icon_px = 16
         self.svn = {}      # 이름 → SVN 상태 (svnstat.folder_status, 따로 늦게 채움)
+        self.cmp = {}      # 이름 → 두 칸 비교 결과 (v0.9.89, Main.compare_panes) — 다시 읽으면 지움
+        self.group_on = False   # 자세히 보기일 때만 날짜 묶음 (v0.9.90, Page.set_mode) — 아이콘 보기는 묶지 않음
+        self.n_groups = 0       # rows 안 묶음 제목 줄 수 (항목 수 셀 때 뺌)
         self.thumbs_on = False   # 아이콘 보기 + 미리보기 켬 → 그림 파일은 미리보기 (thumbs.py)
         self.thumb_px = 16       # 실제 화면 픽셀 크기 (배율 반영)
         self.ovl_on = False      # SVN 아닌 폴더 + 설정 켬 → 윈도우 겹침 아이콘(Git·Perforce 등) (overlays.py)
@@ -826,6 +873,7 @@ class DirModel(QtCore.QAbstractTableModel):
 
     def set_entries(self, path, entries):
         self.beginResetModel()
+        self.cmp = {}   # 두 칸 비교 표시는 목록이 바뀌면 지움 (복사 뒤 등)
         if path != self.path:
             self.svn = {}   # 같은 폴더 다시 읽기면 새 상태가 올 때까지 이전 표시 유지(깜빡임 방지)
         # 버전 관리 표시(윈도우): SVN 작업 폴더는 4Dir 배지를 쓰므로 제외. 다시 읽을 때마다 그 폴더 결과는 새로 물어봄(커밋 등)
@@ -852,6 +900,8 @@ class DirModel(QtCore.QAbstractTableModel):
         if not idx.isValid():
             return None
         e, c = self.rows[idx.row()], idx.column()
+        if e[0][:1] == GROUP_MARK:   # 날짜 묶음 제목 줄 — 글자는 CheckDelegate.paint 가 그림
+            return e[7] if role == Qt.DisplayRole and c == 0 else None
         if role == Qt.DisplayRole:
             if c == 0:
                 if e[7]:
@@ -905,6 +955,19 @@ class DirModel(QtCore.QAbstractTableModel):
             return shellops.icon_for(e[0], e[1], self.icon_px, e[6])
         elif role == Qt.TextAlignmentRole and c in (3, 6):
             return int(Qt.AlignRight | Qt.AlignVCenter)
+        elif role == Qt.ForegroundRole and self.cmp and e[0] in self.cmp:
+            return QtGui.QColor(CMP_KIND[self.cmp[e[0]]][0])
+        elif role == Qt.FontRole and self.cmp and self.cmp.get(e[0]) in ("only", "newer"):
+            f = QtGui.QFont()
+            f.setBold(True)
+            return f
+        elif role == Qt.BackgroundRole and LABELS.data:
+            lc = LABELS.get(self.full(e))
+            b = labels.bg(lc, SETTINGS["dark"]) if lc else ""
+            if b:
+                return QtGui.QColor(b)
+        elif role == Qt.ToolTipRole and c == 0 and self.cmp and e[0] in self.cmp:
+            return CMP_KIND[self.cmp[e[0]]][1]
         elif role == Qt.ForegroundRole and (e[4] & HIDDEN_MASK):
             return QtGui.QColor(140, 140, 140)
         elif role == Qt.ForegroundRole:
@@ -915,6 +978,8 @@ class DirModel(QtCore.QAbstractTableModel):
         return None
 
     def flags(self, idx):
+        if idx.isValid() and idx.row() < len(self.rows) and is_group(self.rows[idx.row()]):
+            return Qt.NoItemFlags   # 묶음 제목: 못 고름·키보드 이동도 건너뜀
         f = super().flags(idx)
         if idx.isValid():
             f |= Qt.ItemIsDragEnabled
@@ -954,7 +1019,31 @@ class DirModel(QtCore.QAbstractTableModel):
 
     def _sort(self):
         self.all = self._sorted(self.all)
-        self.rows = self._filtered(self.all)
+        self.rows = self._grouped(self._filtered(self.all))
+
+    def _grouped(self, rows):
+        """날짜별로 묶기 (v0.9.90): 묶음 제목 줄을 끼움. 묶음 안 순서는 지금 정렬 그대로.
+        묶음 순서는 새것부터 — 수정한 날짜 오름차순 정렬일 때만 오래된 것부터"""
+        self.n_groups = 0
+        if not (OPTS["date_groups"] and self.group_on and rows and self.path and self.path != THIS_PC
+                and not is_search(self.path)):
+            return rows
+        now = time.time()
+        buckets = {}
+        for e in rows:
+            buckets.setdefault(date_bucket(e[3], now), []).append(e)
+        keys = sorted(buckets, reverse=self.sort_col == 1 and self.sort_order == Qt.AscendingOrder)
+        out = []
+        for k in keys:
+            n = len(buckets[k])
+            out.append([GROUP_MARK + k[1], False, -1, 0, 0, "", 0, f"{k[1]}  ({n:,})"])
+            out.extend(buckets[k])
+        self.n_groups = len(keys)
+        return out
+
+    def count(self):
+        """실제 항목 수 (묶음 제목 줄 뺌)"""
+        return len(self.rows) - self.n_groups
 
     propsLoaded = QtCore.Signal(str, int)
 
@@ -1023,7 +1112,7 @@ class DirModel(QtCore.QAbstractTableModel):
     def set_filter(self, text):
         self.filter = text or ""
         self.beginResetModel()
-        self.rows = self._filtered(self.all)
+        self.rows = self._grouped(self._filtered(self.all))
         self.endResetModel()
 
     def _sorted(self, rows):
@@ -1201,7 +1290,7 @@ class CheckDelegate(QtWidgets.QStyledItemDelegate):
 
     def initStyleOption(self, opt, idx):
         super().initStyleOption(opt, idx)
-        if OPTS["checkboxes"] and idx.column() == 0:
+        if OPTS["checkboxes"] and idx.column() == 0 and idx.flags() & Qt.ItemIsSelectable:
             opt.features |= QtWidgets.QStyleOptionViewItem.HasCheckIndicator
             opt.checkState = Qt.Checked if self.sel.isSelected(idx) else Qt.Unchecked
 
@@ -1238,6 +1327,10 @@ class CheckDelegate(QtWidgets.QStyledItemDelegate):
                  "conflict": ("#f29900", "!"), "deleted": ("#d93025", "×"), "unversioned": ("#8a939c", "?")}
 
     def paint(self, p, opt, idx):
+        rows = getattr(idx.model(), "rows", None)
+        if rows and idx.row() < len(rows) and is_group(rows[idx.row()]):
+            self._paint_group(p, opt, rows[idx.row()][7])
+            return
         super().paint(p, opt, idx)
         if idx.column() != 0 or not OPTS["svn_status"]:
             return
@@ -1253,6 +1346,27 @@ class CheckDelegate(QtWidgets.QStyledItemDelegate):
         if r.width() <= 0:
             return
         paint_svn_badge(p, r, opt.rect, st)
+
+    def _paint_group(self, p, opt, text):
+        """날짜 묶음 제목 (v0.9.90): 탐색기처럼 파란 글자 + 오른쪽으로 옅은 선"""
+        dark = SETTINGS["dark"]
+        col = QtGui.QColor("#7fb2ff" if dark else "#1e5fb4")
+        r = opt.rect.adjusted(6, 0, -6, 0)
+        f = QtGui.QFont(opt.font)
+        f.setPointSizeF(f.pointSizeF() * 1.08 if f.pointSizeF() > 0 else 10)
+        p.save()
+        p.setFont(f)
+        p.setPen(col)
+        fm = QtGui.QFontMetrics(f)
+        p.drawText(r, int(Qt.AlignLeft | Qt.AlignVCenter), text)
+        x = r.left() + fm.horizontalAdvance(text) + 10
+        if x < r.right():
+            line = QtGui.QColor(col)
+            line.setAlpha(70)
+            p.setPen(line)
+            y = r.center().y() + 1
+            p.drawLine(x, y, r.right(), y)
+        p.restore()
 
     def editorEvent(self, ev, model, opt, idx):
         if OPTS["checkboxes"] and idx.column() == 0 and ev.type() in (QtCore.QEvent.MouseButtonPress, QtCore.QEvent.MouseButtonDblClick):
@@ -1690,7 +1804,8 @@ class HoverHeader(QtWidgets.QHeaderView):
 
 class DetailView(ViewMixin, QtWidgets.QTreeView):
     # 탐색기처럼 목록 왼쪽·머리줄 아래에 빈 띠 → 파일이 꽉 차도 빈 곳을 눌러 폴더 메뉴(커밋 등)·선택 해제 가능 (10/6 사용자 요청)
-    GUTTER_L, GUTTER_T = 14, 6
+    # v0.9.89 사용자: 열이 스크롤바까지 차면 오른쪽 빈 곳이 없음 → 오른쪽에도 같은 띠 (빈 곳 더블클릭 = 상위 폴더)
+    GUTTER_L, GUTTER_T, GUTTER_R = 14, 6, 14
 
     def updateGeometries(self):
         super().updateGeometries()
@@ -1704,7 +1819,7 @@ class DetailView(ViewMixin, QtWidgets.QTreeView):
             h = self.header()
             hh = h.height() if not h.isHidden() else 0
             m = self.viewportMargins()
-            want = (self.GUTTER_L, hh + self.GUTTER_T, 0, 0)
+            want = (self.GUTTER_L, hh + self.GUTTER_T, self.GUTTER_R, 0)
             if (m.left(), m.top(), m.right(), m.bottom()) != want:
                 self.setViewportMargins(*want)
             vg = self.viewport().geometry()
@@ -1737,6 +1852,14 @@ class DetailView(ViewMixin, QtWidgets.QTreeView):
             if ev.button() == Qt.LeftButton and not (ev.modifiers() & (Qt.ControlModifier | Qt.ShiftModifier)):
                 self.selectionModel().clearSelection()   # 탐색기: 빈 곳 클릭 = 선택 해제
             self.setFocus()
+            return True
+        if t == QtCore.QEvent.MouseButtonDblClick and self._in_gutter(ev.position().toPoint()):
+            # v0.9.89: 왼쪽·오른쪽 빈 띠도 빈 곳 — 더블클릭하면 상위 폴더 (목록 안 빈 곳과 같은 조건)
+            if (ev.button() == Qt.LeftButton and SETTINGS["empty_click_up"] and ev.modifiers() == Qt.NoModifier
+                    and keymap.mouse_action(SETTINGS["mouse"], keymap.mouse_combo(ev.button(), ev.modifiers())) == keymap.BUILTIN
+                    and self.state() != QtWidgets.QAbstractItemView.EditingState and not is_search(self.page.path)):
+                log.info("빈 띠 더블클릭 → 상위 폴더 %s", self.page.path)
+                QtCore.QTimer.singleShot(0, self.page.go_up)
             return True
         return super().event(ev)
 
@@ -1794,6 +1917,8 @@ class Page(QtWidgets.QWidget):
     pathChanged = QtCore.Signal(str)
     status = QtCore.Signal(str)
     openInNewTab = QtCore.Signal(str)
+    fsizeFound = QtCore.Signal(int, str, object)   # (gen, 폴더 이름, 크기) — 폴더 크기 작업 스레드에서 (v0.9.89)
+    fsizeDone = QtCore.Signal(int)
 
     def __init__(self, path, mode="details", parent=None):
         super().__init__(parent)
@@ -1817,6 +1942,10 @@ class Page(QtWidgets.QWidget):
         self.sig.partial.connect(self._on_partial)
         self.sig.info.connect(self._on_info)
         self.sig.svn.connect(self._on_svn)
+        self.fsizeFound.connect(self._on_fsize)
+        self.fsizeDone.connect(self._on_fsize_done)
+        self._fsize_job = None
+        self.tab_color = ""   # 탭 색 (v0.9.89, labels.TAB_COLORS 이름 또는 '#rrggbb') — 탭 상태에 저장
         self.search_info = ""
         self._token = [False]   # 진행 중인 읽기/찾기 취소용
         self.watcher = None
@@ -1829,6 +1958,9 @@ class Page(QtWidgets.QWidget):
         self.tree.setHeader(HoverHeader(self.tree))
         self.tree.setModel(self.model_)
         self.tree.setSelectionModel(self.sel)
+        self._spanned = []
+        for sig in (self.model_.modelReset, self.model_.layoutChanged, self.model_.rowsInserted):
+            sig.connect(self._span_groups)
         _setup_view(self.tree, self)
         self.tree.setItemDelegate(self.delegate)
         self.tree.setRootIsDecorated(False)
@@ -1874,11 +2006,27 @@ class Page(QtWidgets.QWidget):
     def view(self):
         return self.stack.currentWidget()
 
+    def _span_groups(self, *_):
+        """날짜 묶음 제목 줄은 열 전체에 걸쳐 그림 (v0.9.90). 예전 줄 번호 풀고 새로"""
+        rows = self.model_.rows
+        root = QtCore.QModelIndex()
+        for r in self._spanned:
+            if r < len(rows):
+                self.tree.setFirstColumnSpanned(r, root, False)
+        self._spanned = [r for r, e in enumerate(rows) if is_group(e)] if self.model_.n_groups else []
+        for r in self._spanned:
+            self.tree.setFirstColumnSpanned(r, root, True)
+
     # ---------------------------------------------------------- 보기 방식
     def set_mode(self, mode):
         if mode not in MODE_PX:
             mode = "details"
         self.mode = mode
+        grp = mode == "details"   # 날짜 묶음은 자세히 보기에서만 (v0.9.90)
+        if grp != self.model_.group_on:
+            self.model_.group_on = grp
+            if OPTS["date_groups"]:
+                self.model_.sort(self.model_.sort_col, self.model_.sort_order)
         px = MODE_PX[mode]
         self.model_.icon_px = px
         self.model_.thumbs_on = mode in THUMB_MODES and OPTS["thumbnails"]
@@ -1950,11 +2098,13 @@ class Page(QtWidgets.QWidget):
     def view_state(self):
         h = self.tree.header()
         return {"sort": [self.model_.sort_col, int(self.model_.sort_order.value)],
-                "cols": [h.sectionSize(c) for c in range(h.count())]}
+                "cols": [h.sectionSize(c) for c in range(h.count())], "color": self.tab_color}
 
     def apply_view_state(self, vs):
         if not vs:
             return
+        if labels.tab_hex(vs.get("color")):   # 이름 또는 직접 고른 '#rrggbb' (v0.9.90)
+            self.tab_color = vs["color"]
         try:
             h = self.tree.header()
             old_default = {0: 280, 1: 125, 3: 85}    # v0.9.30 까지 기본 폭 → 손대지 않은 열이면 탐색기 기본 폭으로 (날짜가 길어져 잘리지 않게)
@@ -2030,6 +2180,9 @@ class Page(QtWidgets.QWidget):
             self.keep_sel = self._sel_snapshot()
         self.gen += 1
         self.scan_count += 1
+        if self._fsize_job is not None:   # 폴더 크기 재던 것 중단 (다 읽으면 다시)
+            self._fsize_job.cancel()
+            self._fsize_job = None
         log.debug("읽기 요청 gen=%d reason=%s path=%s", self.gen, reason, self.path)
         self._token[0] = True               # 이전 찾기 취소
         self._token = tok = [False]
@@ -2051,6 +2204,8 @@ class Page(QtWidgets.QWidget):
 
     def cancel_jobs(self):
         self._token[0] = True
+        if self._fsize_job is not None:
+            self._fsize_job.cancel()
 
     def _on_partial(self, gen, rows):
         if gen == self.gen:
@@ -2117,6 +2272,7 @@ class Page(QtWidgets.QWidget):
                 self.pending_edit = self.pending_select = None
                 self._emit_status()
                 self.refresh_svn(entries)
+                self._start_fsize()
                 return
             sm.clearSelection()
             for n in new:
@@ -2145,6 +2301,42 @@ class Page(QtWidgets.QWidget):
         self.pending_edit = self.pending_select = None
         self._emit_status()
         self.refresh_svn(entries)
+        self._start_fsize()
+
+    # ---------------------------------------------------------- 폴더 크기 (v0.9.89 사용자 11/4)
+    def _start_fsize(self):
+        """하위 폴더 크기를 뒤에서 재서 크기 칸에 하나씩 (네트워크 드라이브는 안 함). 잰 값은 5분 기억"""
+        if self._fsize_job is not None:
+            self._fsize_job.cancel()
+            self._fsize_job = None
+        p = self.path
+        if not SETTINGS["folder_size"] or p == THIS_PC or is_search(p) or foldersize.is_remote(p):
+            return
+        names = [e[0] for e in self.model_.all if e[1] and not e[5]]
+        if not names:
+            return
+        gen = self.gen
+        self._fsize_job = foldersize.Job(p, names, lambda n, sz, g=gen: self.fsizeFound.emit(g, n, sz),
+                                         lambda g=gen: self.fsizeDone.emit(g))
+        self._fsize_job.start()
+
+    def _on_fsize(self, gen, name, size):
+        if gen != self.gen:
+            return
+        for e in self.model_.all:
+            if e[1] and e[0] == name:
+                e[2] = size
+                break
+        for r, e in enumerate(self.model_.rows):
+            if e[0] == name:
+                ix = self.model_.index(r, 3)
+                self.model_.dataChanged.emit(ix, ix, [Qt.DisplayRole])
+                break
+
+    def _on_fsize_done(self, gen):
+        self._fsize_job = None
+        if gen == self.gen and self.model_.sort_col == 3:   # 크기순이면 다 잰 뒤 한 번 다시 정렬
+            self.model_.sort(3, self.model_.sort_order)
 
     # ---------------------------------------------------------- SVN 상태 (TortoiseSVN 겹침 아이콘 대신 장부 직접 읽기)
     def refresh_svn(self, entries=None):
@@ -2183,7 +2375,7 @@ class Page(QtWidgets.QWidget):
         self._emit_status()
 
     def _emit_status(self):
-        n = len(self.model_.rows)
+        n = self.model_.count()
         sr = self.selected_rows()
         s = len(sr)
         txt = T('{0:,}개 항목').format(n)   # 탐색기 상태줄과 같은 말 (읽기 ms 는 상태줄 풍선 도움말로)
@@ -2249,6 +2441,8 @@ class Page(QtWidgets.QWidget):
         if not idx.isValid():
             return
         e = self.model_.rows[idx.row()]
+        if is_group(e):
+            return
         fp = self.model_.full(e)
         if e[1]:
             self.navigate(fp)
@@ -2505,9 +2699,71 @@ class Page(QtWidgets.QWidget):
             self.copy_path()
         elif act == "properties":
             self.show_properties()
+        elif act == "select_pattern":
+            self.select_pattern()
+        elif act == "sha256":
+            self.show_sha256()
         else:
             return False
         return True
+
+    def select_pattern(self):
+        """패턴으로 고르기 (v0.9.89): 맞는 것만 골라 둠 — 필터와 달리 다른 항목도 그대로 보임"""
+        txt, ok = QtWidgets.QInputDialog.getText(
+            self, T("패턴으로 고르기"),
+            T("고를 이름 (* = 아무 글자, 여러 개는 ; 로)\n예:  *.max      *_stand*; *.psd"),
+            text=SETTINGS["select_pattern"] or "*.max")
+        if not ok or not txt.strip():
+            return
+        SETTINGS["select_pattern"] = txt.strip()
+        n = self.select_by_pattern(txt)
+        self.status.emit(T("'{0}' 에 맞는 것 {1:,}개 고름").format(txt.strip(), n) if n else T("⚠ '{0}' 에 맞는 것이 없습니다").format(txt.strip()))
+
+    def select_by_pattern(self, txt):
+        import fnmatch
+        pats = [x.strip().lower() for x in txt.split(";") if x.strip()]
+        pats = [x if ("*" in x or "?" in x) else f"*{x}*" for x in pats]
+        sel = QtCore.QItemSelection()
+        first = None
+        for r, e in enumerate(self.model_.rows):
+            if is_group(e):
+                continue
+            nm = (e[7] or e[0]).lower()
+            if any(fnmatch.fnmatch(nm, x) for x in pats):
+                sel.select(self.model_.index(r, 0), self.model_.index(r, 0))
+                first = r if first is None else first
+        self.sel.select(sel, QtCore.QItemSelectionModel.ClearAndSelect | QtCore.QItemSelectionModel.Rows)
+        if first is not None:
+            ix = self.model_.index(first, 0)
+            self.sel.setCurrentIndex(ix, QtCore.QItemSelectionModel.NoUpdate)
+            self.view().scrollTo(ix)
+        n = len(self.selected_rows())
+        log.info("패턴으로 고르기 '%s' → %d개 (%s)", txt, n, self.path)
+        return n
+
+    def show_sha256(self):
+        """확인값(SHA256) 보기 (v0.9.89) — 고른 파일들, 뒤에서 계산"""
+        ps = [p for p in self.selected_paths() if os.path.isfile(p)]
+        if not ps:
+            self.status.emit(T("⚠ 확인값을 볼 파일을 고르세요"))
+            return
+        dlg = hashview.HashDialog(ps, main_of(self) or self)
+        dlg.show()
+
+    def pick_label(self, paths):
+        """색 라벨 직접 고르기 (v0.9.90) — 탭 색과 같은 윈도우 색 고르기 창"""
+        start = QtGui.QColor(labels.tab_hex(LABELS.get(paths[0]) if paths else "") or "#3e63dd")
+        c = QtWidgets.QColorDialog.getColor(start, self, T("색 라벨"))
+        if c.isValid():
+            self.set_label(paths, c.name())
+        else:
+            log.info("색 라벨 직접 고르기 취소")
+
+    def set_label(self, paths, color):
+        LABELS.set(paths, color)
+        for m in MODELS:   # 같은 폴더를 연 다른 탭·칸도 바로
+            if m.rows:
+                m.dataChanged.emit(m.index(0, 0), m.index(len(m.rows) - 1, m.columnCount() - 1), [Qt.BackgroundRole])
 
     def mouse_override(self, view, ev, pos):
         """v0.9.83 마우스 버튼 지정: 이 조합에 기능이 지정돼 있으면 실행하고 True (기본 동작이면 False).
@@ -2615,6 +2871,14 @@ class Page(QtWidgets.QWidget):
                         if imgconvert.targets_for(imgconvert.webp_only(paths), f)]
                 if conv and not is_search(self.path):
                     extras.append((mlabel(T("WebP 변환"), None), conv))
+            if self.path != THIS_PC:   # 색 라벨 (v0.9.89) — 4Dir 안에만 저장
+                cur = {LABELS.get(p) for p in paths}
+                own = next(iter(cur)) if len(cur) == 1 and next(iter(cur)) and next(iter(cur)) not in labels.TAB_HEX else ""
+                extras.append((T("색 라벨"), [({"t": lbl, "chk": cur == {k}}, (lambda k=k: self.set_label(paths, k))) for k, lbl, _s in labels.TAB_COLORS]
+                               + [("-", None), ({"t": T("다른 색 고르기…"), "chk": bool(own)}, lambda: self.pick_label(paths)),
+                                  (T("색 라벨 지우기"), lambda: self.set_label(paths, None))]))
+            if any(os.path.isfile(p) for p in paths):
+                extras.append((mlabel(T("확인값(SHA256) 보기"), "sha256"), self.show_sha256))
             if dirs:
                 extras.append(({"t": T("윈도우 즐겨찾기에 고정"), "unless": {"pintohome"}}, lambda: self.do_verb(dirs, "pintohome")))
                 extras.append(({"t": T("시작 화면에 고정"), "unless": {"pintostartscreen"}}, lambda: self.do_verb(dirs, "pintostartscreen")))
@@ -2642,6 +2906,9 @@ class Page(QtWidgets.QWidget):
                                     for o, lbl in ((Qt.AscendingOrder, T("오름차순")), (Qt.DescendingOrder, T("내림차순")))]
             extras.append((mlabel(T("정렬 기준"), None, "O"), srt))
             extras.append((mlabel(T("새로 고침"), "refresh", "E"), lambda: self.reload("menu")))
+            extras.append((mlabel(T("패턴으로 고르기…"), "select_pattern"), self.select_pattern))   # v0.9.89
+            if main_of(self) is not None:
+                extras.append((mlabel(T("두 칸 비교"), "compare"), main_of(self).compare_panes))
             extras.append((T("터미널에서 열기"), lambda: shellops.open_terminal(self.path)))   # 윈도우 11 빈 곳 메뉴처럼 (v0.9.54)
             extras.append(fav_entry)
             extras.append(("-", None))
@@ -3405,6 +3672,44 @@ class ArrowIcon(QtGui.QIconEngine):
         return self.scaledPixmap(size, mode, state, 1.0)
 
 
+def flash_pane(pane, color="#f76b15", times=3, ms=170):
+    """칸 테두리 잠깐 깜빡임 (v0.9.90 두 칸 비교). 마우스는 통과, 끝나면 스스로 지움"""
+    f = QtWidgets.QFrame(pane)
+    f.setObjectName("flash")
+    f.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+    f.setStyleSheet("QFrame#flash{border:3px solid %s; background:transparent;}" % color)
+    f.setGeometry(pane.rect())
+    f.show()
+    f.raise_()
+    left = [times * 2 - 1]
+    t = QtCore.QTimer(f)
+
+    def step():
+        left[0] -= 1
+        if left[0] < 0:
+            t.stop()
+            f.deleteLater()
+            return
+        f.setVisible(not f.isVisible())
+    t.timeout.connect(step)
+    t.start(ms)
+    pane._flash = f   # 시험용
+    return f
+
+
+def color_dot(hexcol, d=12):
+    """메뉴용 색 동그라미 (탭 색)"""
+    pm = QtGui.QPixmap(d, d)
+    pm.fill(Qt.transparent)
+    p = QtGui.QPainter(pm)
+    p.setRenderHint(QtGui.QPainter.Antialiasing, True)
+    p.setPen(Qt.NoPen)
+    p.setBrush(QtGui.QColor(hexcol))
+    p.drawEllipse(1, 1, d - 2, d - 2)
+    p.end()
+    return QtGui.QIcon(pm)
+
+
 def arrow_icon(way):
     return QtGui.QIcon(ArrowIcon(way))
 
@@ -3443,6 +3748,24 @@ class PaneTabBar(QtWidgets.QTabBar):
     def resizeEvent(self, ev):
         super().resizeEvent(ev)
         self._fix_later()
+
+    color_of = staticmethod(lambda i: "")   # Pane 이 바꿔 끼움: 탭 i 의 색 이름 (v0.9.89)
+
+    def paintEvent(self, ev):
+        super().paintEvent(ev)
+        cols = [(i, self.color_of(i)) for i in range(self.count())]
+        cols = [(i, labels.tab_hex(c)) for i, c in cols if labels.tab_hex(c)]   # v0.9.90 직접 고른 색도
+        if not cols:
+            return
+        p = QtGui.QPainter(self)
+        for i, c in cols:
+            r = self.tabRect(i).adjusted(1, 0, -3, 0)   # 탭 사이 간격(오른쪽 2px) 빼고
+            col = QtGui.QColor(c)
+            tint = QtGui.QColor(col)
+            tint.setAlpha(70 if i == self.currentIndex() else 45)
+            p.fillRect(r, tint)
+            p.fillRect(QtCore.QRect(r.left(), r.top(), r.width(), 3), col)   # 위쪽 진한 띠
+        p.end()
 
     def _fix_close_buttons(self):
         for i in range(self.count()):
@@ -3561,6 +3884,7 @@ class Pane(QtWidgets.QFrame):
         self.bar.setElideMode(Qt.ElideRight)
         self.bar.setUsesScrollButtons(True)
         self.bar.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.bar.color_of = lambda i: getattr(self.pages.get(self.bar.tabData(i)), "tab_color", "")
         tl.addWidget(self.bar)
         tl.addSpacing(36)   # + 버튼 자리(탭이 넘칠 때)
         # + 버튼: 마지막 탭 바로 오른쪽에 붙어 다님 (_place_plus)
@@ -3681,6 +4005,20 @@ class Pane(QtWidgets.QFrame):
                     if self.bar.tabData(j) != keep:
                         self.close_tab(j)
             m.addAction(T("다른 탭 모두 닫기"), close_others)
+            pg = self.pages.get(self.bar.tabData(i))
+            if pg is not None:   # 탭 색 (v0.9.89 사용자 11/4)
+                cm = m.addMenu(T("탭 색"))
+                for k, lbl, strong in labels.TAB_COLORS:   # v0.9.90 13색 + 직접 고르기
+                    a = cm.addAction(color_dot(strong), lbl, lambda k=k: self.set_tab_color(pg, k))
+                    a.setCheckable(True)
+                    a.setChecked(pg.tab_color == k)
+                cm.addSeparator()
+                own = pg.tab_color if pg.tab_color and pg.tab_color not in labels.TAB_HEX else ""
+                a = cm.addAction(color_dot(own) if own else QtGui.QIcon(), T("다른 색 고르기…"),
+                                 lambda: self.pick_tab_color(pg))
+                a.setCheckable(True)
+                a.setChecked(bool(own))
+                cm.addAction(T("색 없음"), lambda: self.set_tab_color(pg, ""))
         main = main_of(self)
         if main is not None and i >= 0:
             m.addSeparator()
@@ -3699,6 +4037,21 @@ class Pane(QtWidgets.QFrame):
         m.exec(self.bar.mapToGlobal(pos))
 
     # ---------------------------------------------------------- 탭
+    def pick_tab_color(self, pg):
+        """탭 색 직접 고르기 (v0.9.90) — 윈도우 색 고르기 창, 고른 색은 '#rrggbb' 로 저장"""
+        start = QtGui.QColor(labels.tab_hex(pg.tab_color) or "#3e63dd")
+        c = QtWidgets.QColorDialog.getColor(start, self, T("탭 색"))
+        if c.isValid():
+            self.set_tab_color(pg, c.name())
+        else:
+            log.info("탭 색 직접 고르기 취소")
+
+    def set_tab_color(self, pg, color):
+        pg.tab_color = color or ""
+        log.info("탭 색 pane=%d %s → %s", self.idx, pg.path, color or "없음")
+        self.bar.update()
+        self.changed.emit()
+
     def view(self):
         return self.stack.currentWidget()
 
@@ -3824,6 +4177,7 @@ class Pane(QtWidgets.QFrame):
         if kind != "pane":
             return
         nv = tgt.add_tab(v.path, activate=True)
+        nv.tab_color = v.tab_color   # 탭 색도 따라감 (v0.9.89)
         if 0 <= at < tgt.bar.count() - 1:
             tgt.bar.moveTab(tgt.bar.count() - 1, at)
         main = main_of(tgt)
@@ -3848,6 +4202,8 @@ class Pane(QtWidgets.QFrame):
         log.info("탭 끌어내기 → 새 창 pane=%d %s at %s", self.idx, v.path, gpos.toTuple())
         w = main.open_window(v.path)
         w.move(gpos.x() - 60, gpos.y() - 15)
+        if v.tab_color and w.pane().view() is not None:
+            w.pane().view().tab_color = v.tab_color
         for i in range(self.bar.count()):
             if self.bar.tabData(i) == key and self.bar.count() > 1:
                 self.close_tab(i)
@@ -4078,6 +4434,7 @@ class Pane(QtWidgets.QFrame):
         a.setChecked(SETTINGS["breadcrumb"])
         for key, lbl in (("checkboxes", T("항목 확인란")), ("show_ext", T("파일 확장명")), ("show_hidden", T("숨긴 항목")),
                          ("date_folders_first", T("날짜 정렬 때 폴더를 위로 모으기")),
+                         ("date_groups", T("날짜별로 묶기 (오늘·어제·이번 주…)")),
                          ("svn_status", T("SVN 상태 표시")),
                          ("thumbnails", T("그림 미리보기 (아이콘 보기)")),
                          ("vcs_overlay", T("버전 관리 표시 — Git·Perforce 등 (윈도우 겹침 아이콘)"))):
@@ -4087,6 +4444,7 @@ class Pane(QtWidgets.QFrame):
         show.addSeparator()   # v0.9.75 사용자 의견 (옵션)
         for key, lbl in (("hide_single_tab", T("탭이 하나면 탭 줄 숨기기 (새 탭: Ctrl+T)")),
                          ("empty_click_up", T("빈 곳을 더블클릭하면 상위 폴더로")),
+                         ("folder_size", T("폴더 크기 계산 (크기 칸 — 네트워크 드라이브 제외)")),
                          ("keep_favbar", T("메뉴줄을 접어도 즐겨찾기 줄은 보이기"))):
             a = show.addAction(lbl, lambda key=key: main.toggle_setting(key) if main is not None else None)
             a.setCheckable(True)
@@ -4531,11 +4889,24 @@ class FavPanel(QtWidgets.QFrame):
 
 
 # ================================================================ 레이아웃 아이콘 (코드로 그림)
-LAYOUTS = [("1", T("1칸")), ("2h", T("2칸 좌우")), ("2v", T("2칸 상하")), ("3", T("3칸 (위 2 + 아래 1)")),
-           ("3h", T("3칸 가로")), ("4", T("4칸")), ("6", T("6칸 (3 x 2)"))]
+LAYOUTS = [("1", T("1칸")), ("2h", T("2칸 좌우")), ("2v", T("2칸 상하")),
+           ("2t", T("2칸 상하 (위 작게)")), ("2b", T("2칸 상하 (아래 작게)")),
+           ("3r", T("3칸 (왼쪽 2 + 오른쪽 1)")), ("3l", T("3칸 (왼쪽 1 + 오른쪽 2)")),
+           ("3", T("3칸 (위 2 + 아래 1)")), ("3b", T("3칸 (위 1 + 아래 2)")),
+           ("4l", T("4칸 (왼쪽 3 + 오른쪽 1)")), ("4r", T("4칸 (왼쪽 1 + 오른쪽 3)")),
+           ("4t", T("4칸 (위 3 + 아래 1)")), ("4b", T("4칸 (위 1 + 아래 3)")), ("4", T("4칸")),
+           ("3h", T("3칸 가로")), ("6", T("6칸 (3 x 2)"))]
+# 레이아웃 고르기 창의 줄 (v0.9.92 사용자 11/4 '맥스처럼 전부 + 버튼 하나 눌러 팝업') — 맥스 순서 7개씩, 마지막 줄 + 직접 지정
+LAYOUT_POPUP_ROWS = [["1", "2h", "2v", "2t", "2b", "3r", "3l"], ["3", "3b", "4l", "4r", "4t", "4b", "4"], ["3h", "6"]]
 # 줄마다 보일 칸 번호. 위 줄 = 0,1,4 / 아래 줄 = 2,3,5 (예전 4칸·6칸 저장 상태와 번호 호환)
 LAYOUT_ROWS = {"1": [[0]], "2h": [[0, 1]], "2v": [[0], [2]], "3": [[0, 1], [2]],
-               "3h": [[0, 1, 4]], "4": [[0, 1], [2, 3]], "6": [[0, 1, 4], [2, 3, 5]]}
+               "3h": [[0, 1, 4]], "4": [[0, 1], [2, 3]], "6": [[0, 1, 4], [2, 3, 5]],
+               "3l": [[0], [1, 3]], "3r": [[0, 2], [1]], "4l": [[0, 4, 2], [1]], "4r": [[0], [1, 5, 3]],
+               "2t": [[0], [2]], "2b": [[0], [2]], "3b": [[0], [2, 3]], "4t": [[0, 1, 4], [2]], "4b": [[0], [2, 3, 5]]}
+# 세로 줄(열) 단위 배치 (v0.9.90 사용자 의견 '왼쪽 긴 1칸 + 오른쪽 2칸'): 위 목록이 '줄' 대신 '열' — 분할 방향만 바꿔 씀.
+# 칸 번호는 4칸 자리와 맞춤 (왼쪽=0 왼쪽 위, 오른쪽 위=1, 오른쪽 아래=3) → 4칸 ↔ 이 배치 오가도 폴더가 제자리
+COL_LAYOUTS = {"3l", "3r", "4l", "4r"}
+LAYOUT_RATIO = {"2t": (1, 2), "2b": (2, 1)}   # 줄(열) 크기 비율 — 없으면 같게
 # 직접 지정(가로x세로)의 칸 번호: 기존 6칸 자리는 그대로, 나머지는 위→아래, 왼→오 순서로 6번부터
 _SLOT = [(0, 0), (0, 1), (1, 0), (1, 1), (0, 2), (1, 2)]
 _SLOT += [(r, c) for r in range(MAX_ROWS) for c in range(MAX_COLS) if (r, c) not in _SLOT]
@@ -4587,19 +4958,56 @@ def layout_icon(key, w=22, h=18):
             p.drawLine(1, y, w - 2, y)
         p.end()
         return QtGui.QIcon(pm)
-    cx, cy = 1 + (w - 3) // 2, 5 + (h - 7) // 2
-    t1, t2 = 1 + (w - 3) // 3, 1 + 2 * (w - 3) // 3
-    if key in ("2h", "4"):
-        p.drawLine(cx, 5, cx, h - 2)
-    if key in ("2v", "4", "3", "6"):
-        p.drawLine(1, cy, w - 2, cy)
-    if key == "3":
-        p.drawLine(cx, 5, cx, cy)
-    if key in ("3h", "6"):
-        p.drawLine(t1, 5, t1, h - 2)
-        p.drawLine(t2, 5, t2, h - 2)
+    rows = layout_rows(key) or [[0]]   # v0.9.92: 칸 목록으로 그림 (줄/열·비율 공통)
+    x0, y0, x1, y1 = 1, 5, w - 2, h - 2
+    cols = key in COL_LAYOUTS
+    ratio = LAYOUT_RATIO.get(key) or (1,) * len(rows)
+    a0, a1 = (x0, x1) if cols else (y0, y1)
+    edges, acc = [a0], 0
+    for r in ratio:
+        acc += r
+        edges.append(a0 + round((a1 - a0) * acc / sum(ratio)))
+    for i, row in enumerate(rows):
+        s0, s1 = edges[i], edges[i + 1]
+        if i:
+            p.drawLine(s0, y0, s0, y1) if cols else p.drawLine(x0, s0, x1, s0)
+        b0, b1 = (y0, y1) if cols else (x0, x1)
+        for j in range(1, len(row)):
+            t = b0 + round((b1 - b0) * j / len(row))
+            p.drawLine(s0, t, s1, t) if cols else p.drawLine(t, s0, t, s1)
     p.end()
     return QtGui.QIcon(pm)
+
+
+class LayoutPopup(QtWidgets.QFrame):
+    """레이아웃 고르기 창 (v0.9.92): Main.layout_actions 를 그림 버튼으로 (지금 배치는 눌린 표시). 누르면 바로 바뀌고 닫힘"""
+
+    def __init__(self, main):
+        super().__init__(main, Qt.Popup)
+        self.setObjectName("layoutPopup")
+        self.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        lay = QtWidgets.QGridLayout(self)
+        lay.setContentsMargins(8, 8, 8, 8)
+        lay.setSpacing(4)
+        self.buttons = {}
+        for r, keys in enumerate(LAYOUT_POPUP_ROWS):
+            for c, k in enumerate(keys):
+                lay.addWidget(self._btn(main.layout_actions[k], k), r, c)
+        gb = self._btn(main.act_grid, "grid")
+        gb.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        last = len(LAYOUT_POPUP_ROWS) - 1
+        lay.addWidget(gb, last, len(LAYOUT_POPUP_ROWS[-1]), 1, 7 - len(LAYOUT_POPUP_ROWS[-1]), Qt.AlignLeft)
+
+    def _btn(self, act, key):
+        b = QtWidgets.QToolButton(self)
+        b.setDefaultAction(act)
+        b.setIconSize(QtCore.QSize(40, 32))
+        b.setAutoRaise(True)
+        b.setObjectName("layoutPick")
+        act_cb = lambda *_: self.close()
+        b.clicked.connect(act_cb)
+        self.buttons[key] = b
+        return b
 
 
 def preview_icon(w=22, h=18):
@@ -4909,6 +5317,8 @@ class Main(QtWidgets.QMainWindow):
             "add_fav": add_fav,
             "toggle_chrome": lambda: self.set_chrome_collapsed(not SETTINGS["chrome_collapsed"]),
             "toggle_preview": lambda: self.set_preview(not self.preview.isVisible()),
+            "compare": lambda: self.compare_panes(),
+            "palette": lambda: self.open_palette(),
         }
         for i in range(NPANES):
             self.win_actions[f"pane{i + 1}"] = (lambda i=i: self._focus_pane(i))
@@ -5070,7 +5480,10 @@ class Main(QtWidgets.QMainWindow):
         fold.setToolTip(T("메뉴·즐겨찾기 접기") + " (Ctrl+Shift+M)")
         #   메뉴줄 맨 앞 앱 아이콘은 뺌 — 창 제목줄 아이콘과 중복(10/2 사용자 지시)
 
+        self.top_menus = []   # (이름, 채우는 함수) — 명령 찾기가 메뉴 항목도 모음 (v0.9.89)
+
         def menu_btn(text, filler):
+            self.top_menus.append((text, filler))
             b = QtWidgets.QToolButton()
             b.setText(text)
             b.setPopupMode(QtWidgets.QToolButton.InstantPopup)
@@ -5082,7 +5495,8 @@ class Main(QtWidgets.QMainWindow):
             return b
 
         menu_btn(T("보기"), self._fill_main_view_menu)
-        menu_btn(T("레이아웃"), self._fill_layout_menu)
+        # v0.9.93 사용자 11/4: 글자 메뉴 '레이아웃'은 빼고 도구줄 레이아웃 버튼(고르기 창)만 — 명령 찾기에는 계속 나오게 목록만 남김
+        self.top_menus.append((T("레이아웃"), self._fill_layout_menu))
         menu_btn(T("즐겨찾기"), self._fill_fav_menu)
         menu_btn(T("창 저장/불러오기"), self._fill_session_menu)
         menu_btn(T("도구"), self._fill_tool_menu)
@@ -5092,29 +5506,33 @@ class Main(QtWidgets.QMainWindow):
         self.act_preview.setChecked(bool(SETTINGS["preview_pane"]))
         self.act_preview.setToolTip(T("미리보기 창") + (f" ({key_text('toggle_preview')})" if key_text("toggle_preview") else ""))
         tb.addSeparator()
+        # v0.9.92 사용자 11/4: 레이아웃이 많아져 도구줄엔 버튼 하나(지금 배치 그림) → 누르면 고르기 창(LayoutPopup)
         self.layout_group = QtGui.QActionGroup(self)
         self.layout_actions = {}
         for key, label in LAYOUTS:
-            a = tb.addAction(layout_icon(key), label, lambda k=key: self.set_layout(k, equalize=True))
-            a.setToolTip(T('레이아웃: {0}').format(label))
+            a = QtGui.QAction(layout_icon(key, 40, 32), label, self)
+            a.triggered.connect(lambda _c=False, k=key: self.set_layout(k, equalize=True))
+            a.setToolTip(label)
             a.setCheckable(True)
             self.layout_group.addAction(a)
             self.layout_actions[key] = a
-        self.act_grid = tb.addAction(layout_icon(grid_key(3, 3)), T("직접 지정"), self.open_grid_dialog)
+        self.act_grid = QtGui.QAction(layout_icon(grid_key(3, 3), 40, 32), T("직접 지정"), self)
+        self.act_grid.triggered.connect(self.open_grid_dialog)
         self.act_grid.setToolTip(T("레이아웃: 직접 지정 (가로 x 세로)…"))
         self.act_grid.setCheckable(True)
         self.layout_group.addAction(self.act_grid)
-        # 격자 아이콘만으론 6칸 버튼과 구분이 안 됨(10/8 사용자 지적) → 아이콘 옆에 '직접 지정' 글자
-        gb = tb.widgetForAction(self.act_grid)
-        if isinstance(gb, QtWidgets.QToolButton):
-            gb.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.layout_btn = QtWidgets.QToolButton()
+        self.layout_btn.setObjectName("layoutBtn")
+        self.layout_btn.setAutoRaise(True)
+        self.layout_btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.layout_btn.setText(T("레이아웃") + " ▾")
+        self.layout_btn.clicked.connect(self.show_layout_popup)
+        tb.addWidget(self.layout_btn)
         tb.addSeparator()
         self.act_top = tb.addAction(T("📌 항상 위"), self.toggle_on_top)
         self.act_top.setCheckable(True)
         self.act_top.setChecked(SETTINGS["on_top"])
         self.act_top.setToolTip(T("다른 창 위에 항상 표시 (켜기/끄기)"))
-        tb.addSeparator()
-        tb.addAction(T("Explorer Check (탐색기 점검)"), self.open_check)
         # 알림 줄 (비정상 종료 복원·언어 바꿈 등) — 클릭하면 닫힘.
         # 상단 메뉴줄 안에 두면 창이 좁을 때 '…' 안으로 밀려 안 보임(10/2 사용자 지적, 1168px 재현) → 메뉴줄 아래 한 줄로
         self.notice = QtWidgets.QPushButton()
@@ -5167,6 +5585,9 @@ class Main(QtWidgets.QMainWindow):
         self.idx_btn.setToolTip(T("검색 색인 상태 — 눌러서 검색 범위 설정"))
         self.idx_btn.clicked.connect(self.open_search_roots)
         tb.addWidget(self.idx_btn)
+        # v0.9.93 사용자 11/4: 탐색기 점검 ↔ 전체 검색칸 자리 바꿈 → 검색칸·색인 오른쪽으로
+        tb.addSeparator()
+        self.act_check = tb.addAction(T("Explorer Check (탐색기 점검)"), self.open_check)
         sp = QtWidgets.QWidget()
         sp.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
         tb.addWidget(sp)
@@ -5543,6 +5964,95 @@ class Main(QtWidgets.QMainWindow):
         log.info("새 창 열기 %.0fms %s", (time.perf_counter() - t0) * 1000, path)
         return w
 
+    def compare_panes(self):
+        """두 칸 비교 (v0.9.89 사용자 11/4): 지금 칸과 다른 칸(직전에 쓰던 칸) 폴더를 이름으로 맞춰 봄 (하위 폴더 안까지는 안 봄).
+        이쪽에만·이쪽이 새것 = 굵은 색 글자 + 골라 둠 → F6 이면 그것만 반대쪽으로 복사. 목록을 다시 읽으면 표시가 지워짐"""
+        a = self.pane()
+        b = self.other_pane(a) if a else None
+        va, vb = (a.view() if a else None), (b.view() if b else None)
+        bad = lambda v: v is None or v.path == THIS_PC or is_search(v.path)
+        if bad(va) or bad(vb):
+            self.show_notice(T("⚠ 비교할 다른 칸이 없습니다 — 두 칸에 폴더를 열어 두세요  ✕"), ms=6000)
+            return
+        if os.path.normcase(va.path) == os.path.normcase(vb.path):
+            self.show_notice(T("⚠ 두 칸이 같은 폴더입니다  ✕"), ms=5000)
+            return
+
+        def kind(x, y):
+            if y is None:
+                return "only"
+            if x[1] or y[1]:
+                return None if x[1] and y[1] else "diff"   # 폴더끼리는 이름만, 폴더↔파일이면 다름
+            if abs(x[3] - y[3]) <= 2:   # FAT·네트워크 드라이브는 2초 단위
+                return None if x[2] == y[2] else "diff"
+            return "newer" if x[3] > y[3] else "older"
+        res = []
+        A = {e[0].lower(): e for e in va.model_.all}
+        B = {e[0].lower(): e for e in vb.model_.all}
+        for v, mine, other in ((va, A, B), (vb, B, A)):
+            m = v.model_
+            m.cmp = {e[0]: k for key, e in mine.items() if (k := kind(e, other.get(key)))}
+            sel = QtCore.QItemSelection()
+            for r, e in enumerate(m.rows):
+                if m.cmp.get(e[0]) in ("only", "newer"):
+                    sel.select(m.index(r, 0), m.index(r, 0))
+            v.sel.select(sel, QtCore.QItemSelectionModel.ClearAndSelect | QtCore.QItemSelectionModel.Rows)
+            if m.rows:
+                m.dataChanged.emit(m.index(0, 0), m.index(len(m.rows) - 1, m.columnCount() - 1))
+            cnt = {k: sum(1 for x in m.cmp.values() if x == k) for k in CMP_KIND}
+            res.append(cnt)
+            v.status.emit(T("비교: 이쪽에만 {0} · 이쪽이 새것 {1} · 반대쪽이 새것 {2} · 크기 다름 {3}  (골라 둔 {4}개 → F6 = 반대쪽에 복사)")
+                          .format(cnt["only"], cnt["newer"], cnt["older"], cnt["diff"], cnt["only"] + cnt["newer"]))
+        log.info("두 칸 비교 %s ↔ %s : %s / %s", va.path, vb.path, res[0], res[1])
+        flash_pane(a)
+        flash_pane(b)   # 무엇끼리 비교했는지 보이게 (v0.9.90 사용자 11/4 '헷갈림')
+        same = not any(any(c.values()) for c in res)
+        self.show_notice((T("두 칸 비교: 차이 없음 (이름·날짜·크기 같음)") if same else
+                          T("두 칸 비교: 칸 {0} 이쪽에만 {1}·새것 {2} / 칸 {3} 이쪽에만 {4}·새것 {5} — 골라 둔 것을 F6 으로 반대쪽에 복사")
+                          .format(a.idx + 1, res[0]["only"], res[0]["newer"], b.idx + 1, res[1]["only"], res[1]["newer"])) + "  ✕",
+                         ms=10000)
+
+    def open_palette(self):
+        """명령 찾기 (v0.9.89, Ctrl+Shift+P): 단축키 기능 + 위 메뉴 항목 전부"""
+        items, seen = [], set()
+        km = keymap.current(SETTINGS["keys"])
+        for a, lbl, _k, sc in keymap.ACTIONS:
+            if sc == "view":
+                fn = (lambda a=a: self.pane().view() and self.pane().view().run_action(a))
+            elif sc == "window" and a in self.win_actions and a != "palette":
+                fn = self.win_actions[a]
+            else:
+                continue
+            items.append((lbl, ", ".join(km.get(a, [])), fn))
+            seen.add(lbl)
+        self._pal_menus = []   # 메뉴 항목을 실행할 때까지 메뉴를 살려 둠
+
+        def collect(menu, where):
+            for act in menu.actions():
+                if act.isSeparator() or not act.isEnabled() or not act.isVisible():
+                    continue
+                name = act.text().split("\t")[0].replace("&&", "\0").replace("&", "").replace("\0", "&").strip()
+                if act.menu() is not None:
+                    collect(act.menu(), f"{where} ▸ {name}")
+                elif name and name not in seen:
+                    seen.add(name)
+                    items.append((name, where, act.trigger))
+        for title, filler in getattr(self, "top_menus", []):
+            mm = QtWidgets.QMenu(self)
+            try:
+                filler(mm)
+            except Exception:
+                log.exception("명령 찾기: 메뉴 모으기 실패 %s", title)
+                continue
+            self._pal_menus.append(mm)
+            collect(mm, title)
+        dlg = palette.Palette(items, self)
+        dlg.move(self.mapToGlobal(QtCore.QPoint(max(0, (self.width() - dlg.width()) // 2), 50)))
+        log.info("명령 찾기 열기 (항목 %d개)", len(items))
+        self.palette_dlg = dlg
+        dlg.show()
+        dlg.edit.setFocus()
+
     def other_pane(self, cur):
         """다른 칸으로 보낼 대상: 직전에 쓰던 칸(보이면), 아니면 보이는 다른 칸 중 첫 번째"""
         if self.prev_pane is not None and self.prev_pane is not cur and self.prev_pane.isVisible():
@@ -5765,6 +6275,20 @@ class Main(QtWidgets.QMainWindow):
         a.setCheckable(True)
         a.setChecked(bool(g))
 
+    def show_layout_popup(self):
+        """레이아웃 고르기 창 (v0.9.92): 맥스 뷰포트 레이아웃처럼 그림 버튼 격자. 고르면 닫힘"""
+        pop = LayoutPopup(self)
+        b = self.layout_btn
+        pop.adjustSize()
+        gp = b.mapToGlobal(QtCore.QPoint(0, b.height()))
+        scr = (b.screen() or QtWidgets.QApplication.primaryScreen()).availableGeometry()
+        gp.setX(max(scr.left(), min(gp.x(), scr.right() - pop.width())))
+        pop.move(gp)
+        pop.show()
+        self.layout_popup = pop   # 시험용
+        log.info("레이아웃 고르기 창 (지금 %s)", self.layout_mode)
+        return pop
+
     def open_grid_dialog(self):
         """가로 x 세로 칸 수를 입력받아 나눔 (최대 5 x 4)"""
         g = parse_grid(self.layout_mode)
@@ -5852,6 +6376,9 @@ class Main(QtWidgets.QMainWindow):
         m.addSeparator()
         m.addAction(T("Explorer Check (탐색기 점검)"), self.open_check)
         m.addAction(T("이름 일괄 변경…"), lambda: self.open_batch_rename(self.pane().view().selected_paths() if self.pane().view() else []))
+        m.addAction(mlabel(T("두 칸 비교"), "compare"), self.compare_panes)
+        m.addAction(mlabel(T("패턴으로 고르기…"), "select_pattern"), lambda: self.pane().view() and self.pane().view().select_pattern())
+        m.addAction(mlabel(T("명령 찾기…"), "palette"), self.open_palette)
         m.addAction(T("단축키 설정…"), self.open_keys)
         m.addAction(T("검색 범위 설정…"), self.open_search_roots)
         m.addAction(T("로그 폴더 열기"), lambda: os.startfile(LOG_DIR))
@@ -6032,6 +6559,12 @@ eports.
             key, rows = "4", LAYOUT_ROWS["4"]
         changed = key != self.layout_mode
         self.layout_mode = key
+        cols = key in COL_LAYOUTS   # 열 단위 배치면 분할 방향을 바꿈 (v0.9.90)
+        if (self.vert.orientation() == Qt.Horizontal) != cols:
+            self.vert.setOrientation(Qt.Horizontal if cols else Qt.Vertical)
+            for sp in self.rows:
+                sp.setOrientation(Qt.Vertical if cols else Qt.Horizontal)
+            log.info("칸 분할 방향 %s", "열(왼쪽·오른쪽)" if cols else "줄(위·아래)")
         self._ensure_panes(max(i for row in rows for i in row) + 1)
         used = {i for row in rows for i in row}
         # 쓰는 칸을 해당 줄 앞쪽 순서대로 옮김 (insertWidget = 이미 있으면 자리 이동)
@@ -6049,17 +6582,22 @@ eports.
             # 메뉴로 레이아웃을 바꾸면 보이는 칸을 같은 너비·높이로
             for r, row in enumerate(rows):
                 sp = self.rows[r]
-                total = max(self.vert.width(), 300)
+                total = max(self.vert.height() if cols else self.vert.width(), 300)
                 sp.setSizes([total // len(row) if not sp.widget(j).isHidden() else 0 for j in range(sp.count())])
-            h = max(self.vert.height(), 300)
-            self.vert.setSizes([h // len(rows) if r < len(rows) else 0 for r in range(MAX_ROWS)])
+            h = max(self.vert.width() if cols else self.vert.height(), 300)
+            ratio = LAYOUT_RATIO.get(key) or (1,) * len(rows)   # v0.9.92 위 작게·아래 작게
+            self.vert.setSizes([h * ratio[r] // sum(ratio) if r < len(rows) else 0 for r in range(MAX_ROWS)])
         if key in self.layout_actions:
             self.layout_actions[key].setChecked(True)
         else:
-            self.act_grid.setIcon(layout_icon(key))
+            self.act_grid.setIcon(layout_icon(key, 40, 32))
             self.act_grid.setChecked(True)
         g = parse_grid(key)
         self.act_grid.setToolTip(T('레이아웃: 직접 지정 (지금 가로 {0} x 세로 {1})').format(g[0], g[1]) if g else T("레이아웃: 직접 지정 (가로 x 세로)…"))
+        if getattr(self, "layout_btn", None) is not None:   # 도구줄 버튼 = 지금 배치 그림
+            self.layout_btn.setIcon(layout_icon(key))
+            self.layout_btn.setToolTip(T('레이아웃: 직접 지정 (지금 가로 {0} x 세로 {1})').format(g[0], g[1]) if g else
+                                       T('레이아웃: {0}').format(dict(LAYOUTS).get(key, key)))
         if not self.active_pane.isVisible():
             self.active_pane = self.panes[0]
         self._paint_active()
@@ -6073,6 +6611,10 @@ eports.
         if key == "hide_single_tab":
             for p in self.all_panes():
                 p.update_tabrow()
+        elif key == "folder_size":   # 바로 다시 읽어 크기 칸 채우기/비우기
+            for p in self.all_panes():
+                for v in p.views():
+                    v.reload("folder_size")
         elif key == "keep_favbar":
             for w in WINDOWS or [self]:
                 w.set_chrome_collapsed(bool(SETTINGS["chrome_collapsed"]), save=False)
@@ -6091,8 +6633,8 @@ eports.
                     else:
                         v.keep_sel = None
                         v.model_.path = ""  # 다시 보일 때 새로 읽음
-                elif key == "date_folders_first":
-                    v.model_.sort(v.model_.sort_col, v.model_.sort_order)   # 다시 정렬
+                elif key in ("date_folders_first", "date_groups"):
+                    v.model_.sort(v.model_.sort_col, v.model_.sort_order)   # 다시 정렬 (묶기도 여기서)
                 elif key == "svn_status":
                     v.refresh_svn() if v.active else setattr(v.model_, "svn", {})
                 elif key == "thumbnails":
@@ -6204,6 +6746,7 @@ eports.
         OPTS["show_ext"] = bool(o.get("show_ext", True))
         OPTS["checkboxes"] = bool(o.get("checkboxes", False))
         OPTS["date_folders_first"] = bool(o.get("date_folders_first", False))
+        OPTS["date_groups"] = bool(o.get("date_groups", False))
         OPTS["svn_status"] = bool(o.get("svn_status", True))
         OPTS["thumbnails"] = bool(o.get("thumbnails", True))
         OPTS["vcs_overlay"] = bool(o.get("vcs_overlay", True))
@@ -6559,6 +7102,11 @@ def main():
         OVL.stop()
     session.stop_running()
     log.info("프로세스 종료 rc=%s", rc)
+    busy = POOL.activeThreadCount()
+    if busy:   # 느린 네트워크 즐겨찾기 SVN 확인 등이 아직 응답 대기 → 기다리면 창 닫은 뒤 1분 넘게 남음 (11/4 재현 72초)
+        log.info("작업 %d개 아직 도는 중 → 기다리지 않고 바로 끝냄", busy)
+        logging.shutdown()
+        os._exit(rc)
     sys.exit(rc)
 
 

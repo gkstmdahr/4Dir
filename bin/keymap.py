@@ -33,6 +33,8 @@ ACTIONS = [
     ("undo", T("되돌리기"), "Ctrl+Z", "view"),
     ("copy_path", T("경로 복사"), "Ctrl+Shift+C", "view"),
     ("properties", T("속성"), "Alt+Return; Alt+Enter", "view"),
+    ("select_pattern", T("패턴으로 고르기…"), "Ctrl+Shift+A", "view"),   # v0.9.89
+    ("sha256", T("확인값(SHA256) 보기"), "", "view"),   # v0.9.89
     ("new_window", T("새 창"), "Ctrl+N", "window"),
     ("new_tab", T("새 탭"), "Ctrl+T", "window"),
     ("close_tab", T("탭 닫기"), "Ctrl+W", "window"),
@@ -45,7 +47,9 @@ ACTIONS = [
     ("toggle_hidden", T("숨긴 항목 보이기/숨기기"), "Ctrl+H", "window"),
     ("add_fav", T("현재 폴더를 즐겨찾기에 추가"), "Ctrl+D", "window"),
     ("toggle_chrome", T("메뉴·즐겨찾기 접기/펼치기"), "Ctrl+Shift+M", "window"),
-    ("toggle_preview", T("미리보기 창 보이기/숨기기"), "Alt+P", "window"),   # 탐색기와 같은 키 (v0.9.58)
+    ("toggle_preview", T("미리보기 창 보이기/숨기기"), "Alt+P", "window"),
+    ("compare", T("두 칸 비교"), "Shift+F2", "window"),   # v0.9.89 (토탈 커맨더와 같은 키)
+    ("palette", T("명령 찾기…"), "Ctrl+Shift+P", "window"),   # v0.9.89   # 탐색기와 같은 키 (v0.9.58)
     # v0.9.68: 다른 프로그램을 쓰다가도 이 키 하나로 4Dir 를 앞으로 불러 전체 검색칸에 바로 입력 (윈도우 전역 단축키 RegisterHotKey)
     ("global_hotkey", T("4Dir 불러서 전체 검색 (다른 프로그램 쓰는 중에도)"), "Ctrl+Alt+F", "global"),
 ] + [(f"pane{i + 1}", T('{0}번 칸으로').format(i + 1), f"Ctrl+{i + 1}", "window") for i in range(6)]

@@ -15,7 +15,7 @@ import shutil
 import logging
 
 CARRYOVER_VER = "1.0.1"   # 1.0.1: 로그에 경로를 원래 대소문자로
-FILES = ("4Dir_settings.json", "4Dir_state.json", "4Dir_favorites.json")
+FILES = ("4Dir_settings.json", "4Dir_state.json", "4Dir_favorites.json", "4Dir_labels.json")   # v0.9.89 색 라벨
 DIRS = ("workspaces",)
 log = logging.getLogger("QE.carryover")
 
