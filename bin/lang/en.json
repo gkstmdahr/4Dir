@@ -730,5 +730,7 @@
  "🔒 잠긴 탭이라 새 탭으로 열었습니다": "🔒 Locked tab, so it opened in a new tab",
  "다른 탭 모두 닫기 (잠긴 탭은 남김)": "Close all other tabs (keep locked tabs)",
  "탭 잠금 (다른 폴더는 새 탭으로)": "Lock tab (other folders open in a new tab)",
- "탭 잠금/잠금 해제": "Lock/unlock tab"
+ "탭 잠금/잠금 해제": "Lock/unlock tab",
+ "드라이브를 빼서 그 탭을 내 PC 로 옮겼습니다: {0}  ✕": "Drive removed, so its tabs moved to This PC: {0}  ✕",
+ "⏳ 드라이브가 응답하기를 기다리는 중: {0}": "⏳ Waiting for the drive to respond: {0}"
 }

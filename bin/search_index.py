@@ -233,6 +233,7 @@ class SearchIndex:
         self._cancel = False
         self._build_th = None
         self._watchers = {}        # root → (thread, handle)
+        self._dropped = set()      # 꺼내는 중이라 감시를 놓은 범위 (v0.9.96 — 드라이브 '사용 중' 꺼내기 실패 막기)
         self._rebuild_timer = None
         self._worker = None        # 색인 작업 프로세스 (subprocess.Popen)
         self.events = 0
@@ -374,8 +375,39 @@ class SearchIndex:
         self._rebuild_timer.start()
 
     # ---------------------------------------------------------- 실시간 감시 (ReadDirectoryChangesW)
+    def release_drive(self, d):
+        """드라이브 d('K:')를 꺼내려 함 → 그 드라이브 범위의 실시간 감시를 놓고, 색인 만드는 중이면 작업 프로세스도 멈춤 (v0.9.96)"""
+        n = 0
+        for root in [r for r in self.roots if os.path.splitdrive(r)[0].upper() == d]:
+            self._dropped.add(root)
+            th, h = self._watchers.pop(root, (None, 0))
+            if h:
+                try:
+                    ctypes.windll.kernel32.CancelIoEx(ctypes.c_void_p(int(h)), None)
+                except Exception:
+                    pass
+                n += 1
+        w = getattr(self, "_worker", None)
+        if n and w is not None and w.poll() is None:
+            w.kill()
+            log.info("꺼내기 %s → 색인 작업 프로세스 멈춤 (다음에 다시 만듦)", d)
+        if n:
+            log.info("꺼내기 %s → 실시간 감시 %d개 놓음", d, n)
+        return n
+
+    def rewatch(self):
+        """꺼내기 취소·드라이브 다시 꽂음 → 있는 드라이브의 놓았던 감시 다시"""
+        back = [r for r in self._dropped if os.path.exists(r)]
+        for r in back:
+            self._dropped.discard(r)
+        if back:
+            log.info("실시간 감시 다시 %s", back)
+            self._start_watchers()
+
     def _start_watchers(self):
         for root in self.roots:
+            if root in self._dropped:
+                continue
             if root in self._watchers:
                 continue
             th = threading.Thread(target=self._watch, args=(root,), daemon=True, name=f"watch {root}")
@@ -399,11 +431,11 @@ class SearchIndex:
         flags = (win32con.FILE_NOTIFY_CHANGE_FILE_NAME | win32con.FILE_NOTIFY_CHANGE_DIR_NAME |
                  win32con.FILE_NOTIFY_CHANGE_SIZE | win32con.FILE_NOTIFY_CHANGE_LAST_WRITE)
         try:
-            while not self._cancel:
+            while not self._cancel and root not in self._dropped:
                 try:
                     res = win32file.ReadDirectoryChangesW(h, 65536, True, flags, None, None)
                 except Exception as e:
-                    if not self._cancel:
+                    if not self._cancel and root not in self._dropped:
                         log.warning("감시 끊김 %s: %s", root, e)
                     break
                 if not res:

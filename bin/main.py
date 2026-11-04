@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.95"
+QE_VERSION = "0.9.97"
 
 import os
 import sys
@@ -24,6 +24,7 @@ import traceback
 import ctypes
 import subprocess
 import ctypes.wintypes
+import threading
 
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
@@ -766,6 +767,54 @@ class ScanJob(QtCore.QRunnable):
         self.sig.done.emit(self.gen, self.path, entries, (time.perf_counter() - t0) * 1000, err)
 
 
+def _on_drive(path, d):
+    return os.path.splitdrive(path or "")[0].upper() == d
+
+
+def release_drive(d):
+    """Windows 가 드라이브 d('K:')를 꺼내도 되냐고 물음 (v0.9.96) → 4Dir 가 잡고 있는 것 모두 놓음: 폴더 변경 감시·폴더 크기 재기·꺼내기 알림 핸들.
+    탭은 그대로 두고, 실제로 빠지면 refresh_drives 가 내 PC 로 옮김. 취소되면 rewatch_drive 로 되돌림"""
+    n = 0
+    for w in list(WINDOWS):
+        for p in w.panes:
+            for v in p.views():
+                if _on_drive(v.path, d):
+                    if v.watcher is not None and v.watcher.directories():
+                        v.watcher.removePaths(v.watcher.directories())
+                        n += 1
+                    if v._fsize_job is not None:
+                        v._fsize_job.cancel()
+                        v._fsize_job = None
+        w._drop_note(d)
+    if SEARCH is not None:
+        SEARCH.release_drive(d)   # 검색 색인 실시간 감시도 (외장하드도 NTFS 로컬이면 기본 범위에 듦)
+    log.info("꺼내기 요청 %s → 감시 %d개 풂, 폴더 크기 재기 멈춤", d, n)
+
+
+def rewatch_drive(d):
+    """꺼내기가 취소됨 → 보이는 탭의 감시 다시"""
+    for w in list(WINDOWS):
+        for p in w.panes:
+            for v in p.views():
+                if v.active and _on_drive(v.path, d):
+                    v._watch(v.path, v.path)
+    if SEARCH is not None:
+        SEARCH.rewatch()
+    log.info("꺼내기 취소 %s → 감시 다시", d)
+
+
+def isdir_quick(path, timeout=1.0):
+    """os.path.isdir 를 timeout 초만 기다림 (v0.9.96) — 응답 없으면 None (막 꽂은 외장하드·잠든 네트워크 드라이브)"""
+    box = {}
+
+    def run():
+        box["v"] = os.path.isdir(path)
+    th = threading.Thread(target=run, daemon=True)
+    th.start()
+    th.join(timeout)
+    return box.get("v")
+
+
 def this_pc_entries():
     """내 PC: 특수 폴더 + 드라이브 (실제 이름·아이콘). 작업 스레드에서 호출."""
     out = []
@@ -1300,6 +1349,12 @@ class CheckDelegate(QtWidgets.QStyledItemDelegate):
         sz = super().sizeHint(opt, idx)
         if isinstance(opt.widget, QtWidgets.QTreeView):
             sz.setHeight(max(sz.height(), opt.fontMetrics.height() + 5))
+        elif isinstance(opt.widget, QtWidgets.QListView) and opt.widget.viewMode() == QtWidgets.QListView.IconMode:
+            # v0.9.96: 아이콘 보기는 모든 칸 같은 크기(uniformItemSizes) → 칸 크기를 격자에 맞춤. 전엔 Qt 가 고른 한 항목의 크기를 다 같이 써서
+            # 그 항목이 낮으면(예: K:\ 의 .psd 43px) 모든 이름이 잘림 (11/5 사용자 제보 '외장하드 최상위 보통 아이콘', 재현 rect 90x43)
+            g = opt.widget.gridSize()
+            if g.isValid():
+                return QtCore.QSize(g.width() - 4, g.height() - 4)
         return sz
 
     def initStyleOption(self, opt, idx):
@@ -1937,6 +1992,7 @@ class Page(QtWidgets.QWidget):
     openLocation = QtCore.Signal(str, str)   # v0.9.94 Ctrl+Enter: 파일의 폴더 위치를 새 탭으로 (폴더, 고를 이름)
     lockedNav = QtCore.Signal(str, object)   # v0.9.95 잠긴 탭에서 다른 폴더로 가려 함 → 새 탭으로 (폴더, 고를 이름)
     lockChanged = QtCore.Signal()            # v0.9.95 탭 잠금이 바뀜 → 탭 글자(🔒) 다시
+    navWaitDone = QtCore.Signal(int, bool, object)   # v0.9.96 응답 늦은 드라이브 확인 끝 (번호, 폴더인가, 이동 인자)
     fsizeFound = QtCore.Signal(int, str, object)   # (gen, 폴더 이름, 크기) — 폴더 크기 작업 스레드에서 (v0.9.89)
     fsizeDone = QtCore.Signal(int)
 
@@ -1967,6 +2023,9 @@ class Page(QtWidgets.QWidget):
         self._fsize_job = None
         self.tab_color = ""   # 탭 색 (v0.9.89, labels.TAB_COLORS 이름 또는 '#rrggbb') — 탭 상태에 저장
         self.locked = False   # 탭 잠금 (v0.9.95, 사용자 의견 '토탈 커맨더처럼') — 다른 폴더는 새 탭으로, 탭 상태에 저장
+        self._nav_wait = 0          # 응답 늦은 드라이브 기다림 번호 (v0.9.96) — 그사이 다른 곳으로 가면 버림
+        self._pc_retry = 0          # 내 PC 에서 드라이브 정보가 늦을 때 다시 읽은 횟수 (v0.9.96)
+        self.navWaitDone.connect(self._on_nav_wait)
         self.from_locked = False   # 잠긴 탭 때문에 열린 새 탭 — 다른 폴더로 갈 때까지 상태줄 앞에 안내
         self.search_info = ""
         self._token = [False]   # 진행 중인 읽기/찾기 취소용
@@ -2157,13 +2216,28 @@ class Page(QtWidgets.QWidget):
             log.exception("탭 정렬·열 너비 복원 실패 %s", vs)
 
     # ---------------------------------------------------------- 이동
-    def navigate(self, path, record=True, select=None):
+    def navigate(self, path, record=True, select=None, force=False, checked=False):
         path = norm(path) or THIS_PC
-        if path != THIS_PC and not is_search(path) and not os.path.isdir(path):
+        ok = True if checked or path == THIS_PC or is_search(path) else isdir_quick(path)   # checked = 뒤에서 이미 확인함
+        if ok is None:
+            # v0.9.96: 막 꽂은 외장하드처럼 응답이 늦은 드라이브 — 화면을 멈추지 않고 뒤에서 기다렸다가 이동
+            # (전엔 os.path.isdir 에서 39.6초 '응답 없음', 11/5 사용자 제보·hang.log 확인)
+            self._nav_wait += 1
+            wid = self._nav_wait
+            log.info("드라이브 응답 기다림 → 뒤에서 확인 후 이동 %s", path)
+            self.status.emit(T("⏳ 드라이브가 응답하기를 기다리는 중: {0}").format(path))
+            args = (path, record, select, force)
+
+            def wait_dir():
+                r = os.path.isdir(path)
+                self.navWaitDone.emit(wid, r, args)
+            threading.Thread(target=wait_dir, daemon=True).start()
+            return False
+        if not ok:
             log.info("이동 실패(폴더 아님) %s", path)
             self.status.emit(T('⚠ 폴더를 찾을 수 없습니다: {0}').format(path))
             return False
-        if self.locked and self.path and path != self.path:   # 잠긴 탭은 그 폴더에 그대로 → 새 탭으로 (v0.9.95)
+        if self.locked and not force and self.path and path != self.path:   # 잠긴 탭은 그 폴더에 그대로 → 새 탭으로 (v0.9.95)
             log.info("잠긴 탭 %s → 새 탭으로 %s", self.path, path)
             self.lockedNav.emit(path, select)
             return False
@@ -2185,6 +2259,16 @@ class Page(QtWidgets.QWidget):
         self.pathChanged.emit(path)
         self.reload(reason="nav")
         return True
+
+    def _on_nav_wait(self, wid, ok, args):
+        if wid != self._nav_wait:
+            return   # 그사이 다시 기다리기 시작함
+        path, record, select, force = args
+        log.info("드라이브 응답 옴 %s → %s", path, "이동" if ok else "폴더 아님")
+        if ok:
+            self.navigate(path, record, select, force, checked=True)
+        else:
+            self.status.emit(T('⚠ 폴더를 찾을 수 없습니다: {0}').format(path))
 
     def go_back(self):
         if self.back and self.locked:   # 잠긴 탭: 기록은 그대로 두고 그 폴더를 새 탭으로
@@ -2272,6 +2356,14 @@ class Page(QtWidgets.QWidget):
         if not OPTS["show_hidden"]:
             entries = [e for e in entries if not (e[4] & HIDDEN_MASK)]
         log.info("읽기 완료 path=%s n=%d %.1fms", path, len(entries), ms)
+        if path == THIS_PC:   # v0.9.96: 막 꽂은 드라이브는 이름·아이콘이 늦게 옴(시간 초과 → 폴더 그림) → 5·10·15·20초 뒤 다시
+            late = [e[0] for e in entries if e[6] is None]
+            if late and self._pc_retry < 4:
+                self._pc_retry += 1
+                log.info("내 PC 드라이브 정보 늦음 %s → %d초 뒤 다시 읽기 (%d번째)", late, 5 * self._pc_retry, self._pc_retry)
+                QtCore.QTimer.singleShot(5000 * self._pc_retry, lambda: self.path == THIS_PC and self.reload(reason="pc_retry"))
+            elif not late:
+                self._pc_retry = 0
         keep = self.keep_sel if self.model_.path == path else None
         if keep is not None and self.model_.rows:
             # 읽는 동안 사용자가 고른 것(예: 이름 바꾸고 바로 다른 파일 클릭)을 살림 — 요청 때가 아니라 지금 선택 기준
@@ -2465,6 +2557,9 @@ class Page(QtWidgets.QWidget):
             self.watcher.removePaths(self.watcher.directories())
         if new and new != THIS_PC and not is_search(new):
             self.watcher.addPath(new)
+            m = main_of(self)
+            if m is not None:
+                m.note_drive(new)   # v0.9.96 꺼내기 전에 감시를 풀 수 있게
         log.debug("감시 %s -> %s", old, new)
 
     def _on_dir_changed(self, p):
@@ -3461,6 +3556,15 @@ class Sidebar(DragScrollMixin, QtWidgets.QTreeWidget):
             self.pc_root.addChild(it if it is not None else self._folder_item(label, path, shellops.icon_for("", True, 16, idx)))
             if it is not None and it.text(0) != label:
                 it.setText(0, label)
+            if it is not None and idx is not None:
+                it.setIcon(0, shellops.icon_for("", True, 16, idx))
+        late = [path for label, path, idx in rows if idx is None]
+        self._pc_retry = getattr(self, "_pc_retry", 0)
+        if late and self._pc_retry < 4:   # v0.9.96 막 꽂은 드라이브 정보 늦음 → 다시
+            self._pc_retry += 1
+            QtCore.QTimer.singleShot(5000 * self._pc_retry, self.refresh_pc)
+        elif not late:
+            self._pc_retry = 0
         for p in exp:
             if p in old and old[p].treeWidget() is self:
                 old[p].setExpanded(True)
@@ -5355,6 +5459,7 @@ class Main(QtWidgets.QMainWindow):
         self._drive_timer.setSingleShot(True)
         self._drive_timer.setInterval(600)
         self._drive_timer.timeout.connect(self.refresh_drives)
+        self._dev_notes = {}   # 드라이브 'K:' → (열어 둔 핸들, 알림 등록) — 꺼내기 요청을 받으려고 (v0.9.96)
         self.setWindowIcon(ui_parts.app_icon())
         self.setAcceptDrops(True)   # 끌고 온 탭 받기 (목록·사이드바가 안 받는 끌기는 여기까지 올라옴)
         self.apply_theme(app_wide=not WINDOWS)
@@ -5399,6 +5504,7 @@ class Main(QtWidgets.QMainWindow):
         nrow.addWidget(self.notice, 1)
         nrow.addWidget(self.notice_act)
         nrow.addWidget(self.notice_act2)
+        nrow.addWidget(self.notice_close)
         cl.addLayout(nrow)
         cl.addWidget(self.favbar)
         body = QtWidgets.QWidget()
@@ -5683,6 +5789,15 @@ class Main(QtWidgets.QMainWindow):
         self.notice_act2.setCursor(Qt.PointingHandCursor)
         self.notice_act2.setVisible(False)
         self.notice_act2.clicked.connect(self._notice_act2_clicked)
+        self.notice_close = QtWidgets.QToolButton()   # v0.9.96 알림 닫기 ✕ (11/5 사용자: 글 끝의 ✕ 가 안 보여 어딜 눌러 닫는지 몰랐음)
+        self.notice_close.setObjectName("noticeClose")
+        self.notice_close.setText("✕")
+        self.notice_close.setToolTip(T("닫기"))
+        self.notice_close.setAutoRaise(True)
+        self.notice_close.setStyleSheet("QToolButton{font-size:15px; font-weight:bold; padding:0 8px;}")
+        self.notice_close.setCursor(Qt.PointingHandCursor)
+        self.notice_close.setVisible(False)
+        self.notice_close.clicked.connect(lambda: (log.info("알림 닫기 ✕"), self.hide_notice()))
         self._notice_fn2 = None
         self._notice_fn = None
         # 전체 검색칸부터 끝까지는 따로 된 줄(같은 높이 오른쪽) — 창이 좁아도 검색칸이 '»' 안으로 숨지 않게 (v0.9.70: Ctrl+Alt+F 로 불러도 커서를 못 넣던 문제)
@@ -5946,17 +6061,63 @@ class Main(QtWidgets.QMainWindow):
         log.info("경로 버튼(브레드크럼) %s", SETTINGS["breadcrumb"])
 
     # ---------------------------------------------------------- 닫은 탭 다시 열기 / 다른 칸
+    def note_drive(self, path):
+        """그 드라이브의 '꺼내도 되나?' 알림을 받게 등록 (v0.9.96, 11/5 사용자: 4Dir 가 외장하드를 잡고 있어 '사용 중' 꺼내기 실패).
+        탐색기처럼 드라이브 뿌리에 빈 핸들 하나 열고 RegisterDeviceNotification → 알림 오면 release_drive 로 감시를 풂"""
+        d = os.path.splitdrive(path)[0].upper()
+        if len(d) != 2 or d[1] != ":" or d in self._dev_notes or d == os.environ.get("SystemDrive", "C:").upper():
+            return
+        k = ctypes.windll.kernel32
+        if k.GetDriveTypeW(d + "\\") not in (2, 3):   # 이동식·고정만 (네트워크·CD 제외)
+            return
+        k.CreateFileW.restype = ctypes.c_void_p
+        h = k.CreateFileW(d + "\\", 0, 7, None, 3, 0x02000000, None)   # 권한 없이 열기만, 공유 전부, OPEN_EXISTING, BACKUP_SEMANTICS
+        if not h or h == ctypes.c_void_p(-1).value:
+            log.info("꺼내기 알림 등록 못 함 %s (열기 실패)", d)
+            return
+
+        class DBH(ctypes.Structure):
+            _fields_ = [("size", ctypes.c_uint32), ("type", ctypes.c_uint32), ("res", ctypes.c_uint32),
+                        ("handle", ctypes.c_void_p), ("notify", ctypes.c_void_p), ("guid", ctypes.c_byte * 16),
+                        ("nameoff", ctypes.c_long), ("data", ctypes.c_byte * 1)]
+        f = DBH(ctypes.sizeof(DBH), 6, 0, h)
+        u = ctypes.windll.user32
+        u.RegisterDeviceNotificationW.restype = ctypes.c_void_p
+        n = u.RegisterDeviceNotificationW(ctypes.c_void_p(int(self.winId())), ctypes.byref(f), 0)
+        if not n:
+            k.CloseHandle(ctypes.c_void_p(h))
+            log.info("꺼내기 알림 등록 실패 %s", d)
+            return
+        self._dev_notes[d] = (h, n)
+        log.info("꺼내기 알림 등록 %s", d)
+
+    def _drop_note(self, d):
+        v = self._dev_notes.pop(d, None)
+        if v:
+            ctypes.windll.user32.UnregisterDeviceNotification(ctypes.c_void_p(v[1]))
+            ctypes.windll.kernel32.CloseHandle(ctypes.c_void_p(v[0]))
+
     def refresh_drives(self):
         """드라이브가 생기거나 없어짐 (v0.9.95) → '내 PC' 를 보고 있는 탭과 탐색 창의 '내 PC' 아래를 다시 읽음"""
-        n = 0
+        n, gone = 0, []
+        have = {d.upper() for d in os.listdrives()}
         for p in self.panes:
             for v in p.views():
                 if v.path == THIS_PC:
                     v.reload(reason="drive")
                     n += 1
+                    continue
+                d = os.path.splitdrive(v.path)[0]
+                if len(d) == 2 and d[1] == ":" and not is_search(v.path) and (d.upper() + "\\") not in have:
+                    # v0.9.96: 뺀 드라이브에 있던 탭 → 내 PC (전엔 옛 목록이 그대로 남아 폴더를 열면 '찾을 수 없음', 11/5 사용자 제보)
+                    gone.append(v.path)
+                    v.navigate(THIS_PC, select=d.upper() + "\\", force=True)
             if p.side is not None:
                 p.side.refresh_pc()
-        log.info("드라이브 바뀜 → 내 PC 탭 %d개 다시 읽음, 드라이브 %s", n, os.listdrives())
+        if SEARCH is not None:
+            SEARCH.rewatch()   # 다시 꽂은 드라이브의 검색 감시
+        log.info("드라이브 바뀜 → 내 PC 탭 %d개 다시 읽음, 뺀 드라이브 탭 → 내 PC %s, 드라이브 %s", n, gone, os.listdrives())
+
 
     def reopen_tab(self, k=None, pane=None):
         if not self.closed_tabs:
@@ -6886,8 +7047,12 @@ eports.
     def show_notice(self, text, sticky=None, ms=5000, action=None, action2=None):
         """알림 줄. 보통 알림은 5초 뒤 저절로 닫힘, ⚠ 경고는 눌러서 닫을 때까지 남음.
         action=(버튼 글자, 함수) 이면 알림 오른쪽에 버튼 (누르면 알림 닫고 함수 실행). action2 = 그 옆 보조 버튼 (v0.9.63)"""
+        text = text.rstrip()
+        if text.endswith("✕"):   # 글 끝의 ✕ 대신 오른쪽 닫기 단추 (v0.9.96)
+            text = text[:-1].rstrip()
         self.notice.setText(text)
         self.notice.setVisible(True)
+        self.notice_close.setVisible(True)
         self._notice_fn = action[1] if action else None
         self.notice_act.setText(action[0] if action else "")
         self.notice_act.setVisible(bool(action))
@@ -6909,6 +7074,7 @@ eports.
         self.notice.setVisible(False)
         self.notice_act.setVisible(False)
         self.notice_act2.setVisible(False)
+        self.notice_close.setVisible(False)
 
     def _notice_act_clicked(self):
         fn = self._notice_fn
@@ -7067,7 +7233,19 @@ eports.
                     mask = ctypes.c_uint32.from_address(msg.lParam + 12).value
                     log.info("드라이브 %s %s", "꽂음" if msg.wParam == 0x8000 else "뺌",
                              "".join(chr(65 + i) for i in range(26) if mask >> i & 1))
-                    self._drive_timer.start()
+                    self._drive_timer.start(600 if msg.wParam == 0x8000 else 0)   # 뺌은 바로 (11/5 사용자 '느리다'), 꽂음은 0.6초 묶음
+                elif msg.wParam in (0x8001, 0x8003, 0x8004) and msg.lParam and ctypes.c_uint32.from_address(msg.lParam + 4).value == 6:
+                    # DBT_DEVTYP_HANDLE: 꺼내도 되나(8001) / 꺼내기 취소(8003) / 빠짐(8004) — 우리가 등록한 드라이브 핸들
+                    h = ctypes.c_void_p.from_address(msg.lParam + 16).value
+                    d = next((k for k, v in self._dev_notes.items() if v[0] == h), None)
+                    if d:
+                        if msg.wParam == 0x8001:
+                            release_drive(d)
+                        elif msg.wParam == 0x8003:
+                            rewatch_drive(d)
+                        else:
+                            self._drop_note(d)
+                        return True, 1
         except Exception:
             log.exception("종료 알림 처리 실패")
         if shellops.ShellMenu.current is not None:

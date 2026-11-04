@@ -730,5 +730,7 @@
  "🔒 잠긴 탭이라 새 탭으로 열었습니다": "🔒 Onglet verrouillé : ouvert dans un nouvel onglet",
  "다른 탭 모두 닫기 (잠긴 탭은 남김)": "Fermer tous les autres onglets (garder les verrouillés)",
  "탭 잠금 (다른 폴더는 새 탭으로)": "Verrouiller l'onglet (autres dossiers dans un nouvel onglet)",
- "탭 잠금/잠금 해제": "Verrouiller/déverrouiller l'onglet"
+ "탭 잠금/잠금 해제": "Verrouiller/déverrouiller l'onglet",
+ "드라이브를 빼서 그 탭을 내 PC 로 옮겼습니다: {0}  ✕": "Lecteur retiré : ses onglets affichent maintenant Ce PC : {0}  ✕",
+ "⏳ 드라이브가 응답하기를 기다리는 중: {0}": "⏳ En attente de réponse du lecteur : {0}"
 }

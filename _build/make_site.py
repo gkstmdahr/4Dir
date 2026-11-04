@@ -25,7 +25,7 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.8.1"
+MAKE_SITE_VER = "1.9.1"   # 1.9.1: 받기 버튼 밑 작은 후원 버튼
 SUPPORT = "support@4dir.net"   # 문제 보고 메일 (1.1.1)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -99,6 +99,9 @@ def page(lang, cfg, rel):
         btns.append(f'<a class="btn don" href="https://ko-fi.com/{e(cfg["kofi"])}" rel="noopener">♥ Ko-fi</a>')
     if cfg["sponsors"]:
         btns.append(f'<a class="btn don" href="https://github.com/sponsors/{e(owner)}" rel="noopener">♥ GitHub Sponsors</a>')
+    # 1.9.1: 받기 버튼 바로 밑에도 작은 후원 버튼 (11/5 사용자 '후원하기가 다운로드 밑에') — 설명 글은 아래 후원 칸에 그대로
+    hero_don = (f'<p class="hero-don"><a class="btn don sm" href="https://ko-fi.com/{e(cfg["kofi"])}" rel="noopener" title="{e(t["don"])}">♥ {e(t["don_h"])}</a></p>'
+                if cfg["kofi"] else "")
     donate = (f'<section id="donate"><h2>{e(t["don_h"])}</h2><p>{e(t["don"])}</p><p class="btns">{"".join(btns)}</p></section>'
               if btns else "")
     redirect = ""
@@ -137,7 +140,7 @@ def page(lang, cfg, rel):
 <p class="sub">{e(t["sub"])}</p>
 <p><a class="btn big" href="{dl_url}">⬇ {e(t["dl"].format(**fmt))}</a></p>
 <p class="note">{e(t["dlnote"].format(**fmt))}</p>
-{guide_hero(lang)}</section>
+{guide_hero(lang)}{hero_don}</section>
 <section class="news"><h2>{e(t["new_h"].format(**fmt))}</h2><ul>{news}</ul><p><a href="versions.html">{e(t["hist_link"])} →</a></p></section>
 <figure class="shot"><img src="{up}img/{img}_1.png" alt="{e(t["shot1"])}" width="1280" height="760"><figcaption>{e(t["shot1"])}</figcaption></figure>
 <section><h2>{e(t["feat_h"])}</h2><div class="grid">{feats}</div></section>
@@ -384,7 +387,7 @@ a{color:var(--acc)}
 .note{color:var(--mut);font-size:14px}
 .btn{display:inline-block;padding:10px 18px;border-radius:8px;background:var(--acc);color:#fff;text-decoration:none;font-weight:600}
 .btn:hover{background:var(--acc2)}.btn.big{font-size:19px;padding:14px 28px}
-.btn.don{background:var(--don);margin:4px}
+.btn.don{background:var(--don);margin:4px}.hero-don{margin-top:4px}
 .btn.line{background:transparent;color:var(--acc);border:2px solid var(--acc);padding:8px 20px;font-size:17px}.btn.line:hover{background:var(--acc);color:#fff}
 .shot{margin:24px 0;text-align:center}.shot img{max-width:100%;height:auto;border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.12)}
 figcaption{color:var(--mut);font-size:14px;margin-top:6px}

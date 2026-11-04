@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""winget(마이크로소프트 설치 목록) 등록 파일 만들기 (MAKE_WINGET_VER 1.0.0)
+"""winget(마이크로소프트 설치 목록) 등록 파일 만들기 (MAKE_WINGET_VER 1.0.1)
 
 결과: <4Dir>\\_release\\winget\\<버전>\\gkstmdahr.4Dir.yaml / .installer.yaml / .locale.en-US.yaml
 - 버전 = bin\\main.py 의 QE_VERSION, zip 지문 = _release\\4Dir_v<버전>.zip.sha256.txt (깃허브 릴리스에 올린 것과 같은 파일이어야 함)
@@ -13,7 +13,7 @@ import re
 import sys
 import time
 
-MAKE_WINGET_VER = "1.0.0"
+MAKE_WINGET_VER = "1.0.1"   # 1.0.1: 설명 파일 형식 1.12.0 (winget-pkgs 요청 양식 기준)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 PKG = "gkstmdahr.4Dir"
@@ -46,15 +46,15 @@ def main():
     today = time.strftime("%Y-%m-%d")
     url = f"https://github.com/gkstmdahr/4Dir/releases/download/v{ver}/4Dir_v{ver}.zip"
     files = {
-        f"{PKG}.yaml": f"""# yaml-language-server: $schema=https://aka.ms/winget-manifest.version.1.10.0.schema.json
+        f"{PKG}.yaml": f"""# yaml-language-server: $schema=https://aka.ms/winget-manifest.version.1.12.0.schema.json
 
 PackageIdentifier: {PKG}
 PackageVersion: {ver}
 DefaultLocale: en-US
 ManifestType: version
-ManifestVersion: 1.10.0
+ManifestVersion: 1.12.0
 """,
-        f"{PKG}.installer.yaml": f"""# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.10.0.schema.json
+        f"{PKG}.installer.yaml": f"""# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.12.0.schema.json
 
 PackageIdentifier: {PKG}
 PackageVersion: {ver}
@@ -69,9 +69,9 @@ Installers:
   InstallerUrl: {url}
   InstallerSha256: {sha}
 ManifestType: installer
-ManifestVersion: 1.10.0
+ManifestVersion: 1.12.0
 """,
-        f"{PKG}.locale.en-US.yaml": f"""# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.10.0.schema.json
+        f"{PKG}.locale.en-US.yaml": f"""# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.12.0.schema.json
 
 PackageIdentifier: {PKG}
 PackageVersion: {ver}
@@ -95,7 +95,7 @@ Tags:
 - open-source
 ReleaseNotesUrl: https://github.com/gkstmdahr/4Dir/releases/tag/v{ver}
 ManifestType: defaultLocale
-ManifestVersion: 1.10.0
+ManifestVersion: 1.12.0
 """,
     }
     for name, body in files.items():
