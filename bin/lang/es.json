@@ -762,5 +762,10 @@
  "단축키를 파일로 저장했습니다: {0}": "Atajos guardados en: {0}",
  "4Dir 단축키 파일이 아닙니다: {0}": "No es un archivo de atajos de 4Dir: {0}",
  "단축키를 가져왔습니다: {0} — [저장]을 눌러야 적용됩니다 (되돌리기로 취소)": "Atajos cargados de {0}: pulse [Guardar] para aplicarlos (Deshacer para cancelar)",
- "Shift+숫자패드는 Windows 가 다른 키(End·PgDown 등)로 바꿔 보내서 지정할 수 없습니다. Shift 없이 누르거나 다른 키를 쓰세요.": "No se puede asignar Mayús+teclado numérico: Windows lo convierte en otra tecla (Fin, AvPág…). Púlsela sin Mayús o use otra tecla."
+ "Shift+숫자패드는 Windows 가 다른 키(End·PgDown 등)로 바꿔 보내서 지정할 수 없습니다. Shift 없이 누르거나 다른 키를 쓰세요.": "No se puede asignar Mayús+teclado numérico: Windows lo convierte en otra tecla (Fin, AvPág…). Púlsela sin Mayús o use otra tecla.",
+ "칸마다 (각 칸 왼쪽, ☰ 버튼)": "Por panel (a la izquierda de cada panel, botón ☰)",
+ "공용 (창 왼쪽 하나, 고른 칸으로 열림)": "Compartido (uno a la izquierda de la ventana, abre en el panel elegido)",
+ "공용 탐색 창 (창 왼쪽)": "Panel de navegación compartido (izquierda)",
+ "공용 탐색 창 보이기/숨기기": "Mostrar/ocultar panel de navegación compartido",
+ "공용 탐색 창 보이기": "Mostrar panel de navegación compartido"
 }

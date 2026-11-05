@@ -762,5 +762,10 @@
  "단축키를 파일로 저장했습니다: {0}": "Raccourcis enregistrés dans : {0}",
  "4Dir 단축키 파일이 아닙니다: {0}": "Ce n'est pas un fichier de raccourcis 4Dir : {0}",
  "단축키를 가져왔습니다: {0} — [저장]을 눌러야 적용됩니다 (되돌리기로 취소)": "Raccourcis chargés depuis {0} — appuyez sur [Enregistrer] pour appliquer (Annuler pour revenir)",
- "Shift+숫자패드는 Windows 가 다른 키(End·PgDown 등)로 바꿔 보내서 지정할 수 없습니다. Shift 없이 누르거나 다른 키를 쓰세요.": "Impossible d'attribuer Maj+pavé numérique : Windows le transforme en une autre touche (Fin, Pg suiv…). Appuyez sans Maj ou choisissez une autre touche."
+ "Shift+숫자패드는 Windows 가 다른 키(End·PgDown 등)로 바꿔 보내서 지정할 수 없습니다. Shift 없이 누르거나 다른 키를 쓰세요.": "Impossible d'attribuer Maj+pavé numérique : Windows le transforme en une autre touche (Fin, Pg suiv…). Appuyez sans Maj ou choisissez une autre touche.",
+ "칸마다 (각 칸 왼쪽, ☰ 버튼)": "Par volet (à gauche de chaque volet, bouton ☰)",
+ "공용 (창 왼쪽 하나, 고른 칸으로 열림)": "Partagé (un seul à gauche de la fenêtre, ouvre dans le volet choisi)",
+ "공용 탐색 창 (창 왼쪽)": "Volet de navigation partagé (à gauche)",
+ "공용 탐색 창 보이기/숨기기": "Afficher/masquer le volet de navigation partagé",
+ "공용 탐색 창 보이기": "Afficher le volet de navigation partagé"
 }

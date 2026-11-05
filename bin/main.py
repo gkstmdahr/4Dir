@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.99"
+QE_VERSION = "0.9.101"
 
 import os
 import sys
@@ -4654,10 +4654,15 @@ class Pane(QtWidgets.QFrame):
         m.addSeparator()
         self.fill_sort_menu(m.addMenu(T("정렬 기준")))
         show = m.addMenu(T("표시"))
-        a = show.addAction(T("탐색 창"), lambda: self.toggle_sidebar())
-        a.setCheckable(True)
-        a.setChecked(self.side_host.isVisible())
         main = main_of(self)
+        if SETTINGS["side_shared"]:   # v0.9.100 공용 탐색 창을 쓰는 중 → v0.9.101 여기서는 숨기기/보이기
+            a = show.addAction(T("공용 탐색 창 (창 왼쪽)"), lambda: main.toggle_shared_visible() if main is not None else None)
+            a.setCheckable(True)
+            a.setChecked(not SETTINGS["side_shared_hidden"])
+        else:
+            a = show.addAction(T("탐색 창"), lambda: self.toggle_sidebar())
+            a.setCheckable(True)
+            a.setChecked(bool(getattr(self, "side_on", False)))
         a = show.addAction(T("경로를 버튼으로 (브레드크럼)"), lambda: main.toggle_breadcrumb() if main is not None else None)
         a.setCheckable(True)
         a.setChecked(SETTINGS["breadcrumb"])
@@ -4703,8 +4708,15 @@ class Pane(QtWidgets.QFrame):
         """왼쪽 탐색 창을 지금 폴더까지 펼치고 선택 (탐색기의 '현재 폴더까지 확장'과 같음, 10/2 사용자 요청)"""
         if self.side is not None and self.side_host.isVisible() and self.view() is not None:
             self.side.reveal(self.view().path)
+        main = main_of(self)
+        if main is not None and getattr(main, "active_pane", None) is self:   # v0.9.100 공용 탐색 창은 대상 칸 폴더를 따라감
+            main.sync_shared_side()
 
     def set_sidebar(self, on, save=True):
+        """칸별 탐색 창 (v0.9.100: side_on = 사용자 설정, 공용 탐색 창이 켜져 있으면 설정은 남기고 화면만 숨김)"""
+        self.side_on = bool(on)
+        shared = bool(SETTINGS["side_shared"])
+        on = self.side_on and not shared
         if on and self.side is None:
             self.side = Sidebar()
             self.side.go.connect(lambda p: self.go(p))
@@ -4714,7 +4726,9 @@ class Pane(QtWidgets.QFrame):
         if on and self.body.sizes()[0] < 60:
             total = sum(self.body.sizes()) or 800
             self.body.setSizes([200, max(total - 200, 200)])
-        self.btn_side.setChecked(on)
+        # v0.9.101: 공용 모드에서도 ☰ 보임 → 누르면 공용 탐색 창 숨기기/보이기 (체크 = 공용 창 보임)
+        self.btn_side.setChecked(on if not shared else not SETTINGS["side_shared_hidden"])
+        self.btn_side.setToolTip(T("공용 탐색 창 보이기/숨기기") if shared else T("탐색 창 보이기/숨기기"))
         if on:
             self.sync_sidebar()
         if save:
@@ -4722,11 +4736,15 @@ class Pane(QtWidgets.QFrame):
             self.changed.emit()
 
     def toggle_sidebar(self):
-        self.set_sidebar(not self.side_host.isVisible())
+        main = main_of(self)
+        if SETTINGS["side_shared"] and main is not None:   # v0.9.101 공용 모드면 공용 탐색 창을 숨기기/보이기
+            main.toggle_shared_visible()
+            return
+        self.set_sidebar(not getattr(self, "side_on", False))
 
     def state(self):
         return {"tabs": [v.path for v in self.views()], "current": self.bar.currentIndex(), "mode": self.mode,
-                "sidebar": self.side_host.isVisible(), "body": self.body.sizes(),
+                "sidebar": bool(getattr(self, "side_on", False)), "body": self.body.sizes(),
                 "views": [v.view_state() for v in self.views()]}   # 탭별 정렬·열 너비 (v0.7.1)
 
 
@@ -5521,11 +5539,27 @@ class Main(QtWidgets.QMainWindow):
         self.hsplit.setStretchFactor(1, 0)
         self.hsplit.splitterMoved.connect(self._preview_moved)
         self.preview.setVisible(bool(SETTINGS["preview_pane"]))
-        bl.addWidget(self.hsplit)
+        # v0.9.100 이슈 #3: 창 왼쪽 전체 높이 공용 탐색 창 | (칸들 | 미리보기)
+        self.lsplit = QtWidgets.QSplitter(Qt.Horizontal)
+        self.lsplit.setChildrenCollapsible(False)
+        self.lsplit.setHandleWidth(5)
+        self.shared_side = None   # 처음 켤 때 만듦
+        self.shared_host = QtWidgets.QWidget()
+        self.shared_host.setObjectName("sharedSideHost")
+        QtWidgets.QVBoxLayout(self.shared_host).setContentsMargins(0, 0, 0, 0)
+        self.shared_host.setVisible(False)
+        self.lsplit.addWidget(self.shared_host)
+        self.lsplit.addWidget(self.hsplit)
+        self.lsplit.setStretchFactor(0, 0)
+        self.lsplit.setStretchFactor(1, 1)
+        self.lsplit.splitterMoved.connect(self._shared_moved)
+        bl.addWidget(self.lsplit)
         cl.addWidget(body, 1)
         self.setCentralWidget(central)
         if SETTINGS["chrome_collapsed"]:
             self.set_chrome_collapsed(True, save=False)
+        if SETTINGS["side_shared"]:   # v0.9.100 공용 탐색 창 켜 둔 채 끝냈으면 그대로
+            self.set_shared_side(True, save=False)
         if SETTINGS["on_top"]:
             self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
 
@@ -5553,6 +5587,7 @@ class Main(QtWidgets.QMainWindow):
             "add_fav": add_fav,
             "toggle_chrome": lambda: self.set_chrome_collapsed(not SETTINGS["chrome_collapsed"]),
             "toggle_preview": lambda: self.set_preview(not self.preview.isVisible()),
+            "toggle_nav": lambda: self.pane().toggle_sidebar(),   # v0.9.101 공용이면 공용 창, 칸마다면 지금 칸
             "compare": lambda: self.compare_panes(),
             "palette": lambda: self.open_palette(),
             "ws_latest": lambda: self.load_ws_latest(),   # v0.9.98 이슈 #1 창 구성 단축키
@@ -5872,9 +5907,78 @@ class Main(QtWidgets.QMainWindow):
         if self.preview.isVisible():
             SETTINGS["preview_w"] = self.hsplit.sizes()[1]
 
+    # ---------------------------------------------------------- 공용 탐색 창 (v0.9.100 이슈 #3)
+    def set_shared_side(self, on, save=True):
+        """창 왼쪽 전체 높이 탐색 창 하나 — 고른 폴더는 마지막으로 고른 칸(active_pane)으로. 켜면 칸별 탐색 창은 숨김(설정은 남김)"""
+        on = bool(on)
+        if on and self.shared_side is None:
+            self.shared_side = Sidebar()
+            self.shared_side.go.connect(lambda p: self._shared_go(p, False))
+            self.shared_side.goNewTab.connect(lambda p: self._shared_go(p, True))
+            self.shared_host.layout().addWidget(self.shared_side)
+        SETTINGS["side_shared"] = on
+        if on and save:   # 메뉴에서 '공용'을 고르면 숨김 풀고 보임
+            SETTINGS["side_shared_hidden"] = False
+        self.shared_host.setVisible(on and not SETTINGS["side_shared_hidden"])
+        if on and self.shared_host.isVisible():
+            w = max(120, int(SETTINGS["side_shared_w"] or 240))
+            total = sum(self.lsplit.sizes()) or 1000
+            self.lsplit.setSizes([w, max(total - w, 200)])
+        for p in self.panes:
+            p.set_sidebar(getattr(p, "side_on", False), save=False)
+        if on:
+            self.sync_shared_side()
+        if save:
+            log.info("공용 탐색 창 %s (폭 %s, 숨김 %s)", on, SETTINGS["side_shared_w"], SETTINGS["side_shared_hidden"])
+            for w in list(WINDOWS):   # 다른 창도 같게 (전역 설정)
+                if w is not self:
+                    w.set_shared_side(on, save=False)
+            self.save_timer.start()
+
+    def toggle_shared_visible(self):
+        """공용 모드인 채로 공용 탐색 창만 숨기기/보이기 (v0.9.101 사용자 11/5) — 모든 창 같이"""
+        if not SETTINGS["side_shared"]:
+            return
+        SETTINGS["side_shared_hidden"] = not SETTINGS["side_shared_hidden"]
+        log.info("공용 탐색 창 %s", "숨김" if SETTINGS["side_shared_hidden"] else "보임")
+        for w in list(WINDOWS) or [self]:
+            w.set_shared_side(True, save=False)
+        if self not in WINDOWS:
+            self.set_shared_side(True, save=False)
+        self.save_timer.start()
+
+    def _shared_moved(self, *_):
+        if self.shared_host.isVisible():
+            SETTINGS["side_shared_w"] = self.lsplit.sizes()[0]
+
+    def _shared_go(self, path, new_tab):
+        """공용 탐색 창에서 고른 폴더 → 대상 칸(마지막으로 고른 보이는 칸). 잠긴 탭은 칸의 이동 규칙대로 새 탭"""
+        p = self.active_pane if (self.active_pane in self.panes and self.active_pane.isVisible()) else \
+            next((x for x in self.panes if x.isVisible()), self.panes[0])
+        log.info("공용 탐색 창 -> 칸 %d %s%s", p.idx, path, " (새 탭)" if new_tab else "")
+        p.go(path, new_tab=new_tab)
+
+    def sync_shared_side(self):
+        if self.shared_side is not None and self.shared_host.isVisible():
+            v = self.active_pane.view() if self.active_pane is not None else None
+            if v is not None:
+                self.shared_side.reveal(v.path)
+
     def _fill_main_view_menu(self, m):
         self.pane().fill_view_menu(m)
         m.addSeparator()
+        sm = m.addMenu(T("탐색 창"))   # v0.9.100 칸마다 / 공용
+        g = QtGui.QActionGroup(sm)
+        for on, lbl in ((False, T("칸마다 (각 칸 왼쪽, ☰ 버튼)")), (True, T("공용 (창 왼쪽 하나, 고른 칸으로 열림)"))):
+            a = sm.addAction(lbl, lambda on=on: self.set_shared_side(on))
+            a.setCheckable(True)
+            a.setChecked(bool(SETTINGS["side_shared"]) == on)
+            g.addAction(a)
+        sm.addSeparator()   # v0.9.101 공용 모드인 채로 숨기기
+        a = sm.addAction(mlabel(T("공용 탐색 창 보이기"), "toggle_nav"), self.toggle_shared_visible)
+        a.setCheckable(True)
+        a.setChecked(bool(SETTINGS["side_shared"]) and not SETTINGS["side_shared_hidden"])
+        a.setEnabled(bool(SETTINGS["side_shared"]))
         pv = m.addAction(T("미리보기 창") + (("	" + key_text("toggle_preview")) if key_text("toggle_preview") else ""),
                          lambda: self.set_preview(not self.preview.isVisible()))
         pv.setCheckable(True)
@@ -6117,6 +6221,8 @@ class Main(QtWidgets.QMainWindow):
                     v.navigate(THIS_PC, select=d.upper() + "\\", force=True)
             if p.side is not None:
                 p.side.refresh_pc()
+        if self.shared_side is not None:   # v0.9.100 공용 탐색 창
+            self.shared_side.refresh_pc()
         if SEARCH is not None:
             SEARCH.rewatch()   # 다시 꽂은 드라이브의 검색 감시
         log.info("드라이브 바뀜 → 내 PC 탭 %d개 다시 읽음, 뺀 드라이브 탭 → 내 PC %s, 드라이브 %s", n, gone, os.listdrives())
@@ -6940,6 +7046,7 @@ eports.
             self.prev_pane = self.active_pane   # F6 '다른 칸으로' 대상
             self.active_pane = w
             self._paint_active()
+            self.sync_shared_side()   # v0.9.100 공용 탐색 창이 새 대상 칸 폴더까지 펼침
             if getattr(self, "preview", None) is not None:   # 미리보기 창: 다른 칸으로 옮기면 그 칸의 선택으로 (v0.9.58)
                 self.preview.schedule()
 

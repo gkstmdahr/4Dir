@@ -762,5 +762,10 @@
  "단축키를 파일로 저장했습니다: {0}": "Shortcuts saved to: {0}",
  "4Dir 단축키 파일이 아닙니다: {0}": "Not a 4Dir shortcuts file: {0}",
  "단축키를 가져왔습니다: {0} — [저장]을 눌러야 적용됩니다 (되돌리기로 취소)": "Shortcuts loaded from {0} — press [Save] to apply (Undo to cancel)",
- "Shift+숫자패드는 Windows 가 다른 키(End·PgDown 등)로 바꿔 보내서 지정할 수 없습니다. Shift 없이 누르거나 다른 키를 쓰세요.": "Shift+numpad can't be assigned: Windows turns it into another key (End, PgDown, …). Press it without Shift or use another key."
+ "Shift+숫자패드는 Windows 가 다른 키(End·PgDown 등)로 바꿔 보내서 지정할 수 없습니다. Shift 없이 누르거나 다른 키를 쓰세요.": "Shift+numpad can't be assigned: Windows turns it into another key (End, PgDown, …). Press it without Shift or use another key.",
+ "칸마다 (각 칸 왼쪽, ☰ 버튼)": "Per pane (left of each pane, ☰ button)",
+ "공용 (창 왼쪽 하나, 고른 칸으로 열림)": "Shared (one on the window's left, opens in the selected pane)",
+ "공용 탐색 창 (창 왼쪽)": "Shared navigation pane (window's left)",
+ "공용 탐색 창 보이기/숨기기": "Show/hide shared navigation pane",
+ "공용 탐색 창 보이기": "Show shared navigation pane"
 }

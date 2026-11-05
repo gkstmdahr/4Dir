@@ -74,6 +74,9 @@ class Settings:
                      "select_pattern": "",        # 패턴으로 고르기 마지막 입력 (v0.9.89)
                      "empty_click_up": True,      # 목록 빈 곳을 더블클릭하면 상위 폴더로 (v0.9.75 옵션, v0.9.82 기본 켬)
                      "columns": [1, 2, 3],        # 자세히 보기에 보일 열 (v0.9.76 머리글 우클릭; 1 수정한 날짜·2 유형·3 크기·5 날짜·6 길이·7 만든 날짜·8 미디어 작성 날짜·9 사진 크기)
+                     "side_shared": False,         # v0.9.100 이슈 #3 공용 탐색 창(창 왼쪽 전체 높이) — 켜면 칸별 탐색 창 숨김
+                     "side_shared_w": 240,         # 공용 탐색 창 폭
+                     "side_shared_hidden": False,  # v0.9.101 공용 모드인 채로 잠깐 숨김 (☰ 버튼·보기 메뉴·단축키)
                      "ws_slots": {},              # v0.9.98 이슈 #1 지정 1·2 창 구성 이름 {"1": 이름, "2": 이름}
                       "status_col": True,          # v0.9.94 상태 열 (원드라이브 등 동기화 폴더에서만 보임)
                      "lang": None}           # 화면 언어 코드 (None = 윈도우 표시 언어 따름, i18n.py) — 다시 시작하면 적용
@@ -85,7 +88,7 @@ class Settings:
                     self.data[tk].update({k: v for k, v in d.get(tk, {}).items() if k in THEME_KEYS})
                 if "theme_mode" not in d and d.get("dark"):   # 0.6.2 이전: 다크 모드 켜둔 사람은 '어둡게' 유지
                     self.data["theme_mode"] = "dark"
-                for k in ("theme_mode", "dark", "fav_expanded", "on_top", "allow_multi", "sysmon", "breadcrumb", "keys", "search_roots", "lang", "chrome_collapsed", "batch_rename", "guide_shown", "update_check", "update_last", "update_skip", "resume_after_reboot", "keep_favbar", "hide_single_tab", "empty_click_up", "columns", "mouse", "folder_size", "select_pattern", "status_col", "ws_slots"):
+                for k in ("theme_mode", "dark", "fav_expanded", "on_top", "allow_multi", "sysmon", "breadcrumb", "keys", "search_roots", "lang", "chrome_collapsed", "batch_rename", "guide_shown", "update_check", "update_last", "update_skip", "resume_after_reboot", "keep_favbar", "hide_single_tab", "empty_click_up", "columns", "mouse", "folder_size", "select_pattern", "status_col", "ws_slots", "side_shared", "side_shared_w", "side_shared_hidden"):
                     if k in d:
                         self.data[k] = d[k]
             except Exception:
