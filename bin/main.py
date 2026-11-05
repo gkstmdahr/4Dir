@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.97"
+QE_VERSION = "0.9.99"
 
 import os
 import sys
@@ -5555,6 +5555,9 @@ class Main(QtWidgets.QMainWindow):
             "toggle_preview": lambda: self.set_preview(not self.preview.isVisible()),
             "compare": lambda: self.compare_panes(),
             "palette": lambda: self.open_palette(),
+            "ws_latest": lambda: self.load_ws_latest(),   # v0.9.98 이슈 #1 창 구성 단축키
+            "ws_slot1": lambda: self.load_ws_slot(1),
+            "ws_slot2": lambda: self.load_ws_slot(2),
         }
         for i in range(NPANES):
             self.win_actions[f"pane{i + 1}"] = (lambda i=i: self._focus_pane(i))
@@ -6553,12 +6556,76 @@ class Main(QtWidgets.QMainWindow):
                 st = json.load(f)
         except Exception:
             log.exception("작업 공간 읽기 실패 %s", path)
-            return
+            self.show_notice(T("창 구성 '{0}' 을(를) 읽지 못했습니다 (지금 구성은 그대로)  ✕").format(name))   # v0.9.98
+            return False
         self.sessions.snapshot(self.collect_state(), force=True)   # 불러오기 전 지금 상태 보관
         log.info("작업 공간 불러오기 %s", path)
         self.apply_state(st, geometry=False)
         self.save_state()
         self.show_notice(T("창 구성 '{0}' 불러옴 (이전 상태는 '자동 기록'에 보관)  ✕").format(name))
+        return True
+
+    # v0.9.98 이슈 #1: 단축키로 창 구성 바로 전환 — 최근 저장한 것 · 지정 1 · 지정 2 (불러오기는 메뉴와 같은 load_workspace)
+    def _ws_path(self, name):
+        return os.path.join(WS_DIR, name + ".json")
+
+    def load_ws_latest(self):
+        """최근 저장한 창 구성 = 저장 파일 수정 시각 최신 (불러오기·이름 변경으로는 안 바뀜, 메뉴 목록 순서와 같음)"""
+        ws = self._ws_list()
+        if not ws:
+            log.info("최근 창 구성 단축키: 저장본 없음")
+            self.show_notice(T("저장된 창 구성이 없습니다. '창 저장/불러오기 ▸ 현재 창 구성 저장'으로 먼저 저장하세요  ✕"))
+            return False
+        log.info("최근 창 구성 단축키 → %s", ws[0][0])
+        return self.load_workspace(*ws[0])
+
+    def load_ws_slot(self, n):
+        name = (SETTINGS["ws_slots"] or {}).get(str(n))
+        if not name:
+            log.info("지정 %d 단축키: 미지정", n)
+            self.show_notice(T("지정 {0} 에 연결된 창 구성이 없습니다. '창 저장/불러오기 ▸ 지정 {0}(으)로 설정'에서 고르세요  ✕").format(n))
+            return False
+        p = self._ws_path(name)
+        if not os.path.isfile(p):   # 다른 저장본으로 대신하지 않음
+            log.info("지정 %d 단축키: 파일 없음 %s", n, p)
+            self.show_notice(T("지정 {0} 의 창 구성 '{1}' 을(를) 찾을 수 없습니다 (지워졌거나 밖에서 이름이 바뀜)  ✕").format(n, name))
+            return False
+        log.info("지정 %d 단축키 → %s", n, name)
+        return self.load_workspace(name, p)
+
+    def set_ws_slot(self, n, name):
+        slots = dict(SETTINGS["ws_slots"] or {})
+        if name:
+            slots[str(n)] = name
+        else:
+            slots.pop(str(n), None)
+        SETTINGS["ws_slots"] = slots
+        log.info("지정 %d = %s", n, name)
+        self.show_notice((T("지정 {0} = '{1}'  ✕").format(n, name)) if name else T("지정 {0} 해제  ✕").format(n), ms=2000)
+
+    def rename_workspace(self, name, path, new=None):
+        """저장된 창 구성 이름 변경 — 같은 이름이 있으면 덮어쓰지 않음, 지정 1·2 연결은 따라감, 파일 시각 그대로(최근 순서 안 바뀜)"""
+        if new is None:
+            new, ok = QtWidgets.QInputDialog.getText(self, T("창 구성 이름 변경"), T("새 이름:"), text=name)
+            if not ok:
+                return False
+        new = "".join(c for c in new.strip() if c not in '\\/:*?"<>|')
+        if not new or new == name:
+            return False
+        dst = self._ws_path(new)
+        if os.path.exists(dst) and os.path.normcase(dst) != os.path.normcase(path):
+            log.info("창 구성 이름 변경 거부(같은 이름 있음) %s → %s", name, new)
+            QtWidgets.QMessageBox.warning(self, T("창 구성 이름 변경"), T("같은 이름의 창 구성 '{0}' 이(가) 이미 있습니다. 다른 이름을 쓰세요.").format(new))
+            return False
+        os.rename(path, dst)
+        slots = dict(SETTINGS["ws_slots"] or {})
+        for k, v in list(slots.items()):
+            if v == name:
+                slots[k] = new
+        SETTINGS["ws_slots"] = slots
+        log.info("창 구성 이름 변경 %s → %s (지정 %s)", name, new, slots)
+        self.show_notice(T("창 구성 이름 변경: '{0}' → '{1}'  ✕").format(name, new), ms=2000)
+        return True
 
     def delete_workspace(self, name, path):
         if QtWidgets.QMessageBox.question(self, T("삭제"), T("저장된 창 구성 '{0}' 을(를) 지울까요?").format(name)) == QtWidgets.QMessageBox.Yes:
@@ -6659,9 +6726,35 @@ class Main(QtWidgets.QMainWindow):
             for mm in (load, dele):
                 a = mm.addAction(T("(저장된 창 구성 없음)"))
                 a.setEnabled(False)
+        slots = SETTINGS["ws_slots"] or {}
+        mark = {v: k for k, v in sorted(slots.items(), reverse=True)}
         for name, path in ws:
-            load.addAction(name, lambda n=name, p=path: self.load_workspace(n, p))
+            tag = T("  [지정 {0}]").format(mark[name]) if name in mark else ""
+            load.addAction(name + tag, lambda n=name, p=path: self.load_workspace(n, p))
             dele.addAction(name, lambda n=name, p=path: self.delete_workspace(n, p))
+        # v0.9.98 이슈 #1: 단축키로 바로 불러오기 (키는 '단축키 설정'에서 정함)
+        m.addSeparator()
+        a = m.addAction(mlabel(T("최근 저장한 구성 불러오기 ({0})").format(ws[0][0] if ws else T("없음")), "ws_latest"), self.load_ws_latest)
+        a.setEnabled(bool(ws))
+        for n in (1, 2):
+            m.addAction(mlabel(T("지정 {0} 불러오기 ({1})").format(n, slots.get(str(n)) or T("미지정")), f"ws_slot{n}"),
+                        lambda n=n: self.load_ws_slot(n))
+        for n in (1, 2):
+            sm = m.addMenu(T("지정 {0}(으)로 설정").format(n))
+            for name, path in ws:
+                a = sm.addAction(name, lambda n=n, nm=name: self.set_ws_slot(n, nm))
+                a.setCheckable(True)
+                a.setChecked(slots.get(str(n)) == name)
+            if not ws:
+                sm.addAction(T("(저장된 창 구성 없음)")).setEnabled(False)
+            sm.addSeparator()
+            a = sm.addAction(T("지정 해제"), lambda n=n: self.set_ws_slot(n, None))
+            a.setEnabled(bool(slots.get(str(n))))
+        ren = m.addMenu(T("이름 변경"))
+        for name, path in ws:
+            ren.addAction(name, lambda n=name, p=path: self.rename_workspace(n, p))
+        if not ws:
+            ren.addAction(T("(저장된 창 구성 없음)")).setEnabled(False)
         m.addSeparator()
         auto = m.addMenu(T("자동 기록에서 복구 (크래시 대비)"))
         snaps = self.sessions.list(visible=state_panes)

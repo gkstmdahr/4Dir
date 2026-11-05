@@ -1,11 +1,33 @@
 # -*- coding: utf-8 -*-
-"""4Dir 버전별 바뀐 점 (CHANGELOG_VER 1.0.26 — 0.9.97 11/5 (0.9.96 공개 안 해서 합침) 아이콘 이름 잘림·뺀 드라이브 탭·느린 드라이브·안전 제거·알림 ✕ · 0.9.95 11/5 탭 잠금·드라이브 꽂기 반영 · 0.9.94 11/4 상태 열·Ctrl+Enter 위치·설정 내보내기/가져오기·큰 폴더 빨라짐 · 0.9.93 11/4 (0.9.88~0.9.92 공개 전이라 합침, +레이아웃 16종·고르기 창·글자 메뉴 뺌·검색칸 자리, 새 도구 7개+빈 띠+색 13색·직접 고르기+날짜별 묶기+3칸 왼쪽 1+오른쪽 2+비교 깜빡임) · 0.9.88 11/4 닫을 때 바로 끝남 · 0.9.87 11/4 설정 이어받기·링크 실행 · 0.9.86 짧게 고침 11/3 (사용자 '간단명료하게') · 0.9.86 11/3 (0.9.85 공개 전이라 합침, 겹치면 옮김+되돌리기) · 0.9.85 11/3 (0.9.84 공개 전이라 합침, 겹침 알림 기능 칸) · 0.9.84 11/3 (0.9.83 공개 전이라 합침, 마우스 탭 키보드처럼) · 0.9.83 11/3 (0.9.82 공개 전이라 합침, 마우스 버튼 항목 추가) · 0.9.82 11/3 (0.9.81 공개 전이라 합침) · 0.9.81 11/3 (0.9.80 공개 전이라 합침) · 0.9.80 11/2 (0.9.79 공개 전이라 합침) · 0.9.79 11/2 (0.9.78 공개 전이라 합침) · 0.9.78 11/2 (0.9.77 공개 전이라 합침) · 0.9.77 11/2 (0.9.76 공개 전이라 합침) · 0.9.76 11/2 (0.9.75 는 공개 안 해서 합침) · 0.9.73 4Dir.exe 10/30 · 0.9.71 항목 10/29 (0.9.68~0.9.70 은 공개 안 해서 0.9.71 에 합침)) — make_site.py 가 읽어 메인 '새로 바뀐 점' + 지난 버전 페이지를 만듦.
+"""4Dir 버전별 바뀐 점 (CHANGELOG_VER 1.0.28 — 0.9.99 11/5 (0.9.98 공개 전이라 합침, +단축키 칸 한글 입력기 끔·단축키만 내보내기/가져오기) 창 구성 단축키·지정·이름 변경(이슈 #1) · 0.9.97 11/5 (0.9.96 공개 안 해서 합침) 아이콘 이름 잘림·뺀 드라이브 탭·느린 드라이브·안전 제거·알림 ✕ · 0.9.95 11/5 탭 잠금·드라이브 꽂기 반영 · 0.9.94 11/4 상태 열·Ctrl+Enter 위치·설정 내보내기/가져오기·큰 폴더 빨라짐 · 0.9.93 11/4 (0.9.88~0.9.92 공개 전이라 합침, +레이아웃 16종·고르기 창·글자 메뉴 뺌·검색칸 자리, 새 도구 7개+빈 띠+색 13색·직접 고르기+날짜별 묶기+3칸 왼쪽 1+오른쪽 2+비교 깜빡임) · 0.9.88 11/4 닫을 때 바로 끝남 · 0.9.87 11/4 설정 이어받기·링크 실행 · 0.9.86 짧게 고침 11/3 (사용자 '간단명료하게') · 0.9.86 11/3 (0.9.85 공개 전이라 합침, 겹치면 옮김+되돌리기) · 0.9.85 11/3 (0.9.84 공개 전이라 합침, 겹침 알림 기능 칸) · 0.9.84 11/3 (0.9.83 공개 전이라 합침, 마우스 탭 키보드처럼) · 0.9.83 11/3 (0.9.82 공개 전이라 합침, 마우스 버튼 항목 추가) · 0.9.82 11/3 (0.9.81 공개 전이라 합침) · 0.9.81 11/3 (0.9.80 공개 전이라 합침) · 0.9.80 11/2 (0.9.79 공개 전이라 합침) · 0.9.79 11/2 (0.9.78 공개 전이라 합침) · 0.9.78 11/2 (0.9.77 공개 전이라 합침) · 0.9.77 11/2 (0.9.76 공개 전이라 합침) · 0.9.76 11/2 (0.9.75 는 공개 안 해서 합침) · 0.9.73 4Dir.exe 10/30 · 0.9.71 항목 10/29 (0.9.68~0.9.70 은 공개 안 해서 0.9.71 에 합침)) — make_site.py 가 읽어 메인 '새로 바뀐 점' + 지난 버전 페이지를 만듦.
 새 버전을 낼 때마다 맨 위에 한 줄 추가 (최신이 맨 위). 날짜는 한국 시간 기준 릴리스 날짜.
 항목 하나 = 10개 언어 글자 묶음 (순서: en ko zh-CN zh-TW ja es de fr pt-BR ru). <b> 만 허용."""
 
 ORDER = ["en", "ko", "zh-CN", "zh-TW", "ja", "es", "de", "fr", "pt-BR", "ru"]
 
 CHANGES = [
+("0.9.99", "2026-11-05", [
+    ("<b>Switch saved window layouts with a key</b>: 'Save/Load windows' now has Load most recently saved, Load slot 1 and Load slot 2, plus Set as slot 1/2 and Rename. Assign keys in Keyboard shortcuts (for example Ctrl+Alt+1).",
+     "<b>저장한 창 구성을 단축키로 전환</b>: '창 저장/불러오기'에 최근 저장한 구성·지정 1·지정 2 불러오기와 지정 설정·이름 변경이 생겼습니다. 키는 단축키 설정에서 정합니다(예: Ctrl+Alt+1).",
+     "<b>用快捷键切换已保存的窗口布局</b>：“保存/加载窗口”新增加载最近保存的布局、槽位 1、槽位 2，以及设为槽位和重命名。可在快捷键设置中指定按键（例如 Ctrl+Alt+1）。",
+     "<b>用快速鍵切換已儲存的視窗配置</b>：「儲存/載入視窗」新增載入最近儲存的配置、槽位 1、槽位 2，以及設為槽位和重新命名。可在快速鍵設定中指定按鍵（例如 Ctrl+Alt+1）。",
+     "<b>保存したウィンドウ構成をキーで切り替え</b>：「ウィンドウの保存/読み込み」に、最後に保存した構成・スロット 1・スロット 2 の読み込みと、スロット設定・名前の変更を追加。キーはショートカット キーの設定で指定します（例：Ctrl+Alt+1）。",
+     "<b>Cambie de disposición guardada con una tecla</b>: 'Guardar/cargar ventanas' ahora tiene cargar la última guardada, ranura 1 y ranura 2, además de asignar ranura y renombrar. Asigne teclas en Atajos de teclado (p. ej. Ctrl+Alt+1).",
+     "<b>Gespeicherte Fensteranordnungen per Taste wechseln</b>: „Fenster speichern/laden“ bietet jetzt Zuletzt gespeicherte laden, Platz 1 und Platz 2 sowie Als Platz festlegen und Umbenennen. Tasten unter Tastenkürzel festlegen (z. B. Strg+Alt+1).",
+     "<b>Changez de disposition enregistrée avec une touche</b> : « Enregistrer/charger les fenêtres » propose désormais la dernière enregistrée, l'emplacement 1 et 2, ainsi que Définir comme emplacement et Renommer. Touches à choisir dans Raccourcis clavier (ex. Ctrl+Alt+1).",
+     "<b>Troque de disposição salva com uma tecla</b>: 'Salvar/carregar janelas' agora tem carregar a última salva, espaço 1 e espaço 2, além de definir espaço e renomear. Defina as teclas em Atalhos de teclado (ex.: Ctrl+Alt+1).",
+     "<b>Переключение сохранённых раскладок клавишей</b>: в «Сохранить/загрузить окна» появились загрузка последней сохранённой, слоты 1 и 2, назначение слота и переименование. Клавиши задаются в «Сочетаниях клавиш» (например, Ctrl+Alt+1)."),
+    ("<b>Export and import only shortcuts</b>: the Keyboard shortcuts window has Export shortcuts… and Import shortcuts… buttons. Keyboard and mouse shortcuts go into one small file; importing changes only shortcuts, not tabs or window layouts.",
+     "<b>단축키만 내보내기·가져오기</b>: 단축키 설정 창에 [단축키 내보내기…] [단축키 가져오기…] 버튼. 키보드·마우스 단축키만 작은 파일 하나로 저장하고, 가져와도 탭·창 구성은 그대로입니다.",
+     "<b>仅导出/导入快捷键</b>：快捷键设置窗口新增“导出快捷键…”“导入快捷键…”按钮。键盘和鼠标快捷键保存为一个小文件，导入时只更改快捷键，不影响标签和窗口布局。",
+     "<b>僅匯出/匯入快速鍵</b>：快速鍵設定視窗新增「匯出快速鍵…」「匯入快速鍵…」按鈕。鍵盤與滑鼠快速鍵存成一個小檔案，匯入時只變更快速鍵，不影響分頁與視窗配置。",
+     "<b>ショートカットだけをエクスポート/インポート</b>：ショートカット キーの設定画面に「ショートカットをエクスポート…」「ショートカットをインポート…」ボタン。キーボードとマウスのショートカットを小さなファイル 1 つに保存し、インポートしてもタブやウィンドウ構成は変わりません。",
+     "<b>Exportar e importar solo los atajos</b>: la ventana de Atajos de teclado tiene los botones Exportar atajos… e Importar atajos…. Los atajos de teclado y ratón van en un archivo pequeño; al importar solo cambian los atajos, no las pestañas ni las disposiciones.",
+     "<b>Nur Tastenkürzel exportieren/importieren</b>: Im Fenster Tastenkürzel gibt es „Tastenkürzel exportieren…“ und „Tastenkürzel importieren…“. Tastatur- und Mauskürzel landen in einer kleinen Datei; beim Import ändern sich nur die Kürzel, nicht Tabs oder Fensteranordnungen.",
+     "<b>Exporter et importer uniquement les raccourcis</b> : la fenêtre Raccourcis clavier propose Exporter les raccourcis… et Importer les raccourcis…. Raccourcis clavier et souris tiennent dans un petit fichier ; l'import ne change que les raccourcis, pas les onglets ni les dispositions.",
+     "<b>Exportar e importar só os atalhos</b>: a janela Atalhos de teclado tem os botões Exportar atalhos… e Importar atalhos…. Os atalhos de teclado e mouse ficam num arquivo pequeno; ao importar, só os atalhos mudam, não as abas nem as disposições.",
+     "<b>Экспорт и импорт только сочетаний</b>: в окне «Сочетания клавиш» появились кнопки «Экспорт сочетаний…» и «Импорт сочетаний…». Сочетания клавиатуры и мыши сохраняются в небольшой файл; импорт меняет только сочетания, а не вкладки и раскладки."),
+]),
 ("0.9.97", "2026-11-05", [
     ("<b>Icon views</b>: names are no longer cut off in folders that mix folders and files (for example a drive's top folder).",
      "<b>아이콘 보기</b>: 폴더와 파일이 섞인 곳(예: 드라이브 맨 위)에서 이름이 잘려 보이던 것 고침.",

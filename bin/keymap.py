@@ -6,6 +6,8 @@ v0.9.83: 마우스 버튼 표 (설정 파일 "mouse" = {"Ctrl+middle": 기능, .
 scope: "view" = 파일 목록에 포커스가 있을 때만 / "window" = 창 어디서나
 """
 import logging
+import json
+import os
 from i18n import T   # 화면 문구 번역
 
 from PySide6 import QtCore, QtGui, QtWidgets
@@ -50,7 +52,10 @@ ACTIONS = [
     ("toggle_chrome", T("메뉴·즐겨찾기 접기/펼치기"), "Ctrl+Shift+M", "window"),
     ("toggle_preview", T("미리보기 창 보이기/숨기기"), "Alt+P", "window"),
     ("compare", T("두 칸 비교"), "Shift+F2", "window"),   # v0.9.89 (토탈 커맨더와 같은 키)
-    ("palette", T("명령 찾기…"), "Ctrl+Shift+P", "window"),   # v0.9.89   # 탐색기와 같은 키 (v0.9.58)
+    ("palette", T("명령 찾기…"), "Ctrl+Shift+P", "window"),
+    ("ws_latest", T("최근 저장한 창 구성 불러오기"), "", "window"),   # v0.9.98 이슈 #1 (기본 키 없음 — 단축키 설정에서)
+    ("ws_slot1", T("지정 1 창 구성 불러오기"), "", "window"),
+    ("ws_slot2", T("지정 2 창 구성 불러오기"), "", "window"),   # v0.9.89   # 탐색기와 같은 키 (v0.9.58)
     # v0.9.68: 다른 프로그램을 쓰다가도 이 키 하나로 4Dir 를 앞으로 불러 전체 검색칸에 바로 입력 (윈도우 전역 단축키 RegisterHotKey)
     ("global_hotkey", T("4Dir 불러서 전체 검색 (다른 프로그램 쓰는 중에도)"), "Ctrl+Alt+F", "global"),
 ] + [(f"pane{i + 1}", T('{0}번 칸으로').format(i + 1), f"Ctrl+{i + 1}", "window") for i in range(6)]
@@ -158,6 +163,19 @@ def _mark(it, base, notes):
 
 
 # ================================================================ 설정 창
+_PAD_NAV = (Qt.Key_Home, Qt.Key_End, Qt.Key_PageUp, Qt.Key_PageDown, Qt.Key_Up, Qt.Key_Down, Qt.Key_Left, Qt.Key_Right,
+            Qt.Key_Clear, Qt.Key_Insert, Qt.Key_Delete)
+
+
+def _numlock_on():
+    """Num Lock 켜짐? (켜져 있는데 숫자패드에서 이동 키가 오면 Shift 를 같이 누른 것)"""
+    try:
+        import ctypes
+        return bool(ctypes.windll.user32.GetKeyState(0x90) & 1)
+    except Exception:
+        return False
+
+
 class KeyDialog(QtWidgets.QDialog):
     def __init__(self, custom, parent=None, mouse=None):
         super().__init__(parent)
@@ -200,6 +218,11 @@ class KeyDialog(QtWidgets.QDialog):
                 if len(keys) >= c:
                     e.setKeySequence(QtGui.QKeySequence(keys[c - 1]))
                 e.keySequenceChanged.connect(lambda *_, e=e, a=a: self._key_set(e, a))
+                # v0.9.99 사용자 11/5: 한글 입력 상태면 글자 키가 입력기로 가서 칸에 안 들어감 → 키 칸은 입력기 끔 + 진단 로그
+                for w in [e] + e.findChildren(QtWidgets.QLineEdit):
+                    w.setAttribute(Qt.WA_InputMethodEnabled, False)
+                    w.installEventFilter(self)
+                e.setProperty("qe_action", a)
                 self.tbl.setCellWidget(r, c, e)
                 eds.append(e)
             self.edits[a] = eds
@@ -214,6 +237,9 @@ class KeyDialog(QtWidgets.QDialog):
         self.warn.setStyleSheet("color:#c62828;")
         self.warn.setWordWrap(True)
         lay.addWidget(self.warn)
+        self.info = QtWidgets.QLabel()   # v0.9.99 내보내기·가져오기 결과 (빨강 아님)
+        self.info.setWordWrap(True)
+        lay.addWidget(self.info)
         row = QtWidgets.QHBoxLayout()
         b_def = QtWidgets.QPushButton(T("전부 기본값으로"))
         b_def.clicked.connect(self._defaults)
@@ -237,6 +263,13 @@ class KeyDialog(QtWidgets.QDialog):
         row.addWidget(b_def)
         row.addWidget(self.b_undo)
         row.addWidget(self.b_redo)
+        # v0.9.99 사용자 11/5: 단축키만 따로 저장·불러오기 (탭·창 구성은 안 건드림)
+        self.b_exp = QtWidgets.QPushButton(T("단축키 내보내기…"))
+        self.b_imp = QtWidgets.QPushButton(T("단축키 가져오기…"))
+        for b, fn in ((self.b_exp, self.export_keys), (self.b_imp, self.import_keys)):
+            b.setAutoDefault(False)
+            b.clicked.connect(lambda *_, fn=fn: fn())
+            row.addWidget(b)
         row.addStretch(1)
         row.addWidget(b_ok)
         row.addWidget(b_no)
@@ -336,7 +369,128 @@ class KeyDialog(QtWidgets.QDialog):
         log.info("단축키 설정 다시 하기 (남은 %d)", len(self._redo))
         self._restore(st)
 
+    # ---------------------------------------------------------- 단축키만 내보내기·가져오기 (v0.9.99)
+    def _keys_dir(self):
+        return os.path.join(os.path.expanduser("~"), "Documents")
+
+    def export_keys(self, path=None):
+        """지금 표(저장 전 바꾼 것 포함)의 키보드·마우스 단축키 전부 → json 파일 하나"""
+        if path is None:
+            path, _f = QtWidgets.QFileDialog.getSaveFileName(self, T("단축키 내보내기"),
+                                                             os.path.join(self._keys_dir(), "4Dir_shortcuts.json"), "json (*.json)")
+            if not path:
+                return None
+        data = {"app": "4Dir", "kind": "shortcuts", "format": 1,
+                "keys": {a: [k for k in ks if k] for a, ks in self.collect().items()},
+                "mouse": {e.combo: a for a, eds in self.medits.items() for e in eds if e.combo}}
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=1)
+        except Exception as ex:
+            log.exception("단축키 내보내기 실패 %s", path)
+            self.warn.setText(T("단축키를 저장하지 못했습니다: {0}").format(ex))
+            return None
+        log.info("단축키 내보내기 %s (키보드 %d · 마우스 %d)", path, sum(1 for v in data["keys"].values() if v), len(data["mouse"]))
+        self.warn.clear()
+        self.info.setText(T("단축키를 파일로 저장했습니다: {0}").format(path))
+        return path
+
+    def import_keys(self, path=None):
+        """단축키 파일 → 표에 채움(저장을 눌러야 적용, 되돌리기로 취소). 파일에 없는 기능(새 버전 기능)은 지금 값 그대로"""
+        if path is None:
+            path, _f = QtWidgets.QFileDialog.getOpenFileName(self, T("단축키 가져오기"), self._keys_dir(), "json (*.json)")
+            if not path:
+                return False
+        try:
+            with open(path, encoding="utf-8") as f:
+                data = json.load(f)
+            ok = isinstance(data, dict) and data.get("app") == "4Dir" and data.get("kind") == "shortcuts"
+        except Exception:
+            log.exception("단축키 파일 읽기 실패 %s", path)
+            ok = False
+        if not ok:
+            log.info("단축키 파일 아님 %s", path)
+            self.info.clear()
+            self.warn.setText(T("4Dir 단축키 파일이 아닙니다: {0}").format(path))
+            return False
+        cur = self._snap()
+        fk, fm = data.get("keys") or {}, data.get("mouse") or {}
+        kb = {}
+        for a in self.edits:
+            ks = [str(k) for k in fk[a] if k][:2] if isinstance(fk.get(a), list) else cur[0][a]
+            kb[a] = (list(ks) + ["", ""])[:2]
+        by = {}
+        for c, a in fm.items():
+            if a in self.medits:
+                by.setdefault(a, []).append(c)
+        mb = {a: (by.get(a, [])[:2] + ["", ""])[:2] for a in self.medits}
+        self._hist.append(cur)
+        self._redo.clear()
+        self._restore((kb, mb, [], []))
+        log.info("단축키 가져오기 %s (키보드 %d · 마우스 %d, 저장 전)", path, sum(1 for v in kb.values() if any(v)), len(fm))
+        self.warn.clear()
+        self.info.setText(T("단축키를 가져왔습니다: {0} — [저장]을 눌러야 적용됩니다 (되돌리기로 취소)").format(os.path.basename(path)))
+        return True
+
     # ---------------------------------------------------------- 키보드
+    def eventFilter(self, obj, ev):
+        """키 칸에 들어온 키를 로그로 + 한글 입력기가 먹은 키(VK_PROCESSKEY 229)면 영어로 바꾸라고 알림 (v0.9.99)"""
+        t = ev.type()
+        if t in (QtCore.QEvent.KeyPress, QtCore.QEvent.KeyRelease) and ev.key() in (
+                Qt.Key_Shift, Qt.Key_Control, Qt.Key_Alt, Qt.Key_Meta, Qt.Key_AltGr):
+            # 사용자 11/5 실기(재현 확인): Shift+숫자패드 뒤 Windows 가 Shift 를 다시 눌러 보냄 → Qt 키 칸은 키가 들어간 뒤
+            #   다음 키 누름(수정키 혼자여도)을 '새 입력 시작'으로 보고 칸을 비움 → 수정키 혼자 누름·뗌은 칸에 안 넘김
+            return True
+        if t == QtCore.QEvent.KeyPress and ev.modifiers() & Qt.KeypadModifier and ev.key() in _PAD_NAV and _numlock_on():
+            # 사용자 11/5: Shift+숫자패드 = Num Lock 켜짐인데 숫자 대신 End·PgDown 등이 옴(Windows 가 바꿔 줌, 어떤 숫자였는지 알 수 없음)
+            #   → 지정 안 함 + 빨간 안내 (사용자 '해결 못 하면 빨간 글씨로')
+            log.info("키 칸: Shift+숫자패드(→%s) 지정 안 함", QtGui.QKeySequence(ev.key()).toString())
+            self.info.clear()
+            self.warn.setText(T("Shift+숫자패드는 Windows 가 다른 키(End·PgDown 등)로 바꿔 보내서 지정할 수 없습니다. Shift 없이 누르거나 다른 키를 쓰세요."))
+            return True
+        if t == QtCore.QEvent.KeyPress:
+            vk = ev.nativeVirtualKey()
+            log.info("키 칸 입력 key=0x%x vk=%d text=%r mods=%s (%s)", ev.key(), vk, ev.text(),
+                     int(ev.modifiers().value) if hasattr(ev.modifiers(), "value") else int(ev.modifiers()),
+                     obj.property("qe_action") or (obj.parent() and obj.parent().property("qe_action")))
+            if ev.key() in (0, Qt.Key_unknown) and vk != 229:
+                # 사용자 11/5 실기: Alt+숫자패드 = Windows 'Alt 코드' 글자 입력 → Alt 를 떼면 글자만 옴(key 0, 예 '쿰'). 한글 아님 → 무시
+                log.info("키 칸: 키 없는 글자 %r 무시 (Alt+숫자패드 Alt 코드 등)", ev.text())
+                return True
+            if vk == 229:
+                self.warn.setText(T("한글 입력 상태라 키를 읽지 못했습니다. 한/영 키로 영어로 바꾼 뒤 다시 누르세요."))
+            else:   # v0.9.99: Qt 6.11 키 칸은 Ctrl+Shift+Alt+글자를 못 받음(재현 확인) → 비어 있으면 직접 넣음
+                ed = obj if isinstance(obj, QtWidgets.QKeySequenceEdit) else obj.parent()
+                # v0.9.99 사용자 11/5 '연타하다 어느 순간 입력 안 됨': Qt 키 칸은 한 번 키가 들어가면 다음 키를 무시(재현 확인)
+                #   → 수정키 아닌 키가 오면 먼저 비워서(신호 막음) 새 키가 늘 앞 키를 바꾸게
+                if isinstance(ed, QtWidgets.QKeySequenceEdit) and ev.key() not in (
+                        Qt.Key_Shift, Qt.Key_Control, Qt.Key_Alt, Qt.Key_Meta, Qt.Key_AltGr, Qt.Key_Tab, Qt.Key_Backtab, Qt.Key_Escape):
+                    ed.blockSignals(True)
+                    ed.clear()
+                    ed.blockSignals(False)
+                mods = ev.modifiers() & (Qt.ControlModifier | Qt.ShiftModifier | Qt.AltModifier | Qt.MetaModifier)
+                key = (Qt.Key(Qt.Key_A.value + vk - 0x41) if 0x41 <= vk <= 0x5A else
+                       Qt.Key(Qt.Key_0.value + vk - 0x30) if 0x30 <= vk <= 0x39 else None)
+                if key is None and ev.key() not in (Qt.Key_Shift, Qt.Key_Control, Qt.Key_Alt, Qt.Key_Meta, Qt.Key_AltGr,
+                                                    Qt.Key_Tab, Qt.Key_Backtab, Qt.Key_Escape, 0, Qt.Key_unknown):
+                    key = Qt.Key(ev.key())   # 사용자 11/5 실기: Shift+숫자패드 → Windows 가 End·PgDown 등으로 바꿔 줌, Qt 칸이 못 받음 → 그 키로
+                if isinstance(ed, QtWidgets.QKeySequenceEdit) and key is not None and mods:
+                    QtCore.QTimer.singleShot(0, lambda ed=ed, k=QtCore.QKeyCombination(mods, key): self._key_fallback(ed, k))
+        elif t == QtCore.QEvent.InputMethod and ev.commitString() + ev.preeditString():
+            log.info("키 칸 입력기 글자 %r → 무시", ev.commitString() + ev.preeditString())
+            self.warn.setText(T("한글 입력 상태라 키를 읽지 못했습니다. 한/영 키로 영어로 바꾼 뒤 다시 누르세요."))
+            return True
+        return super().eventFilter(obj, ev)
+
+    def _key_fallback(self, ed, comb):
+        """Qt 키 칸이 못 받은 조합을 직접 넣음 (비어 있을 때만)"""
+        log.info("키 칸 처리 뒤 %r (빈칸이면 직접 넣음 %s)", ed.keySequence().toString(QtGui.QKeySequence.PortableText),
+                 QtGui.QKeySequence(comb).toString(QtGui.QKeySequence.PortableText))
+        if ed.keySequence().isEmpty():
+            ed.setKeySequence(QtGui.QKeySequence(comb))
+            log.info("키 칸 직접 넣음 %s", ed.keySequence().toString(QtGui.QKeySequence.PortableText))
+            ed.clearFocus()
+
     def _key_set(self, e, a):
         """키 칸에 새 키 → 다른 기능에 있던 같은 키는 비우고(새로 넣은 쪽만 남김) 양쪽 기능 칸에 빨갛게 알림 (v0.9.86)"""
         if self._busy:
