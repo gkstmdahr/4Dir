@@ -556,8 +556,9 @@ class SearchIndex:
         return out, total, ms
 
 
-def folder_search(root, text, cancel, batch_cb, limit=5000):
-    """색인 없이 root 아래를 바로 훑으며 찾기. batch_cb(목록) 로 0.5초마다 넘김. 반환 (전체 일치 수, 훑은 개수)"""
+def folder_search(root, text, cancel, batch_cb, limit=5000, files_only=False):
+    """색인 없이 root 아래를 바로 훑으며 찾기. batch_cb(목록) 로 0.5초마다 넘김. 반환 (전체 일치 수, 훑은 개수)
+    files_only = 하위 폴더 펼쳐 보기 (빌드 20): 폴더는 안 넣고 파일만"""
     q = Query(text)
     if q.empty():
         return 0, 0
@@ -579,7 +580,7 @@ def folder_search(root, text, cancel, batch_cb, limit=5000):
                         continue
                     if dd and not (st.st_file_attributes & REPARSE) and e.name.lower() not in SKIP_DIRS:
                         stack.append(e.path)
-                    if q.match(e.name, e.path):
+                    if (not files_only or not dd) and q.match(e.name, e.path):
                         total += 1
                         if total <= limit:
                             buf.append((e.path, e.name, dd, -1 if dd else st.st_size, int(st.st_mtime)))

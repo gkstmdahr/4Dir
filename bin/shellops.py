@@ -214,8 +214,77 @@ FO_NAMES = {shellcon.FO_COPY: "copy", shellcon.FO_MOVE: "move",
             shellcon.FO_DELETE: "delete", shellcon.FO_RENAME: "rename"}
 
 
+# ---- 복사 대기열 (빌드 20, 사용자 11/5 '추천 5개 다' — 여러 복사가 동시에 돌면 서로 느려짐)
+# 복사·이동은 한 줄로 세워 하나씩 (지우기·이름 바꾸기는 바로). 지금 것은 윈도우 진행 창에서 멈춤·취소, 기다리는 것은 4Dir 에서 취소·대기열 멈춤
+QUEUE = {"running": None, "pending": [], "paused": False, "seq": 0}
+_qcv = threading.Condition()
+_qthread = [None]
+on_queue_change = [lambda: None]   # main 이 끼움 (작업 스레드에서 불림 → 신호로 화면에)
+
+
+def _qchanged():
+    try:
+        on_queue_change[0]()
+    except Exception:
+        log.exception("대기열 알림 실패")
+
+
+def _queue_worker():
+    while True:
+        with _qcv:
+            while not QUEUE["pending"] or QUEUE["paused"]:
+                _qcv.wait()
+            job = QUEUE["pending"].pop(0)
+            QUEUE["running"] = job
+        _qchanged()
+        log.info("대기열: 시작 #%d %s (남은 %d)", job["id"], job["desc"], len(QUEUE["pending"]))
+        try:
+            job["run"]()
+        finally:
+            with _qcv:
+                QUEUE["running"] = None
+            _qchanged()
+
+
+def queue_cancel(job_id):
+    """기다리는 작업 취소 (이미 시작한 것은 윈도우 진행 창의 취소로)"""
+    with _qcv:
+        before = len(QUEUE["pending"])
+        QUEUE["pending"] = [j for j in QUEUE["pending"] if j["id"] != job_id]
+        hit = len(QUEUE["pending"]) != before
+    if hit:
+        log.info("대기열: 취소 #%d", job_id)
+        _qchanged()
+    return hit
+
+
+def queue_pause(on):
+    with _qcv:
+        QUEUE["paused"] = bool(on)
+        _qcv.notify_all()
+    log.info("대기열: %s", "멈춤 (지금 것 다음부터)" if on else "이어서")
+    _qchanged()
+
+
+def _enqueue(desc, run):
+    with _qcv:
+        QUEUE["seq"] += 1
+        job = {"id": QUEUE["seq"], "desc": desc, "run": run, "t": time.time()}
+        QUEUE["pending"].append(job)
+        if _qthread[0] is None:
+            _qthread[0] = threading.Thread(target=_queue_worker, daemon=True, name="copy-queue")
+            _qthread[0].start()
+        busy = QUEUE["running"] is not None or len(QUEUE["pending"]) > 1 or QUEUE["paused"]
+        _qcv.notify_all()
+    if busy:
+        log.info("대기열: 기다림 #%d %s", job["id"], desc)
+    _qchanged()
+    return job["id"]
+
+
 def file_op(hwnd, func, srcs, dst=None, flags=0, done=None):
-    """SHFileOperation 을 별도 스레드에서 실행 (UI 멈춤 방지). done(result, aborted) 콜백은 작업 스레드에서 호출됨."""
+    """SHFileOperation 을 별도 스레드에서 실행 (UI 멈춤 방지). done(result, aborted) 콜백은 작업 스레드에서 호출됨.
+    빌드 20: 복사·이동은 대기열(하나씩), 지우기·이름 바꾸기는 바로"""
     srcs = [os.path.normpath(s) for s in srcs]
 
     def run():
@@ -233,6 +302,10 @@ def file_op(hwnd, func, srcs, dst=None, flags=0, done=None):
             except Exception:
                 log.exception("file_op done 콜백 예외")
 
+    if func in (shellcon.FO_COPY, shellcon.FO_MOVE):
+        nm = os.path.basename(srcs[0]) + (f" 외 {len(srcs) - 1}개" if len(srcs) > 1 else "")
+        _enqueue(f"{'이동' if func == shellcon.FO_MOVE else '복사'} {nm} → {dst}", run)
+        return
     threading.Thread(target=run, daemon=True).start()
 
 

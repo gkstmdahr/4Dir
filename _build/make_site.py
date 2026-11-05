@@ -25,7 +25,7 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.9.2"   # 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
+MAKE_SITE_VER = "1.9.3"   # 1.9.3: support 메일 링크에 제목 말머리 [4Dir] / 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
 SUPPORT = "support@4dir.net"   # 문제 보고 메일 (1.1.1)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -148,7 +148,7 @@ def page(lang, cfg, rel):
 <section id="faq"><h2>{e(t["faq_h"])}</h2>{faq}</section>
 </main>
 <footer><div class="wrap">
-<a href="{repo_url}">{e(t["src"])}</a> · <a href="{repo_url}/issues">{e(t["issues"])}</a> · <a href="mailto:{SUPPORT}">{SUPPORT}</a> · <a href="{repo_url}/releases">v{ver}</a> · <a href="{up}code-signing.html">Code signing policy</a>
+<a href="{repo_url}">{e(t["src"])}</a> · <a href="{repo_url}/issues">{e(t["issues"])}</a> · <a href="mailto:{SUPPORT}?subject=%5B4Dir%5D%20">{SUPPORT}</a> · <a href="{repo_url}/releases">v{ver}</a> · <a href="{up}code-signing.html">Code signing policy</a>
 <p>{e(t["lic"])}</p>
 </div></footer>
 </body>
@@ -238,7 +238,7 @@ def guide_page(lang, cfg, rel):
 var io=new IntersectionObserver(function(es){{es.forEach(function(x){{if(x.isIntersecting){{L.forEach(function(a){{a.classList.remove('on')}});var a=m[x.target.id];a&&a.classList.add('on')}}}})}},{{rootMargin:'-20% 0px -70% 0px'}});
 document.querySelectorAll('section.gs').forEach(function(s){{io.observe(s)}})}}catch(e){{}}}})();</script>
 <footer><div class="wrap">
-<a href="{repo_url}">{e(t["src"])}</a> · <a href="{repo_url}/issues">{e(t["issues"])}</a> · <a href="mailto:{SUPPORT}">{SUPPORT}</a> · <a href="{up}code-signing.html">Code signing policy</a>
+<a href="{repo_url}">{e(t["src"])}</a> · <a href="{repo_url}/issues">{e(t["issues"])}</a> · <a href="mailto:{SUPPORT}?subject=%5B4Dir%5D%20">{SUPPORT}</a> · <a href="{up}code-signing.html">Code signing policy</a>
 <p>{e(t["lic"])}</p>
 </div></footer>
 </body>
@@ -292,7 +292,7 @@ Turn it off in <b>Tools &gt; Check for new version at startup (once a day)</b>. 
 </section>
 </main>
 <footer><div class="wrap">
-<a href="{repo_url}">Source code</a> · <a href="{repo_url}/issues">Issues</a> · <a href="mailto:{SUPPORT}">{SUPPORT}</a>
+<a href="{repo_url}">Source code</a> · <a href="{repo_url}/issues">Issues</a> · <a href="mailto:{SUPPORT}?subject=%5B4Dir%5D%20">{SUPPORT}</a>
 </div></footer>
 </body>
 </html>
@@ -360,7 +360,7 @@ def versions_page(lang, cfg, rel):
 </section>
 </main>
 <footer><div class="wrap">
-<a href="{repo_url}">{e(t["src"])}</a> · <a href="{repo_url}/releases">GitHub Releases</a> · <a href="mailto:{SUPPORT}">{SUPPORT}</a> · <a href="{up}code-signing.html">Code signing policy</a>
+<a href="{repo_url}">{e(t["src"])}</a> · <a href="{repo_url}/releases">GitHub Releases</a> · <a href="mailto:{SUPPORT}?subject=%5B4Dir%5D%20">{SUPPORT}</a> · <a href="{up}code-signing.html">Code signing policy</a>
 <p>{e(t["lic"])}</p>
 </div></footer>
 </body>

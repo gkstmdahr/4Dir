@@ -10,7 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.107"
+QE_VERSION = "0.9.108"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 28             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -25,6 +26,7 @@ import ctypes
 import subprocess
 import ctypes.wintypes
 import threading
+import zlib
 
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
@@ -84,7 +86,7 @@ def start_hang_watch(app):
         if os.path.exists(p) and os.path.getsize(p) > 1_000_000:
             os.replace(p, p + ".1")
         f = open(p, "a", encoding="utf-8")
-        f.write(f"\n=== 4Dir v{QE_VERSION} pid={os.getpid()} 시작 {time.strftime('%Y-%m-%d %H:%M:%S')} ===\n")
+        f.write(f"\n=== 4Dir v{QE_VERSION} (빌드 {QE_BUILD}) pid={os.getpid()} 시작 {time.strftime('%Y-%m-%d %H:%M:%S')} ===\n")
         f.flush()
         # 프로그램이 통째로 죽는 충돌도 위치 기록. all_threads=False (v0.9.57): 윈도우 셸(속성 창·끌기 등)이 안에서
         # 일부러 던지고 스스로 받는 COM 오류(0x8001010e)도 이 기록 장치가 잡는데, 그때마다 '모든 스레드' 위치를 훑다가
@@ -427,7 +429,90 @@ import labels  # noqa: E402  (v0.9.89 색 라벨·탭 색)
 import cloud  # noqa: E402  (v0.9.94 원드라이브 등 동기화 폴더 상태 열)
 import palette  # noqa: E402  (v0.9.89 명령 찾기)
 import hashview  # noqa: E402  (v0.9.89 확인값 SHA256)
+import dupes  # noqa: E402  (빌드 20 중복 파일 찾기)
+import archives  # noqa: E402  (빌드 20 압축 파일을 폴더처럼)
+import video  # noqa: E402  (빌드 21 미리보기 동영상 — 부품은 처음 고를 때 불러옴)
 import contentcmp  # noqa: E402  (v0.9.107 두 칸 비교 — 내용까지)
+import memo  # noqa: E402  (v0.9.108 메모 창)
+import devices  # noqa: E402  (v0.9.108 빌드 4 휴대폰 등 드라이브 글자 없는 장치)
+DEV_MIME = "application/x-4dir-devpaths"   # 휴대폰 안 항목 끌기 (파일 주소가 없어 4Dir 안에서만)
+DEV_CLIP = {"paths": None, "cut": False, "seq": -1}   # 휴대폰 항목 복사/잘라내기 — 4Dir 안 붙여넣기용 (윈도우 클립보드엔 셸 데이터로도 넣음)
+DEV_DRAG = {"paths": None}   # 4Dir 에서 끌기 시작한 휴대폰 항목 (4Dir 칸에 놓으면 이것으로 복사)
+
+
+class DevSig(QtCore.QObject):
+    """휴대폰 작업이 끝남(작업 스레드) → 화면 스레드에서 그 폴더를 보고 있는 칸 다시 읽기"""
+    done = QtCore.Signal(str, bool, str, str)   # 다시 읽을 경로, 됐는지, 오류, 새로 생긴 이름(편집할 것)
+
+    def __init__(self):
+        super().__init__()
+        self.done.connect(self._apply, Qt.QueuedConnection)
+
+    def _apply(self, path, ok, err, edit):
+        n = 0
+        for w in list(WINDOWS):
+            for p in w.panes:
+                for v in p.views():
+                    if v.path == path:
+                        if edit and ok:
+                            v.pending_edit = edit
+                        v.reload("dev")
+                        n += 1
+                        if not ok and err:
+                            v.status.emit("⚠ " + err)
+        log.info("장치 작업 끝 → 칸 %d개 다시 읽음 (ok=%s)", n, ok)
+        if n and ok:   # 빌드 18: 휴대폰(MTP)은 새 파일이 목록에 늦게 나옴(바로 읽으면 빠짐, qe177 실측) → 1.5초 뒤 한 번 더
+            QtCore.QTimer.singleShot(1500, lambda: [v.reload("dev2") for w in list(WINDOWS) for p in w.panes for v in p.views() if v.path == path])
+
+
+DEV_SIG = DevSig()
+
+
+class QueueSig(QtCore.QObject):
+    """복사 대기열이 바뀜 (빌드 20) — 작업 스레드에서 와도 화면 스레드에서 단추를 고침"""
+    changed = QtCore.Signal()
+
+
+QUEUE_SIG = QueueSig()
+shellops.on_queue_change[0] = QUEUE_SIG.changed.emit
+MEMOS = None   # memo.MemoStore — 첫 메모 창을 열 때 만듦 (모든 창 공용)
+MEMO_WIN = None   # 빌드 8: 메모 창은 4Dir 창 밖 따로 창 하나 (모든 창 공용)
+PREVIEW_WIN = None   # 빌드 18: 미리보기도 4Dir 창 밖 따로 창 하나 (모든 창 공용, 마지막으로 쓴 창의 고른 파일)
+
+
+def memo_store():
+    global MEMOS
+    if MEMOS is None:
+        MEMOS = memo.MemoStore(BIN_DIR)
+        MEMOS.remind.connect(_memo_remind)
+    return MEMOS
+
+
+def _memo_remind(m):
+    """메모 알림 시각 (빌드 13): 메모 창을 앞으로 + 그 메모 강조 + 작업 표시줄 깜빡임 + 알림 줄"""
+    w = MEMO_WIN.main if MEMO_WIN is not None and MEMO_WIN.main in WINDOWS else (WINDOWS[0] if WINDOWS else None)
+    if w is None:
+        return
+    w.set_memo(True)
+    MEMO_WIN.bring_front()
+    MEMO_WIN.panel.reveal(m["id"])
+    QtWidgets.QApplication.alert(MEMO_WIN, 0)
+    w.show_notice(T("⏰ 메모 알림: {0}").format(m.get("title") or ""), sticky=True)
+
+
+class TipGate(QtCore.QObject):
+    """풍선 도움말 끄기 (빌드 13 사용자: 모든 기능에 툴팁 + 옵션에서 끌 수 있게). 도구줄 » 단추(Qt 가 만듦)에도 설명"""
+
+    def eventFilter(self, obj, ev):
+        if ev.type() == QtCore.QEvent.ToolTip:
+            if not SETTINGS["tooltips"]:
+                return True
+            if isinstance(obj, QtWidgets.QToolButton) and obj.objectName() == "qt_toolbar_ext_button" and not obj.toolTip():
+                obj.setToolTip(T("가려진 메뉴 더 보기"))
+        return False
+
+
+TIP_GATE = TipGate()
 from i18n import T  # noqa: E402  (화면 문구 번역)
 
 VIEW_KEYS = {}   # 파일 목록 단축키 {키: 기능} — Main.apply_keys 가 채움
@@ -456,6 +541,10 @@ WATCH_DELAY_MS = 500
 OPTS = {"show_hidden": False, "show_ext": True, "checkboxes": False,
         "date_folders_first": False,
         "date_groups": False,   # v0.9.90 날짜별로 묶기 (오늘·어제·이번 주…, 윈도우 탐색기 '그룹화' 와 같게)
+        "type_groups": False,   # 빌드 17 형식별로 묶기 (폴더·JPG·PNG…) — 날짜별 묶기와 둘 중 하나
+        "type_chips": True,     # 빌드 17 칸 위 형식 단추 줄 [전체][폴더][JPG][PSD]… 누르면 그 형식만
+        "type_badges": True,    # 빌드 17 아이콘 보기 그림 미리보기 왼쪽 위 형식 딱지 (PSD·PNG·GIF…)
+        "folder_covers": True,  # 빌드 17 아이콘 보기 폴더에 안에 든 첫 그림을 겹쳐 보여 줌 (네트워크 드라이브 제외)
         "svn_status": True,
         "thumbnails": True,
         "vcs_overlay": True}   # vcs_overlay = SVN 아닌 폴더에서 윈도우 겹침 아이콘(Git·Perforce 등) 표시   # thumbnails = 아이콘 보기에서 그림 미리보기 / 날짜 정렬 때 폴더를 위로 모을지 (기본: 섞어서 날짜순 = 윈도우와 같음)
@@ -610,6 +699,9 @@ def is_search(p):
     return bool(p) and p.startswith(SEARCH_PREFIX)
 
 
+FLAT_Q = "⤵*"   # 빌드 20: 하위 폴더 펼쳐 보기 = 그 폴더 아래 모든 파일 (폴더 아래 찾기와 같은 길, 파일만)
+
+
 def search_path(q, folder=None):
     return SEARCH_PREFIX + q.strip() + (f" @ {folder}" if folder else "")
 
@@ -623,19 +715,29 @@ def parse_search(p):
 
 
 def norm(p):
-    return os.path.normpath(p) if p and p != THIS_PC and not is_search(p) else p
+    return os.path.normpath(p) if p and p != THIS_PC and not is_search(p) and not devices.is_dev(p) and not archives.is_arc(p) else p
 
 
 def disp_path(p):
     """주소줄에 보여줄 글자 ('내 PC' 표식만 번역, 실제 경로는 그대로)"""
+    if devices.is_dev(p):   # 휴대폰: 셸 ID 대신 '기기 › 내장 저장공간 › DCIM'
+        return devices.friendly(p)
+    if archives.is_arc(p):   # 빌드 20 압축 안: F:\a.zip\그림
+        return archives.friendly(p)
     return T(THIS_PC) if p == THIS_PC else p
 
 
 def tab_title(p):
     if p == THIS_PC:
         return T(THIS_PC)
+    if devices.is_dev(p):
+        return devices.name_of(p)
+    if archives.is_arc(p):
+        return "🗜 " + archives.name_of(p)
     if is_search(p):
         q, f = parse_search(p)
+        if q == FLAT_Q:
+            return "⤵ " + T("펼쳐 보기") + (f" — {tab_title(f)}" if f else "")
         return f"🔎 {q}" + (T(' ({0} 아래)').format(tab_title(f)) if f else "")
     b = os.path.basename(p.rstrip("\\/"))
     return b or p
@@ -738,14 +840,20 @@ class ScanJob(QtCore.QRunnable):
         try:
             if self.path == THIS_PC:
                 entries = this_pc_entries()
+            elif devices.is_dev(self.path):   # 휴대폰 안 (셸로 읽음)
+                entries = devices.list_dir(self.path, self.cancel)
+            elif archives.is_arc(self.path):   # 빌드 20 압축 파일 안 (읽기 전용)
+                entries = archives.list_dir(self.path, self.cancel)
             elif is_search(self.path):
                 q, folder = parse_search(self.path)
 
                 def rows(lst):
                     return [[n, d, s, m, 0, pth, None, None] for pth, n, d, s, m in lst]
                 if folder:   # 색인 없이 그 폴더 아래를 바로 훑기 (중간 결과를 계속 보냄)
+                    flat = q == FLAT_Q   # 빌드 20 하위 폴더 펼쳐 보기: 파일만, 더 많이
                     total, scanned = search_index.folder_search(
-                        folder, q, self.cancel, lambda b: self.sig.partial.emit(self.gen, rows(b)))
+                        folder, "*" if flat else q, self.cancel, lambda b: self.sig.partial.emit(self.gen, rows(b)),
+                        limit=50000 if flat else 5000, files_only=flat)
                     self.sig.info.emit(self.gen, T('{0:,}개 찾음 (훑은 항목 {1:,}개)').format(total, scanned) + (T(" — 취소됨") if self.cancel() else ""))
                 elif SEARCH is not None:
                     res, total, ms = SEARCH.search(q)
@@ -826,6 +934,8 @@ def this_pc_entries():
     for d in os.listdrives():
         name, idx = shellops.real_info(d)
         out.append([d, True, -1, 0, 0, d, idx, name])
+    for name, p in devices.list_devices():   # 빌드 4: 휴대폰·카메라 등 (드라이브 글자 없음)
+        out.append([name, True, -1, 0, 0, p, devices.icon_index(p), name])
     return out
 
 
@@ -860,6 +970,23 @@ GROUP_MARK = "\0"   # 날짜 묶음 제목 줄 (v0.9.90): 이름 앞 글자 — 
 
 def is_group(e):
     return e[0][:1] == GROUP_MARK
+
+
+def kind_of(e):
+    """형식 단추·형식 묶기용 종류: 폴더 '/', 파일은 소문자 확장명('.jpg'), 확장명 없으면 ''"""
+    if e[1]:
+        return "/"
+    return os.path.splitext(e[0])[1].lower()
+
+
+def kind_label(k):
+    return T("폴더") if k == "/" else (k[1:].upper() if k else T("확장명 없음"))
+
+
+def type_bucket(e):
+    """형식별 묶기 (빌드 17): (순서, 묶음 이름) — 폴더 먼저, 그다음 확장명 가나다(ABC)순, 확장명 없음은 끝"""
+    k = kind_of(e)
+    return (0, "", kind_label(k)) if k == "/" else ((2, "", kind_label(k)) if not k else (1, k, kind_label(k)))
 
 
 def date_bucket(ts, now=None):
@@ -903,6 +1030,7 @@ class DirModel(QtCore.QAbstractTableModel):
         self.group_on = False   # 자세히 보기일 때만 날짜 묶음 (v0.9.90, Page.set_mode) — 아이콘 보기는 묶지 않음
         self.n_groups = 0       # rows 안 묶음 제목 줄 수 (항목 수 셀 때 뺌)
         self.thumbs_on = False   # 아이콘 보기 + 미리보기 켬 → 그림 파일은 미리보기 (thumbs.py)
+        self.covers_ok = False   # 빌드 17 폴더 표지 가능한 폴더 (네트워크·휴대폰·내 PC 아님)
         self.thumb_px = 16       # 실제 화면 픽셀 크기 (배율 반영)
         self.ovl_on = False      # SVN 아닌 폴더 + 설정 켬 → 윈도우 겹침 아이콘(Git·Perforce 등) (overlays.py)
         MODELS.append(self)
@@ -940,6 +1068,9 @@ class DirModel(QtCore.QAbstractTableModel):
             OVL.forget(path)
         self.path, self.all = path, entries
         self.cloud = cloud.root_of(path) if path and path != THIS_PC and not is_search(path) else None
+        # 폴더 표지는 폴더 안을 훑고 첫 그림을 읽으므로 네트워크·클라우드(받기 일어남)·휴대폰·검색 결과는 제외
+        self.covers_ok = bool(path and path != THIS_PC and not is_search(path) and not devices.is_dev(path) and not archives.is_arc(path)
+                              and self.cloud is None and not foldersize.is_remote(path))
         self._sort()
         self.endResetModel()
 
@@ -1003,7 +1134,12 @@ class DirModel(QtCore.QAbstractTableModel):
             st = cloud.state(e[4])
             return cloud.icon(st, self.icon_px if self.icon_px <= 20 else 16) if role == Qt.DecorationRole else cloud.STATES[st][1]
         elif role == Qt.DecorationRole and c == 0:
-            if self.thumbs_on and not e[1] and thumbs.is_image(e[0]):
+            if self.thumbs_on and not e[1] and thumbs.is_image(e[0]) and not devices.is_dev(self.full(e)) and not archives.is_arc(self.full(e)):   # 휴대폰 사진 미리보기는 2차
+                pm = thumbs_service().get(self.full(e), e[3], self.thumb_px)
+                if pm is not None:
+                    pm.setDevicePixelRatio(self.thumb_px / max(1, self.icon_px))
+                    return pm
+            elif self.thumbs_on and e[1] and OPTS["folder_covers"] and self.icon_px >= 48 and self.covers_ok:   # 폴더 표지 (빌드 17)
                 pm = thumbs_service().get(self.full(e), e[3], self.thumb_px)
                 if pm is not None:
                     pm.setDevicePixelRatio(self.thumb_px / max(1, self.icon_px))
@@ -1059,6 +1195,15 @@ class DirModel(QtCore.QAbstractTableModel):
         if not new or new == e[0]:
             return False
         src = self.full(e)
+        if archives.is_arc(src):   # 압축 안: 읽기 전용
+            return False
+        if devices.is_dev(src):   # 휴대폰: 셸로 이름 바꾸고 다시 읽음
+            here = self.path
+            log.info("휴대폰 이름 바꾸기 %s -> %s", e[0], new)
+            devices.run_op("rename", 0, [src], new_name=new, done=lambda ok, err: DEV_SIG.done.emit(here, ok, err, ""))
+            e[0] = new
+            self.dataChanged.emit(idx, idx)
+            return True
         dst = os.path.join(os.path.dirname(src), new)   # 검색 결과는 항목마다 폴더가 다름
         try:
             os.rename(src, dst)
@@ -1089,18 +1234,19 @@ class DirModel(QtCore.QAbstractTableModel):
         """날짜별로 묶기 (v0.9.90): 묶음 제목 줄을 끼움. 묶음 안 순서는 지금 정렬 그대로.
         묶음 순서는 새것부터 — 수정한 날짜 오름차순 정렬일 때만 오래된 것부터"""
         self.n_groups = 0
-        if not (OPTS["date_groups"] and self.group_on and rows and self.path and self.path != THIS_PC
+        by_type = OPTS["type_groups"]
+        if not ((OPTS["date_groups"] or by_type) and self.group_on and rows and self.path and self.path != THIS_PC
                 and not is_search(self.path)):
             return rows
         now = time.time()
         buckets = {}
         for e in rows:
-            buckets.setdefault(date_bucket(e[3], now), []).append(e)
-        keys = sorted(buckets, reverse=self.sort_col == 1 and self.sort_order == Qt.AscendingOrder)
+            buckets.setdefault(type_bucket(e) if by_type else date_bucket(e[3], now), []).append(e)
+        keys = sorted(buckets) if by_type else sorted(buckets, reverse=self.sort_col == 1 and self.sort_order == Qt.AscendingOrder)
         out = []
         for k in keys:
             n = len(buckets[k])
-            out.append([GROUP_MARK + k[1], False, -1, 0, 0, "", 0, f"{k[1]}  ({n:,})"])
+            out.append([GROUP_MARK + k[-1], False, -1, 0, 0, "", 0, f"{k[-1]}  ({n:,})"])
             out.extend(buckets[k])
         self.n_groups = len(keys)
         return out
@@ -1154,7 +1300,10 @@ class DirModel(QtCore.QAbstractTableModel):
             self._load_props(items)
 
     def _filtered(self, rows):
-        """빠른 필터: 이름에 글자 포함(대소문자 무시). * ? 가 있으면 와일드카드."""
+        """빠른 필터: 이름에 글자 포함(대소문자 무시). * ? 가 있으면 와일드카드. 형식 단추(빌드 17)를 고르면 그 형식만"""
+        kinds = getattr(self, "ext_filter", None)
+        if kinds:
+            rows = [e for e in rows if kind_of(e) in kinds]
         f = self.filter.strip().lower()
         if not f:
             return list(rows)
@@ -1235,7 +1384,11 @@ class DirModel(QtCore.QAbstractTableModel):
     def mimeData(self, idxs):
         md = QtCore.QMimeData()
         rows = sorted({i.row() for i in idxs})
-        md.setUrls([QtCore.QUrl.fromLocalFile(self.full(self.rows[r])) for r in rows])
+        ps = [self.full(self.rows[r]) for r in rows]
+        if any(devices.is_dev(p) for p in ps):   # 휴대폰 항목: 파일 주소가 없음 → 4Dir 칸끼리만
+            md.setData(DEV_MIME, "\n".join(ps).encode("utf-8"))
+            return md
+        md.setUrls([QtCore.QUrl.fromLocalFile(p) for p in ps])
         return md
 
     def supportedDragActions(self):
@@ -1597,6 +1750,24 @@ class ViewMixin(DragScrollMixin):
         log.info("끌기 시작 %s %d개", type(self).__name__, len(idxs))   # 10/24 '하나 끌었는데 여러 개 선택됨' 진단
         if not idxs:
             return
+        dps = [self.model().full(self.model().rows[i.row()]) for i in idxs]
+        if any(archives.is_arc(p) for p in dps):   # 빌드 20 압축 안: 임시 폴더에 풀어 진짜 파일로 끌기 (복사만)
+            real = self.page._arc_real(dps)
+            if real:
+                md = QtCore.QMimeData()
+                md.setUrls([QtCore.QUrl.fromLocalFile(p) for p in real])
+                drag = QtGui.QDrag(self)
+                drag.setMimeData(md)
+                log.info("압축 안에서 끌기 %d개 (임시 폴더에 풂)", len(real))
+                drag.exec(Qt.CopyAction, Qt.CopyAction)
+            return
+        if all(devices.is_dev(p) for p in dps):   # 빌드 6: 휴대폰 항목 → 윈도우 셸 끌기 (탐색기·바탕화면에 놓으면 복사됨)
+            DEV_DRAG["paths"] = dps
+            try:
+                devices.shell_drag(dps)
+            finally:
+                DEV_DRAG["paths"] = None
+            return
         md = self.model().mimeData(idxs)
         if md is None:
             return
@@ -1605,7 +1776,7 @@ class ViewMixin(DragScrollMixin):
         e = self.model().rows[base]
         # v0.9.67: 그림 파일은 이미 만들어 둔 미리보기를 끌기 그림으로 (사용자 요청: 빈 jpg 아이콘 대신 원래 그림).
         # 새로 읽지 않음(큰 PSD·max 는 멈칫함) — 없으면 예전처럼 종류 아이콘
-        tpm = thumbs_service().peek(self.model().full(e), e[3]) if not e[1] and thumbs.is_image(e[0]) and OPTS["thumbnails"] else None
+        tpm = thumbs_service().peek(self.model().full(e), e[3]) if not e[1] and thumbs.is_image(e[0]) and OPTS["thumbnails"] and not devices.is_dev(self.model().full(e)) and not archives.is_arc(self.model().full(e)) else None
         if tpm is not None and not tpm.isNull():
             icon = QtGui.QIcon(tpm)
         else:
@@ -1997,6 +2168,7 @@ class Page(QtWidgets.QWidget):
     lockChanged = QtCore.Signal()            # v0.9.95 탭 잠금이 바뀜 → 탭 글자(🔒) 다시
     navWaitDone = QtCore.Signal(int, bool, object)   # v0.9.96 응답 늦은 드라이브 확인 끝 (번호, 폴더인가, 이동 인자)
     fsizeFound = QtCore.Signal(int, str, object)   # (gen, 폴더 이름, 크기) — 폴더 크기 작업 스레드에서 (v0.9.89)
+    typesChanged = QtCore.Signal()   # 빌드 17: 폴더를 다 읽음 → 형식 단추 줄 다시
     fsizeDone = QtCore.Signal(int)
 
     def __init__(self, path, mode="details", parent=None):
@@ -2110,7 +2282,7 @@ class Page(QtWidgets.QWidget):
         grp = mode == "details"   # 날짜 묶음은 자세히 보기에서만 (v0.9.90)
         if grp != self.model_.group_on:
             self.model_.group_on = grp
-            if OPTS["date_groups"]:
+            if OPTS["date_groups"] or OPTS["type_groups"]:
                 self.model_.sort(self.model_.sort_col, self.model_.sort_order)
         px = MODE_PX[mode]
         self.model_.icon_px = px
@@ -2221,7 +2393,10 @@ class Page(QtWidgets.QWidget):
     # ---------------------------------------------------------- 이동
     def navigate(self, path, record=True, select=None, force=False, checked=False):
         path = norm(path) or THIS_PC
-        ok = True if checked or path == THIS_PC or is_search(path) else isdir_quick(path)   # checked = 뒤에서 이미 확인함
+        if archives.is_arc(path):   # 빌드 20 압축 안: 그 압축 파일이 있고 안쪽이 폴더일 때만
+            ok = archives.is_dir(path) and archives.exists(path)
+        else:
+            ok = True if checked or path == THIS_PC or is_search(path) or devices.is_dev(path) else isdir_quick(path)   # checked = 뒤에서 이미 확인함
         if ok is None:
             # v0.9.96: 막 꽂은 외장하드처럼 응답이 늦은 드라이브 — 화면을 멈추지 않고 뒤에서 기다렸다가 이동
             # (전엔 os.path.isdir 에서 39.6초 '응답 없음', 11/5 사용자 제보·hang.log 확인)
@@ -2254,6 +2429,7 @@ class Page(QtWidgets.QWidget):
             if old:
                 self.from_locked = False
             self.model_.filter = ""   # 다른 폴더로 가면 빠른 필터 해제
+            self.model_.ext_filter = set()   # 형식 단추도 (빌드 17)
             if THUMBS is not None and old:
                 THUMBS.drop_pending(old)   # 떠난 폴더의 아직 안 만든 미리보기 요청은 버림
         if self.active:
@@ -2291,6 +2467,12 @@ class Page(QtWidgets.QWidget):
 
     def go_up(self):
         if self.path == THIS_PC:
+            return
+        if devices.is_dev(self.path):   # 휴대폰: 셸 부모 (맨 위면 내 PC)
+            self.navigate(devices.parent_of(self.path) or THIS_PC, select=devices.name_of(self.path))
+            return
+        if archives.is_arc(self.path):   # 압축 안: 한 단계 위 (맨 위면 압축 파일이 있는 폴더, 그 파일 고름)
+            self.navigate(archives.parent_of(self.path), select=archives.name_of(self.path))
             return
         parent = os.path.dirname(self.path.rstrip("\\"))
         if not parent or parent == self.path or (len(self.path) <= 3 and self.path.endswith(":\\")):
@@ -2443,6 +2625,7 @@ class Page(QtWidgets.QWidget):
         self._emit_status()
         self.refresh_svn(entries)
         self._start_fsize()
+        self.typesChanged.emit()
 
     # ---------------------------------------------------------- 폴더 크기 (v0.9.89 사용자 11/4)
     def _start_fsize(self):
@@ -2451,7 +2634,7 @@ class Page(QtWidgets.QWidget):
             self._fsize_job.cancel()
             self._fsize_job = None
         p = self.path
-        if not SETTINGS["folder_size"] or p == THIS_PC or is_search(p) or foldersize.is_remote(p):
+        if not SETTINGS["folder_size"] or p == THIS_PC or is_search(p) or devices.is_dev(p) or archives.is_arc(p) or foldersize.is_remote(p):
             return
         names = [e[0] for e in self.model_.all if e[1] and not e[5]]
         if not names:
@@ -2482,7 +2665,7 @@ class Page(QtWidgets.QWidget):
     # ---------------------------------------------------------- SVN 상태 (TortoiseSVN 겹침 아이콘 대신 장부 직접 읽기)
     def refresh_svn(self, entries=None):
         p = self.path
-        if not OPTS["svn_status"] or p == THIS_PC or is_search(p) or not os.path.isdir(p):
+        if not OPTS["svn_status"] or p == THIS_PC or is_search(p) or devices.is_dev(p) or archives.is_arc(p) or not os.path.isdir(p):
             if self.model_.svn:
                 self.model_.svn = {}
                 self.view().viewport().update()
@@ -2508,6 +2691,12 @@ class Page(QtWidgets.QWidget):
             log.info("SVN 장부 바뀜 → 상태 다시 읽음 %s", self.path)
             self.refresh_svn()
 
+    def set_ext_filter(self, kinds):
+        """형식 단추 (빌드 17): kinds = {'.jpg', '/'(폴더) …}, 빈 것 = 전체"""
+        self.model_.ext_filter = set(kinds)
+        self.set_filter(self.model_.filter)
+        log.info("형식 거르기 %s → %d/%d", sorted(kinds) or "전체", self.model_.count(), len(self.model_.all))
+
     def set_filter(self, text):
         self.model_.set_filter(text)
         log.debug("빠른 필터 '%s' → %d/%d", text, len(self.model_.rows), len(self.model_.all))
@@ -2525,6 +2714,8 @@ class Page(QtWidgets.QWidget):
             txt = f"🔎 '{q}'" + (T(' ({0} 아래)').format(f) if f else T(" (전체)")) + f": {self.search_info}"
         elif self.model_.filter:
             txt = T("필터 '{0}': {1:,} / 전체 {2:,}개").format(self.model_.filter, n, len(self.model_.all))
+        elif getattr(self.model_, "ext_filter", None):
+            txt = T("형식 {0}: {1:,} / 전체 {2:,}개").format(" · ".join(kind_label(k) for k in sorted(self.model_.ext_filter)), n, len(self.model_.all))
         if s:
             txt += T('    {0:,}개 항목 선택함').format(s)
             fs = [self.model_.rows[r][2] for r in sr if not self.model_.rows[r][1] and self.model_.rows[r][2] >= 0]
@@ -2558,7 +2749,7 @@ class Page(QtWidgets.QWidget):
             self.watcher.directoryChanged.connect(self._on_dir_changed)
         if self.watcher.directories():
             self.watcher.removePaths(self.watcher.directories())
-        if new and new != THIS_PC and not is_search(new):
+        if new and new != THIS_PC and not is_search(new) and not devices.is_dev(new) and not archives.is_arc(new):   # 휴대폰·압축은 감시 못 함 → F5
             self.watcher.addPath(new)
             m = main_of(self)
             if m is not None:
@@ -2591,6 +2782,33 @@ class Page(QtWidgets.QWidget):
         if e[1]:
             self.navigate(fp)
             return
+        if archives.is_arc(fp):   # 빌드 20 압축 안 파일: 임시 폴더에 풀어서 엶
+            self.status.emit(T("압축에서 꺼내는 중: {0}").format(e[0]))
+            QtWidgets.QApplication.setOverrideCursor(Qt.WaitCursor)
+            try:
+                real = archives.extract_temp([fp])
+            except Exception as ex:
+                real = []
+                log.exception("압축 안 파일 열기 실패 %s", fp)
+                self.status.emit(f"⚠ {ex}")
+            finally:
+                QtWidgets.QApplication.restoreOverrideCursor()
+            if real:
+                log.info("압축 안 파일 열기 %s → %s", fp, real[0])
+                try:
+                    os.startfile(real[0])
+                except OSError as ex:
+                    self.status.emit(f"⚠ {ex}")
+            return
+        if SETTINGS["arc_browse"] and archives.is_archive_file(fp) and os.path.isfile(fp):   # 압축 파일 → 4Dir 안에서 폴더처럼 (설정에서 끔)
+            log.info("압축 파일 안으로 %s", fp)
+            self.navigate(archives.make(fp))
+            return
+        if devices.is_dev(fp):   # 휴대폰 안 파일: 임시 폴더로 받아서 엶 (탐색기와 같게)
+            self.status.emit(T("휴대폰에서 받는 중: {0}").format(e[0]))
+            devices.open_file(self.hwnd(), fp, e[0],
+                              done=lambda ok, err, loc: DEV_SIG.done.emit("", ok, err or "", ""))
+            return
         if fp.lower().endswith(".lnk"):   # 폴더 바로 가기 → 탐색기처럼 이 칸에서 그 폴더로 (v0.9.55, 사용자 요청)
             tgt = os.path.expandvars(shellops.link_target(fp))
             if tgt and os.path.isdir(tgt):
@@ -2621,14 +2839,54 @@ class Page(QtWidgets.QWidget):
     def hwnd(self):
         return int(self.window().winId())
 
+    def _arc_real(self, ps):
+        """압축 안 항목 → 임시 폴더에 푼 진짜 경로 (보통 경로는 그대로). 실패하면 None"""
+        if not any(archives.is_arc(p) for p in ps):
+            return ps
+        self.status.emit(T("압축에서 꺼내는 중… {0}개").format(len(ps)))
+        QtWidgets.QApplication.setOverrideCursor(Qt.WaitCursor)
+        try:
+            real = archives.extract_temp([p for p in ps if archives.is_arc(p)]) + [p for p in ps if not archives.is_arc(p)]
+        except Exception as ex:
+            log.exception("압축에서 꺼내기 실패")
+            self.status.emit(f"⚠ {ex}")
+            return None
+        finally:
+            QtWidgets.QApplication.restoreOverrideCursor()
+        return real
+
     def do_copy(self, cut=False):
         ps = self.selected_paths()
+        if ps and any(archives.is_arc(p) for p in ps):   # 빌드 20 압축 안: 임시 폴더에 풀어 진짜 파일로 클립보드 (탐색기에도 붙여넣기 됨, 잘라내기는 복사로)
+            real = self._arc_real(ps)
+            if real:
+                DEV_CLIP["paths"] = None
+                shellops.set_clipboard(real, False)
+                self.status.emit(T('{0}개 {1} 됨').format(len(real), T('복사')) + (T(" (압축 안은 잘라내기 대신 복사)") if cut else ""))
+            return
+        if ps and any(devices.is_dev(p) for p in ps):   # 휴대폰 항목: 윈도우 클립보드에 셸 데이터(탐색기·바탕화면 붙여넣기) + 4Dir 안 붙여넣기용 기억
+            on_clip = devices.to_clipboard(ps) if all(devices.is_dev(p) for p in ps) else False
+            DEV_CLIP.update(paths=list(ps), cut=cut, seq=shellops.clipboard_info()["seq"])
+            log.info("휴대폰 항목 %s %d개 (윈도우 클립보드 %s)", "잘라내기" if cut else "복사", len(ps), on_clip)
+            self.status.emit(T('{0}개 {1} 됨').format(len(ps), T('잘라내기') if cut else T('복사')))
+            return
+        DEV_CLIP["paths"] = None
         if ps and self.path != THIS_PC:
             shellops.set_clipboard(ps, cut)
             self.status.emit(T('{0}개 {1} 됨').format(len(ps), T('잘라내기') if cut else T('복사')))
 
     def do_paste(self):
         if self.path == THIS_PC or is_search(self.path):
+            return
+        if archives.is_arc(self.path):
+            self.status.emit(T("⚠ 압축 파일 안은 읽기 전용입니다 (넣기·지우기·이름 바꾸기 안 됨)"))
+            return
+        if DEV_CLIP["paths"] and DEV_CLIP["seq"] == shellops.clipboard_info()["seq"]:   # 휴대폰에서 복사한 것 (그 뒤 다른 복사 없음)
+            ps, cut = list(DEV_CLIP["paths"]), DEV_CLIP["cut"]
+            if cut:
+                DEV_CLIP["paths"] = None
+            log.info("휴대폰 항목 붙여넣기 %d개 → %s", len(ps), self.path)
+            self.file_op(ps, self.path, cut, select_in=self)
             return
         ps, cut = shellops.get_clipboard()
         if ps:
@@ -2704,12 +2962,19 @@ class Page(QtWidgets.QWidget):
         if os.path.normcase(target.path) == os.path.normcase(self.path):
             self.status.emit(T("⚠ 같은 폴더입니다"))
             return
-        log.info("다른 칸으로 %s n=%d -> %s", "이동" if move else "복사", len(ps), target.path)
+        log.info("다른 칸으로 %s n=%d -> %s", "이동" if move else "복사", len(ps), tab_title(target.path))
         self.file_op(ps, target.path, move, select_in=target)
-        self.status.emit(T('{0}개 {1} → {2}').format(len(ps), T('이동') if move else T('복사'), target.path))
+        self.status.emit(T('{0}개 {1} → {2}').format(len(ps), T('이동') if move else T('복사'), disp_path(target.path)))
 
     def do_delete(self, permanent=False):
         ps = self.selected_paths()
+        if archives.is_arc(self.path):
+            self.status.emit(T("⚠ 압축 파일 안은 읽기 전용입니다 (넣기·지우기·이름 바꾸기 안 됨)"))
+            return
+        if ps and any(devices.is_dev(p) for p in ps):   # 휴대폰: 휴지통 없음 → 윈도우가 영구 삭제를 물어봄
+            here = self.path
+            devices.run_op("delete", self.hwnd(), ps, done=lambda ok, err: DEV_SIG.done.emit(here, ok, err, ""))
+            return
         if ps and self.path != THIS_PC:   # 검색 결과에서도 됨 (전체 경로)
             def done(res, aborted, ps=ps):   # 작업 스레드에서 불림
                 gone = [p for p in ps if not os.path.exists(p)]
@@ -2719,6 +2984,24 @@ class Page(QtWidgets.QWidget):
 
     def file_op(self, srcs, tgt, move, select_in=None):
         """복사·이동 (셸 작업) + 되돌리기 기록 + 보고 있는 칸이면 새로 생긴 것 선택"""
+        if archives.is_arc(tgt):   # 빌드 20: 압축 안에는 못 넣음
+            self.status.emit(T("⚠ 압축 파일 안은 읽기 전용입니다 (넣기·지우기·이름 바꾸기 안 됨)"))
+            return
+        if any(archives.is_arc(x) for x in srcs):   # 압축 안 → 임시 폴더에 풀어 보통 복사 (이동은 복사로)
+            real = self._arc_real(list(srcs))
+            if not real:
+                return
+            log.info("압축에서 꺼내 %s → %s (%d개)", "복사" if not move else "복사(이동 대신)", tgt, len(real))
+            srcs, move = real, False
+        if devices.is_dev(tgt) or any(devices.is_dev(s) for s in srcs):   # 휴대폰이 끼면 IFileOperation (되돌리기 기록 없음)
+            src_dir = devices.parent_of(srcs[0]) if devices.is_dev(srcs[0]) else os.path.dirname(os.path.normpath(srcs[0]))
+
+            def done(ok, err):
+                DEV_SIG.done.emit(tgt, ok, err, "")
+                if move and src_dir:
+                    DEV_SIG.done.emit(src_dir, ok, "", "")
+            devices.run_op("move" if move else "copy", self.hwnd(), list(srcs), tgt, done=done)
+            return
         try:
             before = set(os.listdir(tgt))
         except OSError:
@@ -2766,6 +3049,9 @@ class Page(QtWidgets.QWidget):
 
     def do_rename(self):
         ps = self.selected_paths()
+        if archives.is_arc(self.path):
+            self.status.emit(T("⚠ 압축 파일 안은 읽기 전용입니다 (넣기·지우기·이름 바꾸기 안 됨)"))
+            return
         if len(ps) > 1:   # 여러 개 → 이름 일괄 변경 창 (하나면 그 자리에서)
             m = main_of(self)
             if m is not None:
@@ -2776,6 +3062,9 @@ class Page(QtWidgets.QWidget):
             self.view().edit(self.model_.index(idx.row(), 0))
 
     def do_new_folder(self):
+        if archives.is_arc(self.path):
+            self.status.emit(T("⚠ 압축 파일 안은 읽기 전용입니다 (넣기·지우기·이름 바꾸기 안 됨)"))
+            return
         if self.path == THIS_PC:
             self.status.emit(T("⚠ 내 PC 에는 새 폴더를 만들 수 없습니다"))
             return
@@ -2784,6 +3073,15 @@ class Page(QtWidgets.QWidget):
             return
         base, n = T("새 폴더"), 1
         name = base
+        if devices.is_dev(self.path):   # 휴대폰 안 새 폴더
+            have = {e[0].lower() for e in self.model_.all}
+            while name.lower() in have:
+                n += 1
+                name = f"{base} ({n})"
+            here = self.path
+            log.info("휴대폰 새 폴더 %s", name)
+            devices.run_op("newfolder", self.hwnd(), [], here, name, done=lambda ok, err: DEV_SIG.done.emit(here, ok, err, name))
+            return
         while os.path.exists(os.path.join(self.path, name)):
             n += 1
             name = f"{base} ({n})"
@@ -2802,8 +3100,12 @@ class Page(QtWidgets.QWidget):
         """파일 목록 단축키 — 키 → 기능은 keymap(보기 > 단축키 설정에서 변경)"""
         if self.editing():
             return False
+        if ev.text() and ev.text() != " " and ev.text().isprintable():
+            self._typed_at = time.time()   # 이름 첫 글자로 찾는 중이면 스페이스는 글자로 (빌드 20)
         act = VIEW_KEYS.get(keymap.event_key(ev))
         if not act:
+            return False
+        if act == "quick_preview" and time.time() - getattr(self, "_typed_at", 0) < 1.0:
             return False
         return self.run_action(act)
 
@@ -2848,9 +3150,33 @@ class Page(QtWidgets.QWidget):
             self.select_pattern()
         elif act == "sha256":
             self.show_sha256()
+        elif act == "quick_preview":   # 빌드 20 스페이스: 미리보기 창 켜기/끄기 (고른 파일)
+            m = main_of(self)
+            if m is not None:
+                m.set_preview(not (SETTINGS["preview_pane"] and PREVIEW_WIN is not None and PREVIEW_WIN.isVisible()))
+        elif act == "flat_view":
+            self.flat_view()
+        elif act == "find_dupes":
+            m = main_of(self)
+            if m is not None:
+                m.find_dupes(self)
         else:
             return False
         return True
+
+    def flat_view(self):
+        """하위 폴더 펼쳐 보기 (빌드 20): 이 폴더 아래 모든 파일을 한 목록으로 새 탭에 (위치 열 보임, 색인 없이 바로 훑음)"""
+        folder = self.path
+        if folder == THIS_PC or is_search(folder) or devices.is_dev(folder) or archives.is_arc(folder) or not os.path.isdir(folder):
+            self.status.emit(T("⚠ 폴더 안에서만 쓸 수 있습니다 (내 PC·검색 결과 제외)"))
+            return
+        m = main_of(self)
+        pane = next((p for p in m.panes if self in p.views()), None) if m is not None else None
+        log.info("하위 폴더 펼쳐 보기 %s", folder)
+        if pane is not None:
+            pane.add_tab(search_path(FLAT_Q, folder), activate=True)
+        else:
+            self.openInNewTab.emit(search_path(FLAT_Q, folder))
 
     def select_pattern(self):
         """패턴으로 고르기 (v0.9.89): 맞는 것만 골라 둠 — 필터와 달리 다른 항목도 그대로 보임"""
@@ -2983,6 +3309,57 @@ class Page(QtWidgets.QWidget):
         return False
 
     # ---------------------------------------------------------- 우클릭
+    def _dev_menu(self, gp, paths):
+        """휴대폰 안 우클릭 메뉴 (빌드 4) — 윈도우 메뉴는 셸 경로가 없어 못 띄움"""
+        m = QtWidgets.QMenu(self)
+        here = self.path
+        if paths:
+            if len(paths) == 1:
+                m.addAction(mlabel(T("열기"), "open"), self.open_selected)
+            if devices.is_dev(here):
+                m.addAction(mlabel(T("잘라내기"), "cut"), lambda: self.do_copy(cut=True))
+            m.addAction(mlabel(T("복사"), "copy"), self.do_copy)
+            m.addSeparator()
+            m.addAction(mlabel(T("다른 칸으로 복사"), "send_copy"), lambda: self.send_to_other(False))
+            if devices.is_dev(here):
+                m.addAction(mlabel(T("다른 칸으로 이동"), "send_move"), lambda: self.send_to_other(True))
+                m.addSeparator()
+                m.addAction(mlabel(T("이름 바꾸기"), "rename"), self.do_rename)
+                m.addAction(mlabel(T("삭제"), "delete"), self.do_delete)
+        else:
+            m.addAction(mlabel(T("붙여넣기"), "paste"), self.do_paste)
+            m.addAction(mlabel(T("새 폴더"), "new_folder"), self.do_new_folder)
+            m.addSeparator()
+            m.addAction(mlabel(T("새로 고침"), "refresh"), lambda: self.reload("menu"))
+        m.exec(gp)
+
+    def _arc_menu(self, gp, paths):
+        """압축 파일 안 우클릭 (빌드 20) — 읽기 전용: 열기·복사·다른 칸으로 꺼내기"""
+        m = QtWidgets.QMenu(self)
+        if paths:
+            if len(paths) == 1:
+                m.addAction(mlabel(T("열기"), "open"), self.open_selected)
+            m.addAction(mlabel(T("복사"), "copy"), self.do_copy)
+            m.addSeparator()
+            m.addAction(mlabel(T("다른 칸으로 꺼내기 (복사)"), "send_copy"), lambda: self.send_to_other(False))
+        else:
+            arc = archives.split(self.path)[0]
+            m.addAction(T("압축 파일 전체를 다른 칸으로 풀기"), lambda: self._arc_extract_all(arc))
+            m.addSeparator()
+            m.addAction(mlabel(T("새로 고침"), "refresh"), lambda: self.reload("menu"))
+        m.exec(gp)
+
+    def _arc_extract_all(self, arc):
+        main = main_of(self)
+        tp = main.other_pane(self.pane()) if main is not None else None
+        tv = tp.view() if tp else None
+        if tv is None or tv.path == THIS_PC or is_search(tv.path) or archives.is_arc(tv.path):
+            self.status.emit(T("⚠ 보낼 칸이 없습니다 (다른 칸에서 폴더를 열어 두세요)"))
+            return
+        top = [e[5] for e in archives.list_dir(archives.make(arc))]
+        log.info("압축 전체 풀기 %s → %s", arc, tv.path)
+        self.file_op(top, tv.path, False, select_in=tv)
+
     def context_menu(self, view, ev):
         idx = view.indexAt(view.viewport().mapFromGlobal(ev.globalPos()))
         if idx.isValid() and not self.sel.isSelected(self.model_.index(idx.row(), 0)):
@@ -2999,6 +3376,12 @@ class Page(QtWidgets.QWidget):
 
         if is_search(self.path):
             self._search_menu(gp, x, y, paths)
+            return
+        if devices.is_dev(self.path) or any(devices.is_dev(p) for p in paths):   # 휴대폰: 윈도우 우클릭 메뉴 대신 4Dir 메뉴
+            self._dev_menu(gp, paths)
+            return
+        if archives.is_arc(self.path):   # 빌드 20 압축 안: 읽기 전용 4Dir 메뉴
+            self._arc_menu(gp, paths)
             return
 
         if self.path == THIS_PC and not paths:
@@ -3056,6 +3439,8 @@ class Page(QtWidgets.QWidget):
                 extras.append(({"t": T("윈도우 즐겨찾기에 고정"), "unless": {"pintohome"}}, lambda: self.do_verb(dirs, "pintohome")))
                 extras.append(({"t": T("시작 화면에 고정"), "unless": {"pintostartscreen"}}, lambda: self.do_verb(dirs, "pintostartscreen")))
             extras.append(({"t": T("경로로 복사"), "unless": {"copyaspath"}}, lambda: shellops.copy_as_path(paths)))
+            if len(paths) == 1 and archives.is_archive_file(paths[0]) and os.path.isfile(paths[0]):   # 빌드 20
+                extras.append((T("🗜 압축 파일 안 보기 (4Dir)"), lambda p=paths[0]: self.navigate(archives.make(p))))
             if len(paths) == 1 and dirs:
                 extras.append((T("터미널에서 열기"), lambda: shellops.open_terminal(dirs[0])))
         favs =[((f"{d['group']} ▸ {d['name']}" if d.get("group") else d["name"]), (lambda p=d["path"]: self.navigate(p))) for d in FAV.items]
@@ -3080,6 +3465,9 @@ class Page(QtWidgets.QWidget):
             extras.append((mlabel(T("정렬 기준"), None, "O"), srt))
             extras.append((mlabel(T("새로 고침"), "refresh", "E"), lambda: self.reload("menu")))
             extras.append((mlabel(T("패턴으로 고르기…"), "select_pattern"), self.select_pattern))   # v0.9.89
+            extras.append((mlabel(T("하위 폴더 펼쳐 보기"), "flat_view"), self.flat_view))   # 빌드 20
+            if main_of(self) is not None:
+                extras.append((mlabel(T("중복 파일 찾기…"), "find_dupes"), lambda: main_of(self).find_dupes(self)))   # 빌드 20
             if main_of(self) is not None:
                 extras.append((mlabel(T("두 칸 비교"), "compare"), main_of(self).compare_panes))
             extras.append((T("터미널에서 열기"), lambda: shellops.open_terminal(self.path)))   # 윈도우 11 빈 곳 메뉴처럼 (v0.9.54)
@@ -3202,6 +3590,19 @@ class Page(QtWidgets.QWidget):
     def drop(self, view, ev):
         srcs = [u.toLocalFile() for u in ev.mimeData().urls() if u.isLocalFile()]
         tgt = self._drop_target(view, ev)
+        if ev.mimeData().hasFormat(DEV_MIME):   # 휴대폰 항목을 끌어 옴
+            srcs = bytes(ev.mimeData().data(DEV_MIME)).decode("utf-8").split("\n")
+        elif DEV_DRAG["paths"]:   # 빌드 6: 4Dir 에서 시작한 휴대폰 셸 끌기를 4Dir 칸에 놓음
+            srcs = list(DEV_DRAG["paths"])
+        if srcs and (devices.is_dev(tgt) or any(devices.is_dev(s) for s in srcs)):
+            move = self.drop_action(view, ev) == Qt.MoveAction
+            srcs = [s for s in srcs if s and s != tgt]
+            log.info("드롭(휴대폰) %s n=%d -> %s", "이동" if move else "복사", len(srcs), tab_title(tgt))
+            if srcs and tgt != THIS_PC:
+                self.file_op(srcs, tgt, move)
+            ev.setDropAction(Qt.CopyAction)
+            ev.accept()
+            return
         if not srcs and vfiles.has_virtual(ev.mimeData()):   # v0.9.75: 아웃룩 첨부 등 가상 파일 → 내용을 받아 저장
             try:
                 saved, why = vfiles.save(ev.mimeData(), tgt)
@@ -3310,6 +3711,14 @@ class SubdirJob(QtCore.QRunnable):
 
     def run(self):
         out = []
+        if devices.is_dev(self.path):   # 휴대폰: 하위 폴더 (이름, 셸 경로)
+            try:
+                out = [(e[0], e[5]) for e in devices.list_dir(self.path) if e[1]]
+            except OSError:
+                log.warning("탐색 창 휴대폰 폴더 못 읽음")
+            out.sort(key=lambda x: shellops.natural_key(x[0]))
+            self.sig.subdirs.emit(self.item, out)
+            return
         try:
             with os.scandir(self.path) as it:
                 for de in it:
@@ -3524,7 +3933,7 @@ class Sidebar(DragScrollMixin, QtWidgets.QTreeWidget):
     def _folder_item(self, label, path, icon):
         it = QtWidgets.QTreeWidgetItem([label])
         it.setData(0, PATH_ROLE, path)
-        it.setToolTip(0, path)
+        it.setToolTip(0, label if devices.is_dev(path) else path)   # 휴대폰은 셸 ID 대신 이름
         it.setIcon(0, icon)
         it.addChild(QtWidgets.QTreeWidgetItem([DUMMY]))  # 펼칠 수 있게 (펼칠 때 읽음)
         return it
@@ -3583,6 +3992,9 @@ class Sidebar(DragScrollMixin, QtWidgets.QTreeWidget):
         """'내 PC' 아래에서 path 까지 한 단계씩 펼치고 선택. 하위 목록은 펼칠 때 읽으므로 비동기로 이어감"""
         self._reveal_path = path
         self._reveal_wait = None
+        if devices.is_dev(path) or archives.is_arc(path):   # 휴대폰·압축 안은 트리 자동 펼치기 안 함
+            self._reveal_path = None
+            return
         if not path or path == THIS_PC or is_search(path):
             if path == THIS_PC:
                 self._select(self.pc_root)
@@ -3633,6 +4045,18 @@ class Sidebar(DragScrollMixin, QtWidgets.QTreeWidget):
         self.blockSignals(False)
         self.scrollToItem(it, QtWidgets.QAbstractItemView.PositionAtCenter)
 
+    def reset_devices(self):
+        """휴대폰 항목 아래를 다시 읽게 (빌드 6) — 펼쳐 두었으면 바로 다시 읽음"""
+        for i in range(self.pc_root.childCount()):
+            it = self.pc_root.child(i)
+            if devices.is_dev(it.data(0, PATH_ROLE) or ""):
+                was = it.isExpanded()
+                it.takeChildren()
+                it.addChild(QtWidgets.QTreeWidgetItem([DUMMY]))
+                if was:
+                    it.setExpanded(False)
+                    it.setExpanded(True)
+
     def _on_expand(self, it):
         if it is self.fav_root:
             if time.time() - self._pinned_at > 3:   # 펼칠 때마다 윈도우 고정 목록 다시 읽음 (연달아 누르면 한 번)
@@ -3655,9 +4079,10 @@ class Sidebar(DragScrollMixin, QtWidgets.QTreeWidget):
         icon = shellops.icon_for("", True, 16)
         reopen = []
         for n in names:
-            c = self._folder_item(n, os.path.join(p, n), icon)
+            n, cp = n if isinstance(n, tuple) else (n, os.path.join(p, n))   # 휴대폰은 (이름, 셸 경로)
+            c = self._folder_item(n, cp, icon)
             it.addChild(c)
-            if self._nc(os.path.join(p, n)) in was_open:
+            if not devices.is_dev(cp) and self._nc(cp) in was_open:
                 reopen.append(c)
         for c in reopen:
             c.setExpanded(True)   # 펼치면 그 안을 다시 읽음
@@ -3719,6 +4144,10 @@ class Crumbs(QtWidgets.QFrame):
             return [(T(THIS_PC), THIS_PC)]
         if is_search(p):   # 검색 탭: 드라이브 조각 없이 검색어 하나
             return [(T(THIS_PC), THIS_PC), (tab_title(p), p)]
+        if devices.is_dev(p):   # 휴대폰: 기기 › 내장 저장공간 › …
+            return [(T(THIS_PC), THIS_PC)] + devices.chain(p)
+        if archives.is_arc(p):   # 압축 안: 압축 파일이 있는 폴더까지 + 압축 › 안쪽
+            return Crumbs.segments(os.path.dirname(archives.split(p)[0])) + archives.chain(p)
         out = [(T(THIS_PC), THIS_PC)]
         drive, rest = os.path.splitdrive(p)
         acc = drive + "\\"
@@ -3891,6 +4320,62 @@ def flash_pane(pane, color="#f76b15", times=3, ms=170):
     return f
 
 
+def gif_icon(kind, fg="#333333", sz=20):
+    """GIF 조작 단추 아이콘 (빌드 18, 사용자 참고 그림): prev |◀ · play ▶ · pause ⏸ · stop ■ · next ▶| · save 💾 — 직접 그림"""
+    dpr = 2
+    pm = QtGui.QPixmap(sz * dpr, sz * dpr)
+    pm.fill(Qt.transparent)
+    p = QtGui.QPainter(pm)
+    p.setRenderHint(QtGui.QPainter.Antialiasing, True)
+    p.scale(dpr * sz / 20.0, dpr * sz / 20.0)
+    c = QtGui.QColor(fg)
+    p.setPen(Qt.NoPen)
+    p.setBrush(c)
+    P = QtCore.QPointF
+    tri = lambda pts: p.drawPolygon(QtGui.QPolygonF([P(x, y) for x, y in pts]))
+    if kind == "prev":
+        p.drawRect(QtCore.QRectF(4, 4.5, 2.2, 11))
+        tri([(15.5, 4.5), (15.5, 15.5), (7.2, 10)])
+    elif kind == "next":
+        p.drawRect(QtCore.QRectF(13.8, 4.5, 2.2, 11))
+        tri([(4.5, 4.5), (4.5, 15.5), (12.8, 10)])
+    elif kind == "play":
+        tri([(6, 4), (6, 16), (16, 10)])
+    elif kind == "pause":
+        p.drawRect(QtCore.QRectF(5.5, 4.5, 3, 11))
+        p.drawRect(QtCore.QRectF(11.5, 4.5, 3, 11))
+    elif kind == "stop":
+        p.drawRoundedRect(QtCore.QRectF(5, 5, 10, 10), 1.2, 1.2)
+    elif kind == "autoplay":   # 빌드 28 자동 재생 — 돌아가는 화살표 안에 재생 세모
+        p.setBrush(Qt.NoBrush)
+        p.setPen(QtGui.QPen(c, 1.6, Qt.SolidLine, Qt.RoundCap))
+        p.drawArc(QtCore.QRectF(2.5, 2.5, 15, 15), 60 * 16, 290 * 16)
+        p.setPen(Qt.NoPen)
+        p.setBrush(c)
+        tri([(13.2, 1.2), (17.8, 3.2), (13.8, 6.4)])   # 화살촉
+        tri([(8, 6.5), (8, 13.5), (13.5, 10)])
+    elif kind in ("sound", "mute"):   # 빌드 24 소리 켜짐/꺼짐 — 스피커 + 물결 / 스피커 + X
+        p.drawPolygon(QtGui.QPolygonF([P(3, 7.5), P(6.5, 7.5), P(10.5, 4), P(10.5, 16), P(6.5, 12.5), P(3, 12.5)]))
+        p.setBrush(Qt.NoBrush)
+        p.setPen(QtGui.QPen(c, 1.6, Qt.SolidLine, Qt.RoundCap))
+        if kind == "sound":
+            p.drawArc(QtCore.QRectF(9.5, 6.5, 5, 7), -60 * 16, 120 * 16)
+            p.drawArc(QtCore.QRectF(9.5, 4, 8.5, 12), -60 * 16, 120 * 16)
+        else:
+            p.drawLine(P(13, 7.5), P(17.5, 12.5))
+            p.drawLine(P(17.5, 7.5), P(13, 12.5))
+    elif kind == "save":
+        body = QtGui.QPainterPath()   # 디스켓: 오른쪽 위 모서리를 깎은 몸통 + 위 셔터 + 아래 이름표
+        body.moveTo(3.5, 3.5); body.lineTo(13.5, 3.5); body.lineTo(16.5, 6.5); body.lineTo(16.5, 16.5); body.lineTo(3.5, 16.5); body.closeSubpath()
+        p.drawPath(body)
+        p.setCompositionMode(QtGui.QPainter.CompositionMode_Clear)   # 셔터·이름표는 구멍으로 (밝게·어둡게 둘 다 보이게)
+        p.drawRect(QtCore.QRectF(6.5, 4.5, 5.5, 3.5))
+        p.drawRect(QtCore.QRectF(6, 11, 8, 4.5))
+    p.end()
+    pm.setDevicePixelRatio(dpr)
+    return QtGui.QIcon(pm)
+
+
 def color_dot(hexcol, d=12):
     """메뉴용 색 동그라미 (탭 색)"""
     pm = QtGui.QPixmap(d, d)
@@ -3967,6 +4452,168 @@ class PaneTabBar(QtWidgets.QTabBar):
             if b is not None:
                 r = self.tabRect(i)
                 b.move(r.right() - self.CLOSE_SHIFT - b.width(), b.y())
+
+
+class ChipBar(QtWidgets.QWidget):
+    """형식 단추 줄 (빌드 17, galleryV8 참고): [전체 n] [폴더 n] [JPG n] [PSD n]… 많은 순 + 들어가지 않는 것은 '+N ▾'.
+    누르면 그 형식만, Ctrl+누르기 = 여러 개. 형식이 2가지 이상일 때만 보임. 폴더를 옮기면 전체로.
+    빌드 18 (사용자 11/5): 단추는 절대 안 눌림(글자 '…' 금지) → 폭에 들어가는 만큼만 보이고 나머지는 '+N ▾',
+    15% 작게, 형식마다 색(형식 딱지와 같은 thumbs.BADGE_COLORS, 폴더 노랑, 없는 형식은 확장명으로 정해지는 고정 색)"""
+    SCALE = 0.85
+    FOLDER = "#d9a520"
+    OTHER = ["#5c6bc0", "#00897b", "#c0392b", "#7b1fa2", "#0277bd", "#558b2f", "#ad1457", "#6d4c41", "#00838f", "#ef6c00"]
+
+    def __init__(self, pane):
+        super().__init__()
+        self.pane = pane
+        self.setObjectName("chipBar")
+        self.lay = QtWidgets.QHBoxLayout(self)
+        self.lay.setContentsMargins(4, 2, 4, 2)
+        self.lay.setSpacing(3)
+        self.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Fixed)   # 좁으면 단추를 줄이지 않고 '+N ▾' 로 (창 축소를 막지 않게)
+        self.sig = None
+        self.chips = []      # [(형식 키, 단추, 고름?)] — 키 None = 전체
+        self.more = None
+        self.counts = {}
+        self.v = None
+        self.setVisible(False)
+
+    @classmethod
+    def color_of(cls, k):
+        if k is None:
+            return "#2f6fd0"
+        if k == "/":
+            return cls.FOLDER
+        c = thumbs.BADGE_COLORS.get(k)
+        return c or cls.OTHER[zlib.crc32((k or "-").encode()) % len(cls.OTHER)]
+
+    def _style(self, b, k, on):
+        c = QtGui.QColor(self.color_of(k))
+        dark = self.palette().color(QtGui.QPalette.Window).lightness() < 128
+        fg = c.lighter(170) if dark else c.darker(115)
+        if on:
+            css = f"background:{c.name()}; color:white; border:1px solid {c.name()};"
+        else:
+            css = (f"background:rgba({c.red()},{c.green()},{c.blue()},{40 if dark else 28}); color:{fg.name()};"
+                   f" border:1px solid rgba({c.red()},{c.green()},{c.blue()},170);")
+        b.setStyleSheet(f"QToolButton{{{css} border-radius:8px; padding:0px 7px; margin:0;}}"
+                        f"QToolButton:hover{{background:rgba({c.red()},{c.green()},{c.blue()},80);}}"
+                        "QToolButton::menu-indicator{image:none; width:0;}")
+        f = b.font()
+        f.setPointSizeF(max(6.0, QtWidgets.QApplication.font().pointSizeF() * self.SCALE))
+        b.setFont(f)
+        b.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+
+    def _clear(self):
+        while self.lay.count():
+            it = self.lay.takeAt(0)
+            if it.widget():
+                it.widget().deleteLater()
+        self.chips, self.more = [], None
+
+    def refresh(self, v, force=False):
+        if v is None or not OPTS["type_chips"] or v.path == THIS_PC or devices.is_dev(v.path):
+            self.setVisible(False)
+            self.sig = None
+            return
+        m = v.model_
+        counts = {}
+        for e in m.all:
+            k = kind_of(e)
+            counts[k] = counts.get(k, 0) + 1
+        sel = set(getattr(m, "ext_filter", set()) or ())
+        sig = (id(v), v.path, tuple(sorted(counts.items())), tuple(sorted(sel)))
+        if sig == self.sig and not force:
+            return
+        self.sig = sig
+        self._clear()
+        if len(counts) < 2 and not sel:
+            self.setVisible(False)
+            return
+        self.v, self.counts = v, counts
+        order = (["/"] if "/" in counts else []) + sorted((k for k in counts if k != "/"), key=lambda k: (-counts[k], k))
+        self._chip(v, T("전체"), None, len(m.all), not sel)
+        for k in order:
+            self._chip(v, kind_label(k), k, counts[k], k in sel)
+        b = QtWidgets.QToolButton()
+        b.setObjectName("chipMore")
+        b.setToolTip(T("나머지 형식"))
+        b.setPopupMode(QtWidgets.QToolButton.InstantPopup)
+        b.setFocusPolicy(Qt.NoFocus)
+        self._style(b, None, False)
+        mm = QtWidgets.QMenu(b)
+        mm.aboutToShow.connect(lambda mm=mm: self._fill_more(mm))
+        b.setMenu(mm)
+        self.lay.addWidget(b)
+        self.more = b
+        self.lay.addStretch(1)
+        self.setVisible(True)
+        self._fit()
+
+    def _chip(self, v, label, k, n, on):
+        b = QtWidgets.QToolButton()
+        b.setObjectName("chip")
+        b.setText(f"{label} {n:,}")
+        b.setCheckable(True)
+        b.setChecked(on)
+        b.setToolTip(T("전체 보기") if k is None else T("{0} 만 보기 — Ctrl+누르기 = 여러 형식").format(label))
+        b.setFocusPolicy(Qt.NoFocus)
+        self._style(b, k, on)
+        b.clicked.connect(lambda *_: self._pick(v, k, bool(QtWidgets.QApplication.keyboardModifiers() & Qt.ControlModifier)))
+        self.lay.addWidget(b)
+        self.chips.append((k, b, on))
+        return b
+
+    def _fit(self):
+        """폭에 들어가는 단추만 보임 ('전체'·고른 단추는 항상), 나머지 수는 '+N ▾' (빌드 18)"""
+        if not self.chips or self.more is None:
+            return
+        sp = self.lay.spacing()
+        m = self.lay.contentsMargins()
+        avail = self.width() - m.left() - m.right()
+        must = [i for i, (k, b, on) in enumerate(self.chips) if k is None or on]
+        used = sum(self.chips[i][1].sizeHint().width() + sp for i in must)
+        show = set(must)
+        rest = [i for i in range(len(self.chips)) if i not in show]
+        for n_hidden_after, i in enumerate(rest):
+            w = self.chips[i][1].sizeHint().width() + sp
+            left = len(rest) - n_hidden_after - 1
+            self.more.setText(f"+{left} ▾")
+            mw = self.more.sizeHint().width() + sp if left else 0
+            if used + w + mw > avail:
+                break
+            used += w
+            show.add(i)
+        hidden = [i for i in range(len(self.chips)) if i not in show]
+        for i, (k, b, on) in enumerate(self.chips):
+            b.setVisible(i in show)
+        self.more.setText(f"+{len(hidden)} ▾")
+        self.more.setVisible(bool(hidden))
+        self._hidden = [self.chips[i][0] for i in hidden]
+
+    def _fill_more(self, mm):
+        mm.clear()
+        sel = set(getattr(self.v.model_, "ext_filter", set()) or ()) if self.v else set()
+        for k in getattr(self, "_hidden", []):
+            a = mm.addAction(color_dot(self.color_of(k)), f"{kind_label(k)}  ({self.counts.get(k, 0):,})",
+                             lambda k=k: self._pick(self.v, k, False))
+            a.setCheckable(True)
+            a.setChecked(k in sel)
+
+    def resizeEvent(self, ev):
+        super().resizeEvent(ev)
+        self._fit()
+
+    def _pick(self, v, k, add):
+        cur = set(getattr(v.model_, "ext_filter", set()) or ())
+        if k is None:
+            new = set()
+        elif add:
+            new = cur ^ {k}
+        else:
+            new = set() if cur == {k} else {k}   # 고른 것을 다시 누르면 전체로
+        v.set_ext_filter(new)
+        self.refresh(v, force=True)
 
 
 class Pane(QtWidgets.QFrame):
@@ -4091,6 +4738,8 @@ class Pane(QtWidgets.QFrame):
         plus.clicked.connect(lambda: self.add_tab(self.view().path if self.view() else THIS_PC, focus=True))
         self.plus = plus
         rl.addWidget(tabrow)
+        self.chips = ChipBar(self)   # 빌드 17: [전체][폴더][JPG][PSD]… (galleryV8 참고)
+        rl.addWidget(self.chips)
         self.stack = QtWidgets.QStackedWidget()
         rl.addWidget(self.stack, 1)
         self.body.addWidget(right)
@@ -4262,6 +4911,7 @@ class Pane(QtWidgets.QFrame):
         key = id(v)
         self.pages[key] = v
         v.pathChanged.connect(lambda p, v=v: self._on_path(v, p))
+        v.typesChanged.connect(lambda v=v: v is self.view() and self.chips.refresh(v))
         v.status.connect(lambda s, v=v: v is self.view() and (self.stat.setText(T("🔒 잠긴 탭이라 새 탭으로 열었습니다") + "  ·  " + s if v.from_locked else s),
                                                              self.stat.setToolTip(getattr(v, "status_tip", ""))))
         v.status.connect(lambda s, v=v: v is self.view() and self._poke_preview())   # 선택·폴더가 바뀌면 상태 글자가 바뀜 (v0.9.58)
@@ -4477,6 +5127,8 @@ class Pane(QtWidgets.QFrame):
             self.bar.removeTab(0)
 
     def _on_path(self, v, p):
+        if v is self.view():
+            QtCore.QTimer.singleShot(0, lambda p=p: getattr(self.window(), "folder_memo_check", lambda _p: None)(p))
         for i in range(self.bar.count()):
             if self.bar.tabData(i) == id(v):
                 self.bar.setTabText(i, self.tab_text(v))
@@ -4512,6 +5164,7 @@ class Pane(QtWidgets.QFrame):
                 pass
         self.stack.setCurrentWidget(v)
         self._prev = v
+        self.chips.refresh(v)
         self.addr.setText(disp_path(v.path))
         self.crumbs.set_path(v.path)
         self.sync_sidebar()
@@ -4532,6 +5185,10 @@ class Pane(QtWidgets.QFrame):
         t = os.path.expandvars(self.addr.text().strip().strip('"'))
         v = self.view()
         if not v:
+            return
+        if (devices.is_dev(v.path) or archives.is_arc(v.path)) and t == disp_path(v.path):   # 휴대폰·압축: 주소줄 글자는 보여 주기용 → 그대로면 새로 고침
+            v.reload("addr")
+            self._crumb_back()
             return
         cmd = t.lower()
         if cmd.endswith(".exe"):
@@ -4644,7 +5301,7 @@ class Pane(QtWidgets.QFrame):
     def _poke_preview(self):
         m = main_of(self)
         if m is not None and getattr(m, "preview", None) is not None and m.active_pane is self:
-            m.preview.schedule()
+            m.preview.schedule(m)
 
     def fill_view_menu(self, m):
         m.clear()
@@ -4668,7 +5325,8 @@ class Pane(QtWidgets.QFrame):
             a.setChecked(bool(getattr(self, "side_on", False)))
         # v0.9.104: 자주 켜고 끄는 것만 (경로 버튼·날짜 정렬 폴더 위로·SVN·그림 미리보기·버전 관리 표시는 설정 창)
         for key, lbl in (("checkboxes", T("항목 확인란")), ("show_ext", T("파일 확장명")), ("show_hidden", T("숨긴 항목")),
-                         ("date_groups", T("날짜별로 묶기 (오늘·어제·이번 주…)"))):
+                         ("date_groups", T("날짜별로 묶기 (오늘·어제·이번 주…)")), ("type_groups", T("형식별로 묶기 (폴더·JPG·PNG…)")),
+                         ("type_chips", T("형식 단추 줄 ([전체][JPG][PSD]…)"))):
             a = show.addAction(lbl, lambda key=key: main.toggle_opt(key) if main is not None else None)
             a.setCheckable(True)
             a.setChecked(OPTS[key])
@@ -5285,6 +5943,323 @@ def preview_icon(w=22, h=18):
     return QtGui.QIcon(pm)
 
 
+def chips_icon(sz=20):
+    """형식 단추 줄 켜기/끄기 단추 아이콘 (빌드 27, 빌드 28 사용자 '캡슐 하나를 대각선으로 반반'): 파랑 | 주황 캡슐"""
+    dpr = 2
+    pm = QtGui.QPixmap(sz * dpr, sz * dpr)
+    pm.fill(Qt.transparent)
+    p = QtGui.QPainter(pm)
+    p.setRenderHint(QtGui.QPainter.Antialiasing, True)
+    p.scale(dpr * sz / 20.0, dpr * sz / 20.0)
+    cap = QtGui.QPainterPath()
+    cap.addRoundedRect(QtCore.QRectF(1.5, 6, 17, 8), 4, 4)
+    P = QtCore.QPointF
+    left = QtGui.QPainterPath()
+    left.addPolygon(QtGui.QPolygonF([P(0, 0), P(12.5, 0), P(7.5, 20), P(0, 20)]))
+    p.setPen(Qt.NoPen)
+    p.setBrush(QtGui.QColor("#e07b00"))
+    p.drawPath(cap)
+    p.setBrush(QtGui.QColor("#2f6fd0"))
+    p.drawPath(cap.intersected(left))
+    p.setPen(QtGui.QPen(QtGui.QColor(255, 255, 255, 230), 1.2))   # 가운데 대각선 흰 금
+    p.drawLine(P(11.5, 6.3), P(8.5, 13.7))
+    p.end()
+    pm.setDevicePixelRatio(dpr)
+    return QtGui.QIcon(pm)
+
+
+def memo_icon(sz=20):
+    """메모 창 버튼 그림 (빌드 7 사용자 11/5 '포스트잇 같은 노란색에 빨간 펜'): 노란 메모지(접힌 귀·줄) + 빨간 펜"""
+    dpr = 2
+    pm = QtGui.QPixmap(sz * dpr, sz * dpr)
+    pm.fill(Qt.transparent)
+    p = QtGui.QPainter(pm)
+    p.setRenderHint(QtGui.QPainter.Antialiasing, True)
+    p.scale(dpr, dpr)
+    s = sz / 20.0
+    # 메모지 (오른쪽 아래 귀 접힘)
+    note = QtGui.QPainterPath()
+    note.moveTo(2 * s, 3 * s)
+    note.lineTo(15 * s, 3 * s)
+    note.lineTo(15 * s, 13 * s)
+    note.lineTo(11 * s, 17 * s)
+    note.lineTo(2 * s, 17 * s)
+    note.closeSubpath()
+    p.setPen(QtGui.QPen(QtGui.QColor("#c9a200"), 1.0 * s))
+    p.setBrush(QtGui.QColor("#ffd84d"))
+    p.drawPath(note)
+    p.setBrush(QtGui.QColor("#e6b800"))   # 접힌 귀
+    p.drawPolygon(QtGui.QPolygonF([QtCore.QPointF(15 * s, 13 * s), QtCore.QPointF(11 * s, 13 * s), QtCore.QPointF(11 * s, 17 * s)]))
+    p.setPen(QtGui.QPen(QtGui.QColor("#b38f00"), 1.0 * s))   # 글 줄
+    for y in (7, 10, 13):
+        p.drawLine(QtCore.QPointF(4.5 * s, y * s), QtCore.QPointF((10 if y == 13 else 12.5) * s, y * s))
+    # 빨간 펜 (오른쪽 위 → 메모지 위로 비스듬히)
+    p.save()
+    p.translate(14.5 * s, 7.5 * s)
+    p.rotate(45)
+    p.setPen(QtGui.QPen(QtGui.QColor("#8e1b1b"), 0.8 * s))
+    p.setBrush(QtGui.QColor("#e53935"))
+    p.drawRoundedRect(QtCore.QRectF(-1.6 * s, -8.5 * s, 3.2 * s, 10 * s), 0.8 * s, 0.8 * s)   # 몸통
+    p.setBrush(QtGui.QColor("#f2d0a4"))
+    p.drawPolygon(QtGui.QPolygonF([QtCore.QPointF(-1.6 * s, 1.5 * s), QtCore.QPointF(1.6 * s, 1.5 * s), QtCore.QPointF(0, 4.6 * s)]))   # 깎은 부분
+    p.setPen(Qt.NoPen)
+    p.setBrush(QtGui.QColor("#e53935"))
+    p.drawPolygon(QtGui.QPolygonF([QtCore.QPointF(-0.6 * s, 3.4 * s), QtCore.QPointF(0.6 * s, 3.4 * s), QtCore.QPointF(0, 4.6 * s)]))   # 펜 끝
+    p.restore()
+    p.end()
+    pm.setDevicePixelRatio(dpr)
+    return QtGui.QIcon(pm)
+
+
+class MemoWindow(QtWidgets.QWidget):
+    """메모 창 (빌드 8): 4Dir 창 밖 따로 창, 처음엔 4Dir 창 바로 오른쪽(화면 밖이면 안쪽 끝).
+    빌드 10 사용자: 다른 창 뒤로 숨으면 찾기 힘듦 → 작업 표시줄에 나오는 보통 창 + 항상 위(📌).
+    닫기 = 메모 창 끄기. 위치·크기는 설정 memo_geo 에 기억"""
+
+    def __init__(self, main):
+        super().__init__(None, Qt.Window)
+        self._deact = 0.0   # 마지막으로 메모 창이 앞에서 내려간 시각 (4Dir 버튼: 보고 있던 중이면 끄기, 뒤에 숨었으면 앞으로)
+        self.setWindowTitle(T("메모") + " — 4Dir")
+        self.setWindowIcon(memo_icon(32))
+        self.main = main
+        lay = QtWidgets.QVBoxLayout(self)
+        lay.setContentsMargins(0, 0, 0, 0)
+        self.panel = memo.MemoPanel(memo_store(), lambda: bool(SETTINGS["dark"]), on_side=None,
+                                    on_close=lambda: self._close_from_panel())
+        lay.addWidget(self.panel)
+        self.panel.fill_settings = self._fill_settings
+        self.panel.on_pin = lambda on: self._toggle_top(on)
+        self.panel.open_path = self._open_path        # 빌드 13: Ctrl+클릭 링크
+        self.panel.cur_folder = self._cur_folder      # 빌드 13: 폴더 메모
+        self.panel.btn_pin.setChecked(bool(SETTINGS["memo_top"]))
+        self.setMinimumSize(200, 200)
+        self._placed = False
+        if SETTINGS["memo_top"]:
+            self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
+        QtGui.QShortcut(QtGui.QKeySequence("Alt+M"), self, lambda: main.set_memo(False))   # 메모 창에서도 Alt+M = 끄기
+
+    def changeEvent(self, ev):
+        if ev.type() == QtCore.QEvent.ActivationChange and not self.isActiveWindow():
+            self._deact = time.time()
+        super().changeEvent(ev)
+
+    def was_front(self):
+        """4Dir 버튼을 누르기 바로 전까지 메모 창을 보고 있었나 (누르는 순간 4Dir 로 활성이 넘어감)"""
+        return self.isVisible() and not self.isMinimized() and (self.isActiveWindow() or time.time() - self._deact < 0.6)
+
+    def bring_front(self):
+        if self.isMinimized():
+            self.showNormal()
+        self.show()
+        self.raise_()
+        self.activateWindow()
+
+    def _fill_settings(self, m):
+        """메모 ⚙ 메뉴 (빌드 9)"""
+        a = m.addAction(T("항상 위에 표시"), lambda: self._toggle_top(not SETTINGS["memo_top"]))
+        a.setCheckable(True)
+        a.setChecked(bool(SETTINGS["memo_top"]))
+        m.addAction(T("메모 파일 위치 열기"), self._open_file_loc)
+
+    def _front_main(self):
+        w = self.main if self.main in WINDOWS else (WINDOWS[0] if WINDOWS else self.main)
+        return w
+
+    def _cur_folder(self):
+        v = self._front_main().pane().view()
+        p = getattr(v, "path", "") if v is not None else ""
+        return p if p and p != THIS_PC and not is_search(p) and not devices.is_dev(p) and not archives.is_arc(p) else None
+
+    def _open_path(self, path):
+        """메모 링크: 폴더 = 4Dir 새 탭, 파일 = 그 폴더 새 탭 + 파일 고름 (없으면 알림)"""
+        w = self._front_main()
+        path = os.path.normpath(path)
+        if os.path.isdir(path):
+            w.pane().add_tab(path, activate=True)
+        elif os.path.exists(path):
+            v = w.pane().add_tab(os.path.dirname(path), activate=True)
+            v.pending_select = os.path.basename(path)
+        else:
+            w.show_notice(T("⚠ 경로를 찾을 수 없습니다: {0}").format(path))
+            return
+        w.raise_()
+        w.activateWindow()
+
+    def _open_file_loc(self):
+        """4Dir 새 탭으로 bin 폴더 + 메모 파일 고름"""
+        w = WINDOWS[0] if WINDOWS else self.main
+        v = w.pane().add_tab(BIN_DIR, activate=True)
+        v.pending_select = memo.FILE
+        w.raise_()
+        w.activateWindow()
+
+    def _toggle_top(self, on):
+        SETTINGS["memo_top"] = bool(on)
+        if self.windowHandle() is not None:   # 창을 다시 만들지 않고 깜빡임 없이 (메인 '항상 위'와 같은 방식)
+            self.windowHandle().setFlag(Qt.WindowStaysOnTopHint, bool(on))
+        else:
+            self.setWindowFlag(Qt.WindowStaysOnTopHint, bool(on))
+        self.panel.btn_pin.setChecked(bool(on))
+        log.info("메모 창 항상 위 %s", on)
+
+    def _on_screen(self):
+        """제목줄까지 화면 안에 들어오게 (빌드 9 사용자 '처음 열었을 때 위가 화면 밖이라 못 움직임')"""
+        fg = self.frameGeometry()
+        scr = (QtGui.QGuiApplication.screenAt(fg.center()) or self.main.screen() or QtWidgets.QApplication.primaryScreen()).availableGeometry()
+        top_pad = self.geometry().top() - fg.top()   # 제목줄 높이
+        x = min(max(fg.left(), scr.left()), max(scr.left(), scr.right() - fg.width()))
+        y = min(max(fg.top(), scr.top()), max(scr.top(), scr.bottom() - 100))
+        h = min(self.height(), scr.height() - top_pad - 8)
+        if (x, y) != (fg.left(), fg.top()) or h != self.height():
+            self.move(x, y)
+            self.resize(self.width(), max(200, h))
+            log.info("메모 창 화면 안으로 %s", self.frameGeometry().getRect())
+
+    def show_near(self, main):
+        if not self._placed:
+            self._placed = True
+            geo = SETTINGS["memo_geo"]
+            ok = False
+            if geo:
+                try:
+                    ok = self.restoreGeometry(QtCore.QByteArray.fromHex(geo.encode()))
+                    scr = QtGui.QGuiApplication.screenAt(self.frameGeometry().center())
+                    ok = ok and scr is not None   # 그 모니터가 없어졌으면 다시 자리 잡음
+                except Exception:
+                    ok = False
+            if not ok:
+                fg = main.frameGeometry()
+                scr = (main.screen() or QtWidgets.QApplication.primaryScreen()).availableGeometry()
+                w, h = 300, max(400, min(fg.height(), scr.height()))
+                x = fg.right() + 2
+                if x + w > scr.right():
+                    x = max(scr.left(), scr.right() - w)   # 오른쪽에 자리가 없으면 화면 안쪽 끝
+                self.setGeometry(x, max(scr.top(), fg.top()), w, h)
+            log.info("메모 창 자리 %s (기억 %s)", self.geometry().getRect(), bool(ok))
+        self.show()
+        self._on_screen()   # 창 테두리·제목줄이 생긴 뒤 화면 안으로
+        self.raise_()
+
+    def save_geo(self):
+        if self.isVisible() or self._placed:
+            SETTINGS["memo_geo"] = bytes(self.saveGeometry().toHex()).decode()
+
+    def _close_from_panel(self):
+        self.close()
+
+    def closeEvent(self, ev):
+        self.save_geo()
+        if MEMOS is not None:
+            MEMOS.save_now()
+        ev.accept()
+        if SETTINGS["memo_on"] and self.main is not None:
+            m = WINDOWS[0] if WINDOWS else self.main
+            QtCore.QTimer.singleShot(0, lambda: m.set_memo(False))
+
+
+class PreviewWindow(QtWidgets.QWidget):
+    """미리보기 창 (빌드 18, 사용자 11/5 '메모 창처럼 따로 창'): 4Dir 창 밖, 작업 표시줄에 나오는 보통 창, 처음엔 4Dir 창 오른쪽.
+    켜도 칸 크기가 안 바뀜. 위치·크기 preview_geo, 항상 위 preview_top(우클릭). 닫기 = 미리보기 끄기. 숨거나 최소화하면 GIF 멈춤"""
+
+    def __init__(self, main):
+        super().__init__(None, Qt.Window)
+        self._deact = 0.0
+        self._placed = False
+        self.setWindowTitle(T("미리보기") + " — 4Dir")
+        self.setWindowIcon(preview_icon())
+        self.main = main
+        lay = QtWidgets.QVBoxLayout(self)
+        lay.setContentsMargins(0, 0, 0, 0)
+        self.pane = PreviewPane(main)
+        lay.addWidget(self.pane)
+        self.setMinimumSize(200, 240)
+        if SETTINGS["preview_top"]:
+            self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
+        QtGui.QShortcut(QtGui.QKeySequence("Alt+P"), self, lambda: (self.pane.main or main).set_preview(False))
+        # 빌드 23 (사용자 11/6): 미리보기 창 어디서든 ← → = 한 장면(막대·띠·화면 같이), 스페이스 = 재생/멈춤 (GIF·동영상)
+        for key, fn in (("Left", lambda: self.pane.movie is not None and self.pane._gif_step(-1)),
+                        ("Right", lambda: self.pane.movie is not None and self.pane._gif_step(+1)),
+                        ("Space", lambda: self.pane.movie is not None and self.pane._gif_toggle())):
+            sc = QtGui.QShortcut(QtGui.QKeySequence(key), self, fn)
+            sc.setContext(Qt.WindowShortcut)
+
+    def changeEvent(self, ev):
+        if ev.type() == QtCore.QEvent.ActivationChange and not self.isActiveWindow():
+            self._deact = time.time()
+        if ev.type() == QtCore.QEvent.WindowStateChange:
+            self.pane.pause_movie(self.isMinimized())   # 최소화 = GIF 멈춤
+            if not self.isMinimized():
+                self.pane.schedule()   # 되살리면 지금 고른 파일로 다시
+        super().changeEvent(ev)
+
+    def was_front(self):
+        return self.isVisible() and not self.isMinimized() and (self.isActiveWindow() or time.time() - self._deact < 0.6)
+
+    def bring_front(self):
+        if self.isMinimized():
+            self.showNormal()
+        self.show()
+        self.raise_()
+        self.activateWindow()
+
+    def contextMenuEvent(self, ev):
+        m = QtWidgets.QMenu(self)
+        a = m.addAction(T("항상 위에 표시"), lambda: self._toggle_top(not SETTINGS["preview_top"]))
+        a.setCheckable(True)
+        a.setChecked(bool(SETTINGS["preview_top"]))
+        m.addAction(T("미리보기 창 닫기") + "\tAlt+P", self.close)
+        m.exec(ev.globalPos())
+
+    def _toggle_top(self, on):
+        SETTINGS["preview_top"] = bool(on)
+        if self.windowHandle() is not None:
+            self.windowHandle().setFlag(Qt.WindowStaysOnTopHint, bool(on))
+        else:
+            self.setWindowFlag(Qt.WindowStaysOnTopHint, bool(on))
+        log.info("미리보기 창 항상 위 %s", on)
+
+    def show_near(self, main):
+        if not self._placed:
+            self._placed = True
+            ok = False
+            geo = SETTINGS["preview_geo"]
+            if geo:
+                try:
+                    ok = self.restoreGeometry(QtCore.QByteArray.fromHex(geo.encode()))
+                    ok = ok and QtGui.QGuiApplication.screenAt(self.frameGeometry().center()) is not None
+                except Exception:
+                    ok = False
+            if not ok:
+                fg = main.frameGeometry()
+                scr = (main.screen() or QtWidgets.QApplication.primaryScreen()).availableGeometry()
+                w = max(220, int(SETTINGS["preview_w"] or 300) + 40)   # 옛 칸 너비(preview_w)는 처음 크기로만
+                h = max(400, min(fg.height(), scr.height()))
+                x = fg.right() + 2
+                if x + w > scr.right():
+                    x = max(scr.left(), scr.right() - w)
+                self.setGeometry(x, max(scr.top(), fg.top()), w, h)
+            log.info("미리보기 창 자리 %s (기억 %s)", self.geometry().getRect(), bool(ok))
+        self.show()
+        fg = self.frameGeometry()   # 제목줄까지 화면 안 (메모 창과 같게)
+        scr = (QtGui.QGuiApplication.screenAt(fg.center()) or main.screen() or QtWidgets.QApplication.primaryScreen()).availableGeometry()
+        x = min(max(fg.left(), scr.left()), max(scr.left(), scr.right() - fg.width()))
+        y = min(max(fg.top(), scr.top()), max(scr.top(), scr.bottom() - 100))
+        if (x, y) != (fg.left(), fg.top()):
+            self.move(x, y)
+        self.raise_()
+
+    def save_geo(self):
+        if self.isVisible() or self._placed:
+            SETTINGS["preview_geo"] = bytes(self.saveGeometry().toHex()).decode()
+
+    def closeEvent(self, ev):
+        self.save_geo()
+        ev.accept()
+        if SETTINGS["preview_pane"]:
+            m = self.pane.main if self.pane.main in WINDOWS else (WINDOWS[0] if WINDOWS else self.main)
+            QtCore.QTimer.singleShot(0, lambda: m.set_preview(False))
+
+
 def gear_icon(sz=18, color="#76838f"):   # 밝게·어둡게 둘 다 보이는 회색
     """설정 버튼 그림 (v0.9.104 사용자 11/5 '설정은 아이콘으로'): 톱니바퀴"""
     dpr = 2
@@ -5481,6 +6456,8 @@ class SettingsDialog(QtWidgets.QDialog):
                     lambda: SETTINGS["resume_after_reboot"], lambda: SETTINGS.__setitem__("resume_after_reboot", not SETTINGS["resume_after_reboot"]))
         self._set(lay, "hide_single_tab", T("탭이 하나면 탭 줄 숨기기 (새 탭: Ctrl+T)"))
         self._set(lay, "keep_favbar", T("메뉴줄을 접어도 즐겨찾기 줄은 보이기"))
+        self._sub(lay, T("도움말"))
+        self._set(lay, "tooltips", T("풍선 도움말(툴팁) 보이기 — 단추에 마우스를 올리면 설명"))
 
     def _p_list(self, lay):
         self._sub(lay, T("표시"))
@@ -5492,9 +6469,15 @@ class SettingsDialog(QtWidgets.QDialog):
         self._sub(lay, T("정렬·묶기"))
         self._opt(lay, "date_folders_first", T("날짜 정렬 때 폴더를 위로 모으기"))
         self._opt(lay, "date_groups", T("날짜별로 묶기 (오늘·어제·이번 주…)"))
+        self._opt(lay, "type_groups", T("형식별로 묶기 (폴더·JPG·PNG…)"), T("날짜별 묶기와 둘 중 하나만 — 자세히 보기에서"))
+        self._sub(lay, T("형식·그림"))
+        self._opt(lay, "type_chips", T("형식 단추 줄 ([전체][JPG][PSD]…)"), T("목록 위 단추를 누르면 그 형식만 보임 (Ctrl+누르기 = 여러 개)"))
+        self._opt(lay, "type_badges", T("그림 미리보기에 형식 딱지 (PSD·PNG·GIF…)"), T("보통 아이콘 이상에서"))
+        self._opt(lay, "folder_covers", T("폴더 표지 — 폴더 안 첫 그림을 겹쳐 보기"), T("아이콘 보기에서, 네트워크 드라이브 제외"))
         self._sub(lay, T("동작"))
         self._set(lay, "folder_size", T("폴더 크기 계산 (크기 칸 — 네트워크 드라이브 제외)"))
         self._set(lay, "empty_click_up", T("빈 곳을 더블클릭하면 상위 폴더로"))
+        self._set(lay, "arc_browse", T("압축 파일(ZIP·7Z·RAR…)을 두 번 누르면 4Dir 안에서 폴더처럼 열기"))   # 빌드 20
 
     def _p_nav(self, lay):
         m = self.main
@@ -5538,7 +6521,7 @@ class SettingsDialog(QtWidgets.QDialog):
 
     def _p_about(self, lay):
         m = self.main
-        v = QtWidgets.QLabel(f"4Dir v{QE_VERSION}")
+        v = QtWidgets.QLabel(f"4Dir v{QE_VERSION}  " + T("(빌드 {0})").format(QE_BUILD))
         vf = v.font()
         vf.setPointSizeF(vf.pointSizeF() + 2)
         v.setFont(vf)
@@ -5614,6 +6597,8 @@ class PreviewPane(QtWidgets.QFrame):
         self.info.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
         self.info.setTextInteractionFlags(Qt.TextSelectableByMouse)
         lay.addWidget(self.pic, 1)
+        self.gifbar = self._build_gifbar()   # 빌드 17: GIF 장면 조작 (galleryV8 참고)
+        lay.addWidget(self.gifbar)
         lay.addWidget(self.name)
         lay.addWidget(self.info)
         lay.addStretch(0)
@@ -5625,8 +6610,10 @@ class PreviewPane(QtWidgets.QFrame):
         self.timer.setInterval(120)
         self.timer.timeout.connect(self.refresh)
 
-    def schedule(self):
-        if self.isVisible():
+    def schedule(self, main=None):
+        if main is not None and main in WINDOWS + [self.main]:
+            self.main = main   # 빌드 18: 마지막으로 쓴 4Dir 창의 고른 파일을 보여 줌
+        if self.isVisible() and not self.window().isMinimized():   # 빌드 18: 최소화한 미리보기 창은 안 그림 (되살리면 다시)
             self.timer.start()
 
     def showEvent(self, ev):
@@ -5643,31 +6630,365 @@ class PreviewPane(QtWidgets.QFrame):
         self._stop_movie()
 
     GIF_MAX = 64 * 1048576   # 이보다 큰 GIF 는 움직임 없이 첫 장만 (메모리·CPU)
+    GIF_SEEK_MAX = 24 * 1048576   # 이 크기까지만 모든 장면을 기억해 아무 장면으로나 이동 (넘으면 재생·다음 장면만)
+    # 빌드 17: 윈도우 미리보기(썸네일 처리기)가 있는 문서·영상은 첫 장면/첫 쪽을 크게 (LibreOffice 없이 — 윈도우·오피스가 주는 것)
+    DOC_PREVIEW = {".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx", ".hwp", ".hwpx", ".mp4", ".mov", ".avi", ".mkv",
+                   ".wmv", ".webm", ".m4v", ".fbx", ".obj", ".3mf", ".stl", ".glb", ".svg", ".heic", ".avif", ".raw", ".cr2", ".nef"}
+
+    def _build_gifbar(self):
+        """GIF 장면 조작줄: ⏮ ◀ ⏯ ▶ · 장면 막대 · 5/55 · 60ms · 이 장면 PNG 저장"""
+        w = QtWidgets.QWidget()
+        v = QtWidgets.QVBoxLayout(w)
+        v.setContentsMargins(0, 0, 0, 0)
+        v.setSpacing(3)
+        row = QtWidgets.QHBoxLayout()
+        row.setSpacing(2)
+
+        def b(text, tip, fn):
+            x = QtWidgets.QToolButton()
+            x.setText(text)
+            x.setToolTip(tip)
+            x.setAutoRaise(True)
+            x.clicked.connect(fn)
+            row.addWidget(x)
+            return x
+        # 빌드 18 (사용자 11/5 참고 그림): |◀ 이전 · ▶/⏸ 재생 · ■ 정지 · ▶| 다음 — 글자 대신 직접 그린 아이콘 (비슷한 글자가 겹쳐 보이지 않게)
+        self.gif_btns = {}
+        for kind, tip, fn in (("prev", T("이전 장면 (멈춤)"), lambda: self._gif_step(-1)),
+                              ("play", T("재생 / 멈춤"), self._gif_toggle),
+                              ("stop", T("정지 (첫 장면)"), self._gif_stop),
+                              ("next", T("다음 장면 (멈춤)"), lambda: self._gif_step(+1))):
+            x = b("", tip, fn)
+            x.setIcon(gif_icon(kind, self._gif_fg()))
+            x.setIconSize(QtCore.QSize(20, 20))
+            self.gif_btns[kind] = x
+        self.gif_play = self.gif_btns["play"]
+        self.gif_slider = QtWidgets.QSlider(Qt.Horizontal)
+        self.gif_slider.setToolTip(T("장면 고르기 (끌면 그 장면에서 멈춤)"))
+        self.gif_slider.valueChanged.connect(lambda n: self._gif_seek(n))   # 빌드 22: 끌기뿐 아니라 누르기·화살표 키도 (_gif_ui 가 고칠 땐 신호 막음)
+        self.gif_slider.installEventFilter(self)   # 빌드 22: 막대 아무 데나 누르면 그 자리로 (기본은 한 칸씩만)
+        row.addWidget(self.gif_slider, 1)
+        ap = b("", T("자동 재생 — 켜면 GIF·동영상을 고르자마자 재생, 끄면 첫 장면에서 멈춘 채"), self._toggle_autoplay)   # 빌드 28 (사용자 11/6 '유저가 선택')
+        ap.setIcon(gif_icon("autoplay", self._gif_fg()))
+        ap.setIconSize(QtCore.QSize(20, 20))
+        ap.setCheckable(True)
+        ap.setChecked(bool(SETTINGS["preview_autoplay"]))
+        self.gif_btns["autoplay"] = ap
+        snd = b("", T("소리 켜기/끄기"), self._toggle_sound)   # 빌드 24 동영상만 보임
+        snd.setIconSize(QtCore.QSize(20, 20))
+        snd.setVisible(False)
+        self.gif_btns["sound"] = snd
+        sv = b("", T("지금 장면을 PNG 로 저장"), self._gif_save)
+        sv.setIcon(gif_icon("save", self._gif_fg()))
+        sv.setIconSize(QtCore.QSize(20, 20))
+        self.gif_btns["save"] = sv
+        v.addLayout(row)
+        self.gif_lbl = QtWidgets.QLabel()
+        self.gif_lbl.setAlignment(Qt.AlignHCenter)
+        v.addWidget(self.gif_lbl)
+        self.gif_strip = QtWidgets.QListWidget()   # 장면 띠 (작은 그림, 누르면 그 장면)
+        self.gif_strip.setViewMode(QtWidgets.QListView.IconMode)
+        self.gif_strip.setFlow(QtWidgets.QListView.LeftToRight)
+        self.gif_strip.setWrapping(False)
+        self.gif_strip.setIconSize(QtCore.QSize(48, 48))
+        # 빌드 18: 아래 가로 막대 50% 굵게 → 빌드 23 사용자 '너무 두껍다' → Windows 기본 굵기
+        sb_h = self.style().pixelMetric(QtWidgets.QStyle.PM_ScrollBarExtent)
+        self.gif_strip.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.gif_strip.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.gif_strip.setFixedHeight(48 + self.fontMetrics().height() + 16 + sb_h)   # 그림 + 장면 번호 글자가 안 잘리게
+        self.gif_strip.setMovement(QtWidgets.QListView.Static)
+        self.gif_strip.setToolTip(T("장면 띠 — 누르면 그 장면, 끌면 옆으로 밀림"))
+        self._strip_drag = None   # 빌드 18: 끌어서 밀기 (눌렀던 x, 그때 스크롤 값, 끄는 중?)
+        self.gif_strip.viewport().installEventFilter(self)
+        self.gif_strip.installEventFilter(self)   # 빌드 23: 띠에 초점이 있어도 ← → 는 장면 이동 (띠 칸만 움직이던 것)
+        self.gif_strip.itemClicked.connect(lambda it: self._gif_seek(it.data(Qt.UserRole)))
+        v.addWidget(self.gif_strip)
+        w.setVisible(False)
+        return w
+
+    def _gif_seek(self, n):
+        m = self.movie
+        if m is None or not self.gif_seekable:
+            return
+        n = max(0, min(int(n), m.frameCount() - 1))
+        m.setPaused(True)
+        ok = m.jumpToFrame(n)
+        if not ok:   # 아직 안 지나간 장면은 바로 못 감 (GIF 는 앞에서부터 풀어야 함) → 처음부터 차례로
+            steps = 0
+            if m.currentFrameNumber() > n:
+                m.jumpToFrame(0)
+            while m.currentFrameNumber() < n and steps < 5000 and m.jumpToNextFrame():
+                steps += 1
+            ok = m.currentFrameNumber() == n
+        log.debug("GIF 장면 이동 %s → %s (지금 %d)", n, ok, m.currentFrameNumber())
+        self._gif_ui()
+
+    def _gif_step(self, d):
+        m = self.movie
+        if m is None:
+            return
+        if m.state() == QtGui.QMovie.Running:
+            m.setPaused(True)
+        if d > 0 and not self.gif_seekable:
+            m.jumpToNextFrame()
+        else:
+            self._gif_seek((m.currentFrameNumber() + d) % max(1, m.frameCount()))
+        self._gif_ui()
+
+    def _toggle_autoplay(self):
+        on = self.gif_btns["autoplay"].isChecked()
+        SETTINGS["preview_autoplay"] = on
+        log.info("미리보기 자동 재생 %s", "켬" if on else "끔")
+
+    def _toggle_sound(self):
+        m = self.movie
+        if not isinstance(m, video.VideoMovie):
+            return
+        on = m.muted()   # 꺼져 있었으면 켬
+        m.set_muted(not on)
+        SETTINGS["video_sound"] = on
+        log.info("미리보기 동영상 소리 %s", "켬" if on else "끔")
+        self._gif_ui()
+
+    def _gif_fg(self):
+        return self.palette().color(QtGui.QPalette.WindowText).name()
+
+    def _gif_stop(self):
+        """■ 정지 = 멈추고 첫 장면 (빌드 18)"""
+        m = self.movie
+        if m is None:
+            return
+        m.setPaused(True)
+        self._gif_seek(0)
+        self._gif_ui()
+
+    def _strip_event(self, ev):
+        """장면 띠 끌어서 밀기 (빌드 18): 누르고 움직이면 가로 스크롤을 손으로 밀듯, 놓을 때 장면 이동 안 함. 안 움직이고 놓으면 그 장면"""
+        t = ev.type()
+        sb = self.gif_strip.horizontalScrollBar()
+        if t == QtCore.QEvent.MouseButtonPress and ev.button() == Qt.LeftButton:
+            self._strip_drag = [ev.position().x(), sb.value(), False]
+        elif t == QtCore.QEvent.MouseMove and self._strip_drag and ev.buttons() & Qt.LeftButton:
+            dx = ev.position().x() - self._strip_drag[0]
+            if not self._strip_drag[2] and abs(dx) >= QtWidgets.QApplication.startDragDistance():
+                self._strip_drag[2] = True
+                self.gif_strip.viewport().setCursor(Qt.ClosedHandCursor)
+            if self._strip_drag[2]:
+                sb.setValue(int(self._strip_drag[1] - dx))
+                return True
+        elif t == QtCore.QEvent.MouseButtonRelease and self._strip_drag:
+            dragged = self._strip_drag[2]
+            self._strip_drag = None
+            self.gif_strip.viewport().unsetCursor()
+            if dragged:
+                log.debug("장면 띠 끌어 밂 → 스크롤 %d", sb.value())
+                return True   # 장면 이동 안 함
+        return False
+
+    def eventFilter(self, obj, ev):
+        if ev.type() == QtCore.QEvent.KeyPress and self.movie is not None and obj in (getattr(self, "gif_strip", None), getattr(self, "gif_slider", None)):
+            k = ev.key()   # 빌드 23: 띠·막대에서 ← → = 한 장면 (화면·막대·띠 같이), 스페이스 = 재생/멈춤
+            if k in (Qt.Key_Left, Qt.Key_Right) and not ev.modifiers():
+                self._gif_step(-1 if k == Qt.Key_Left else +1)
+                return True
+            if k == Qt.Key_Space and not ev.modifiers():
+                self._gif_toggle()
+                return True
+        if getattr(self, "gif_strip", None) is not None and obj is self.gif_strip.viewport():
+            if self._strip_event(ev):
+                return True
+        if obj is getattr(self, "gif_slider", None) and ev.type() == QtCore.QEvent.MouseButtonPress and ev.button() == Qt.LeftButton:
+            sl = self.gif_slider   # 누른 자리 값으로 바로 (손잡이를 누른 거면 그대로 끌기)
+            opt = QtWidgets.QStyleOptionSlider()
+            sl.initStyleOption(opt)
+            hr = sl.style().subControlRect(QtWidgets.QStyle.CC_Slider, opt, QtWidgets.QStyle.SC_SliderHandle, sl)
+            if not hr.contains(ev.position().toPoint()):
+                gr = sl.style().subControlRect(QtWidgets.QStyle.CC_Slider, opt, QtWidgets.QStyle.SC_SliderGroove, sl)
+                x = int(ev.position().x()) - gr.x() - hr.width() // 2
+                v = QtWidgets.QStyle.sliderValueFromPosition(sl.minimum(), sl.maximum(), x, max(1, gr.width() - hr.width()))
+                log.debug("장면 막대 누름 → %d", v)
+                sl.setValue(v)
+        return super().eventFilter(obj, ev)
+
+    def _gif_toggle(self):
+        m = self.movie
+        if m is None:
+            return
+        m.setPaused(m.state() == QtGui.QMovie.Running)
+        self._gif_ui()
+
+    def _gif_ui(self):
+        m = self.movie
+        if m is None:
+            return
+        n, tot = m.currentFrameNumber(), m.frameCount()
+        self.gif_play.setIcon(gif_icon("pause" if m.state() == QtGui.QMovie.Running else "play", self._gif_fg()))
+        self.gif_slider.blockSignals(True)
+        self.gif_slider.setRange(0, max(0, tot - 1))
+        self.gif_slider.setValue(max(0, n))
+        self.gif_slider.blockSignals(False)
+        if isinstance(m, video.VideoMovie):   # 빌드 21: 장면 + 시각 + fps
+            ms = int(m.currentTime() - (m._t0 or 0))   # 첫 장면을 0초로 (첫 장면이 0.032초에서 시작하는 영상도 있음)
+            tm = lambda x: f"{x // 60000:02d}:{x // 1000 % 60:02d}.{x % 1000:03d}"
+            # 빌드 24 (사용자 11/6 '지금 시간인지 전체 시간인지 헷갈림'): 지금 시각 / 전체 길이
+            # 빌드 26 (사용자 11/6 '심플하게 49 / 92 frame'): 장면 / 전체 frame · 지금 시각 / 전체 길이 · fps (어느 언어나 같은 글자)
+            self.gif_lbl.setText(f"{n + 1} / {tot} frame  ·  {tm(ms)} / {tm(int(m.duration()))}  ·  {m.display_fps()}fps")
+            sb = self.gif_btns.get("sound")
+            if sb is not None:
+                sb.setVisible(m.has_audio())
+                sb.setIcon(gif_icon("mute" if m.muted() else "sound", self._gif_fg()))
+                sb.setToolTip(T("소리 켜기") if m.muted() else T("소리 끄기"))
+        else:
+            self.gif_lbl.setText(f"{n + 1} / {tot} frame  ·  {max(0, m.nextFrameDelay())}ms")   # 빌드 26 동영상과 같은 모양
+        if self.gif_strip.count() and m.state() != QtGui.QMovie.Running:
+            # 빌드 23: 띠 칸 = 장면 번호(동영상은 고르게 뽑아 칸 순서 ≠ 장면 — 전엔 28 을 눌렀는데 82 칸이 골라져 보임, 11/6 사용자)
+            row = 0
+            for r in range(self.gif_strip.count()):
+                if (self.gif_strip.item(r).data(Qt.UserRole) or 0) <= n:
+                    row = r
+                else:
+                    break
+            if self.gif_strip.currentRow() != row:
+                self.gif_strip.blockSignals(True)
+                self.gif_strip.setCurrentRow(row)
+                self.gif_strip.blockSignals(False)
+            self.gif_strip.scrollToItem(self.gif_strip.item(row))
+
+    def _gif_save(self):
+        m = self.movie
+        if m is None:
+            return
+        img = m.currentImage()
+        base = os.path.splitext(m.fileName())[0]
+        dst, _ = QtWidgets.QFileDialog.getSaveFileName(self, T("장면 저장"), f"{base}_{m.currentFrameNumber() + 1:03d}.png", "PNG (*.png)")
+        if dst:
+            ok = img.save(dst, "PNG")
+            log.info("GIF 장면 저장 %s 장면 %d → %s (%s)", m.fileName(), m.currentFrameNumber() + 1, dst, ok)
+            self.main.show_notice((T("장면을 저장했습니다: {0}") if ok else T("⚠ 장면 저장 실패: {0}")).format(dst))
+
+    def _gif_strip_fill(self, path):
+        """장면 띠: 뒤 스레드에서 장면마다 작은 그림 → 화면 스레드로 (300장까지)"""
+        self.gif_strip.clear()
+        gen = self._strip_gen = getattr(self, "_strip_gen", 0) + 1
+        sig = self._strip_sig
+
+        def work():
+            rd = QtGui.QImageReader(path)
+            out, i = [], 0
+            while i < 300:
+                im = rd.read()
+                if im.isNull():
+                    break
+                out.append(im.scaled(48, 48, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+                i += 1
+            try:
+                sig.emit(gen, out)
+            except RuntimeError:
+                pass
+        threading.Thread(target=work, daemon=True, name="gifstrip").start()
+
+    def _on_strip(self, gen, imgs):
+        if gen != getattr(self, "_strip_gen", 0) or self.movie is None:
+            return
+        for i, im in enumerate(imgs):
+            if isinstance(im, tuple):   # 동영상 (빌드 21): 고르게 뽑은 장면 = (장면 번호, 그림)
+                i, im = im
+            it = QtWidgets.QListWidgetItem(QtGui.QIcon(QtGui.QPixmap.fromImage(im)), str(i + 1))
+            it.setData(Qt.UserRole, i)
+            self.gif_strip.addItem(it)
+        self.gif_strip.setEnabled(self.gif_seekable)
 
     def _stop_movie(self):
         if self.movie is not None:
             self.movie.stop()
             self.movie.deleteLater()
             self.movie = None
+        vs = getattr(self, "_vstrip", None)
+        if vs is not None:   # 빌드 21 동영상 장면 띠 재생기
+            vs.close()
+            vs.deleteLater()
+            self._vstrip = None
+        if hasattr(self, "gifbar"):
+            self.gifbar.setVisible(False)
+        if hasattr(self, "gif_btns") and "sound" in self.gif_btns:
+            self.gif_btns["sound"].setVisible(False)   # GIF 엔 소리 단추 없음
 
     def pause_movie(self, paused):
         """창 최소화 = 멈춤 (보이지 않는데 돌 필요 없음), 다시 열면 이어서"""
         if self.movie is not None:
             self.movie.setPaused(paused)
 
+    def _play_video(self, path, mtime):
+        """동영상: 재생(소리 없음, 끝나면 처음부터) + GIF 와 같은 조작줄 (빌드 21). 부품이 없으면 False → 첫 장면 그림"""
+        if not video.available():
+            return False
+        m = video.VideoMovie(path, self, muted=not SETTINGS["video_sound"])
+        self.movie = m
+        self.gif_seekable = True
+        m.frameChanged.connect(lambda _i, m=m: m is self.movie and (self._set_pic(m.currentPixmap()), self._gif_ui()))
+        m.ready.connect(lambda m=m: m is self.movie and (self._gif_ui(), self._video_strip(m)))
+        m.failed.connect(lambda _s, m=m, p=path, t=mtime: m is self.movie and self._video_failed(p, t))
+        pm = thumbs_service().get(path, mtime, self.PX)   # 첫 장면이 오기 전엔 윈도우 미리보기 그림
+        if pm is not None:
+            self._set_pic(pm)
+        self.gif_strip.clear()
+        self.gifbar.setVisible(True)
+        if SETTINGS["preview_autoplay"]:
+            m.start()
+        else:   # 빌드 28: 첫 장면에서 멈춘 채 (▶ 로 재생)
+            m.ready.connect(lambda m=m: m is self.movie and m.jumpToFrame(0))
+            m.pl.pause()
+        log.info("미리보기 동영상 %s (자동 재생 %s)", path, bool(SETTINGS["preview_autoplay"]))
+        return True
+
+    def _video_strip(self, m):
+        old = getattr(self, "_vstrip", None)
+        if old is not None:
+            old.close()
+            old.deleteLater()
+        gen = self._strip_gen = getattr(self, "_strip_gen", 0) + 1
+        if not hasattr(self, "_strip_sig"):
+            class _S(QtCore.QObject):
+                done = QtCore.Signal(int, list)
+            self._strip_sig_obj = _S()
+            self._strip_sig = self._strip_sig_obj.done
+            self._strip_sig.connect(self._on_strip)
+        self._vstrip = video.VideoStrip(m.fileName(), m.frameCount(), m.fms, parent=self)
+        self._vstrip.done.connect(lambda lst, gen=gen: self._on_strip(gen, lst))
+
+    def _video_failed(self, path, mtime):
+        log.info("동영상 재생 못 함 → 첫 장면 그림 %s", path)
+        self._stop_movie()
+        pm = thumbs_service().get(path, mtime, self.PX)
+        self.cur = (path, mtime)
+        if pm is not None:
+            self._set_pic(pm)
+
     def _play_gif(self, path, size):
         """움직이는 GIF 면 재생하고 True. 한 장짜리·깨진 파일·너무 큰 파일·재생 부품(qgif) 없음 → False (보통 미리보기로)"""
         if size > self.GIF_MAX or b"gif" not in [bytes(f) for f in QtGui.QMovie.supportedFormats()]:
             return False
         m = QtGui.QMovie(path)
-        m.setCacheMode(QtGui.QMovie.CacheNone)
+        self.gif_seekable = size <= self.GIF_SEEK_MAX
+        m.setCacheMode(QtGui.QMovie.CacheAll if self.gif_seekable else QtGui.QMovie.CacheNone)   # 다 기억해야 아무 장면으로 이동
         if not m.isValid() or m.frameCount() == 1:
             m.deleteLater()
             return False
         self.movie = m
-        m.frameChanged.connect(lambda _i, m=m: m is self.movie and self._set_pic(m.currentPixmap()))
+        m.frameChanged.connect(lambda _i, m=m: m is self.movie and (self._set_pic(m.currentPixmap()), self._gif_ui()))
         m.start()
-        log.info("미리보기 GIF 재생 %s (장면 %d, %s)", path, m.frameCount(), size_short(size))
+        if not SETTINGS["preview_autoplay"]:   # 빌드 28: 첫 장면에서 멈춘 채
+            m.setPaused(True)
+        if not hasattr(self, "_strip_sig"):
+            class _S(QtCore.QObject):
+                done = QtCore.Signal(int, list)
+            self._strip_sig_obj = _S()
+            self._strip_sig = self._strip_sig_obj.done
+            self._strip_sig.connect(self._on_strip)
+        self.gifbar.setVisible(True)
+        self._gif_strip_fill(path)
+        self._gif_ui()
+        log.info("미리보기 GIF 재생 %s (장면 %d, %s, 장면 이동 %s)", path, m.frameCount(), size_short(size), self.gif_seekable)
         return True
 
     def _on_ready(self, path, px):
@@ -5688,7 +7009,7 @@ class PreviewPane(QtWidgets.QFrame):
         self.pic.setPixmap(self.src.scaled(max(1, int(sw * k)), max(1, int(sh * k)), Qt.KeepAspectRatio, Qt.SmoothTransformation))
 
     def refresh(self):
-        if not self.isVisible():
+        if not self.isVisible() or self.window().isMinimized():
             return
         pane = self.main.pane()
         v = pane.view() if pane else None
@@ -5720,12 +7041,19 @@ class PreviewPane(QtWidgets.QFrame):
             lines.append(T("수정한 날짜") + ": " + win_datetime(e[3]))
         self.info.setText("\n".join(x for x in lines if x))
         pm = None
+        if devices.is_dev(path) or archives.is_arc(path):   # 휴대폰·압축 안 파일: 그림 없이 정보만
+            self.cur = None
+            self._set_pic(None)
+            return
+        if not e[1] and video.is_video(e[0]) and OPTS["thumbnails"] and self._play_video(path, e[3]):   # 빌드 21 동영상 = GIF 처럼
+            self.cur = None
+            return
         if not e[1] and e[0].lower().endswith(".gif") and OPTS["thumbnails"] and self._play_gif(path, e[2]):
             self.cur = None
             return
-        if not e[1] and thumbs.is_image(e[0]) and OPTS["thumbnails"]:
+        if not e[1] and OPTS["thumbnails"] and (thumbs.is_image(e[0]) or os.path.splitext(e[0])[1].lower() in self.DOC_PREVIEW):
             self.cur = (path, e[3])
-            pm = thumbs_service().get(path, e[3], self.PX)   # 없으면 요청 → 다 되면 _on_ready
+            pm = thumbs_service().get(path, e[3], self.PX)   # 없으면 요청 → 다 되면 _on_ready (문서·영상은 윈도우 미리보기, 없으면 아이콘)
         else:
             self.cur = None
         if pm is None:
@@ -5811,13 +7139,13 @@ class Main(QtWidgets.QMainWindow):
         self.hsplit = QtWidgets.QSplitter(Qt.Horizontal)
         self.hsplit.setChildrenCollapsible(False)
         self.hsplit.setHandleWidth(5)
-        self.preview = PreviewPane(self)
+        global PREVIEW_WIN
+        if PREVIEW_WIN is None:   # 빌드 18: 미리보기는 따로 창 (켜도 칸 크기 그대로) — 처음 창이 만들고 모두 같이 씀
+            PREVIEW_WIN = PreviewWindow(self)
+        self.preview = PREVIEW_WIN.pane
         self.hsplit.addWidget(self.vert)
-        self.hsplit.addWidget(self.preview)
-        self.hsplit.setStretchFactor(0, 1)
-        self.hsplit.setStretchFactor(1, 0)
-        self.hsplit.splitterMoved.connect(self._preview_moved)
-        self.preview.setVisible(bool(SETTINGS["preview_pane"]))
+        if SETTINGS["preview_pane"] and not PREVIEW_WIN.isVisible():
+            QtCore.QTimer.singleShot(0, lambda: self.set_preview(True))
         # v0.9.100 이슈 #3: 창 왼쪽 전체 높이 공용 탐색 창 | (칸들 | 미리보기)
         self.lsplit = QtWidgets.QSplitter(Qt.Horizontal)
         self.lsplit.setChildrenCollapsible(False)
@@ -5837,6 +7165,13 @@ class Main(QtWidgets.QMainWindow):
         self.setCentralWidget(central)
         if SETTINGS["chrome_collapsed"]:
             self.set_chrome_collapsed(True, save=False)
+        self.memo_panel = None
+        if getattr(Main, "_last_devices", None) is None:   # 빌드 5: 휴대폰 꽂기/빼기 비교 기준 (뒤에서, 시작 안 늦추게)
+            Main._last_devices = ()
+            threading.Thread(target=lambda: setattr(Main, "_last_devices", tuple(sorted(n for n, _p in devices.list_devices()))),
+                             daemon=True).start()
+        if SETTINGS["memo_on"]:   # v0.9.108 메모 창 켜 둔 채 끝냈으면 그대로
+            self.set_memo(True, save=False)
         if SETTINGS["side_shared"]:   # v0.9.100 공용 탐색 창 켜 둔 채 끝냈으면 그대로
             self.set_shared_side(True, save=False)
         if SETTINGS["on_top"]:
@@ -5856,6 +7191,7 @@ class Main(QtWidgets.QMainWindow):
             "new_window": lambda: self.open_window(self.pane().view().path if self.pane().view() else THIS_PC),
             "close_tab": lambda: self.pane().close_tab(self.pane().bar.currentIndex()),
             "lock_tab": lambda: self.pane().toggle_lock(),
+            "toggle_chips": lambda: self.toggle_opt("type_chips"),   # 빌드 27
             "reopen_tab": lambda: self.reopen_tab(),
             "focus_filter": lambda: self.pane().focus_filter(),
             "global_search": lambda: self.focus_global_search(),
@@ -5865,8 +7201,9 @@ class Main(QtWidgets.QMainWindow):
             "toggle_hidden": lambda: self.toggle_opt("show_hidden"),
             "add_fav": add_fav,
             "toggle_chrome": lambda: self.set_chrome_collapsed(not SETTINGS["chrome_collapsed"]),
-            "toggle_preview": lambda: self.set_preview(not self.preview.isVisible()),
-            "toggle_nav": lambda: self.pane().toggle_sidebar(),   # v0.9.101 공용이면 공용 창, 칸마다면 지금 칸
+            "toggle_preview": lambda: self.toggle_preview(),
+            "toggle_nav": lambda: self.pane().toggle_sidebar(),
+            "toggle_memo": lambda: self.toggle_memo(),   # v0.9.108 메모 창 (빌드 10: 뒤에 숨었으면 앞으로)   # v0.9.101 공용이면 공용 창, 칸마다면 지금 칸
             "compare": lambda: self.compare_panes(),
             "palette": lambda: self.open_palette(),
             "settings": lambda: self.open_settings(),   # v0.9.104
@@ -6047,10 +7384,11 @@ class Main(QtWidgets.QMainWindow):
 
         self.top_menus = []   # (이름, 채우는 함수) — 명령 찾기가 메뉴 항목도 모음 (v0.9.89)
 
-        def menu_btn(text, filler):
+        def menu_btn(text, filler, tip=""):
             self.top_menus.append((text, filler))
             b = QtWidgets.QToolButton()
             b.setText(text)
+            b.setToolTip(tip)   # 빌드 13 사용자: 모든 메뉴·기능에 풍선 도움말
             b.setPopupMode(QtWidgets.QToolButton.InstantPopup)
             b.setAutoRaise(True)
             m = QtWidgets.QMenu(b)
@@ -6059,12 +7397,12 @@ class Main(QtWidgets.QMainWindow):
             tb.addWidget(b)
             return b
 
-        menu_btn(T("보기"), self._fill_main_view_menu)
+        menu_btn(T("보기"), self._fill_main_view_menu, T("보기 — 칸 나누기 · 탐색 창 · 미리보기 · 항상 위 등 화면 표시"))
         # v0.9.93 사용자 11/4: 글자 메뉴 '레이아웃'은 빼고 도구줄 레이아웃 버튼(고르기 창)만 — 명령 찾기에는 계속 나오게 목록만 남김
         self.top_menus.append((T("레이아웃"), self._fill_layout_menu))
         self.top_menus.append((T("즐겨찾기"), self._fill_fav_menu))   # v0.9.102 메뉴줄에서 뺌(즐겨찾기 바 글자로) — 명령 찾기엔 남김
         self.top_menus.append((T("창 저장/불러오기"), self._fill_session_menu))   # v0.9.103 사용자 11/5: 도구 메뉴 안으로 (명령 찾기엔 남김)
-        menu_btn(T("도구"), self._fill_tool_menu)
+        menu_btn(T("도구"), self._fill_tool_menu, T("도구 — 메모 창 · 창 저장/불러오기 · 폴더 비교 · 찾기 등"))
         self.top_menus.append((T("설정"), self._fill_settings_menu))   # 명령 찾기용 목록 (v0.9.103)
         # v0.9.104 사용자 11/5: 설정은 톱니 아이콘 → 카테고리 설정 창
         self.btn_settings = QtWidgets.QToolButton()
@@ -6074,9 +7412,37 @@ class Main(QtWidgets.QMainWindow):
         self.btn_settings.clicked.connect(lambda: self.open_settings())
         tb.addWidget(self.btn_settings)
         # 미리보기 창 켜기/끄기 — 도구 오른쪽 (v0.9.59, 사용자 요청)
-        self.act_preview = tb.addAction(preview_icon(), T("미리보기 창"), lambda: self.set_preview(not self.preview.isVisible()))
+        self.act_preview = tb.addAction(preview_icon(), T("미리보기 창"), lambda: self.toggle_preview())
         self.act_preview.setCheckable(True)
         self.act_preview.setChecked(bool(SETTINGS["preview_pane"]))
+        # v0.9.108 메모 창 켜기/끄기 (미리보기 버튼 옆)
+        self.btn_memo = QtWidgets.QToolButton()
+        self.btn_memo.setIcon(memo_icon())   # 빌드 7: 글자 📝 대신 그린 노란 메모지 + 빨간 펜 (작고 흐려 안 보였음)
+        self.btn_memo.setCheckable(True)
+        self.btn_memo.setAutoRaise(True)
+        self.btn_memo.setToolTip(T("메모 창") + "  (Alt+M)")
+        self.btn_memo.clicked.connect(lambda: self.toggle_memo())
+        tb.addWidget(self.btn_memo)
+        # 빌드 27 (사용자 11/6): 형식 단추 줄(데이터 종류 칩) 켜기/끄기 — 모든 창·칸에 적용
+        self.btn_chips = QtWidgets.QToolButton()
+        self.btn_chips.setIcon(chips_icon())
+        self.btn_chips.setCheckable(True)
+        self.btn_chips.setChecked(bool(OPTS["type_chips"]))
+        self.btn_chips.setAutoRaise(True)
+        self.btn_chips.setToolTip(T("형식 단추 줄 보이기/숨기기 ([전체][JPG][PSD]…) — 모든 칸"))
+        self.btn_chips.clicked.connect(lambda: self.toggle_opt("type_chips"))
+        tb.addWidget(self.btn_chips)
+        # 빌드 20 복사 대기열: 복사·이동이 여러 개면 하나씩 — 기다리는 게 있을 때만 '⏳ 대기 n' 이 보임 (누르면 목록·취소·멈춤)
+        self.btn_queue = QtWidgets.QToolButton()
+        self.btn_queue.setPopupMode(QtWidgets.QToolButton.InstantPopup)
+        self.btn_queue.setAutoRaise(True)
+        self.btn_queue.setToolTip(T("복사 대기열 — 복사·이동을 하나씩 차례로 (기다리는 것 취소·멈춤)"))
+        qm = QtWidgets.QMenu(self.btn_queue)
+        qm.aboutToShow.connect(lambda qm=qm: self._fill_queue_menu(qm))
+        self.btn_queue.setMenu(qm)
+        self.act_queue = tb.addWidget(self.btn_queue)
+        self.act_queue.setVisible(False)
+        QUEUE_SIG.changed.connect(self._queue_ui)
         self.act_preview.setToolTip(T("미리보기 창") + (f" ({key_text('toggle_preview')})" if key_text("toggle_preview") else ""))
         tb.addSeparator()
         # v0.9.92 사용자 11/4: 레이아웃이 많아져 도구줄엔 버튼 하나(지금 배치 그림) → 누르면 고르기 창(LayoutPopup)
@@ -6188,23 +7554,132 @@ class Main(QtWidgets.QMainWindow):
         self.set_sysmon(SETTINGS["sysmon"], save=False)
 
     def set_preview(self, on):
-        """오른쪽 미리보기 창 보이기/숨기기 (v0.9.58). 너비는 기억"""
+        """미리보기 창 켜기/끄기 — 빌드 18 (사용자 11/5): 메모 창처럼 4Dir 창 밖 따로 창, 켜도 칸 크기 그대로. 위치·크기 기억"""
         on = bool(on)
-        if on and not self.preview.isVisible():
-            self.preview.setVisible(True)
-            total = sum(self.hsplit.sizes()) or self.width()
-            pw = max(160, min(int(SETTINGS["preview_w"] or 300), total // 2))
-            self.hsplit.setSizes([max(200, total - pw), pw])
-        elif not on:
-            self.preview.setVisible(False)
+        if PREVIEW_WIN is not None:
+            if on:
+                PREVIEW_WIN.setStyleSheet(self.styleSheet())
+                self.preview.main = self
+                PREVIEW_WIN.show_near(self)
+                self.preview.schedule(self)
+            else:
+                PREVIEW_WIN.save_geo()
+                PREVIEW_WIN.hide()
         SETTINGS["preview_pane"] = on
-        if getattr(self, "act_preview", None) is not None:
-            self.act_preview.setChecked(on)   # 메뉴·Alt+P 로 바꿔도 버튼 눌림 표시 맞춤
+        for w in list(WINDOWS) + ([self] if self not in WINDOWS else []):
+            if getattr(w, "act_preview", None) is not None:
+                w.act_preview.setChecked(on)   # 메뉴·Alt+P 로 바꿔도 버튼 눌림 표시 맞춤
         log.info("미리보기 창 %s", "켬" if on else "끔")
 
-    def _preview_moved(self, *_):
-        if self.preview.isVisible():
-            SETTINGS["preview_w"] = self.hsplit.sizes()[1]
+    def _queue_ui(self):
+        q = shellops.QUEUE
+        n = len(q["pending"])
+        busy = q["running"] is not None
+        self.act_queue.setVisible(bool(n) or (busy and (n or q["paused"])) or q["paused"])
+        self.btn_queue.setText(("⏸ " if q["paused"] else "⏳ ") + T("대기 {0}").format(n))
+
+    def _fill_queue_menu(self, m):
+        m.clear()
+        q = shellops.QUEUE
+        if q["running"] is not None:
+            a = m.addAction(T("지금: {0}").format(q["running"]["desc"]))
+            a.setEnabled(False)
+        if q["pending"]:
+            m.addSeparator()
+        for j in list(q["pending"]):
+            sm = m.addMenu(T("기다림: {0}").format(j["desc"]))
+            sm.addAction(T("이 작업 취소"), lambda jid=j["id"]: shellops.queue_cancel(jid))
+        m.addSeparator()
+        if q["paused"]:
+            m.addAction(T("▶ 이어서 하기"), lambda: shellops.queue_pause(False))
+        else:
+            m.addAction(T("⏸ 다음 작업 멈춤 (지금 것은 계속)"), lambda: shellops.queue_pause(True))
+
+    def find_dupes(self, v=None):
+        """중복 파일 찾기 (빌드 20): 고른 폴더들(없으면 지금 폴더) 아래에서 내용이 같은 파일 → 창에서 골라 휴지통으로"""
+        v = v or (self.pane().view() if self.pane() else None)
+        if v is None or v.path == THIS_PC or is_search(v.path) or devices.is_dev(v.path) or archives.is_arc(v.path) or not os.path.isdir(v.path):
+            self.show_notice(T("⚠ 폴더 안에서만 쓸 수 있습니다 (내 PC·검색 결과 제외)"))
+            return
+        roots = [p for p in v.selected_paths() if os.path.isdir(p)] or [v.path]
+
+        def open_loc(p):
+            nv = self.pane().add_tab(os.path.dirname(p), activate=True)
+            nv.pending_select = os.path.basename(p)
+            self.raise_()
+            self.activateWindow()
+
+        def trash(ps, after):
+            shellops.delete(self.hwnd_int(), ps, done=lambda res, ab: after())
+        dlg = dupes.DupeDialog(roots, open_loc, trash, self)
+        dlg.setAttribute(Qt.WA_DeleteOnClose)
+        dlg.setStyleSheet(self.styleSheet())
+        dlg.show()
+
+    def hwnd_int(self):
+        try:
+            return int(self.winId())
+        except Exception:
+            return 0
+
+    def toggle_preview(self):
+        """미리보기 버튼·Alt+P (메모와 같게): 꺼져 있으면 켬, 다른 창 뒤에 숨어 있으면 앞으로, 보고 있던 중이면 끔"""
+        if SETTINGS["preview_pane"] and PREVIEW_WIN is not None and PREVIEW_WIN.isVisible() and not PREVIEW_WIN.was_front():
+            PREVIEW_WIN.bring_front()
+            if getattr(self, "act_preview", None) is not None:
+                self.act_preview.setChecked(True)
+            log.info("미리보기 창 앞으로")
+            return
+        self.set_preview(not (SETTINGS["preview_pane"] and PREVIEW_WIN is not None and PREVIEW_WIN.isVisible()))
+
+    # ---------------------------------------------------------- 메모 창 (v0.9.108)
+    def folder_memo_check(self, path):
+        """폴더 메모 (빌드 13): 그 폴더에 붙인 메모가 있으면 알림 줄 + [메모 보기]"""
+        if not path or MEMOS is None and not os.path.exists(os.path.join(BIN_DIR, memo.FILE)):
+            return
+        ms = memo_store().for_folder(path)
+        if not ms:
+            return
+        log.info("폴더 메모 %s → %d장", path, len(ms))
+        mid = ms[0]["id"]
+
+        def show():
+            self.set_memo(True)
+            MEMO_WIN.bring_front()
+            MEMO_WIN.panel.reveal(mid)
+        names = ", ".join((m.get("title") or "") for m in ms[:3])
+        self.show_notice(T("📝 이 폴더 메모: {0}").format(names), action=(T("메모 보기"), show))
+
+    def toggle_memo(self):
+        """📌 버튼·Alt+M·도구 메뉴 (빌드 10 사용자 '뒤에 숨으면 껐다 켜야 올라옴'): 꺼져 있으면 켬, 뒤에 숨어 있으면 앞으로, 보고 있던 중이면 끔"""
+        if SETTINGS["memo_on"] and MEMO_WIN is not None and MEMO_WIN.isVisible() and not MEMO_WIN.was_front():
+            MEMO_WIN.bring_front()
+            self.btn_memo.setChecked(True)
+            log.info("메모 창 앞으로")
+            return
+        self.set_memo(not SETTINGS["memo_on"])
+
+    def set_memo(self, on, save=True):
+        """메모 창 켜기/끄기 — 빌드 8 사용자 11/5 '아예 밖으로 빼자, 열 때 칸 크기가 바뀌는 건 싫다' → 4Dir 창 옆 따로 창 하나.
+        모든 4Dir 창이 같은 메모 창을 씀. 위치·크기 기억"""
+        global MEMO_WIN
+        on = bool(on)
+        if on and MEMO_WIN is None:
+            MEMO_WIN = MemoWindow(self)
+        if MEMO_WIN is not None:
+            if on:
+                MEMO_WIN.setStyleSheet(self.styleSheet())
+                MEMO_WIN.show_near(self)
+                MEMO_WIN.bring_front()
+            else:
+                MEMO_WIN.hide()
+        SETTINGS["memo_on"] = on
+        for w in list(WINDOWS) + ([self] if self not in WINDOWS else []):   # 만드는 중인 창(아직 목록에 없음)도
+            w.btn_memo.setChecked(on)
+            w.memo_panel = MEMO_WIN.panel if MEMO_WIN is not None else None
+        if save:
+            log.info("메모 창 %s", on)
+            self.save_timer.start()
 
     # ---------------------------------------------------------- 공용 탐색 창 (v0.9.100 이슈 #3)
     def set_shared_side(self, on, save=True):
@@ -6247,8 +7722,10 @@ class Main(QtWidgets.QMainWindow):
         self.save_timer.start()
 
     def _shared_moved(self, *_):
+        sizes = self.lsplit.sizes()
         if self.shared_host.isVisible():
-            SETTINGS["side_shared_w"] = self.lsplit.sizes()[0]
+            SETTINGS["side_shared_w"] = sizes[self.lsplit.indexOf(self.shared_host)]
+
 
     def _shared_go(self, path, new_tab):
         """공용 탐색 창에서 고른 폴더 → 대상 칸(마지막으로 고른 보이는 칸). 잠긴 탭은 칸의 이동 규칙대로 새 탭"""
@@ -6279,7 +7756,7 @@ class Main(QtWidgets.QMainWindow):
         a.setChecked(bool(SETTINGS["side_shared"]) and not SETTINGS["side_shared_hidden"])
         a.setEnabled(bool(SETTINGS["side_shared"]))
         pv = m.addAction(T("미리보기 창") + (("	" + key_text("toggle_preview")) if key_text("toggle_preview") else ""),
-                         lambda: self.set_preview(not self.preview.isVisible()))
+                         lambda: self.toggle_preview())
         pv.setCheckable(True)
         pv.setChecked(self.preview.isVisible())
         fav = m.addAction(T("즐겨찾기 바 펼치기"), self.favbar.toggle)
@@ -6341,6 +7818,7 @@ class Main(QtWidgets.QMainWindow):
         m.addSeparator()   # 동작
         for key, lbl in (("hide_single_tab", T("탭이 하나면 탭 줄 숨기기 (새 탭: Ctrl+T)")),
                          ("empty_click_up", T("빈 곳을 더블클릭하면 상위 폴더로")),
+                         ("arc_browse", T("압축 파일(ZIP·7Z·RAR…)을 두 번 누르면 4Dir 안에서 폴더처럼 열기")),
                          ("folder_size", T("폴더 크기 계산 (크기 칸 — 네트워크 드라이브 제외)")),
                          ("keep_favbar", T("메뉴줄을 접어도 즐겨찾기 줄은 보이기"))):
             a = m.addAction(lbl, lambda key=key: self.toggle_setting(key))
@@ -6411,8 +7889,8 @@ class Main(QtWidgets.QMainWindow):
 
     def changeEvent(self, ev):
         # 최소화하면 사용량 갱신·GIF 재생 멈춤 (보이지 않는데 돌 필요 없음)
-        if ev.type() == QtCore.QEvent.WindowStateChange and hasattr(self, "preview"):
-            self.preview.pause_movie(self.isMinimized())
+        if ev.type() == QtCore.QEvent.ActivationChange and self.isActiveWindow() and getattr(self, "preview", None) is not None:
+            self.preview.schedule(self)   # 빌드 18: 다른 4Dir 창을 쓰면 미리보기도 그 창의 고른 파일로
         if ev.type() == QtCore.QEvent.WindowStateChange and hasattr(self, "mon_timer"):
             if self.isMinimized():
                 self.mon_timer.stop()
@@ -6582,6 +8060,50 @@ class Main(QtWidgets.QMainWindow):
             SEARCH.rewatch()   # 다시 꽂은 드라이브의 검색 감시
         log.info("드라이브 바뀜 → 내 PC 탭 %d개 다시 읽음, 뺀 드라이브 탭 → 내 PC %s, 드라이브 %s", n, gone, os.listdrives())
 
+
+    def _devnode_check(self):
+        """장치 연결이 바뀜 → 1.5초·5초 뒤 휴대폰 목록을 보고, 달라졌으면 내 PC 다시 읽기 (빌드 5, 사용자 '휴대폰 다시 연결했는데 안 보임')"""
+        if not hasattr(self, "_devnode_timer"):
+            self._devnode_timer = QtCore.QTimer(self)
+            self._devnode_timer.setSingleShot(True)
+            self._devnode_timer.timeout.connect(self._devices_changed)
+            self._devnode_late = QtCore.QTimer(self)
+            self._devnode_late.setSingleShot(True)
+            self._devnode_late.timeout.connect(self._devices_changed)
+        self._devnode_timer.start(1500)   # 휴대폰은 잠금 풀고 '파일 전송'을 고른 뒤에야 셸에 나타남 → 두 번 봄
+        self._devnode_late.start(5000)
+
+    def _devices_changed(self):
+        if self is not (WINDOWS[0] if WINDOWS else self):
+            return   # 창이 여러 개면 한 창만 확인 (refresh_drives 가 모든 창을 다시 읽음)
+        now = tuple(sorted(n for n, _p in devices.list_devices()))
+        old = getattr(Main, "_last_devices", None)
+        Main._last_devices = now
+        if now == old:
+            # 빌드 6 사용자: '파일 전송'을 고르기 전엔 저장공간이 없음 → 고른 뒤에도 이름은 같아 다시 안 읽었음.
+            # 장치 연결이 바뀌었으니 휴대폰을 보고 있는 칸·탐색 창의 휴대폰 아래는 다시 읽음
+            if now:
+                n = 0
+                for w in list(WINDOWS):
+                    for p in w.panes:
+                        for v in p.views():
+                            if devices.is_dev(v.path) and v.active:
+                                v.reload("devnode")
+                                n += 1
+                    for sb in [p.side for p in w.panes] + [getattr(w, "shared_side", None)]:
+                        if sb is not None:
+                            sb.reset_devices()
+                log.info("장치 연결 바뀜(이름 같음) → 휴대폰 칸 %d개 다시 읽음", n)
+            return
+        log.info("휴대폰 등 장치 바뀜 %s → %s", list(old), list(now))
+        if len(now) < len(old):   # 빠진 장치 → 휴대폰 안을 보던 탭은 내 PC 로 (드라이브 뺄 때와 같게)
+            for w in list(WINDOWS):
+                for p in w.panes:
+                    for v in p.views():
+                        if devices.is_dev(v.path):
+                            v.navigate(THIS_PC, force=True)
+        for w in list(WINDOWS) or [self]:
+            w.refresh_drives()
 
     def reopen_tab(self, k=None, pane=None):
         if not self.closed_tabs:
@@ -6954,6 +8476,11 @@ class Main(QtWidgets.QMainWindow):
         self.setStyleSheet(ui_parts.build_style(SETTINGS[SETTINGS.theme_key()], dark))
         if getattr(self, "mon", None):
             self._update_mon()
+        if MEMO_WIN is not None:   # v0.9.108 메모지 색도 밝게/어둡게 (빌드 8: 따로 창)
+            MEMO_WIN.setStyleSheet(self.styleSheet())
+            MEMO_WIN.panel.restyle()
+        if PREVIEW_WIN is not None:   # 빌드 18
+            PREVIEW_WIN.setStyleSheet(self.styleSheet())
 
     def _on_svn_changed(self, root):
         """작업 폴더 안 변경(실시간)·처음 훑기 끝 → 그 안을 보고 있는 탭의 SVN 배지만 다시 읽음"""
@@ -7303,6 +8830,10 @@ class Main(QtWidgets.QMainWindow):
 
     def _fill_tool_menu(self, m):
         m.clear()
+        mm = m.addAction(memo_icon(), mlabel(T("메모 창"), "toggle_memo"), lambda: self.toggle_memo())   # 빌드 9: 도구 맨 위
+        mm.setCheckable(True)
+        mm.setChecked(bool(SETTINGS["memo_on"]))
+        m.addSeparator()
         sm = m.addMenu(T("창 저장/불러오기"))   # v0.9.103 메뉴줄에서 여기로
         sm.aboutToShow.connect(lambda: self._fill_session_menu(sm))
         m.addSeparator()
@@ -7310,6 +8841,8 @@ class Main(QtWidgets.QMainWindow):
         m.addAction(T("이름 일괄 변경…"), lambda: self.open_batch_rename(self.pane().view().selected_paths() if self.pane().view() else []))
         m.addAction(mlabel(T("두 칸 비교"), "compare"), self.compare_panes)
         m.addAction(mlabel(T("패턴으로 고르기…"), "select_pattern"), lambda: self.pane().view() and self.pane().view().select_pattern())
+        m.addAction(mlabel(T("하위 폴더 펼쳐 보기"), "flat_view"), lambda: self.pane().view() and self.pane().view().flat_view())   # 빌드 20
+        m.addAction(mlabel(T("중복 파일 찾기…"), "find_dupes"), lambda: self.find_dupes(self.pane().view()))   # 빌드 20
         m.addAction(mlabel(T("명령 찾기…"), "palette"), self.open_palette)
         # v0.9.104 사용자 11/5: 사용법·로그·문제 보고·새 버전·홈페이지·후원은 설정 창 '정보'로
 
@@ -7368,7 +8901,7 @@ eports.
         try:
             self.save_state()
             scr = self.screen()
-            info = [f"4Dir {QE_VERSION}", f"저장 시각 {time.strftime('%Y-%m-%d %H:%M:%S')}",
+            info = [f"4Dir {QE_VERSION} build {QE_BUILD}", f"저장 시각 {time.strftime('%Y-%m-%d %H:%M:%S')}",
                     f"윈도우 {platform.platform()} ({platform.version()})", f"파이썬 {sys.version.split()[0]} {sys.executable}",
                     f"Qt {QtCore.qVersion()}", f"실행 위치 {BIN_DIR}",
                     f"화면 {scr.size().width()}x{scr.size().height()} 배율 {scr.devicePixelRatio():.2f} DPI {scr.logicalDotsPerInch():.0f}" if scr else "화면 ?",
@@ -7406,7 +8939,7 @@ eports.
         메일 프로그램이 없으면 주소를 복사하고 알림"""
         import platform
         from urllib.parse import quote
-        subject = f"4Dir v{QE_VERSION} problem report"
+        subject = f"[4Dir] v{QE_VERSION} problem report"   # 빌드 3: 받은 편지함에서 [4Dir] 말머리로 구분 (사용자 11/5)
         body = (chr(13) + chr(10)).join([T("어떤 문제가 있었나요? (무엇을 하다가, 어떻게 됐는지)"), "", "", "----",
                              f"4Dir {QE_VERSION} / {platform.platform()}",
                              T("첨부할 파일: {0}").format(os.path.basename(path)),
@@ -7455,7 +8988,7 @@ eports.
             self._paint_active()
             self.sync_shared_side()   # v0.9.100 공용 탐색 창이 새 대상 칸 폴더까지 펼침
             if getattr(self, "preview", None) is not None:   # 미리보기 창: 다른 칸으로 옮기면 그 칸의 선택으로 (v0.9.58)
-                self.preview.schedule()
+                self.preview.schedule(self)
 
     def _paint_active(self):
         for p in self.panes:
@@ -7573,7 +9106,16 @@ eports.
 
     def toggle_opt(self, key):
         OPTS[key] = not OPTS[key]
+        if OPTS[key] and key in ("date_groups", "type_groups"):   # 묶기는 둘 중 하나
+            OPTS["type_groups" if key == "date_groups" else "date_groups"] = False
+        thumbs.BADGES, thumbs.COVERS = OPTS["type_badges"], OPTS["folder_covers"]
+        if key in ("type_badges", "folder_covers"):
+            thumbs_service().clear()   # 딱지·표지는 미리보기에 그려 넣으므로 다시 만듦
         log.info("보기 옵션 %s=%s", key, OPTS[key])
+        if key == "type_chips":   # 빌드 27 위쪽 단추 눌림 표시도 모든 창
+            for w in list(WINDOWS) + ([self] if self not in WINDOWS else []):
+                if getattr(w, "btn_chips", None) is not None:
+                    w.btn_chips.setChecked(bool(OPTS["type_chips"]))
         if key == "svn_status":   # 즐겨찾기 바 SVN 표시도 같이 켜고 끔
             for w in WINDOWS:
                 w.favbar._svn_timer.start()
@@ -7585,8 +9127,15 @@ eports.
                     else:
                         v.keep_sel = None
                         v.model_.path = ""  # 다시 보일 때 새로 읽음
-                elif key in ("date_folders_first", "date_groups"):
+                elif key in ("date_folders_first", "date_groups", "type_groups"):
                     v.model_.sort(v.model_.sort_col, v.model_.sort_order)   # 다시 정렬 (묶기도 여기서)
+                elif key == "type_chips":
+                    if not OPTS["type_chips"] and getattr(v.model_, "ext_filter", None):
+                        v.set_ext_filter(set())
+                    if v is p.view():
+                        p.chips.refresh(v, force=True)
+                elif key in ("type_badges", "folder_covers"):
+                    v.view().viewport().update()
                 elif key == "svn_status":
                     v.refresh_svn() if v.active else setattr(v.model_, "svn", {})
                 elif key == "thumbnails":
@@ -7704,6 +9253,12 @@ eports.
         OPTS["checkboxes"] = bool(o.get("checkboxes", False))
         OPTS["date_folders_first"] = bool(o.get("date_folders_first", False))
         OPTS["date_groups"] = bool(o.get("date_groups", False))
+        OPTS["type_groups"] = bool(o.get("type_groups", False)) and not OPTS["date_groups"]
+        for k in ("type_chips", "type_badges", "folder_covers"):
+            OPTS[k] = bool(o.get(k, True))
+        thumbs.BADGES, thumbs.COVERS = OPTS["type_badges"], OPTS["folder_covers"]
+        if getattr(self, "btn_chips", None) is not None:   # 빌드 27 저장된 켬/끔을 위쪽 단추에도
+            self.btn_chips.setChecked(OPTS["type_chips"])
         OPTS["svn_status"] = bool(o.get("svn_status", True))
         OPTS["thumbnails"] = bool(o.get("thumbnails", True))
         OPTS["vcs_overlay"] = bool(o.get("vcs_overlay", True))
@@ -7772,6 +9327,24 @@ eports.
 
     def closeEvent(self, ev):
         last = not [w for w in WINDOWS if w is not self]
+        if MEMOS is not None:   # v0.9.108 메모는 닫을 때 바로 저장 (0.6초 기다리지 않음)
+            MEMOS.save_now()
+        if last:   # 빌드 20: 압축에서 꺼낸 임시 폴더 정리 (이 프로그램 것만)
+            try:
+                archives.cleanup()
+            except Exception:
+                log.exception("압축 임시 폴더 정리 실패")
+        if MEMO_WIN is not None:
+            MEMO_WIN.save_geo()
+            if last:   # 마지막 4Dir 창을 닫으면 메모 창도 닫음 (켜 둔 상태는 기억 → 다음에 다시 열림)
+                MEMO_WIN.hide()
+        if PREVIEW_WIN is not None:   # 빌드 18 미리보기 따로 창도 같게
+            PREVIEW_WIN.save_geo()
+            if last:
+                PREVIEW_WIN.pane._stop_movie()
+                PREVIEW_WIN.hide()
+            elif PREVIEW_WIN.pane.main is self:
+                PREVIEW_WIN.pane.main = next(w for w in WINDOWS if w is not self)
         st = self.collect_state()
         now = time.time()
         if SESSION_END["on"]:
@@ -7841,6 +9414,8 @@ eports.
                     log.info("드라이브 %s %s", "꽂음" if msg.wParam == 0x8000 else "뺌",
                              "".join(chr(65 + i) for i in range(26) if mask >> i & 1))
                     self._drive_timer.start(600 if msg.wParam == 0x8000 else 0)   # 뺌은 바로 (11/5 사용자 '느리다'), 꽂음은 0.6초 묶음
+                elif msg.wParam == 0x0007:   # DBT_DEVNODES_CHANGED — 휴대폰처럼 드라이브 글자 없는 장치는 볼륨 신호가 안 옴 (빌드 5)
+                    self._devnode_check()
                 elif msg.wParam in (0x8001, 0x8003, 0x8004) and msg.lParam and ctypes.c_uint32.from_address(msg.lParam + 4).value == 6:
                     # DBT_DEVTYP_HANDLE: 꺼내도 되나(8001) / 꺼내기 취소(8003) / 빠짐(8004) — 우리가 등록한 드라이브 핸들
                     h = ctypes.c_void_p.from_address(msg.lParam + 16).value
@@ -8038,7 +9613,7 @@ def hand_off_to_running(arg_path):
 
 def main():
     log.info("=" * 60)
-    log.info("4Dir v%s 시작 python=%s pid=%d", QE_VERSION, sys.version.split()[0], os.getpid())
+    log.info("4Dir v%s (빌드 %s) 시작 python=%s pid=%d", QE_VERSION, QE_BUILD, sys.version.split()[0], os.getpid())
     arg_path = sys.argv[1] if len(sys.argv) > 1 and os.path.isdir(sys.argv[1]) else None
     try:  # 작업표시줄에 파이썬 아이콘 대신 4Dir 아이콘이 보이게
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_ID)
@@ -8046,6 +9621,7 @@ def main():
         pass
     QtWidgets.QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
     app = QtWidgets.QApplication(sys.argv)
+    app.installEventFilter(TIP_GATE)   # 빌드 13: 풍선 도움말 끄기
     if not SETTINGS["allow_multi"] and hand_off_to_running(arg_path):
         log.info("창 하나만 모드: 이미 실행 중 → 기존 창으로 넘기고 종료")
         return
@@ -8075,6 +9651,8 @@ def main():
         log.info("지난번 창 %d개 더 다시 엶", len(w.pending_windows))
         w.raise_()
         w.activateWindow()
+    if os.path.exists(os.path.join(BIN_DIR, memo.FILE)):   # 빌드 13: 메모 알림은 메모 창을 안 열어도 울림
+        QtCore.QTimer.singleShot(3000, memo_store)
     QtCore.QTimer.singleShot(10000, lambda: WINDOWS and start_update_check(WINDOWS[0]))   # 새 버전 확인 (하루 한 번, 뒤에서)
     if not SETTINGS["guide_shown"]:   # 처음 실행 → 사용법 한 번 (다시 보기: 도구 > 사용법)
         def first_guide():

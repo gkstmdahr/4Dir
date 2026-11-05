@@ -37,10 +37,14 @@ ACTIONS = [
     ("properties", T("속성"), "Alt+Return; Alt+Enter", "view"),
     ("select_pattern", T("패턴으로 고르기…"), "Ctrl+Shift+A", "view"),   # v0.9.89
     ("sha256", T("확인값(SHA256) 보기"), "", "view"),   # v0.9.89
+    ("quick_preview", T("미리보기 창 바로 보기/닫기"), "Space", "view"),   # 빌드 20 (다른 파일 관리자처럼 스페이스)
+    ("flat_view", T("하위 폴더 펼쳐 보기 (모든 파일 한 목록)"), "", "view"),   # 빌드 20
+    ("find_dupes", T("중복 파일 찾기…"), "", "view"),   # 빌드 20
     ("new_window", T("새 창"), "Ctrl+N", "window"),
     ("new_tab", T("새 탭"), "Ctrl+T", "window"),
     ("close_tab", T("탭 닫기"), "Ctrl+W", "window"),
-    ("lock_tab", T("탭 잠금/잠금 해제"), "", "window"),   # v0.9.95 (기본 키 없음 — 단축키 설정에서)
+    ("lock_tab", T("탭 잠금/잠금 해제"), "", "window"),
+    ("toggle_chips", T("형식 단추 줄 보이기/숨기기"), "", "window"),   # 빌드 27 위쪽 단추와 같음   # v0.9.95 (기본 키 없음 — 단축키 설정에서)
     ("reopen_tab", T("닫은 탭 다시 열기"), "Ctrl+Shift+T", "window"),
     ("next_tab", T("다음 탭"), "Ctrl+Tab", "window"),
     ("prev_tab", T("이전 탭"), "Ctrl+Shift+Tab", "window"),
@@ -51,7 +55,8 @@ ACTIONS = [
     ("add_fav", T("현재 폴더를 즐겨찾기에 추가"), "Ctrl+D", "window"),
     ("toggle_chrome", T("메뉴·즐겨찾기 접기/펼치기"), "Ctrl+Shift+M", "window"),
     ("toggle_preview", T("미리보기 창 보이기/숨기기"), "Alt+P", "window"),
-    ("toggle_nav", T("탐색 창 보이기/숨기기"), "", "window"),   # v0.9.101 공용이면 공용 탐색 창, 칸마다면 지금 칸 (기본 키 없음)
+    ("toggle_nav", T("탐색 창 보이기/숨기기"), "", "window"),
+    ("toggle_memo", T("메모 창 보이기/숨기기"), "Alt+M", "window"),   # v0.9.108   # v0.9.101 공용이면 공용 탐색 창, 칸마다면 지금 칸 (기본 키 없음)
     ("compare", T("두 칸 비교"), "Shift+F2", "window"),   # v0.9.89 (토탈 커맨더와 같은 키)
     ("palette", T("명령 찾기…"), "Ctrl+Shift+P", "window"),
     ("settings", T("설정…"), "Ctrl+,", "window"),   # v0.9.104 설정 창

@@ -25,7 +25,7 @@ LOGF = os.path.join(HERE, "make_public_log.txt")
 sys.path.insert(0, HERE)
 
 BIN_SKIP_DIRS = {"__pycache__", "log", "sessions", "workspaces", "index", "restore_backup", "_restore_pending"}
-BIN_SKIP_FILES = re.compile(r"(4Dir_(state|favorites|settings|labels).*|.*\.running|.*\.tmp|.*백업.*)$", re.I)
+BIN_SKIP_FILES = re.compile(r"(4Dir_(state|favorites|settings|labels|memos).*|.*\.running|.*\.tmp|.*백업.*)$", re.I)
 BUILD_FILES = ["make_release.py", "make_release.bat", "make_guide.py", "make_shots.py", "make_site.py", "site_text.py", "changelog.py",
                "make_public.py", "make_launcher.py", "usage_text.py", "make_winget.py"]   # 1.0.7: make_winget.py   # 1.0.6: usage_text.py(언어별 사용법, make_release 1.8.0 이 가져옴)
 # 1.0.5: 4Dir.exe 를 깃허브가 공개 소스로 직접 빌드 (코드 서명 SignPath 조건 — 서명할 파일은 자동 빌드 결과여야 함)

@@ -11,6 +11,8 @@
 1.1.0 (v0.9.58): .max = 파일 안 미리보기를 직접 읽음(요약 정보의 윈도우 메타파일 안 비트맵, 1ms 안팎 —
   3ds Max·Autodesk 부품 필요 없음, 맥스 없는 PC 에서도 나옴). .psd = 파일 안 미리보기(JPEG)를 직접 읽어 GDI+ 로 풂
   (윈도우는 PSD 미리보기가 없음). 둘 다 실패하면 윈도우 미리보기. 파일은 앞부분·요약 정보만 읽음(전체 안 읽음).
+1.3.0 (4Dir 빌드 17, galleryV8 참고): 형식 딱지(왼쪽 위 PSD·PNG·GIF…, 64~299px 미리보기에만 — 미리보기 창 큰 그림엔 안 넣음),
+  폴더 표지(폴더 안 첫 그림을 폴더 모양 위에 겹쳐 그림, 이름순 첫 그림, 앞 2000개까지만 훑음). 둘 다 작업 스레드에서 QImage 로 그림.
 """
 import os
 import time
@@ -24,7 +26,12 @@ from ctypes import wintypes
 from PySide6 import QtCore, QtGui
 
 log = logging.getLogger("QE.thumb")
-VERSION = "1.2.0"
+VERSION = "1.3.0"
+BADGES = True    # 형식 딱지 (main 이 OPTS 로 정함)
+COVERS = True    # 폴더 표지
+BADGE_COLORS = {".psd": "#1f6fd1", ".png": "#2e9d4f", ".jpg": "#e07b00", ".jpeg": "#e07b00", ".gif": "#8e44ad", ".max": "#0f8b8d",
+                ".tga": "#b03a2e", ".tif": "#6d4c41", ".tiff": "#6d4c41", ".bmp": "#546e7a", ".webp": "#00897b", ".dds": "#5d4037",
+                ".exr": "#37474f", ".hdr": "#37474f", ".ico": "#7cb342"}
 IMAGE_EXT = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tga", ".psd", ".dds", ".tif", ".tiff", ".webp", ".ico", ".exr", ".hdr", ".max"}
 CACHE_BYTES = 120 * 1024 * 1024
 
@@ -237,8 +244,106 @@ def psd_preview(path):
     return None
 
 
-def make_image(path, px):
-    """미리보기 하나 만들기 — .max·.psd 는 파일 안 미리보기 먼저, 없으면 윈도우 미리보기"""
+def badge(img, ext):
+    """형식 딱지: 왼쪽 위 둥근 사각형에 확장명 (PSD·PNG…)"""
+    if img is None or img.isNull() or not ext:
+        return img
+    img = img.convertToFormat(QtGui.QImage.Format_ARGB32_Premultiplied)
+    w = img.width()
+    p = QtGui.QPainter(img)
+    p.setRenderHint(QtGui.QPainter.Antialiasing, True)
+    p.setRenderHint(QtGui.QPainter.TextAntialiasing, True)
+    f = QtGui.QFont("Segoe UI")
+    f.setBold(True)
+    f.setPixelSize(max(9, min(16, int(w * 0.11))))
+    p.setFont(f)
+    txt = ext[1:].upper()[:4]
+    fm = QtGui.QFontMetrics(f)
+    bw, bh = fm.horizontalAdvance(txt) + 8, fm.height() + 1
+    r = QtCore.QRectF(3, 3, bw, bh)
+    p.setPen(QtCore.Qt.NoPen)
+    p.setBrush(QtGui.QColor(BADGE_COLORS.get(ext, "#616161")))
+    p.drawRoundedRect(r, 3, 3)
+    p.setPen(QtGui.QColor("#ffffff"))
+    p.drawText(r, QtCore.Qt.AlignCenter, txt)
+    p.end()
+    return img
+
+
+def first_image(folder, limit=2000):
+    """폴더 안 이름순 첫 그림 파일 (.max 제외 — 표지는 그림만), 앞 limit 개까지만 훑음"""
+    best = None
+    try:
+        with os.scandir(folder) as it:
+            for i, d in enumerate(it):
+                if i >= limit:
+                    break
+                ext = os.path.splitext(d.name)[1].lower()
+                if ext in IMAGE_EXT and ext != ".max" and d.is_file(follow_symlinks=False):
+                    k = d.name.lower()
+                    if best is None or k < best[0]:
+                        best = (k, d.path)
+    except OSError:
+        return None
+    return best[1] if best else None
+
+
+def folder_cover(folder, px):
+    """폴더 표지: 폴더 모양 + 안 첫 그림 카드 (그림이 없으면 None → 보통 폴더 아이콘)"""
+    pic_path = first_image(folder)
+    if not pic_path:
+        return None
+    pic = make_image(pic_path, px, badges=False)
+    if pic is None or pic.isNull():
+        return None
+    img = QtGui.QImage(px, px, QtGui.QImage.Format_ARGB32_Premultiplied)
+    img.fill(QtCore.Qt.transparent)
+    p = QtGui.QPainter(img)
+    p.setRenderHint(QtGui.QPainter.Antialiasing, True)
+    p.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
+    s = px / 100.0
+    back = QtGui.QPainterPath()   # 뒤판 + 탭
+    back.moveTo(6 * s, 22 * s)
+    back.lineTo(6 * s, 14 * s)
+    back.quadTo(6 * s, 10 * s, 10 * s, 10 * s)
+    back.lineTo(36 * s, 10 * s)
+    back.lineTo(43 * s, 18 * s)
+    back.lineTo(90 * s, 18 * s)
+    back.quadTo(94 * s, 18 * s, 94 * s, 22 * s)
+    back.lineTo(94 * s, 84 * s)
+    back.lineTo(6 * s, 84 * s)
+    back.closeSubpath()
+    p.setPen(QtCore.Qt.NoPen)
+    p.setBrush(QtGui.QColor("#d9a520"))
+    p.drawPath(back)
+    # 그림 카드 (흰 테두리)
+    area = QtCore.QRectF(14 * s, 22 * s, 72 * s, 56 * s)
+    k = min(area.width() / pic.width(), area.height() / pic.height())
+    pw, ph = pic.width() * k, pic.height() * k
+    card = QtCore.QRectF(area.center().x() - pw / 2, area.bottom() - ph, pw, ph)
+    p.setBrush(QtGui.QColor("#ffffff"))
+    p.drawRect(card.adjusted(-2 * s, -2 * s, 2 * s, 2 * s))
+    p.drawImage(card, pic)
+    # 앞판 (아래 띠) — 그림 아래쪽만 살짝 덮어 폴더처럼
+    front = QtGui.QPainterPath()
+    front.addRoundedRect(QtCore.QRectF(4 * s, 70 * s, 92 * s, 20 * s), 3 * s, 3 * s)
+    p.setBrush(QtGui.QColor("#f5c84c"))
+    p.drawPath(front)
+    p.end()
+    return img
+
+
+def make_image(path, px, badges=True):
+    """미리보기 하나 만들기 — 폴더 = 표지(1.3.0), .max·.psd 는 파일 안 미리보기 먼저, 없으면 윈도우 미리보기. 64~299px 는 형식 딱지"""
+    if os.path.isdir(path):
+        return folder_cover(path, px) if COVERS else None
+    img = _make_image(path, px)
+    if badges and BADGES and 64 <= px < 300 and img is not None:
+        img = badge(img, os.path.splitext(path)[1].lower())
+    return img
+
+
+def _make_image(path, px):
     ext = os.path.splitext(path)[1].lower()
     if ext in (".max", ".psd"):
         try:
@@ -322,6 +427,15 @@ class Thumbs(QtCore.QObject):
     def stop(self):
         self.alive = False
         self.ev.set()
+
+    def clear(self):
+        """딱지·표지 설정이 바뀜 → 만든 것 전부 버리고 다시 (1.3.0)"""
+        with self.lock:
+            self.cache.clear()
+            self.bytes = 0
+            self.failed.clear()
+        self.pix.clear()
+        log.info("미리보기 기억 비움 (딱지 %s, 표지 %s)", BADGES, COVERS)
 
     def _run(self):
         ole.CoInitializeEx(None, 0)   # MTA (실측: STA 보다 첫 호출 빠름)

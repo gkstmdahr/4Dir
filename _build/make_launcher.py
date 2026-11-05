@@ -14,7 +14,7 @@ import sys
 import time
 import subprocess
 
-MAKE_LAUNCHER_VER = "1.0.0"
+MAKE_LAUNCHER_VER = "1.0.1"   # 1.0.1: 파일 버전 4번째 자리 = QE_BUILD (공개 번호·빌드 번호 나눔)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 SRC = os.path.join(ROOT, "launcher", "4Dir_launcher.cs")
@@ -35,6 +35,12 @@ def app_version():
     return re.search(r'QE_VERSION = "([^"]+)"', s).group(1)
 
 
+def app_build():
+    s = open(os.path.join(ROOT, "bin", "main.py"), encoding="utf-8").read()
+    m = re.search(r'^QE_BUILD = (\d+)', s, re.M)
+    return int(m.group(1)) if m else 0
+
+
 def find_csc():
     win = os.environ.get("SystemRoot", r"C:\Windows")
     for fw in ("Framework64", "Framework"):
@@ -48,8 +54,8 @@ def main():
     out_dir = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else os.path.join(HERE, "launcher_out")
     os.makedirs(out_dir, exist_ok=True)
     ver = app_version()
-    nums = [int(x) for x in re.findall(r"\d+", ver)][:4]
-    ver4 = ".".join(str(n) for n in nums + [0] * (4 - len(nums)))
+    nums = [int(x) for x in re.findall(r"\d+", ver)][:3]
+    ver4 = ".".join(str(n) for n in nums + [0] * (3 - len(nums)) + [app_build()])   # 1.0.1: 공개 번호 3자리 + 빌드
     log(f"make_launcher {MAKE_LAUNCHER_VER}: 4Dir {ver} (파일 버전 {ver4}) → {out_dir}")
 
     src = open(SRC, encoding="utf-8").read().replace("@VER4@", ver4).replace("@VER@", ver)

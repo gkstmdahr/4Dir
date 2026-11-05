@@ -17,8 +17,8 @@ import zipfile
 import logging
 
 BACKUP_VER = "1.0.0"
-FILES = ("4Dir_settings.json", "4Dir_state.json", "4Dir_favorites.json", "4Dir_labels.json")
-DIRS = ("workspaces", "sessions")
+FILES = ("4Dir_settings.json", "4Dir_state.json", "4Dir_favorites.json", "4Dir_labels.json", "4Dir_memos.json")   # v0.9.108 메모
+DIRS = ("workspaces", "sessions", "memo_images")   # 빌드 13 메모 그림
 MANIFEST = "4Dir_backup.json"
 PENDING = "_restore_pending"
 KEEP_DIR = "restore_backup"

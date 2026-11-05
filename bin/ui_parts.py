@@ -56,7 +56,9 @@ class Settings:
                      "allow_multi": False,   # False = 창 하나만 (다시 실행하면 기존 창을 앞으로)
                      "sysmon": True,         # 상단에 CPU·GPU 사용량 표시
                      "preview_pane": False,  # 오른쪽 미리보기 창 (v0.9.58, 보기 > 미리보기 창 / Alt+P)
-                     "preview_w": 300,       # 미리보기 창 너비
+                     "preview_w": 300,       # 미리보기 창 너비 (빌드 18 부터 따로 창 — 처음 크기로만 씀)
+                     "preview_geo": "",      # 빌드 18 미리보기 따로 창 위치·크기
+                     "preview_top": False,   # 빌드 18 미리보기 창 항상 위
                      "breadcrumb": True,     # 주소를 경로 버튼으로 (기본: 경로 버튼, 빈 곳 클릭하면 입력칸)
                      "batch_rename": {},     # 이름 일괄 변경 창의 마지막 입력값
                      "guide_shown": False,   # 처음 실행 때 사용법 창을 보여줬는지
@@ -73,10 +75,19 @@ class Settings:
                      "folder_size": True,         # 폴더 크기 계산 — 크기 칸 (v0.9.89, 네트워크 드라이브 제외)
                      "select_pattern": "",        # 패턴으로 고르기 마지막 입력 (v0.9.89)
                      "empty_click_up": True,      # 목록 빈 곳을 더블클릭하면 상위 폴더로 (v0.9.75 옵션, v0.9.82 기본 켬)
+                     "preview_autoplay": True,    # 빌드 28 미리보기 GIF·동영상 자동 재생 (조작줄 단추)
+                     "video_sound": True,         # 빌드 24 미리보기 동영상 소리 (단추로 끄면 기억)
+                     "arc_browse": True,          # 빌드 20 압축 파일을 두 번 누르면 4Dir 안에서 폴더처럼 (끄면 윈도우 연결 프로그램)
                      "columns": [1, 2, 3],        # 자세히 보기에 보일 열 (v0.9.76 머리글 우클릭; 1 수정한 날짜·2 유형·3 크기·5 날짜·6 길이·7 만든 날짜·8 미디어 작성 날짜·9 사진 크기)
-                     "side_shared": False,         # v0.9.100 이슈 #3 공용 탐색 창(창 왼쪽 전체 높이) — 켜면 칸별 탐색 창 숨김
+                     "side_shared": True,          # v0.9.100 이슈 #3 공용 탐색 창(창 왼쪽 전체 높이) — 켜면 칸별 탐색 창 숨김 · 빌드 18 기본 켬(사용자 11/5)
                      "side_shared_w": 240,         # 공용 탐색 창 폭
-                     "side_shared_hidden": False,  # v0.9.101 공용 모드인 채로 잠깐 숨김 (☰ 버튼·보기 메뉴·단축키)
+                     "side_shared_hidden": False,
+                     "memo_on": False,            # v0.9.108 메모 창 (사용자 11/5)
+                     "memo_side": "right",        # 메모 창 위치 left / right
+                     "memo_w": 280,
+                     "memo_geo": "",
+                     "tooltips": True,            # 빌드 13 사용자: 풍선 도움말 보이기 (설정에서 끔)
+                     "memo_top": False,            # 빌드 9: 메모 창 항상 위               # 빌드 8: 메모 창(따로 창) 위치·크기  # v0.9.101 공용 모드인 채로 잠깐 숨김 (☰ 버튼·보기 메뉴·단축키)
                      "ws_slots": {},              # v0.9.98 이슈 #1 지정 1·2 창 구성 이름 {"1": 이름, "2": 이름}
                       "status_col": True,          # v0.9.94 상태 열 (원드라이브 등 동기화 폴더에서만 보임)
                      "lang": None}           # 화면 언어 코드 (None = 윈도우 표시 언어 따름, i18n.py) — 다시 시작하면 적용
@@ -88,7 +99,7 @@ class Settings:
                     self.data[tk].update({k: v for k, v in d.get(tk, {}).items() if k in THEME_KEYS})
                 if "theme_mode" not in d and d.get("dark"):   # 0.6.2 이전: 다크 모드 켜둔 사람은 '어둡게' 유지
                     self.data["theme_mode"] = "dark"
-                for k in ("theme_mode", "dark", "fav_expanded", "on_top", "allow_multi", "sysmon", "breadcrumb", "keys", "search_roots", "lang", "chrome_collapsed", "batch_rename", "guide_shown", "update_check", "update_last", "update_skip", "resume_after_reboot", "keep_favbar", "hide_single_tab", "empty_click_up", "columns", "mouse", "folder_size", "select_pattern", "status_col", "ws_slots", "side_shared", "side_shared_w", "side_shared_hidden"):
+                for k in ("theme_mode", "dark", "fav_expanded", "on_top", "allow_multi", "sysmon", "breadcrumb", "keys", "search_roots", "lang", "chrome_collapsed", "batch_rename", "guide_shown", "update_check", "update_last", "update_skip", "resume_after_reboot", "keep_favbar", "hide_single_tab", "empty_click_up", "columns", "mouse", "folder_size", "select_pattern", "status_col", "ws_slots", "side_shared", "side_shared_w", "side_shared_hidden", "memo_on", "memo_side", "memo_w", "memo_geo", "memo_top", "preview_pane", "preview_w", "preview_geo", "preview_top", "tooltips", "arc_browse", "video_sound", "preview_autoplay"):
                     if k in d:
                         self.data[k] = d[k]
             except Exception:

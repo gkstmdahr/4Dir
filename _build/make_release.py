@@ -16,6 +16,7 @@ _release 에 함께 생기는 것: 4Dir_v<버전>.zip.sha256.txt (정품 확인�
 로그: _build\\build_log.txt
 """
 import os
+import glob
 import re
 import sys
 import shutil
@@ -28,7 +29,7 @@ import subprocess
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import usage_text   # 1.8.0: 언어별 사용법 글
 
-MAKE_VER = "1.9.3"   # 1.9.3: 설정 가져오기 보관·준비 폴더(restore_backup·_restore_pending) 빼기 / 1.9.2: 색 라벨 파일(4Dir_labels.json, 개인 데이터) 빼기 / 1.9.1: carryover 가져오기 확인 / 1.9.0: 사용법 파일 맨 위에 이번 버전 바뀐 점(changelog) / 1.8.0: 사용법 10개 언어 파일(이름도 그 언어)·Guide\<언어> 그림 10개 언어, 한국어 사용법에서 영어 부분 뺌 / 1.7.0: 4Dir.exe 실행기 포함(사용법은 exe 우선, vbs 예비) / 1.6.0: 일본어 설명서 お読みください.txt (Vector 掲載基準) / 1.5.0: qwebp·qjpeg 포함, imgconvert 가져오기 확인 / 1.4.1: 프로그램 안 사용법 그림은 ko·en p1~p6 만 / 1.4.0: qgif.dll(GIF 재생) 포함 / 1.3.0: 회사 글자 목록 별도 파일(corp_words.txt, 비공개), 4Dir 본체 GPL-3.0 라이선스 포함, 패키지 정보 없을 때 버전·pywin32 라이선스 대체 / 1.2.5: 소스 백업에 _dev(시험·번역) 포함 / 1.2.4: overlays·overlayorder 가져오기 확인 / 1.2.3: thumbs 가져오기 확인 / 1.2.2: 사용법에 즐겨찾기 정리·탭 끌기·일괄 변경 / 1.2.1: favorg 가져오기 확인 / 1.2.0: 이전 배포판은 _release\백업\배포판 으로 옮김(최근 10개), 버전마다 소스 백업 _release\백업\소스 / 1.1.5: 사용법 그림(bin\guide, 사용법 그림\ko·en) / 1.1.4: batchrename 가져오기 확인 / 1.1.3: 회사 관련 글자 검사(있으면 배포 중단) / 1.1.1: 언어 파일(bin\lang) 포함·영어 안내 / 1.1.0: .pyc 배포, SHA256 지문 파일, 라이선스 문서, 사용법(차단 해제 안내) 갱신
+MAKE_VER = "1.9.6"   # 1.9.6: 동영상 부품(QtMultimedia·FFmpeg·ffmpegmediaplugin) 넣음 / 1.9.5: 가져오기 확인에 dupes·archives / 1.9.4: changelog 에 아직 이번 공개 번호가 없으면(빌드 중) 바뀐 점만 생략하고 계속 / 1.9.3: 설정 가져오기 보관·준비 폴더(restore_backup·_restore_pending) 빼기 / 1.9.2: 색 라벨 파일(4Dir_labels.json, 개인 데이터) 빼기 / 1.9.1: carryover 가져오기 확인 / 1.9.0: 사용법 파일 맨 위에 이번 버전 바뀐 점(changelog) / 1.8.0: 사용법 10개 언어 파일(이름도 그 언어)·Guide\<언어> 그림 10개 언어, 한국어 사용법에서 영어 부분 뺌 / 1.7.0: 4Dir.exe 실행기 포함(사용법은 exe 우선, vbs 예비) / 1.6.0: 일본어 설명서 お読みください.txt (Vector 掲載基準) / 1.5.0: qwebp·qjpeg 포함, imgconvert 가져오기 확인 / 1.4.1: 프로그램 안 사용법 그림은 ko·en p1~p6 만 / 1.4.0: qgif.dll(GIF 재생) 포함 / 1.3.0: 회사 글자 목록 별도 파일(corp_words.txt, 비공개), 4Dir 본체 GPL-3.0 라이선스 포함, 패키지 정보 없을 때 버전·pywin32 라이선스 대체 / 1.2.5: 소스 백업에 _dev(시험·번역) 포함 / 1.2.4: overlays·overlayorder 가져오기 확인 / 1.2.3: thumbs 가져오기 확인 / 1.2.2: 사용법에 즐겨찾기 정리·탭 끌기·일괄 변경 / 1.2.1: favorg 가져오기 확인 / 1.2.0: 이전 배포판은 _release\백업\배포판 으로 옮김(최근 10개), 버전마다 소스 백업 _release\백업\소스 / 1.1.5: 사용법 그림(bin\guide, 사용법 그림\ko·en) / 1.1.4: batchrename 가져오기 확인 / 1.1.3: 회사 관련 글자 검사(있으면 배포 중단) / 1.1.1: 언어 파일(bin\lang) 포함·영어 안내 / 1.1.0: .pyc 배포, SHA256 지문 파일, 라이선스 문서, 사용법(차단 해제 안내) 갱신
 # PySide6·Qt 라이선스 원문 (LGPLv3 는 GPLv3 를 참조). gnu.org 는 이 네트워크에서 응답 없음(10/2 실측) → SPDX 공식 원문 저장소
 LICENSE_URLS = {"LGPL-3.0.txt": "https://raw.githubusercontent.com/spdx/license-list-data/main/text/LGPL-3.0-only.txt",
                 "GPL-3.0.txt": "https://raw.githubusercontent.com/spdx/license-list-data/main/text/GPL-3.0-only.txt"}
@@ -47,15 +48,16 @@ EMBED = f"python-{PYVER}-embed-amd64.zip"
 EMBED_URL = f"https://www.python.org/ftp/python/{PYVER}/{EMBED}"
 
 # bin 에서 배포하지 않는 것 (개인 데이터)
-BIN_SKIP_DIRS = {"__pycache__", "log", "sessions", "workspaces", "index", "restore_backup", "_restore_pending"}   # index = 검색 색인(개인 데이터)
-BIN_SKIP_FILES = re.compile(r"(4Dir_(state|favorites|settings|labels).*|.*\.running|.*\.tmp|.*백업.*)$", re.I)
+BIN_SKIP_DIRS = {"__pycache__", "log", "sessions", "workspaces", "index", "restore_backup", "_restore_pending", "memo_images"}   # index = 검색 색인(개인 데이터)
+BIN_SKIP_FILES = re.compile(r"(4Dir_(state|favorites|settings|labels|memos).*|.*\.running|.*\.tmp|.*백업.*)$", re.I)
 
 # PySide6 에서 필요한 것만 (이름 규칙)
 PYSIDE_KEEP = re.compile(r"^(__init__\.py|_config\.py|_git_pyside_version\.py|"
-                         r"Qt(Core|Gui|Widgets|Network)\.pyd|pyside6\.abi3\.dll|"
-                         r"Qt6(Core|Gui|Widgets|Network)\.dll|"
+                         r"Qt(Core|Gui|Widgets|Network|Multimedia)\.pyd|pyside6\.abi3\.dll|"
+                         r"Qt6(Core|Gui|Widgets|Network|Multimedia)\.dll|"
+                         r"(avcodec|avformat|avutil|swresample|swscale)-\d+\.dll|"   # 1.9.6 동영상 미리보기 (FFmpeg, _build\get_video.py)
                          r"(msvcp|vcruntime|concrt)\d*(_\w+)?\.dll)$", re.I)
-PYSIDE_PLUGINS = ["platforms/qwindows.dll", "styles/qmodernwindowsstyle.dll", "imageformats/qico.dll",
+PYSIDE_PLUGINS = ["platforms/qwindows.dll", "multimedia/ffmpegmediaplugin.dll", "styles/qmodernwindowsstyle.dll", "imageformats/qico.dll",
                   "imageformats/qgif.dll", "imageformats/qwebp.dll", "imageformats/qjpeg.dll"]   # 1.5.0: webp·jpg (그림 변환 v0.9.66)   # 1.4.0: GIF 움직임 재생(미리보기 창). runtime 에 없으면 _build\qt_plugins 에서 (PyPI PySide6-Essentials 6.11.1 원본)
 QT_PLUGINS_EXTRA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "qt_plugins")
 PYWIN_DIRS = ["win32", "win32com", "win32comext", "pywin32_system32"]
@@ -144,6 +146,10 @@ def write_licenses(out, sp_src, rt):
     shutil.copy2(get_license("GPL-3.0.txt", LICENSE_URLS["GPL-3.0.txt"]), os.path.join(lic, "4Dir_GPL-3.0.txt"))
     with open(os.path.join(lic, "라이선스_안내.txt"), "w", encoding="utf-8-sig") as f:
         f.write(LICENSE_NOTE.format(py=PYVER, qt=_pkg_ver(sp_src, "pyside6"), pw=_pkg_ver(sp_src, "pywin32")))
+        if glob.glob(os.path.join(out, "runtime", "Lib", "site-packages", "PySide6", "avcodec-*.dll")):   # 1.9.6 동영상 미리보기
+            f.write("\n\nFFmpeg (avcodec, avformat, avutil, swresample, swscale — 동영상 미리보기 / video preview)\n"
+                    "  Qt for Python (PySide6_Addons) 에 들어 있는 FFmpeg 를 그대로 씀 / shipped unmodified from PySide6_Addons.\n"
+                    "  라이선스: LGPL 2.1 이상 (LGPL 2.1 or later) — 문서는 PySide6_Qt_LGPL-3.0.txt, 원본 소스 https://ffmpeg.org\n")
     return sorted(os.listdir(lic))
 
 
@@ -245,7 +251,10 @@ def news_block(lg, ver):
     """1.9.0: 사용법 파일 맨 위에 이번 버전 바뀐 점 (changelog.py 맨 위 항목 = 사이트 '바뀐 점'과 같은 글)"""
     import changelog
     if not changelog.CHANGES or changelog.CHANGES[0][0] != ver:
-        raise SystemExit(f"changelog.py 맨 위({changelog.CHANGES[0][0]})가 v{ver} 이 아님 — 바뀐 점 먼저 적을 것")
+        # 1.9.4: 공개 번호·빌드 번호 나눔 — 공개 전 빌드는 아직 바뀐 점이 없을 수 있음 → 사용법 맨 위 '바뀐 점'만 빼고 계속.
+        #        공개(make_public → make_site)는 그대로 막음 (바뀐 점 없이 공개 안 됨)
+        log(f"(알림) changelog 맨 위 {changelog.CHANGES[0][0] if changelog.CHANGES else '-'} ≠ v{ver} — 공개 전 빌드라 사용법의 '바뀐 점' 생략")
+        return ""
     items = changelog.items(ver, lg.replace("_", "-"))
     lines = [re.sub(r"<[^>]+>", "", x).replace("&gt;", ">").replace("&lt;", "<").replace("&amp;", "&") for x in items]
     return "[" + NEWS_HEAD[lg].format(ver=ver) + "]\n" + "".join(f"  - {x}\n" for x in lines) + "\n"
@@ -377,7 +386,7 @@ def main():
     chk = subprocess.run([os.path.join(rt, "python.exe"), "-B", "-c",   # -B: 배포 폴더에 __pycache__ 안 남김
                           "import sys;sys.path.insert(0,r'%s');"
                           "from PySide6 import QtCore,QtGui,QtWidgets,QtNetwork;import win32gui,win32con,pythoncom;"
-                          "from win32com.shell import shell;import carryover,i18n,shellops,sysmon,favorites,session,ui_parts,keymap,search_index,explorer_check,svnstat,batchrename,guide,favorg,thumbs,overlays,overlayorder,imgconvert;"
+                          "from win32com.shell import shell;import carryover,dupes,archives,video,i18n,shellops,sysmon,favorites,session,ui_parts,keymap,search_index,explorer_check,svnstat,batchrename,guide,favorg,thumbs,overlays,overlayorder,imgconvert;"
                           "print('모듈 OK', sys.version.split()[0], QtCore.qVersion(), search_index.__file__)" % os.path.join(out, "bin")],
                          capture_output=True, text=True, env=env, encoding="utf-8", errors="replace")
     log(f"실행 확인 rc={chk.returncode} {chk.stdout.strip()} {chk.stderr.strip()[-500:]}")

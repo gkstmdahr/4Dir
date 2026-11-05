@@ -39,7 +39,7 @@
 var io=new IntersectionObserver(function(es){es.forEach(function(x){if(x.isIntersecting){L.forEach(function(a){a.classList.remove('on')});var a=m[x.target.id];a&&a.classList.add('on')}})},{rootMargin:'-20% 0px -70% 0px'});
 document.querySelectorAll('section.gs').forEach(function(s){io.observe(s)})}catch(e){}})();</script>
 <footer><div class="wrap">
-<a href="https://github.com/gkstmdahr/4Dir">原始碼</a> · <a href="https://github.com/gkstmdahr/4Dir/issues">回報問題</a> · <a href="mailto:support@4dir.net">support@4dir.net</a> · <a href="../code-signing.html">Code signing policy</a>
+<a href="https://github.com/gkstmdahr/4Dir">原始碼</a> · <a href="https://github.com/gkstmdahr/4Dir/issues">回報問題</a> · <a href="mailto:support@4dir.net?subject=%5B4Dir%5D%20">support@4dir.net</a> · <a href="../code-signing.html">Code signing policy</a>
 <p>GPL-3.0 自由軟體。Windows 是 Microsoft 的商標。</p>
 </div></footer>
 <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "f27a6860fa474599b9edc51f5f12448f"}'></script>
