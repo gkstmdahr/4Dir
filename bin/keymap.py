@@ -54,6 +54,7 @@ ACTIONS = [
     ("toggle_nav", T("탐색 창 보이기/숨기기"), "", "window"),   # v0.9.101 공용이면 공용 탐색 창, 칸마다면 지금 칸 (기본 키 없음)
     ("compare", T("두 칸 비교"), "Shift+F2", "window"),   # v0.9.89 (토탈 커맨더와 같은 키)
     ("palette", T("명령 찾기…"), "Ctrl+Shift+P", "window"),
+    ("settings", T("설정…"), "Ctrl+,", "window"),   # v0.9.104 설정 창
     ("ws_latest", T("최근 저장한 창 구성 불러오기"), "", "window"),   # v0.9.98 이슈 #1 (기본 키 없음 — 단축키 설정에서)
     ("ws_slot1", T("지정 1 창 구성 불러오기"), "", "window"),
     ("ws_slot2", T("지정 2 창 구성 불러오기"), "", "window"),   # v0.9.89   # 탐색기와 같은 키 (v0.9.58)

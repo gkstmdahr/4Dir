@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.101"
+QE_VERSION = "0.9.107"
 
 import os
 import sys
@@ -427,6 +427,7 @@ import labels  # noqa: E402  (v0.9.89 색 라벨·탭 색)
 import cloud  # noqa: E402  (v0.9.94 원드라이브 등 동기화 폴더 상태 열)
 import palette  # noqa: E402  (v0.9.89 명령 찾기)
 import hashview  # noqa: E402  (v0.9.89 확인값 SHA256)
+import contentcmp  # noqa: E402  (v0.9.107 두 칸 비교 — 내용까지)
 from i18n import T  # noqa: E402  (화면 문구 번역)
 
 VIEW_KEYS = {}   # 파일 목록 단축키 {키: 기능} — Main.apply_keys 가 채움
@@ -849,7 +850,9 @@ def fmt_duration(sec):
 CMP_KIND = {"only": ("#1a7f37", T("두 칸 비교: 이쪽에만 있음")),
             "newer": ("#c2410c", T("두 칸 비교: 이쪽이 더 새것")),
             "older": ("#8a8f98", T("두 칸 비교: 반대쪽이 더 새것")),
-            "diff": ("#7c3aed", T("두 칸 비교: 날짜는 같고 크기가 다름"))}
+            "diff": ("#7c3aed", T("두 칸 비교: 날짜는 같고 크기가 다름")),
+            "content": ("#dc2626", T("두 칸 비교: 이름·크기는 같은데 내용이 다름")),     # v0.9.107 내용까지 비교
+            "dateonly": ("#8a8f98", T("두 칸 비교: 날짜만 다름 (내용은 같음)"))}
 
 
 GROUP_MARK = "\0"   # 날짜 묶음 제목 줄 (v0.9.90): 이름 앞 글자 — 파일 이름엔 못 쓰는 글자라 실제 파일과 안 겹침
@@ -4663,26 +4666,14 @@ class Pane(QtWidgets.QFrame):
             a = show.addAction(T("탐색 창"), lambda: self.toggle_sidebar())
             a.setCheckable(True)
             a.setChecked(bool(getattr(self, "side_on", False)))
-        a = show.addAction(T("경로를 버튼으로 (브레드크럼)"), lambda: main.toggle_breadcrumb() if main is not None else None)
-        a.setCheckable(True)
-        a.setChecked(SETTINGS["breadcrumb"])
+        # v0.9.104: 자주 켜고 끄는 것만 (경로 버튼·날짜 정렬 폴더 위로·SVN·그림 미리보기·버전 관리 표시는 설정 창)
         for key, lbl in (("checkboxes", T("항목 확인란")), ("show_ext", T("파일 확장명")), ("show_hidden", T("숨긴 항목")),
-                         ("date_folders_first", T("날짜 정렬 때 폴더를 위로 모으기")),
-                         ("date_groups", T("날짜별로 묶기 (오늘·어제·이번 주…)")),
-                         ("svn_status", T("SVN 상태 표시")),
-                         ("thumbnails", T("그림 미리보기 (아이콘 보기)")),
-                         ("vcs_overlay", T("버전 관리 표시 — Git·Perforce 등 (윈도우 겹침 아이콘)"))):
+                         ("date_groups", T("날짜별로 묶기 (오늘·어제·이번 주…)"))):
             a = show.addAction(lbl, lambda key=key: main.toggle_opt(key) if main is not None else None)
             a.setCheckable(True)
             a.setChecked(OPTS[key])
-        show.addSeparator()   # v0.9.75 사용자 의견 (옵션)
-        for key, lbl in (("hide_single_tab", T("탭이 하나면 탭 줄 숨기기 (새 탭: Ctrl+T)")),
-                         ("empty_click_up", T("빈 곳을 더블클릭하면 상위 폴더로")),
-                         ("folder_size", T("폴더 크기 계산 (크기 칸 — 네트워크 드라이브 제외)")),
-                         ("keep_favbar", T("메뉴줄을 접어도 즐겨찾기 줄은 보이기"))):
-            a = show.addAction(lbl, lambda key=key: main.toggle_setting(key) if main is not None else None)
-            a.setCheckable(True)
-            a.setChecked(bool(SETTINGS[key]))
+
+        # v0.9.103: '탭이 하나면 탭 줄 숨기기' 등 동작 설정은 메뉴줄 '설정'으로 옮김 (사용자 11/5)
 
     def fill_sort_menu(self, m):
         m.clear()
@@ -4766,7 +4757,17 @@ class FavPanel(QtWidgets.QFrame):
         lay = QtWidgets.QHBoxLayout(self)
         lay.setContentsMargins(6, 2, 4, 2)
         lay.setSpacing(4)
-        lbl = QtWidgets.QLabel(T("즐겨찾기"))
+        # v0.9.102 사용자 11/5: 메뉴줄 '즐겨찾기'는 빼고 이 글자를 누르면 즐겨찾기 메뉴
+        lbl = QtWidgets.QToolButton()
+        lbl.setText(T("즐겨찾기"))   # 화살표는 메뉴 버튼이 붙여 줌(위 메뉴줄과 같은 모양)
+        lbl.setToolTip(T("즐겨찾기 메뉴 (추가·정리·윈도우 탐색기에서 가져오기)"))
+        lbl.setAutoRaise(True)
+        lbl.setPopupMode(QtWidgets.QToolButton.InstantPopup)
+        lbl.setCursor(Qt.PointingHandCursor)
+        fm = QtWidgets.QMenu(lbl)
+        fm.aboutToShow.connect(lambda: (fm.clear(), self.main._fill_fav_menu(fm)))
+        lbl.setMenu(fm)
+        self.lbl = lbl
         lbl.setObjectName("favLabel")
         lbl.setFixedHeight(25)   # 버튼 한 줄 높이와 맞춤
         lbl.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -4781,7 +4782,7 @@ class FavPanel(QtWidgets.QFrame):
         self.btn_fold = QtWidgets.QToolButton()
         self.btn_fold.setAutoRaise(True)
         self.btn_fold.clicked.connect(self.toggle)
-        lay.addWidget(self.btn_fold, 0, Qt.AlignTop)
+        lay.insertWidget(0, self.btn_fold, 0, Qt.AlignTop)   # v0.9.105 사용자 11/5: 메뉴줄 ▲ 처럼 왼쪽 끝
         self.buttons = []
         self.svn = {}   # 즐겨찾기 경로 → SVN 상태 (FavSvnJob)
         self._svn_sig = FavSvnSig(self)
@@ -5284,6 +5285,284 @@ def preview_icon(w=22, h=18):
     return QtGui.QIcon(pm)
 
 
+def gear_icon(sz=18, color="#76838f"):   # 밝게·어둡게 둘 다 보이는 회색
+    """설정 버튼 그림 (v0.9.104 사용자 11/5 '설정은 아이콘으로'): 톱니바퀴"""
+    dpr = 2
+    pm = QtGui.QPixmap(sz * dpr, sz * dpr)
+    pm.fill(Qt.transparent)
+    p = QtGui.QPainter(pm)
+    p.setRenderHint(QtGui.QPainter.Antialiasing, True)
+    p.scale(dpr, dpr)
+    c = sz / 2.0
+    col = QtGui.QColor(color)
+    p.setPen(Qt.NoPen)
+    p.setBrush(col)
+    for k in range(8):   # 이 8개
+        p.save()
+        p.translate(c, c)
+        p.rotate(k * 45)
+        p.drawRoundedRect(QtCore.QRectF(-sz * 0.09, -sz * 0.48, sz * 0.18, sz * 0.22), 1, 1)
+        p.restore()
+    p.drawEllipse(QtCore.QPointF(c, c), sz * 0.34, sz * 0.34)
+    p.setCompositionMode(QtGui.QPainter.CompositionMode_Clear)
+    p.drawEllipse(QtCore.QPointF(c, c), sz * 0.14, sz * 0.14)   # 가운데 구멍
+    p.end()
+    pm.setDevicePixelRatio(dpr)
+    return QtGui.QIcon(pm)
+
+
+class SettingsDialog(QtWidgets.QDialog):
+    """설정 창 (v0.9.104 사용자 11/5: 설정은 팝업 창에 카테고리로) — 왼쪽 카테고리 · 오른쪽 내용. 바꾸면 바로 적용(메뉴와 같은 함수 호출)"""
+
+    PAGES = ("general", "list", "nav", "vcs", "keys", "colors", "search", "backup", "about")
+
+    def __init__(self, main):
+        super().__init__(main)
+        self.main = main
+        self.setWindowTitle(T("설정 (Settings)"))
+        self.resize(1000, 700)   # v0.9.105 단축키 표가 안에 들어감
+        self.setAttribute(Qt.WA_DeleteOnClose)
+        outer = QtWidgets.QHBoxLayout(self)
+        self.cats = QtWidgets.QListWidget()
+        self.cats.setObjectName("settingsCats")
+        self.cats.setFixedWidth(170)
+        self.cats.setFrameShape(QtWidgets.QFrame.NoFrame)
+        f = self.cats.font()
+        f.setPointSizeF(f.pointSizeF() + 1)
+        self.cats.setFont(f)
+        self.stack = QtWidgets.QStackedWidget()
+        left = QtWidgets.QVBoxLayout()   # v0.9.106 사용자 11/5: 카테고리 아래 빈 곳에 후원
+        left.addWidget(self.cats)   # 높이는 항목 수만큼 (아래 _fit_cats) → 바로 밑에 후원
+        if SITE_URL or DONATE_URL:
+            don = QtWidgets.QPushButton(T("♥ 후원하기"))
+            don.setObjectName("donateBtn")
+            don.setCursor(Qt.PointingHandCursor)
+            don.setStyleSheet("QPushButton#donateBtn{background:#e2446b; color:#ffffff; font-weight:bold; border:none;"
+                              " border-radius:6px; padding:8px 16px;} QPushButton#donateBtn:hover{background:#c9365b;}")
+            don.setFixedWidth(170)
+            don.clicked.connect(lambda *_: open_link(DONATE_URL or SITE_URL + "#donate", "후원"))
+            self.donate = don
+            left.addSpacing(10)
+            left.addWidget(don)
+        left.addStretch(1)
+        outer.addLayout(left)
+        right = QtWidgets.QVBoxLayout()
+        right.addWidget(self.stack, 1)
+        row = QtWidgets.QHBoxLayout()
+        note = QtWidgets.QLabel(T("바꾸면 바로 적용됩니다."))
+        note.setObjectName("favLabel")
+        self.note = note   # 단축키·검색 페이지는 저장·적용 버튼이 따로 있어 숨김
+        row.addWidget(note, 1)
+        b = QtWidgets.QPushButton(T("닫기"))
+        b.clicked.connect(self.close)
+        row.addWidget(b)
+        right.addLayout(row)
+        outer.addLayout(right, 1)
+        self.checks = {}
+        for key, title, build in (("general", T("일반"), self._p_general), ("list", T("파일 목록"), self._p_list),
+                                  ("nav", T("탐색 창"), self._p_nav), ("vcs", T("버전 관리"), self._p_vcs),
+                                  ("keys", T("단축키·마우스"), self._p_keys), ("colors", T("색상"), self._p_colors),
+                                  ("search", T("검색"), self._p_search), ("backup", T("백업"), self._p_backup),
+                                  ("about", T("정보"), self._p_about)):
+            w = QtWidgets.QWidget()
+            lay = QtWidgets.QVBoxLayout(w)
+            lay.setContentsMargins(16, 8, 8, 8)
+            lay.setSpacing(8)
+            h = QtWidgets.QLabel(title)
+            hf = h.font()
+            hf.setPointSizeF(hf.pointSizeF() + 4)
+            hf.setBold(True)
+            h.setFont(hf)
+            lay.addWidget(h)
+            if not build(lay):   # 안에 창을 넣는 페이지는 아래 여백 없이 꽉 채움
+                lay.addStretch(1)
+            self.stack.addWidget(w)
+            it = QtWidgets.QListWidgetItem(title)
+            it.setData(Qt.UserRole, key)
+            it.setSizeHint(QtCore.QSize(160, 32))
+            self.cats.addItem(it)
+        self.cats.setFixedHeight(sum(self.cats.sizeHintForRow(i) for i in range(self.cats.count())) + 6)
+        self.cats.currentRowChanged.connect(self.stack.setCurrentIndex)
+        self.cats.currentRowChanged.connect(lambda r: self.note.setVisible(self.PAGES[r] not in ("keys", "search")))
+        self.cats.setCurrentRow(0)
+        log.info("설정 창 열기")
+
+    def show_page(self, key):
+        if key in self.PAGES:
+            self.cats.setCurrentRow(self.PAGES.index(key))
+
+    # ---- 부품
+    def _check(self, lay, key, label, get, toggle, tip=""):
+        cb = QtWidgets.QCheckBox(label)
+        cb.setChecked(bool(get()))
+        if tip:
+            cb.setToolTip(tip)
+
+        def flip(*_):
+            if bool(get()) != cb.isChecked():
+                toggle()
+            cb.setChecked(bool(get()))
+            log.info("설정 창: %s = %s", key, bool(get()))
+        cb.clicked.connect(flip)
+        self.checks[key] = cb
+        lay.addWidget(cb)
+        return cb
+
+    def _opt(self, lay, key, label, tip=""):
+        return self._check(lay, key, label, lambda: OPTS[key], lambda: self.main.toggle_opt(key), tip)
+
+    def _set(self, lay, key, label, tip=""):
+        return self._check(lay, key, label, lambda: SETTINGS[key], lambda: self.main.toggle_setting(key), tip)
+
+    def _btn(self, lay, label, fn, desc=""):
+        if desc:
+            d = QtWidgets.QLabel(desc)
+            d.setWordWrap(True)
+            lay.addWidget(d)
+        b = QtWidgets.QPushButton(label)
+        b.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        b.clicked.connect(lambda *_: fn())
+        lay.addWidget(b)
+        return b
+
+    def _embed(self, lay, make):
+        """기존 설정 창(단축키·색상·검색 범위)을 따로 띄우지 않고 이 페이지 안에 (v0.9.105 사용자 11/5).
+        저장·적용·취소로 끝나면 같은 자리에 새로 만들어 지금 값으로 다시 보여 줌"""
+        box = QtWidgets.QVBoxLayout()
+        box.setContentsMargins(0, 0, 0, 0)
+        lay.addLayout(box, 1)
+        self.embedded = getattr(self, "embedded", {})
+
+        def build():
+            dlg, done = make()
+            dlg.setWindowFlags(Qt.Widget)
+            box.addWidget(dlg)
+            self.embedded[make.__name__] = dlg
+
+            def fin(r):
+                if done:
+                    done(r)
+                box.removeWidget(dlg)
+                dlg.deleteLater()
+                QtCore.QTimer.singleShot(0, build)
+            dlg.finished.connect(fin)
+            dlg.show()
+        build()
+        return True
+
+    def _sub(self, lay, text):
+        l = QtWidgets.QLabel(text)
+        l.setObjectName("favLabel")
+        lay.addSpacing(6)
+        lay.addWidget(l)
+
+    # ---- 페이지
+    def _p_general(self, lay):
+        m = self.main
+        form = QtWidgets.QFormLayout()
+        self.lang = QtWidgets.QComboBox()
+        self.lang.addItem(T("윈도우 언어 따름") + f"  ({dict(i18n.LANGS).get(i18n.windows_lang(), 'English')})", None)
+        for code, name in i18n.LANGS:
+            self.lang.addItem(name, code)
+        self.lang.setCurrentIndex(max(0, self.lang.findData(SETTINGS["lang"])))
+        self.lang.currentIndexChanged.connect(lambda i: m.set_language(self.lang.itemData(i)))
+        form.addRow(T("언어 (Language)"), self.lang)
+        self.theme = QtWidgets.QComboBox()
+        for mode, label in (("system", T("시스템 설정 따름")), ("light", T("밝게 (Light)")), ("dark", T("어둡게 (Dark)"))):
+            self.theme.addItem(label, mode)
+        self.theme.setCurrentIndex(max(0, self.theme.findData(SETTINGS["theme_mode"])))
+        self.theme.currentIndexChanged.connect(lambda i: (m.set_theme_mode(self.theme.itemData(i)), self.setStyleSheet(m.styleSheet())))
+        form.addRow(T("화면 테마"), self.theme)
+        lay.addLayout(form)
+        self._sub(lay, T("창"))
+        self._check(lay, "allow_multi", T("창 여러 개 열기 허용"), lambda: SETTINGS["allow_multi"], m.toggle_multi,
+                    T("끄면 4Dir 는 하나만 실행되고, 다시 실행하면 기존 창이 앞으로 나옵니다"))
+        self._check(lay, "resume_after_reboot", T("재부팅 후 다시 열기 (켜 둔 채 윈도우를 끄면 다음 로그인 때)"),
+                    lambda: SETTINGS["resume_after_reboot"], lambda: SETTINGS.__setitem__("resume_after_reboot", not SETTINGS["resume_after_reboot"]))
+        self._set(lay, "hide_single_tab", T("탭이 하나면 탭 줄 숨기기 (새 탭: Ctrl+T)"))
+        self._set(lay, "keep_favbar", T("메뉴줄을 접어도 즐겨찾기 줄은 보이기"))
+
+    def _p_list(self, lay):
+        self._sub(lay, T("표시"))
+        self._opt(lay, "show_ext", T("파일 확장명"))
+        self._opt(lay, "show_hidden", T("숨긴 항목"))
+        self._opt(lay, "checkboxes", T("항목 확인란"))
+        self._opt(lay, "thumbnails", T("그림 미리보기 (아이콘 보기)"))
+        self._check(lay, "breadcrumb", T("경로를 버튼으로 (브레드크럼)"), lambda: SETTINGS["breadcrumb"], self.main.toggle_breadcrumb)
+        self._sub(lay, T("정렬·묶기"))
+        self._opt(lay, "date_folders_first", T("날짜 정렬 때 폴더를 위로 모으기"))
+        self._opt(lay, "date_groups", T("날짜별로 묶기 (오늘·어제·이번 주…)"))
+        self._sub(lay, T("동작"))
+        self._set(lay, "folder_size", T("폴더 크기 계산 (크기 칸 — 네트워크 드라이브 제외)"))
+        self._set(lay, "empty_click_up", T("빈 곳을 더블클릭하면 상위 폴더로"))
+
+    def _p_nav(self, lay):
+        m = self.main
+        g = QtWidgets.QButtonGroup(self)
+        self.nav_radio = {}
+        for on, lbl in ((False, T("칸마다 (각 칸 왼쪽, ☰ 버튼)")), (True, T("공용 (창 왼쪽 하나, 고른 칸으로 열림)"))):
+            r = QtWidgets.QRadioButton(lbl)
+            r.setChecked(bool(SETTINGS["side_shared"]) == on)
+            r.toggled.connect(lambda c, on=on: c and (m.set_shared_side(on), self._nav_sync()))
+            g.addButton(r)
+            lay.addWidget(r)
+            self.nav_radio[on] = r
+        self.nav_vis = self._check(lay, "side_shared_visible", T("공용 탐색 창 보이기"),
+                                   lambda: SETTINGS["side_shared"] and not SETTINGS["side_shared_hidden"], m.toggle_shared_visible)
+        self._nav_sync()
+
+    def _nav_sync(self):
+        self.nav_vis.setEnabled(bool(SETTINGS["side_shared"]))
+        self.nav_vis.setChecked(bool(SETTINGS["side_shared"]) and not SETTINGS["side_shared_hidden"])
+
+    def _p_vcs(self, lay):
+        self._opt(lay, "svn_status", T("SVN 상태 표시"))
+        self._opt(lay, "vcs_overlay", T("버전 관리 표시 — Git·Perforce 등 (윈도우 겹침 아이콘)"))
+        lay.addSpacing(8)
+        self._btn(lay, T("겹침 아이콘 순서 정리 (윈도우)…"), self.main.open_overlay_order,
+                  T("윈도우 겹침 아이콘(OneDrive·SVN 등)이 많아 일부가 안 보일 때 순서를 정리합니다."))
+
+    def _p_keys(self, lay):
+        return self._embed(lay, self.main.keys_panel)
+
+    def _p_colors(self, lay):
+        return self._embed(lay, self.main.colors_panel)
+
+    def _p_search(self, lay):
+        return self._embed(lay, self.main.search_panel)
+
+    def _p_backup(self, lay):
+        self._btn(lay, T("설정 내보내기 (백업 파일로 저장)…"), self.main.export_settings,
+                  T("보기·단축키·즐겨찾기·창과 탭(탭 색 포함)·색 라벨·저장한 창 구성을 zip 하나로 저장합니다. 포맷 뒤 되돌리기용."))
+        self._btn(lay, T("설정 가져오기 (백업 파일에서 되돌리기)…"), self.main.import_settings)
+
+    def _p_about(self, lay):
+        m = self.main
+        v = QtWidgets.QLabel(f"4Dir v{QE_VERSION}")
+        vf = v.font()
+        vf.setPointSizeF(vf.pointSizeF() + 2)
+        v.setFont(vf)
+        lay.addWidget(v)
+        # 후원 버튼은 v0.9.106 부터 왼쪽 카테고리 아래 (모든 페이지에서 보임)
+        if SITE_URL:   # 홈페이지 - 4dir.net (링크)
+            host = SITE_URL.split("//", 1)[-1].strip("/")
+            hp = QtWidgets.QLabel(T("홈페이지") + f' - <a href="{SITE_URL}">{host}</a>')
+            hp.setObjectName("homeLink")
+            hp.setTextFormat(Qt.RichText)
+            hp.setTextInteractionFlags(Qt.LinksAccessibleByMouse)
+            hp.linkActivated.connect(lambda *_: open_link(SITE_URL, "홈페이지"))
+            lay.addWidget(hp)
+        lay.addSpacing(6)
+        self._btn(lay, T("새 버전 확인"), lambda: start_update_check(m, manual=True))
+        self._check(lay, "update_check", T("시작할 때 새 버전 확인 (하루 한 번)"), lambda: SETTINGS["update_check"],
+                    lambda: SETTINGS.__setitem__("update_check", not SETTINGS["update_check"]))
+        self._sub(lay, T("도움말"))
+        self._btn(lay, T("사용법…"), m.open_guide)
+        self._sub(lay, T("문제가 있을 때"))
+        self._btn(lay, T("로그 폴더 열기"), lambda: os.startfile(LOG_DIR))
+        self._btn(lay, T("문제 보고용 로그 저장… (4Dir 폴더의 reports 에 zip)"), m.save_report)
+
+
 # 화면 색상은 ui_parts.build_style(SETTINGS[theme 또는 theme_dark]) 로 만든다 (보기 > 색상 설정에서 변경)
 
 
@@ -5590,6 +5869,7 @@ class Main(QtWidgets.QMainWindow):
             "toggle_nav": lambda: self.pane().toggle_sidebar(),   # v0.9.101 공용이면 공용 창, 칸마다면 지금 칸
             "compare": lambda: self.compare_panes(),
             "palette": lambda: self.open_palette(),
+            "settings": lambda: self.open_settings(),   # v0.9.104
             "ws_latest": lambda: self.load_ws_latest(),   # v0.9.98 이슈 #1 창 구성 단축키
             "ws_slot1": lambda: self.load_ws_slot(1),
             "ws_slot2": lambda: self.load_ws_slot(2),
@@ -5683,6 +5963,10 @@ class Main(QtWidgets.QMainWindow):
         self.gsearch.selectAll()
 
     def open_search_roots(self):
+        return self.open_settings("search")   # v0.9.105 설정 창 안에서
+
+    def search_panel(self):
+        """설정 창 '검색' 안에 넣는 검색 범위 설정 (v0.9.105) → (창, 끝났을 때)"""
         dlg = QtWidgets.QDialog(self)
         dlg.setWindowTitle(T("검색 범위 설정 (Search Scope)"))
         dlg.resize(520, 420)
@@ -5728,10 +6012,15 @@ class Main(QtWidgets.QMainWindow):
         info.setStyleSheet("color:#888;")
         lay.addWidget(info)
         bb = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
+        bb.button(QtWidgets.QDialogButtonBox.Ok).setText(T("적용"))
+        bb.button(QtWidgets.QDialogButtonBox.Cancel).setText(T("되돌리기"))
         bb.accepted.connect(dlg.accept)
         bb.rejected.connect(dlg.reject)
         lay.addWidget(bb)
-        if dlg.exec():
+
+        def done(r):
+            if not r:
+                return
             roots = [{"path": lst.item(i).data(Qt.UserRole), "on": lst.item(i).checkState() == Qt.Checked} for i in range(lst.count())]
             old = self.search_roots_enabled()
             SETTINGS["search_roots"] = roots
@@ -5740,6 +6029,8 @@ class Main(QtWidgets.QMainWindow):
             if [x.lower() for x in old] != [x.lower() for x in new]:
                 self.idx_btn.setText(T("색인 만드는 중"))
                 SEARCH.set_roots(new)
+            self.show_notice(T("검색 범위를 저장했습니다  ✕"), ms=1500)
+        return dlg, done
 
     # ---------------------------------------------------------- 상단 메뉴 + 레이아웃 아이콘
     def _build_top_bar(self):
@@ -5771,9 +6062,17 @@ class Main(QtWidgets.QMainWindow):
         menu_btn(T("보기"), self._fill_main_view_menu)
         # v0.9.93 사용자 11/4: 글자 메뉴 '레이아웃'은 빼고 도구줄 레이아웃 버튼(고르기 창)만 — 명령 찾기에는 계속 나오게 목록만 남김
         self.top_menus.append((T("레이아웃"), self._fill_layout_menu))
-        menu_btn(T("즐겨찾기"), self._fill_fav_menu)
-        menu_btn(T("창 저장/불러오기"), self._fill_session_menu)
+        self.top_menus.append((T("즐겨찾기"), self._fill_fav_menu))   # v0.9.102 메뉴줄에서 뺌(즐겨찾기 바 글자로) — 명령 찾기엔 남김
+        self.top_menus.append((T("창 저장/불러오기"), self._fill_session_menu))   # v0.9.103 사용자 11/5: 도구 메뉴 안으로 (명령 찾기엔 남김)
         menu_btn(T("도구"), self._fill_tool_menu)
+        self.top_menus.append((T("설정"), self._fill_settings_menu))   # 명령 찾기용 목록 (v0.9.103)
+        # v0.9.104 사용자 11/5: 설정은 톱니 아이콘 → 카테고리 설정 창
+        self.btn_settings = QtWidgets.QToolButton()
+        self.btn_settings.setIcon(gear_icon())
+        self.btn_settings.setAutoRaise(True)
+        self.btn_settings.setToolTip(T("설정") + "  (Ctrl+,)")
+        self.btn_settings.clicked.connect(lambda: self.open_settings())
+        tb.addWidget(self.btn_settings)
         # 미리보기 창 켜기/끄기 — 도구 오른쪽 (v0.9.59, 사용자 요청)
         self.act_preview = tb.addAction(preview_icon(), T("미리보기 창"), lambda: self.set_preview(not self.preview.isVisible()))
         self.act_preview.setCheckable(True)
@@ -5986,6 +6285,38 @@ class Main(QtWidgets.QMainWindow):
         fav = m.addAction(T("즐겨찾기 바 펼치기"), self.favbar.toggle)
         fav.setCheckable(True)
         fav.setChecked(self.favbar.expanded)
+        mon = m.addAction(T("CPU·GPU 사용량 표시"), lambda: self.set_sysmon(not SETTINGS["sysmon"]))
+        mon.setCheckable(True)
+        mon.setChecked(SETTINGS["sysmon"])
+        top = m.addAction(T("항상 위"), self.toggle_on_top)
+        top.setCheckable(True)
+        top.setChecked(SETTINGS["on_top"])
+        # v0.9.103: 화면 테마·언어·색상·창 여러 개 열기는 '설정' 메뉴로
+
+    def open_settings(self, page=None):
+        """설정 창 (v0.9.104) — 창마다 하나, 이미 열려 있으면 앞으로"""
+        dlg = getattr(self, "settings_dlg", None)
+        try:
+            alive = dlg is not None and dlg.isVisible()
+        except RuntimeError:
+            alive = False
+        if not alive:
+            dlg = SettingsDialog(self)
+            dlg.setStyleSheet(self.styleSheet())
+            self.settings_dlg = dlg
+            dlg.show()
+        dlg.raise_()
+        dlg.activateWindow()
+        if page:
+            dlg.show_page(page)
+        return dlg
+
+    def _fill_settings_menu(self, m):
+        """메뉴줄 '설정' (v0.9.103 사용자 11/5: 설정 관련은 한곳에) — 보기·도구에 흩어져 있던 설정을 모음"""
+        m.clear()
+        m.addAction(T("단축키 설정…"), self.open_keys)
+        m.addAction(T("색상 설정…"), self.open_colors)
+        m.addAction(T("검색 범위 설정…"), self.open_search_roots)
         tm = m.addMenu(T("화면 테마"))
         grp = QtGui.QActionGroup(tm)
         for mode, label in (("system", T("시스템 설정 따름")), ("light", T("밝게 (Light)")), ("dark", T("어둡게 (Dark)"))):
@@ -6007,18 +6338,35 @@ class Main(QtWidgets.QMainWindow):
             a.setCheckable(True)
             a.setChecked(cur == code)
             lg.addAction(a)
-        top = m.addAction(T("항상 위"), self.toggle_on_top)
-        top.setCheckable(True)
-        top.setChecked(SETTINGS["on_top"])
-        mon = m.addAction(T("CPU·GPU 사용량 표시"), lambda: self.set_sysmon(not SETTINGS["sysmon"]))
-        mon.setCheckable(True)
-        mon.setChecked(SETTINGS["sysmon"])
+        m.addSeparator()   # 동작
+        for key, lbl in (("hide_single_tab", T("탭이 하나면 탭 줄 숨기기 (새 탭: Ctrl+T)")),
+                         ("empty_click_up", T("빈 곳을 더블클릭하면 상위 폴더로")),
+                         ("folder_size", T("폴더 크기 계산 (크기 칸 — 네트워크 드라이브 제외)")),
+                         ("keep_favbar", T("메뉴줄을 접어도 즐겨찾기 줄은 보이기"))):
+            a = m.addAction(lbl, lambda key=key: self.toggle_setting(key))
+            a.setCheckable(True)
+            a.setChecked(bool(SETTINGS[key]))
         multi = m.addAction(T("창 여러 개 열기 허용"), self.toggle_multi)
         multi.setCheckable(True)
         multi.setChecked(SETTINGS["allow_multi"])
         multi.setToolTip(T("끄면 4Dir 는 하나만 실행되고, 다시 실행하면 기존 창이 앞으로 나옵니다"))
-        m.addAction(T("색상 설정…"), self.open_colors)
-        m.addAction(T("단축키 설정…"), self.open_keys)
+        a = m.addAction(T("시작할 때 새 버전 확인 (하루 한 번)"))
+        a.setCheckable(True)
+        a.setChecked(bool(SETTINGS["update_check"]))
+        a.toggled.connect(lambda on: SETTINGS.__setitem__("update_check", on))
+        a = m.addAction(T("재부팅 후 다시 열기 (켜 둔 채 윈도우를 끄면 다음 로그인 때)"))
+        a.setCheckable(True)
+        a.setChecked(bool(SETTINGS["resume_after_reboot"]))
+        a.toggled.connect(lambda on: (SETTINGS.__setitem__("resume_after_reboot", on), log.info("재부팅 후 다시 열기 %s", on)))
+        m.addAction(T("겹침 아이콘 순서 정리 (윈도우)…"), self.open_overlay_order)
+        m.addSeparator()   # 백업
+        m.addAction(T("설정 내보내기 (백업 파일로 저장)…"), self.export_settings)
+        m.addAction(T("설정 가져오기 (백업 파일에서 되돌리기)…"), self.import_settings)
+        m.addSeparator()   # v0.9.104 정보 (메뉴줄엔 안 보이지만 명령 찾기가 이 목록을 씀)
+        m.addAction(T("사용법…"), self.open_guide)
+        m.addAction(T("새 버전 확인"), lambda: start_update_check(self, manual=True))
+        m.addAction(T("로그 폴더 열기"), lambda: os.startfile(LOG_DIR))
+        m.addAction(T("문제 보고용 로그 저장… (4Dir 폴더의 reports 에 zip)"), self.save_report)
 
     # ---------------------------------------------------------- CPU·GPU 사용량
     def set_sysmon(self, on, save=True):
@@ -6151,15 +6499,22 @@ class Main(QtWidgets.QMainWindow):
         log.info("단축키 적용: 창 %d개, 목록 %d개, 바꾼 것 %s", len(self.shortcuts), len(VIEW_KEYS), SETTINGS["keys"])
 
     def open_keys(self):
+        return self.open_settings("keys")   # v0.9.105 사용자 11/5: 따로 띄우지 않고 설정 창 안에서
+
+    def keys_panel(self):
+        """설정 창 '단축키·마우스' 안에 넣는 단축키 창 (v0.9.105) → (창, 끝났을 때)"""
         dlg = keymap.KeyDialog(SETTINGS["keys"], self, mouse=SETTINGS["mouse"])
-        if dlg.exec() and dlg.result_keys is not None:
-            SETTINGS["keys"] = dlg.result_keys
-            SETTINGS["mouse"] = dlg.result_mouse or {}
-            log.info("마우스 버튼 지정 %s", SETTINGS["mouse"])
-            for w in WINDOWS or [self]:
-                w.apply_keys()
-            hotkey_register()   # 어디서나 단축키도 새 키로
-            self.show_notice(T("단축키를 저장했습니다  ✕"), ms=1000)
+
+        def done(r):
+            if r and dlg.result_keys is not None:
+                SETTINGS["keys"] = dlg.result_keys
+                SETTINGS["mouse"] = dlg.result_mouse or {}
+                log.info("마우스 버튼 지정 %s", SETTINGS["mouse"])
+                for w in WINDOWS or [self]:
+                    w.apply_keys()
+                hotkey_register()   # 어디서나 단축키도 새 키로
+                self.show_notice(T("단축키를 저장했습니다  ✕"), ms=1000)
+        return dlg, done
 
     def toggle_breadcrumb(self):
         SETTINGS["breadcrumb"] = not SETTINGS["breadcrumb"]
@@ -6416,13 +6771,85 @@ class Main(QtWidgets.QMainWindow):
             v.status.emit(T("비교: 이쪽에만 {0} · 이쪽이 새것 {1} · 반대쪽이 새것 {2} · 크기 다름 {3}  (골라 둔 {4}개 → F6 = 반대쪽에 복사)")
                           .format(cnt["only"], cnt["newer"], cnt["older"], cnt["diff"], cnt["only"] + cnt["newer"]))
         log.info("두 칸 비교 %s ↔ %s : %s / %s", va.path, vb.path, res[0], res[1])
+        self._cmp_ctx = {"va": va, "vb": vb, "pa": va.path, "pb": vb.path, "A": A, "B": B}   # v0.9.107 내용까지 비교용
         flash_pane(a)
         flash_pane(b)   # 무엇끼리 비교했는지 보이게 (v0.9.90 사용자 11/4 '헷갈림')
         same = not any(any(c.values()) for c in res)
         self.show_notice((T("두 칸 비교: 차이 없음 (이름·날짜·크기 같음)") if same else
                           T("두 칸 비교: 칸 {0} 이쪽에만 {1}·새것 {2} / 칸 {3} 이쪽에만 {4}·새것 {5} — 골라 둔 것을 F6 으로 반대쪽에 복사")
                           .format(a.idx + 1, res[0]["only"], res[0]["newer"], b.idx + 1, res[1]["only"], res[1]["newer"])) + "  ✕",
-                         ms=10000)
+                         ms=15000, action=(T("내용까지 비교"), self.compare_contents))
+
+    def _cmp_pairs(self):
+        """내용 비교할 짝: 양쪽에 같은 이름 파일이고 크기가 같은 것 (크기가 다르면 내용도 다름)"""
+        c = self._cmp_ctx
+        out = []
+        for key, e in c["A"].items():
+            o = c["B"].get(key)
+            if o is not None and not e[1] and not o[1] and e[2] == o[2]:
+                out.append((key, os.path.join(c["pa"], e[0]), os.path.join(c["pb"], o[0]), e[2] or 0))
+        return out
+
+    def compare_contents(self):
+        """두 칸 비교 뒤 '내용까지 비교' (v0.9.107 사용자 11/5): 이름·크기 같은 파일을 실제로 읽어 맞춰 봄.
+        내용 다름 = 빨강, 날짜만 다르고 내용 같음 = 회색('날짜만 다름', F6 고르기에서 뺌). 뒤 스레드 + 멈추기"""
+        c = getattr(self, "_cmp_ctx", None)
+        if not c or c["va"].path != c["pa"] or c["vb"].path != c["pb"]:
+            self.show_notice(T("⚠ 두 칸 비교를 먼저 하세요 (Shift+F2)  ✕"), ms=6000)
+            return None
+        old = getattr(self, "_cmp_job", None)
+        if old is not None:
+            old.cancel()
+        pairs = self._cmp_pairs()
+        if not pairs:
+            self.show_notice(T("내용 비교: 이름·크기가 같은 파일이 없습니다  ✕"), ms=6000)
+            return None
+        job = contentcmp.ContentCompare(pairs, self)
+        self._cmp_job = job
+        log.info("내용 비교 시작 %s ↔ %s : %d짝 %.1fMB", c["pa"], c["pb"], len(pairs), job.total / 1048576)
+
+        def prog(n, total, done_b, total_b):
+            if self._cmp_job is job:
+                self.show_notice(T("내용 비교 중 {0}/{1}개 · {2} / {3}").format(n, total, size_short(done_b), size_short(total_b)),
+                                 sticky=True, action=(T("멈추기"), job.cancel))
+        job.progress.connect(prog)
+        job.finished.connect(lambda res, stopped: self._cmp_apply(job, res, stopped))
+        job.start()
+        return job
+
+    def _cmp_apply(self, job, res, stopped):
+        if self._cmp_job is not job:
+            return
+        self._cmp_job = None
+        c = self._cmp_ctx
+        n_content = n_date = 0
+        for v, mine, path in ((c["va"], c["A"], c["pa"]), (c["vb"], c["B"], c["pb"])):
+            m = v.model_
+            if v.path != path:   # 그새 다른 폴더로 감
+                continue
+            for key, r in res.items():
+                e = mine.get(key)
+                if e is None:
+                    continue
+                if r == "content" and m.cmp.get(e[0]) is None:   # 날짜·크기 같은데 내용 다름 (날짜가 다르면 '새것' 표시·F6 고르기 그대로)
+                    m.cmp[e[0]] = "content"
+                    n_content += 1
+                elif r == "same" and m.cmp.get(e[0]) in ("newer", "older"):
+                    m.cmp[e[0]] = "dateonly"
+                    n_date += 1
+            sel = QtCore.QItemSelection()
+            for row, e in enumerate(m.rows):
+                if m.cmp.get(e[0]) in ("only", "newer"):
+                    sel.select(m.index(row, 0), m.index(row, 0))
+            v.sel.select(sel, QtCore.QItemSelectionModel.ClearAndSelect | QtCore.QItemSelectionModel.Rows)
+            if m.rows:
+                m.dataChanged.emit(m.index(0, 0), m.index(len(m.rows) - 1, m.columnCount() - 1))
+        n_same = sum(1 for v in res.values() if v == "same")
+        n_err = sum(1 for v in res.values() if v == "error")
+        self.show_notice(T("내용 비교{0}: 내용 다름 {1} (빨강) · 날짜만 다름 {2} (내용 같음) · 같음 {3}{4}").format(
+            T(" (멈춤)") if stopped else "", n_content // 2, n_date // 2, n_same,
+            T(" · 못 읽음 {0}").format(n_err) if n_err else "") + "  ✕", ms=15000)
+        self.last_cmp_result = res
 
     def open_palette(self):
         """명령 찾기 (v0.9.89, Ctrl+Shift+P): 단축키 기능 + 위 메뉴 항목 전부"""
@@ -6574,6 +7001,10 @@ class Main(QtWidgets.QMainWindow):
         self.set_theme_mode("light" if SETTINGS["dark"] else "dark")
 
     def open_colors(self):
+        return self.open_settings("colors")   # v0.9.105 설정 창 안에서
+
+    def colors_panel(self):
+        """설정 창 '색상' 안에 넣는 색상 설정 (v0.9.105) → (창, 끝났을 때 없음) — 바꾸면 바로 적용"""
         dlg = QtWidgets.QDialog(self)
         dlg.setWindowTitle(T("색상 설정 (Colors)"))
         lay = QtWidgets.QVBoxLayout(dlg)
@@ -6618,13 +7049,11 @@ class Main(QtWidgets.QMainWindow):
         row = QtWidgets.QHBoxLayout()
         rb = QtWidgets.QPushButton(T("기본값으로"))
         rb.clicked.connect(reset)
-        cb = QtWidgets.QPushButton(T("닫기"))
-        cb.clicked.connect(dlg.accept)
         row.addWidget(rb)
         row.addStretch(1)
-        row.addWidget(cb)
         lay.addLayout(row)
-        dlg.exec()
+        lay.addStretch(1)
+        return dlg, None
 
     def toggle_on_top(self):
         on = not SETTINGS["on_top"]
@@ -6874,37 +7303,15 @@ class Main(QtWidgets.QMainWindow):
 
     def _fill_tool_menu(self, m):
         m.clear()
-        m.addAction(T("사용법…"), self.open_guide)
+        sm = m.addMenu(T("창 저장/불러오기"))   # v0.9.103 메뉴줄에서 여기로
+        sm.aboutToShow.connect(lambda: self._fill_session_menu(sm))
         m.addSeparator()
         m.addAction(T("Explorer Check (탐색기 점검)"), self.open_check)
         m.addAction(T("이름 일괄 변경…"), lambda: self.open_batch_rename(self.pane().view().selected_paths() if self.pane().view() else []))
         m.addAction(mlabel(T("두 칸 비교"), "compare"), self.compare_panes)
         m.addAction(mlabel(T("패턴으로 고르기…"), "select_pattern"), lambda: self.pane().view() and self.pane().view().select_pattern())
         m.addAction(mlabel(T("명령 찾기…"), "palette"), self.open_palette)
-        m.addAction(T("단축키 설정…"), self.open_keys)
-        m.addAction(T("검색 범위 설정…"), self.open_search_roots)
-        m.addSeparator()   # v0.9.94 사용자 11/4: 포맷 뒤 그대로 되돌리기
-        m.addAction(T("설정 내보내기 (백업 파일로 저장)…"), self.export_settings)
-        m.addAction(T("설정 가져오기 (백업 파일에서 되돌리기)…"), self.import_settings)
-        m.addSeparator()
-        m.addAction(T("로그 폴더 열기"), lambda: os.startfile(LOG_DIR))
-        m.addAction(T("문제 보고용 로그 저장… (4Dir 폴더의 reports 에 zip)"), self.save_report)
-        m.addAction(T("겹침 아이콘 순서 정리 (윈도우)…"), self.open_overlay_order)
-        m.addSeparator()
-        m.addAction(T("새 버전 확인"), lambda: start_update_check(self, manual=True))
-        a = m.addAction(T("시작할 때 새 버전 확인 (하루 한 번)"))
-        a.setCheckable(True)
-        a.setChecked(bool(SETTINGS["update_check"]))
-        a.toggled.connect(lambda on: SETTINGS.__setitem__("update_check", on))
-        a = m.addAction(T("재부팅 후 다시 열기 (켜 둔 채 윈도우를 끄면 다음 로그인 때)"))
-        a.setCheckable(True)
-        a.setChecked(bool(SETTINGS["resume_after_reboot"]))
-        a.toggled.connect(lambda on: (SETTINGS.__setitem__("resume_after_reboot", on), log.info("재부팅 후 다시 열기 %s", on)))
-        if SITE_URL or DONATE_URL:   # 주소가 정해진 것만 (0.9.50: 후원은 사이트 없이도)
-            m.addSeparator()
-            if SITE_URL:
-                m.addAction(T("4Dir 홈페이지"), lambda: open_link(SITE_URL, "홈페이지"))
-            m.addAction(T("♥ 후원하기 (개발 응원)"), lambda: open_link(DONATE_URL or SITE_URL + "#donate", "후원"))
+        # v0.9.104 사용자 11/5: 사용법·로그·문제 보고·새 버전·홈페이지·후원은 설정 창 '정보'로
 
     def export_settings(self, dest=None):
         """설정 전체 내보내기 (v0.9.94): 보기·단축키·즐겨찾기·창과 탭(탭 색 포함)·색 라벨·창 구성 → zip 하나"""
