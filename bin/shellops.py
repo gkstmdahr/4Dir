@@ -303,8 +303,8 @@ def file_op(hwnd, func, srcs, dst=None, flags=0, done=None):
                 log.exception("file_op done 콜백 예외")
 
     if func in (shellcon.FO_COPY, shellcon.FO_MOVE):
-        nm = os.path.basename(srcs[0]) + (f" 외 {len(srcs) - 1}개" if len(srcs) > 1 else "")
-        _enqueue(f"{'이동' if func == shellcon.FO_MOVE else '복사'} {nm} → {dst}", run)
+        nm = T("{0} 외 {1}개").format(os.path.basename(srcs[0]), len(srcs) - 1) if len(srcs) > 1 else os.path.basename(srcs[0])
+        _enqueue(T("이동: {0} → {1}" if func == shellcon.FO_MOVE else "복사: {0} → {1}").format(nm, dst), run)   # 0.9.109 빌드 3: 10개 언어
         return
     threading.Thread(target=run, daemon=True).start()
 
@@ -817,10 +817,17 @@ class ShellMenu:
     """윈도우 클래식 우클릭 메뉴(TortoiseSVN·압축·새로 만들기·보내기·연결 프로그램 포함).
     메뉴가 떠 있는 동안 current 에 자신을 두고, 메인창 nativeEvent 가 하위메뉴 메시지를 forward() 로 넘긴다."""
     EXTRA_BASE = 0x8000  # 우리 항목 id (셸 항목 1~0x7FFF 와 겹치지 않음)
+    ALT_BASE = 0x6000    # 0.9.109 빈 곳 메뉴의 빈 하위 메뉴를 채울 '폴더 자체' 메뉴 id (빈 곳 셸 항목은 1~0x5FFF)
     current = None
 
-    def __init__(self, hwnd, folder, names, extras=(), extended=False, tail=(), newfolder=None):
+    def __init__(self, hwnd, folder, names, extras=(), extended=False, tail=(), newfolder=None, id_first=1, id_last=None):
         self.cm = None
+        self.id_first = id_first
+        self.alt = None        # 빈 곳 메뉴: 하위 메뉴가 비면 '폴더 자체' 우클릭 메뉴의 같은 이름 하위 메뉴로 채움 (handle)
+        self.alt_tried = False
+        self.hwnd_ = hwnd
+        self.folder_ = folder
+        self.background = not names
         self.newfolder_id = None   # 윈도우 '새 폴더' 자리에 넣은 우리 항목 id
         self.cm_hi = None   # (ptr, 3|2)  IContextMenu3 또는 2
         self.hmenu = None
@@ -871,8 +878,10 @@ class ShellMenu:
         flags = shellcon.CMF_NORMAL | shellcon.CMF_EXPLORE | shellcon.CMF_CANRENAME
         if extended:
             flags |= shellcon.CMF_EXTENDEDVERBS
+        if id_last is None:
+            id_last = ShellMenu.ALT_BASE - 1 if not names else 0x7FFF
         _check(_com(self.cm, 3, [ctypes.c_void_p, ctypes.c_uint, ctypes.c_uint, ctypes.c_uint, ctypes.c_uint],
-                    self.hmenu, 0, 1, 0x7FFF, flags), "QueryContextMenu")
+                    self.hmenu, 0, id_first, id_last, flags), "QueryContextMenu")
         # 우리 항목 id 는 펼친 순서대로 EXTRA_BASE+n : extras → tail → newfolder (부르는 쪽 콜백 목록도 같은 순서)
         n = 0
         if extras:
@@ -944,8 +953,65 @@ class ShellMenu:
         log.info("셸메뉴 구성 folder=%s n=%d 항목=%d 하위메뉴지원=IContextMenu%s", folder, len(names),
                  win32gui.GetMenuItemCount(self.hmenu), self.cm_hi[1] if self.cm_hi else "없음")
 
+    def _own_sub(self, hsub):
+        """hsub 가 이 메뉴 맨 위 항목의 하위 메뉴면 그 글자"""
+        for i in range(win32gui.GetMenuItemCount(self.hmenu)):
+            if ctypes.windll.user32.GetSubMenu(self.hmenu, i) == hsub:
+                return _menu_text(self.hmenu, i)
+        return None
+
+    def _fill_from_alt(self, hsub, text):
+        """빈 곳 메뉴의 하위 메뉴가 비었음 ('액세스 권한 부여 ▸' 처럼 탐색기 창 정보를 요구하는 확장 — 사용자 제보 11/6)
+        → 같은 폴더를 항목으로 우클릭한 메뉴의 같은 이름 하위 메뉴를 펼쳐 그 항목들을 복사 (id 는 ALT_BASE 범위 → show 가 alt 로 실행)"""
+        if self.alt is None and not self.alt_tried:
+            self.alt_tried = True
+            try:
+                self.alt = ShellMenu(self.hwnd_, self.folder_, [""], id_first=ShellMenu.ALT_BASE, id_last=ShellMenu.EXTRA_BASE - 1)
+            except Exception:
+                log.exception("빈 곳 하위 메뉴 대신 채울 폴더 메뉴 만들기 실패 %s", self.folder_)
+        if self.alt is None:
+            return 0
+        want = _menu_plain(text)
+        src = None
+        for i in range(win32gui.GetMenuItemCount(self.alt.hmenu)):
+            h = ctypes.windll.user32.GetSubMenu(self.alt.hmenu, i)
+            if h and _menu_plain(_menu_text(self.alt.hmenu, i)) == want:
+                src = h
+                self.alt.handle(WM_INITMENUPOPUP, h, i)
+                break
+        if not src:
+            log.info("빈 곳 하위 메뉴 '%s' 비었음 — 폴더 메뉴에도 같은 이름 없음", text)
+            return 0
+        n = 0
+        for j in range(win32gui.GetMenuItemCount(src)):
+            t = _menu_text(src, j)
+            idc = ctypes.windll.user32.GetMenuItemID(src, j)
+            st = ctypes.windll.user32.GetMenuState(src, j, win32con.MF_BYPOSITION)
+            if st & win32con.MF_SEPARATOR or (not t and idc in (0, 0xFFFFFFFF)):
+                win32gui.AppendMenu(hsub, win32con.MF_SEPARATOR, 0, "")
+            elif idc == 0xFFFFFFFF:   # 더 깊은 하위 메뉴는 옮기지 않음
+                continue
+            else:
+                win32gui.AppendMenu(hsub, win32con.MF_STRING | (st & (win32con.MF_GRAYED | win32con.MF_CHECKED)), idc, t)
+                n += 1
+        log.info("빈 곳 하위 메뉴 '%s' 비었음 → 폴더 메뉴에서 %d개 채움", text, n)
+        return n
+
     def handle(self, msg, wparam, lparam):
         """하위메뉴 메시지를 셸 메뉴에 전달. 반환 (처리됨, 결과)"""
+        if self.background and msg == WM_INITMENUPOPUP and self.cm_hi:
+            text = self._own_sub(wparam)
+            if text is not None:
+                r = self._handle(msg, wparam, lparam)
+                if win32gui.GetMenuItemCount(wparam) == 0:
+                    self._fill_from_alt(wparam, text)
+                return r
+        if self.alt is not None and msg in (WM_INITMENUPOPUP, WM_DRAWITEM, WM_MEASUREITEM, WM_MENUCHAR):
+            if msg == WM_INITMENUPOPUP and self._own_sub(wparam) is None and self.alt._own_sub(wparam) is not None:
+                return self.alt._handle(msg, wparam, lparam)
+        return self._handle(msg, wparam, lparam)
+
+    def _handle(self, msg, wparam, lparam):
         if not self.cm_hi:
             return False, 0
         ptr, lvl = self.cm_hi
@@ -985,6 +1051,9 @@ class ShellMenu:
         log.info("셸메뉴 실행 id=%d hr=0x%08X", idcmd, hr & 0xFFFFFFFF)
 
     def close(self):
+        if self.alt is not None:
+            self.alt.close()
+            self.alt = None
         if self.hmenu:
             win32gui.DestroyMenu(self.hmenu)
             self.hmenu = None
@@ -1015,6 +1084,11 @@ class ShellMenu:
             if cmd >= ShellMenu.EXTRA_BASE:
                 log.info("셸메뉴 우리항목 %d", cmd - ShellMenu.EXTRA_BASE)
                 return ("extra", cmd - ShellMenu.EXTRA_BASE)
+            if m.alt is not None and cmd >= ShellMenu.ALT_BASE:   # 빈 곳 메뉴에 채워 넣은 '폴더 자체' 항목
+                verb = m.alt.verb(cmd - ShellMenu.ALT_BASE)
+                log.info("셸메뉴 선택(빈 곳 → 폴더 메뉴) id=%d verb=%s", cmd - ShellMenu.ALT_BASE, verb)
+                m.alt.invoke(hwnd, cmd - ShellMenu.ALT_BASE, folder, x, y)
+                return ("invoked", verb)
             verb = m.verb(cmd - 1)
             log.info("셸메뉴 선택 id=%d verb=%s", cmd - 1, verb)
             if verb.lower() == "rename":

@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.108"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 28             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.109"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 6              # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -435,6 +435,16 @@ import video  # noqa: E402  (빌드 21 미리보기 동영상 — 부품은 처�
 import contentcmp  # noqa: E402  (v0.9.107 두 칸 비교 — 내용까지)
 import memo  # noqa: E402  (v0.9.108 메모 창)
 import devices  # noqa: E402  (v0.9.108 빌드 4 휴대폰 등 드라이브 글자 없는 장치)
+# 0.9.109 빌드 3 (사용자 11/6 '추가 기능 전부'): 경쟁 앱 조사 후보 10개
+import hexview  # noqa: E402  글자·16진수 보기 (F3)
+import syncdirs  # noqa: E402  폴더 맞추기
+import winhook  # noqa: E402  Win+E 로 4Dir
+import imgbatch  # noqa: E402  그림 일괄 크기·형식
+import spacemap  # noqa: E402  디스크 사용량 트리맵
+import tags  # noqa: E402  태그·가상 그룹
+import fileattrs  # noqa: E402  날짜·속성 일괄
+import userbtns  # noqa: E402  사용자 단추
+import ftpfs  # noqa: E402  FTP (archives 를 거쳐 폴더처럼)
 DEV_MIME = "application/x-4dir-devpaths"   # 휴대폰 안 항목 끌기 (파일 주소가 없어 4Dir 안에서만)
 DEV_CLIP = {"paths": None, "cut": False, "seq": -1}   # 휴대폰 항목 복사/잘라내기 — 4Dir 안 붙여넣기용 (윈도우 클립보드엔 셸 데이터로도 넣음)
 DEV_DRAG = {"paths": None}   # 4Dir 에서 끌기 시작한 휴대폰 항목 (4Dir 칸에 놓으면 이것으로 복사)
@@ -558,10 +568,10 @@ MODE_PX = {k: px for k, _, px in VIEW_MODES}
 SORT_COLS = [(0, T("이름")), (5, T("날짜")), (2, T("유형")), (3, T("크기")), (6, T("길이")), (7, T("만든 날짜")),
              (1, T("수정한 날짜")), (4, T("파일 위치")), (8, T("미디어 작성 날짜")), (9, T("사진 크기"))]
 # v0.9.76: 정렬 기준 = 열 번호 (열 5~9 추가, 머리글 우클릭으로 보이기). 0.9.75 에 저장된 열 없는 정렬 번호 10~14 → 새 열 번호
-OLD_SORT = {11: 6, 12: 7, 13: 8, 14: 9}   # v0.9.94: 10 은 이제 상태 열 — 0.9.75(공개 안 함) 의 10(날짜) 변환은 뺌
+OLD_SORT = {12: 7, 13: 8, 14: 9}   # 0.9.109: 11 은 이제 태그 열   # v0.9.94: 10 은 이제 상태 열 — 0.9.75(공개 안 함) 의 10(날짜) 변환은 뺌
 PROP_SORTS = {5: "item_date", 6: "duration", 8: "media_date", 9: "pixels"}   # 뒤에서 셸 속성을 읽어야 하는 정렬
 PROP_COLS = {5: "item_date", 6: "duration", 8: "media_date", 9: "dims"}       # 그 값을 보여 주는 열
-OPT_COLS = [10, 1, 2, 3, 5, 6, 7, 8, 9]   # 10 = 상태(v0.9.94, 동기화 폴더에서만 보임 — 설정 status_col)   # 머리글 우클릭에서 켜고 끄는 열 (이름은 항상, 위치는 검색 결과에서만)
+OPT_COLS = [10, 1, 2, 3, 5, 6, 7, 8, 9, 11]   # 11 = 태그 (0.9.109)   # 10 = 상태(v0.9.94, 동기화 폴더에서만 보임 — 설정 status_col)   # 머리글 우클릭에서 켜고 끄는 열 (이름은 항상, 위치는 검색 결과에서만)
 FAV = favorites.Favorites()
 # 우클릭 메뉴에서 윈도우 자체의 '즐겨찾기에 추가(F)'(탐색기 빠른 실행 고정)와 헷갈리지 않게 ★QE 표시
 QE_FAV = T("★ 4Dir 즐겨찾기")
@@ -582,6 +592,7 @@ SERVER = None          # 하나만 실행용 통신 (창이 아니라 프로그�
 THUMBS = None          # 그림 미리보기 (thumbs.Thumbs, 처음 필요할 때 만듦, 모든 창이 같이 씀)
 THUMB_MODES = ("small", "medium", "large", "xlarge")   # 미리보기를 보여줄 보기 방식 (자세히·목록은 안 함)
 MODELS = []            # 미리보기 완성 알림을 받을 목록 모델들 (약한 참조 대신 닫힐 때 빠짐)
+TAGS = tags.Store(os.path.join(BIN_DIR, "4Dir_tags.json"))   # 0.9.109 태그·묶음 — 4Dir 안에만 저장
 LABELS = labels.Store(os.path.join(BIN_DIR, "4Dir_labels.json"))   # 색 라벨 (v0.9.89) — 4Dir 안에만 저장
 
 
@@ -715,7 +726,7 @@ def parse_search(p):
 
 
 def norm(p):
-    return os.path.normpath(p) if p and p != THIS_PC and not is_search(p) and not devices.is_dev(p) and not archives.is_arc(p) else p
+    return os.path.normpath(p) if p and p != THIS_PC and not is_search(p) and not devices.is_dev(p) and not archives.is_arc(p) and not ftpfs.is_url(p) else p
 
 
 def disp_path(p):
@@ -732,12 +743,18 @@ def tab_title(p):
         return T(THIS_PC)
     if devices.is_dev(p):
         return devices.name_of(p)
+    if archives.is_ftp(p):   # 0.9.109
+        return "🌐 " + archives.name_of(p)
     if archives.is_arc(p):
         return "🗜 " + archives.name_of(p)
     if is_search(p):
         q, f = parse_search(p)
         if q == FLAT_Q:
             return "⤵ " + T("펼쳐 보기") + (f" — {tab_title(f)}" if f else "")
+        if q.startswith(tags.TAG_Q):   # 0.9.109 태그로 보기
+            return "🏷 " + q[len(tags.TAG_Q):]
+        if q.startswith(tags.SET_Q):   # 0.9.109 묶음
+            return "📚 " + q[len(tags.SET_Q):]
         return f"🔎 {q}" + (T(' ({0} 아래)').format(tab_title(f)) if f else "")
     b = os.path.basename(p.rstrip("\\/"))
     return b or p
@@ -849,7 +866,9 @@ class ScanJob(QtCore.QRunnable):
 
                 def rows(lst):
                     return [[n, d, s, m, 0, pth, None, None] for pth, n, d, s, m in lst]
-                if folder:   # 색인 없이 그 폴더 아래를 바로 훑기 (중간 결과를 계속 보냄)
+                if tags.is_view(q):   # 0.9.109 태그·묶음 보기 (4Dir 안에 저장한 목록)
+                    entries = rows(TAGS.rows(q))
+                elif folder:   # 색인 없이 그 폴더 아래를 바로 훑기 (중간 결과를 계속 보냄)
                     flat = q == FLAT_Q   # 빌드 20 하위 폴더 펼쳐 보기: 파일만, 더 많이
                     total, scanned = search_index.folder_search(
                         folder, "*" if flat else q, self.cancel, lambda b: self.sig.partial.emit(self.gen, rows(b)),
@@ -946,8 +965,8 @@ POOL.setMaxThreadCount(4)
 # ================================================================ 목록 모델
 COLS = [T("이름"), T("수정한 날짜"), T("유형"), T("크기"), T("위치"),   # 위치 = 검색 결과에서만 보임
         T("날짜"), T("길이"), T("만든 날짜"), T("미디어 작성 날짜"), T("사진 크기"),   # v0.9.76: 머리글 우클릭으로 보이기 (기본 숨김)
-        T("상태")]   # v0.9.94: 원드라이브 등 동기화 폴더 상태 (탐색기처럼 이름 바로 오른쪽)
-COL_WIDTH = (322, 145, 120, 80, 320, 145, 80, 145, 145, 100, 46)
+        T("상태"), T("태그")]   # 상태 v0.9.94 · 태그 0.9.109 (처음 태그를 붙이면 저절로 보임)   # v0.9.94: 원드라이브 등 동기화 폴더 상태 (탐색기처럼 이름 바로 오른쪽)
+COL_WIDTH = (322, 145, 120, 80, 320, 145, 80, 145, 145, 100, 46, 140)
 
 
 def fmt_duration(sec):
@@ -1108,6 +1127,8 @@ class DirModel(QtCore.QAbstractTableModel):
                 return "" if e[2] < 0 else win_kbsize(e[2])
             if c == 4:
                 return os.path.dirname(e[5]) if e[5] and not e[7] else ""
+            if c == 11:   # 0.9.109 태그
+                return ", ".join(TAGS.tags_of(self.full(e))) if TAGS.files and not e[7] else ""
             if c == 7:
                 ct = 0 if e[7] else shellprops.created(self.full(e), e[3])
                 return win_datetime(ct) if ct else ""
@@ -1165,6 +1186,8 @@ class DirModel(QtCore.QAbstractTableModel):
                 return QtGui.QColor(b)
         elif role == Qt.ToolTipRole and c == 0 and self.cmp and e[0] in self.cmp:
             return CMP_KIND[self.cmp[e[0]]][1]
+        elif role == Qt.ForegroundRole and c == 11 and TAGS.files and TAGS.tags_of(self.full(e)):   # 태그 = 첫 태그 색
+            return QtGui.QColor(TAGS.color(TAGS.tags_of(self.full(e))[0]))
         elif role == Qt.ForegroundRole and (e[4] & HIDDEN_MASK):
             return QtGui.QColor(140, 140, 140)
         elif role == Qt.ForegroundRole:
@@ -1195,6 +1218,15 @@ class DirModel(QtCore.QAbstractTableModel):
         if not new or new == e[0]:
             return False
         src = self.full(e)
+        if archives.is_ftp(src):   # 0.9.109 FTP 이름 바꾸기
+            try:
+                ftpfs.rename(src, new)
+            except Exception as ex:
+                log.warning("FTP 이름 바꾸기 실패 %s: %s", src, ex)
+                QtWidgets.QMessageBox.warning(None, T("이름 바꾸기"), T('이름을 바꿀 수 없습니다.\n{0}').format(ex))
+                return False
+            DEV_SIG.done.emit(self.path, True, "", "")
+            return True
         if archives.is_arc(src):   # 압축 안: 읽기 전용
             return False
         if devices.is_dev(src):   # 휴대폰: 셸로 이름 바꾸고 다시 읽음
@@ -1218,6 +1250,8 @@ class DirModel(QtCore.QAbstractTableModel):
             e[5] = dst
         self.dataChanged.emit(idx, idx)
         self.renamed.emit(src, dst)
+        if TAGS.files or TAGS.sets:
+            TAGS.rename(src, dst)   # 0.9.109 태그·묶음도 따라감
         return True
 
     def sort(self, col, order=Qt.AscendingOrder):
@@ -1367,6 +1401,8 @@ class DirModel(QtCore.QAbstractTableModel):
             key = lambda e: e[2]
         elif c == 4:
             key = lambda e: ((os.path.dirname(e[5]) if e[5] else "").lower(), shellops.natural_key(e[0]))
+        elif c == 11:   # 0.9.109 태그 (없는 것은 뒤로)
+            key = lambda e: (", ".join(TAGS.tags_of(self.full(e))).lower() or "\uffff", shellops.natural_key(e[0]))
         elif c == 10:   # 상태: 클라우드에만 → 이 PC → 항상 유지
             key = lambda e: (cloud.STATES[cloud.state(e[4])][0], shellops.natural_key(e[0]))
         else:
@@ -1971,6 +2007,23 @@ class ViewMixin(DragScrollMixin):
         self.page.editor_closed()
 
 
+def refresh_tags_ui(show_col=False):
+    """태그를 붙이거나 뗌 (0.9.109) → 처음이면 태그 열을 켜고, 모든 칸의 태그 칸을 다시 그림"""
+    if show_col and 11 not in SETTINGS["columns"]:
+        toggle_column(11)
+    for w in WINDOWS:
+        for p in w.panes:
+            for v in p.views():
+                m = v.model_
+                if m.rows:
+                    m.dataChanged.emit(m.index(0, 11), m.index(len(m.rows) - 1, 11))
+
+
+def remember_ftp(site):
+    """최근 FTP 사이트 (0.9.109, 비밀번호는 저장 안 함 — 기억은 윈도우 자격 증명)"""
+    SETTINGS["ftp_sites"] = ([site] + [s for s in SETTINGS["ftp_sites"] if s != site])[:10]
+
+
 def toggle_column(c):
     """머리글 우클릭에서 열 켜고 끄기 → 모든 창·칸·탭에 (v0.9.76). 10(상태)은 설정 status_col 로 (v0.9.94)"""
     if c == 10:
@@ -2393,6 +2446,22 @@ class Page(QtWidgets.QWidget):
     # ---------------------------------------------------------- 이동
     def navigate(self, path, record=True, select=None, force=False, checked=False):
         path = norm(path) or THIS_PC
+        if ftpfs.is_url(path):   # 0.9.109 주소줄 ftp://사용자@서버/경로
+            st, pth, pw0 = ftpfs.from_url(path)
+            if pw0 is not None:
+                try:
+                    ftpfs.login(st, pw0)
+                except Exception as ex:
+                    self.status.emit(f"⚠ FTP: {ex}")
+                    return False
+            path = ftpfs.make(st, pth)
+        if ftpfs.is_ftp(path) and not ftpfs.ready(ftpfs.split(path)[0]):   # 비밀번호 모름 → 연결 창
+            r = ftpfs.login_dialog(self, ftpfs.split(path)[0], ftpfs.split(path)[1], SETTINGS["ftp_sites"])
+            if not r:
+                return False
+            path = ftpfs.make(*r)
+        if ftpfs.is_ftp(path):
+            remember_ftp(ftpfs.split(path)[0])
         if archives.is_arc(path):   # 빌드 20 압축 안: 그 압축 파일이 있고 안쪽이 폴더일 때만
             ok = archives.is_dir(path) and archives.exists(path)
         else:
@@ -2878,7 +2947,7 @@ class Page(QtWidgets.QWidget):
     def do_paste(self):
         if self.path == THIS_PC or is_search(self.path):
             return
-        if archives.is_arc(self.path):
+        if archives.is_arc(self.path) and not archives.is_ftp(self.path):   # FTP 는 올리기 (0.9.109)
             self.status.emit(T("⚠ 압축 파일 안은 읽기 전용입니다 (넣기·지우기·이름 바꾸기 안 됨)"))
             return
         if DEV_CLIP["paths"] and DEV_CLIP["seq"] == shellops.clipboard_info()["seq"]:   # 휴대폰에서 복사한 것 (그 뒤 다른 복사 없음)
@@ -2968,6 +3037,10 @@ class Page(QtWidgets.QWidget):
 
     def do_delete(self, permanent=False):
         ps = self.selected_paths()
+        if archives.is_ftp(self.path):   # 0.9.109 FTP: 휴지통 없음 → 확인 후 서버에서 지움
+            if ps and QtWidgets.QMessageBox.question(self, T("FTP 지우기"), T("서버에서 {0}개를 지웁니다 (휴지통 없음). 계속할까요?").format(len(ps))) == QtWidgets.QMessageBox.Yes:
+                self._ftp_bg(lambda: ftpfs.delete(ps), self.path, T("FTP 지움 {0}개").format(len(ps)))
+            return
         if archives.is_arc(self.path):
             self.status.emit(T("⚠ 압축 파일 안은 읽기 전용입니다 (넣기·지우기·이름 바꾸기 안 됨)"))
             return
@@ -2984,6 +3057,12 @@ class Page(QtWidgets.QWidget):
 
     def file_op(self, srcs, tgt, move, select_in=None):
         """복사·이동 (셸 작업) + 되돌리기 기록 + 보고 있는 칸이면 새로 생긴 것 선택"""
+        if archives.is_ftp(tgt):   # 0.9.109 FTP 로 올리기 (압축·FTP 안 것은 먼저 꺼내서) — 이동도 복사로
+            real = self._arc_real(list(srcs))
+            if real:
+                log.info("FTP 올리기 %d개 → %s", len(real), archives.friendly(tgt))
+                self._ftp_bg(lambda: ftpfs.upload(real, tgt), tgt, T("FTP 올림 {0}개 → {1}").format(len(real), archives.friendly(tgt)))
+            return
         if archives.is_arc(tgt):   # 빌드 20: 압축 안에는 못 넣음
             self.status.emit(T("⚠ 압축 파일 안은 읽기 전용입니다 (넣기·지우기·이름 바꾸기 안 됨)"))
             return
@@ -3049,7 +3128,7 @@ class Page(QtWidgets.QWidget):
 
     def do_rename(self):
         ps = self.selected_paths()
-        if archives.is_arc(self.path):
+        if archives.is_arc(self.path) and not archives.is_ftp(self.path):
             self.status.emit(T("⚠ 압축 파일 안은 읽기 전용입니다 (넣기·지우기·이름 바꾸기 안 됨)"))
             return
         if len(ps) > 1:   # 여러 개 → 이름 일괄 변경 창 (하나면 그 자리에서)
@@ -3062,6 +3141,12 @@ class Page(QtWidgets.QWidget):
             self.view().edit(self.model_.index(idx.row(), 0))
 
     def do_new_folder(self):
+        if archives.is_ftp(self.path):   # 0.9.109 FTP 새 폴더
+            name, ok = QtWidgets.QInputDialog.getText(self, T("새 폴더"), T("이름"), text=T("새 폴더"))
+            if ok and name.strip():
+                here = self.path
+                self._ftp_bg(lambda: ftpfs.mkdir(here, name.strip()), here, T("FTP 새 폴더: {0}").format(name.strip()))
+            return
         if archives.is_arc(self.path):
             self.status.emit(T("⚠ 압축 파일 안은 읽기 전용입니다 (넣기·지우기·이름 바꾸기 안 됨)"))
             return
@@ -3160,9 +3245,96 @@ class Page(QtWidgets.QWidget):
             m = main_of(self)
             if m is not None:
                 m.find_dupes(self)
+        elif act == "view_file":   # 0.9.109
+            self.view_file()
+        elif act == "file_attrs":
+            ps = self.selected_paths()
+            if ps and self.path != THIS_PC and not archives.is_arc(self.path):
+                self.file_attrs(ps)
+        elif act == "img_batch":
+            ps = [p for p in self.selected_paths() if imgbatch.is_image(p)]
+            if ps:
+                self.img_batch(ps)
+        elif act == "space_map":
+            ds = [p for p in self.selected_paths() if os.path.isdir(p)]
+            self.space_map(ds[0] if ds else self.path)
         else:
             return False
         return True
+
+    # ---------------------------------------------------------- 0.9.109 빌드 3 추가 기능 (칸)
+    def view_file(self):
+        """F3 글자·16진수 보기 (압축·FTP 안 파일은 꺼내서)"""
+        cur = self.selected_paths()
+        ps = [p for p in cur if not archives.is_arc(p) and os.path.isfile(p)]
+        if not ps and cur and archives.is_arc(cur[0]):
+            ps = [p for p in (self._arc_real(cur[:1]) or []) if os.path.isfile(p)]
+        if not ps:
+            self.status.emit(T("⚠ 파일을 고르세요"))
+            return
+        dlg = hexview.ViewerDialog(ps[0], self.window())
+        dlg.setStyleSheet(self.window().styleSheet())
+        dlg.show()
+        return dlg
+
+    def toggle_tag(self, paths, tag):
+        on = not all(tag in TAGS.tags_of(p) for p in paths)
+        TAGS.toggle(paths, tag, on)
+        refresh_tags_ui(show_col=on)
+        self.status.emit(T("태그 '{0}' {1}: {2}개").format(tag, T("붙임") if on else T("뗌"), len(paths)))
+
+    def new_tag(self, paths):
+        name, ok = QtWidgets.QInputDialog.getText(self, T("새 태그"), T("태그 이름 (예: 검수, 최종, 참고)"))
+        if ok and name.strip():
+            TAGS.new_tag(name.strip())
+            TAGS.toggle(paths, name.strip(), True)
+            refresh_tags_ui(show_col=True)
+            self.status.emit(T("태그 '{0}' {1}: {2}개").format(name.strip(), T("붙임"), len(paths)))
+
+    def clear_tags(self, paths):
+        TAGS.clear(paths)
+        refresh_tags_ui()
+
+    def add_to_set(self, name, paths):
+        if name is None:
+            name, ok = QtWidgets.QInputDialog.getText(self, T("새 가상 그룹"), T("가상 그룹 이름 (흩어진 파일을 한곳에 모아 보기 — 진짜 파일은 그대로)"))
+            if not ok or not name.strip():
+                return
+            name = name.strip()
+        n = TAGS.add_to_set(name, paths)
+        self.status.emit(T("가상 그룹 '{0}' 에 {1}개 넣음 (도구 ▸ 가상 그룹 에서 열기)").format(name, n))
+
+    def file_attrs(self, paths):
+        dlg = fileattrs.AttrDialog(paths, lambda n: self.reload("attrs"), self.window())
+        dlg.setStyleSheet(self.window().styleSheet())
+        dlg.exec()
+
+    def img_batch(self, paths):
+        dlg = imgbatch.ImgBatchDialog(paths, None, self.window())
+        dlg.setAttribute(Qt.WA_DeleteOnClose)
+        dlg.setStyleSheet(self.window().styleSheet())
+        dlg.show()
+        return dlg
+
+    def space_map(self, root):
+        m = main_of(self)
+        if m is not None:
+            return m.space_map(root)
+
+    def _ftp_bg(self, fn, path, msg):
+        """FTP 작업(올리기·지우기·새 폴더)을 뒤 스레드에서 → 끝나면 그 폴더를 보는 칸 다시 읽기 + 알림"""
+        self.status.emit("⏳ FTP…")
+        sg = _undo_signal()
+
+        def run():
+            try:
+                fn()
+                DEV_SIG.done.emit(path, True, "", "")
+                sg.done.emit(msg + "  ✕")
+            except Exception as ex:
+                log.exception("FTP 작업 실패")
+                DEV_SIG.done.emit(path, False, f"FTP: {ex}", "")
+        threading.Thread(target=run, daemon=True, name="ftp").start()
 
     def flat_view(self):
         """하위 폴더 펼쳐 보기 (빌드 20): 이 폴더 아래 모든 파일을 한 목록으로 새 탭에 (위치 열 보임, 색인 없이 바로 훑음)"""
@@ -3342,6 +3514,16 @@ class Page(QtWidgets.QWidget):
             m.addAction(mlabel(T("복사"), "copy"), self.do_copy)
             m.addSeparator()
             m.addAction(mlabel(T("다른 칸으로 꺼내기 (복사)"), "send_copy"), lambda: self.send_to_other(False))
+            if archives.is_ftp(self.path):   # 0.9.109 FTP 는 고치기도 됨
+                m.addSeparator()
+                m.addAction(mlabel(T("이름 바꾸기"), "rename"), self.do_rename)
+                m.addAction(mlabel(T("삭제 (서버에서)"), "delete"), self.do_delete)
+        elif archives.is_ftp(self.path):
+            m.addAction(mlabel(T("붙여넣기 (올리기)"), "paste"), self.do_paste)
+            m.addAction(mlabel(T("새 폴더"), "new_folder"), self.do_new_folder)
+            m.addSeparator()
+            m.addAction(mlabel(T("새로 고침"), "refresh"), lambda: self.reload("menu"))
+            m.addAction(T("FTP 연결 끊기"), lambda: (ftpfs.close_all(), self.navigate(THIS_PC)))
         else:
             arc = archives.split(self.path)[0]
             m.addAction(T("압축 파일 전체를 다른 칸으로 풀기"), lambda: self._arc_extract_all(arc))
@@ -3402,14 +3584,14 @@ class Page(QtWidgets.QWidget):
 
         # 윈도우 메뉴 맨 위에 끼워 넣는 우리 항목: [(표시, 콜백) 또는 (표시, [(하위표시, 콜백)…])]
         extras = []
+        # 0.9.109 빌드 5 (사용자 11/6 '오른쪽 메뉴 정리'): 자주 쓰는 것만 위에, 나머지 4Dir 기능은 '4Dir 도구 ▸' 하나로
+        #   순서: 대상 위치 · 새 탭 · 다른 칸으로 복사/이동 · 압축/WebP · 색 라벨/태그/가상 그룹 · 4Dir 도구 ▸ · 윈도우 고정·경로 복사 · 터미널 · ★즐겨찾기
         if paths:
             dirs = [p for p in paths if os.path.isdir(p)]
             if dirs:
                 extras.append((mlabel(T("새 탭에서 열기"), "open_new_tab"), lambda: [self.openInNewTab.emit(p) for p in dirs]))
-                extras.append((QE_FAV_ADD, lambda: [FAV.add(p) for p in dirs]))
             main = main_of(self)
             if self.path != THIS_PC and main is not None:
-                extras.append((mlabel(T("이름 일괄 변경…"), "rename" if len(paths) > 1 else None), lambda: main.open_batch_rename(self.selected_paths())))
                 tg = [(T('칸 {0}: {1}').format(p.idx + 1, p.view().path), p.view()) for p in main.panes
                       if p.isVisible() and p is not pane and p.view() and p.view().path != THIS_PC]
                 if tg:
@@ -3433,8 +3615,24 @@ class Page(QtWidgets.QWidget):
                 extras.append((T("색 라벨"), [({"t": lbl, "chk": cur == {k}}, (lambda k=k: self.set_label(paths, k))) for k, lbl, _s in labels.TAB_COLORS]
                                + [("-", None), ({"t": T("다른 색 고르기…"), "chk": bool(own)}, lambda: self.pick_label(paths)),
                                   (T("색 라벨 지우기"), lambda: self.set_label(paths, None))]))
-            if any(os.path.isfile(p) for p in paths):
-                extras.append((mlabel(T("확인값(SHA256) 보기"), "sha256"), self.show_sha256))
+                tg_items = [({"t": t, "chk": all(t in TAGS.tags_of(p) for p in paths)}, (lambda t=t: self.toggle_tag(paths, t))) for t in TAGS.all_tags()]
+                extras.append((T("태그"), tg_items + ([("-", None)] if tg_items else []) + [(T("새 태그…"), lambda: self.new_tag(paths))]
+                               + ([(T("태그 모두 떼기"), lambda: self.clear_tags(paths))] if any(TAGS.tags_of(p) for p in paths) else [])))
+                st_items = [(n, (lambda n=n: self.add_to_set(n, paths))) for n in TAGS.all_sets()]
+                extras.append((T("가상 그룹에 넣기"), st_items + ([("-", None)] if st_items else []) + [(T("새 가상 그룹…"), lambda: self.add_to_set(None, paths))]))
+                tools = []   # 4Dir 도구 ▸
+                if main is not None:
+                    tools.append((mlabel(T("이름 일괄 변경…"), "rename" if len(paths) > 1 else None), lambda: main.open_batch_rename(self.selected_paths())))
+                tools.append((mlabel(T("날짜·속성 바꾸기…"), "file_attrs"), lambda: self.file_attrs(paths)))
+                if any(imgbatch.is_image(p) for p in paths):
+                    tools.append((mlabel(T("그림 크기·형식 바꾸기…"), "img_batch"), lambda: self.img_batch(paths)))
+                if any(os.path.isfile(p) for p in paths):
+                    tools.append((mlabel(T("확인값(SHA256) 보기"), "sha256"), self.show_sha256))
+                if len(paths) == 1 and os.path.isfile(paths[0]):
+                    tools.append((mlabel(T("글자·16진수로 보기"), "view_file"), self.view_file))
+                if dirs:
+                    tools.append((mlabel(T("디스크 사용량 트리맵"), "space_map"), lambda: self.space_map(dirs[0])))
+                extras.append((T("4Dir 도구"), tools))
             if dirs:
                 extras.append(({"t": T("윈도우 즐겨찾기에 고정"), "unless": {"pintohome"}}, lambda: self.do_verb(dirs, "pintohome")))
                 extras.append(({"t": T("시작 화면에 고정"), "unless": {"pintostartscreen"}}, lambda: self.do_verb(dirs, "pintostartscreen")))
@@ -3449,7 +3647,16 @@ class Page(QtWidgets.QWidget):
         fav_entry = (QE_FAV, favs or [(T("(비어 있음)"), lambda: None)])
         newfolder = None
         if paths:
-            extras.append(fav_entry)
+            # 0.9.109 빌드 6 (사용자 11/6): ★ 즐겨찾기 둘은 맨 위로 모으고, 나머지는 많이 쓰는 순
+            order = [T("대상 위치 열기"), T("새 탭에서 열기"), T("다른 칸으로 복사"), T("다른 칸으로 이동"), T("경로로 복사"),
+                     T("압축"), T("WebP 변환"), T("터미널에서 열기"), T("🗜 압축 파일 안 보기 (4Dir)"), T("색 라벨"), T("태그"),
+                     T("가상 그룹에 넣기"), T("4Dir 도구"), T("윈도우 즐겨찾기에 고정"), T("시작 화면에 고정")]
+
+            def rank(e):
+                t = e[0]["t"] if isinstance(e[0], dict) else e[0]
+                t = t.split("	")[0].replace("&", "")
+                return next((i for i, o in enumerate(order) if t.startswith(o.replace("&", ""))), len(order))
+            extras = [fav_entry] + ([(QE_FAV_ADD, lambda: [FAV.add(p) for p in dirs])] if dirs else []) + sorted(extras, key=rank)
         else:
             # 빈 곳: 윈도우 탐색기 빈 곳 메뉴 순서 (10/8 사용자 확정) — 새 폴더 · 보기 · 정렬 기준 · 새로 고침 · ★4Dir 즐겨찾기
             # ─ 붙여넣기(복사한 것 없으면 흐림) ─ 윈도우 항목들(윈도우 '새 폴더' 자리에 되돌리기) … 속성
@@ -3464,12 +3671,13 @@ class Page(QtWidgets.QWidget):
                                     for o, lbl in ((Qt.AscendingOrder, T("오름차순")), (Qt.DescendingOrder, T("내림차순")))]
             extras.append((mlabel(T("정렬 기준"), None, "O"), srt))
             extras.append((mlabel(T("새로 고침"), "refresh", "E"), lambda: self.reload("menu")))
-            extras.append((mlabel(T("패턴으로 고르기…"), "select_pattern"), self.select_pattern))   # v0.9.89
-            extras.append((mlabel(T("하위 폴더 펼쳐 보기"), "flat_view"), self.flat_view))   # 빌드 20
+            tools = [(mlabel(T("패턴으로 고르기…"), "select_pattern"), self.select_pattern),   # 0.9.109 빌드 5: 빈 곳도 '4Dir 도구 ▸' 하나로
+                     (mlabel(T("하위 폴더 펼쳐 보기"), "flat_view"), self.flat_view)]
             if main_of(self) is not None:
-                extras.append((mlabel(T("중복 파일 찾기…"), "find_dupes"), lambda: main_of(self).find_dupes(self)))   # 빌드 20
-            if main_of(self) is not None:
-                extras.append((mlabel(T("두 칸 비교"), "compare"), main_of(self).compare_panes))
+                tools.append((mlabel(T("두 칸 비교"), "compare"), main_of(self).compare_panes))
+                tools.append((mlabel(T("중복 파일 찾기…"), "find_dupes"), lambda: main_of(self).find_dupes(self)))
+            tools.append((mlabel(T("디스크 사용량 트리맵"), "space_map"), lambda: self.space_map(self.path)))
+            extras.append((T("4Dir 도구"), tools))
             extras.append((T("터미널에서 열기"), lambda: shellops.open_terminal(self.path)))   # 윈도우 11 빈 곳 메뉴처럼 (v0.9.54)
             extras.append(fav_entry)
             extras.append(("-", None))
@@ -3524,6 +3732,11 @@ class Page(QtWidgets.QWidget):
                   (T("새 탭에서 폴더 위치 열기"), lambda: self.openInNewTab.emit(loc))]
         if main_of(self) is not None:
             extras.append((mlabel(T("이름 일괄 변경…"), "rename" if len(paths) > 1 else None), lambda: main_of(self).open_batch_rename(self.selected_paths())))
+        q = parse_search(self.path)[0]
+        if q.startswith(tags.SET_Q):   # 0.9.109 묶음 보기: 진짜 파일은 그대로, 목록에서만 뺌
+            extras.insert(0, (T("가상 그룹에서 빼기"), lambda: (TAGS.remove_from_set(q[len(tags.SET_Q):], paths), self.reload("set"))))
+        elif q.startswith(tags.TAG_Q):
+            extras.insert(0, (T("이 태그 떼기"), lambda: (TAGS.toggle(paths, q[len(tags.TAG_Q):], False), refresh_tags_ui(), self.reload("tag"))))
         parents = {os.path.normcase(os.path.dirname(pth)) for pth in paths}
         if len(parents) == 1:
             try:
@@ -4146,6 +4359,8 @@ class Crumbs(QtWidgets.QFrame):
             return [(T(THIS_PC), THIS_PC), (tab_title(p), p)]
         if devices.is_dev(p):   # 휴대폰: 기기 › 내장 저장공간 › …
             return [(T(THIS_PC), THIS_PC)] + devices.chain(p)
+        if archives.is_ftp(p):   # 0.9.109 FTP: 내 PC › 🌐 서버 › 폴더
+            return [(T(THIS_PC), THIS_PC)] + archives.chain(p)
         if archives.is_arc(p):   # 압축 안: 압축 파일이 있는 폴더까지 + 압축 › 안쪽
             return Crumbs.segments(os.path.dirname(archives.split(p)[0])) + archives.chain(p)
         out = [(T(THIS_PC), THIS_PC)]
@@ -5371,10 +5586,13 @@ class Pane(QtWidgets.QFrame):
             self.side.go.connect(lambda p: self.go(p))
             self.side.goNewTab.connect(lambda p: self.go(p, new_tab=True))
             self.side_host.layout().addWidget(self.side)
+        if not on and self.side_host.isVisibleTo(self) and self.body.sizes()[0] >= 60:   # 이슈 #5: 숨기기 전 폭 기억 (공용 모드로 바꿀 때 등)
+            self._side_w = self.body.sizes()[0]
         self.side_host.setVisible(on)
         if on and self.body.sizes()[0] < 60:
             total = sum(self.body.sizes()) or 800
-            self.body.setSizes([200, max(total - 200, 200)])
+            w = int(getattr(self, "_side_w", 0) or 200)
+            self.body.setSizes([w, max(total - w, 200)])
         # v0.9.101: 공용 모드에서도 ☰ 보임 → 누르면 공용 탐색 창 숨기기/보이기 (체크 = 공용 창 보임)
         self.btn_side.setChecked(on if not shared else not SETTINGS["side_shared_hidden"])
         self.btn_side.setToolTip(T("공용 탐색 창 보이기/숨기기") if shared else T("탐색 창 보이기/숨기기"))
@@ -5383,6 +5601,13 @@ class Pane(QtWidgets.QFrame):
         if save:
             log.info("탐색 창 pane=%d %s", self.idx, on)
             self.changed.emit()
+
+    def _body_sizes(self):
+        """저장용 탐색 창·목록 폭 — 숨겨져 0 이면 숨기기 전 폭으로 (이슈 #5)"""
+        s = self.body.sizes()
+        if s and s[0] < 60 and getattr(self, "_side_w", 0) and len(s) > 1:
+            return [self._side_w, max(sum(s) - self._side_w, 200)]
+        return s
 
     def toggle_sidebar(self):
         main = main_of(self)
@@ -5393,7 +5618,7 @@ class Pane(QtWidgets.QFrame):
 
     def state(self):
         return {"tabs": [v.path for v in self.views()], "current": self.bar.currentIndex(), "mode": self.mode,
-                "sidebar": bool(getattr(self, "side_on", False)), "body": self.body.sizes(),
+                "sidebar": bool(getattr(self, "side_on", False)), "body": self._body_sizes(),
                 "views": [v.view_state() for v in self.views()]}   # 탭별 정렬·열 너비 (v0.7.1)
 
 
@@ -6179,9 +6404,20 @@ class PreviewWindow(QtWidgets.QWidget):
         # 빌드 23 (사용자 11/6): 미리보기 창 어디서든 ← → = 한 장면(막대·띠·화면 같이), 스페이스 = 재생/멈춤 (GIF·동영상)
         for key, fn in (("Left", lambda: self.pane.movie is not None and self.pane._gif_step(-1)),
                         ("Right", lambda: self.pane.movie is not None and self.pane._gif_step(+1)),
-                        ("Space", lambda: self.pane.movie is not None and self.pane._gif_toggle())):
+                        ("Space", self._space)):
             sc = QtGui.QShortcut(QtGui.QKeySequence(key), self, fn)
             sc.setContext(Qt.WindowShortcut)
+
+    def _space(self):
+        """미리보기 창의 스페이스: GIF·동영상이면 재생/멈춤, 아니면 창 닫기 (0.9.109 빌드 4 — 스페이스로 연 창이 앞으로 와 키를 가져가서
+        두 번째 스페이스로 안 닫히던 것, qe181 실패 원인)"""
+        if self.pane.movie is not None:
+            self.pane._gif_toggle()
+        else:
+            log.info("미리보기 창 스페이스 → 닫기")
+            m = self.pane.main or next(iter(WINDOWS), None)
+            if m is not None:
+                m.set_preview(False)
 
     def changeEvent(self, ev):
         if ev.type() == QtCore.QEvent.ActivationChange and not self.isActiveWindow():
@@ -6458,6 +6694,9 @@ class SettingsDialog(QtWidgets.QDialog):
         self._set(lay, "keep_favbar", T("메뉴줄을 접어도 즐겨찾기 줄은 보이기"))
         self._sub(lay, T("도움말"))
         self._set(lay, "tooltips", T("풍선 도움말(툴팁) 보이기 — 단추에 마우스를 올리면 설명"))
+        self._sub(lay, T("윈도우"))   # 0.9.109
+        self._check(lay, "win_e", T("Win+E 를 누르면 탐색기 대신 4Dir 열기"), winhook.ours, m.toggle_winE,
+                    T("이 사용자 계정에만 적용 — 끄면 원래 탐색기로 돌아옵니다"))
 
     def _p_list(self, lay):
         self._sub(lay, T("표시"))
@@ -7205,6 +7444,9 @@ class Main(QtWidgets.QMainWindow):
             "toggle_nav": lambda: self.pane().toggle_sidebar(),
             "toggle_memo": lambda: self.toggle_memo(),   # v0.9.108 메모 창 (빌드 10: 뒤에 숨었으면 앞으로)   # v0.9.101 공용이면 공용 창, 칸마다면 지금 칸
             "compare": lambda: self.compare_panes(),
+            "sync_dirs": lambda: self.sync_dirs(),   # 0.9.109
+            "ftp_connect": lambda: self.ftp_connect(),
+            "user_buttons": lambda: self.edit_user_buttons(),
             "palette": lambda: self.open_palette(),
             "settings": lambda: self.open_settings(),   # v0.9.104
             "ws_latest": lambda: self.load_ws_latest(),   # v0.9.98 이슈 #1 창 구성 단축키
@@ -7410,7 +7652,6 @@ class Main(QtWidgets.QMainWindow):
         self.btn_settings.setAutoRaise(True)
         self.btn_settings.setToolTip(T("설정") + "  (Ctrl+,)")
         self.btn_settings.clicked.connect(lambda: self.open_settings())
-        tb.addWidget(self.btn_settings)
         # 미리보기 창 켜기/끄기 — 도구 오른쪽 (v0.9.59, 사용자 요청)
         self.act_preview = tb.addAction(preview_icon(), T("미리보기 창"), lambda: self.toggle_preview())
         self.act_preview.setCheckable(True)
@@ -7432,6 +7673,13 @@ class Main(QtWidgets.QMainWindow):
         self.btn_chips.setToolTip(T("형식 단추 줄 보이기/숨기기 ([전체][JPG][PSD]…) — 모든 칸"))
         self.btn_chips.clicked.connect(lambda: self.toggle_opt("type_chips"))
         tb.addWidget(self.btn_chips)
+        # 0.9.109 빌드 3 사용자 단추 (도구 ▸ 사용자 단추 편집…) — 없으면 안 보임
+        self.ubar = QtWidgets.QWidget()
+        self.ubar_lay = QtWidgets.QHBoxLayout(self.ubar)
+        self.ubar_lay.setContentsMargins(0, 0, 0, 0)
+        self.ubar_lay.setSpacing(2)
+        self.act_ubar = tb.addWidget(self.ubar)
+        self.build_user_buttons()
         # 빌드 20 복사 대기열: 복사·이동이 여러 개면 하나씩 — 기다리는 게 있을 때만 '⏳ 대기 n' 이 보임 (누르면 목록·취소·멈춤)
         self.btn_queue = QtWidgets.QToolButton()
         self.btn_queue.setPopupMode(QtWidgets.QToolButton.InstantPopup)
@@ -7472,6 +7720,7 @@ class Main(QtWidgets.QMainWindow):
         self.act_top.setCheckable(True)
         self.act_top.setChecked(SETTINGS["on_top"])
         self.act_top.setToolTip(T("다른 창 위에 항상 표시 (켜기/끄기)"))
+        tb.addWidget(self.btn_settings)   # 0.9.109 빌드 1 (사용자 11/6): 설정 톱니는 '항상 위' 뒤로
         # 알림 줄 (비정상 종료 복원·언어 바꿈 등) — 클릭하면 닫힘.
         # 상단 메뉴줄 안에 두면 창이 좁을 때 '…' 안으로 밀려 안 보임(10/2 사용자 지적, 1168px 재현) → 메뉴줄 아래 한 줄로
         self.notice = QtWidgets.QPushButton()
@@ -7548,9 +7797,7 @@ class Main(QtWidgets.QMainWindow):
         self.mon_timer = QtCore.QTimer(self)
         self.mon_timer.setInterval(1500)
         self.mon_timer.timeout.connect(self._update_mon)
-        ver = QtWidgets.QLabel(f"  v{QE_VERSION}  ")
-        ver.setStyleSheet("color:#888;")
-        tb.addWidget(ver)
+        # 0.9.109 빌드 2 (사용자 11/6): 메뉴 막대 끝 버전 글자 뺌 — 제목 표시줄에 이미 있음
         self.set_sysmon(SETTINGS["sysmon"], save=False)
 
     def set_preview(self, on):
@@ -7594,6 +7841,148 @@ class Main(QtWidgets.QMainWindow):
             m.addAction(T("▶ 이어서 하기"), lambda: shellops.queue_pause(False))
         else:
             m.addAction(T("⏸ 다음 작업 멈춤 (지금 것은 계속)"), lambda: shellops.queue_pause(True))
+
+    # ---------------------------------------------------------- 0.9.109 빌드 3 추가 기능 (창)
+    def sync_dirs(self):
+        """폴더 맞추기: 지금 칸(A)과 다른 칸(B) — 하위 폴더까지 비교 후 복사"""
+        a = self.pane()
+        b = self.other_pane(a) if a else None
+        va, vb = (a.view() if a else None), (b.view() if b else None)
+        bad = lambda v: v is None or v.path == THIS_PC or is_search(v.path) or devices.is_dev(v.path) or archives.is_arc(v.path) or not os.path.isdir(v.path)
+        if bad(va) or bad(vb):
+            self.show_notice(T("⚠ 폴더 맞추기: 두 칸에 폴더를 열어 두세요  ✕"), ms=6000)
+            return None
+        if os.path.normcase(va.path) == os.path.normcase(vb.path):
+            self.show_notice(T("⚠ 두 칸이 같은 폴더입니다  ✕"), ms=5000)
+            return None
+
+        def trash(ps, after):
+            shellops.delete(self.hwnd_int(), ps, done=lambda res, ab: after())
+        dlg = syncdirs.SyncDialog(va.path, vb.path, trash, lambda: [x.reload("sync") for x in (va, vb)], self)
+        dlg.setAttribute(Qt.WA_DeleteOnClose)
+        dlg.setStyleSheet(self.styleSheet())
+        dlg.show()
+        log.info("폴더 맞추기 열기 %s ↔ %s", va.path, vb.path)
+        return dlg
+
+    def space_map(self, root=None):
+        v = self.pane().view() if self.pane() else None
+        root = root or (v.path if v else None)
+        if not root or root == THIS_PC or is_search(root) or devices.is_dev(root) or archives.is_arc(root) or not os.path.isdir(root):
+            self.show_notice(T("⚠ 디스크 사용량 트리맵: 폴더(또는 드라이브)에서 쓰세요  ✕"), ms=5000)
+            return None
+
+        def open_cb(path, is_file):
+            nv = self.pane().add_tab(os.path.dirname(path) if is_file else path, activate=True)
+            if is_file:
+                nv.pending_select = os.path.basename(path)
+            self.raise_()
+            self.activateWindow()
+        dlg = spacemap.SpaceMapDialog(root, open_cb, self)
+        dlg.setStyleSheet(self.styleSheet())
+        dlg.show()
+        return dlg
+
+    def ftp_connect(self):
+        r = ftpfs.login_dialog(self, None, "/", SETTINGS["ftp_sites"])
+        if r:
+            remember_ftp(r[0])
+            self.pane().add_tab(ftpfs.make(*r), activate=True)
+
+    def edit_user_buttons(self):
+        dlg = userbtns.EditDialog(SETTINGS["user_buttons"], self)
+        dlg.setStyleSheet(self.styleSheet())
+        if dlg.exec():
+            SETTINGS["user_buttons"] = dlg.result_items()
+            log.info("사용자 단추 %d개 저장", len(SETTINGS["user_buttons"]))
+            for w in WINDOWS:
+                w.build_user_buttons()
+
+    def build_user_buttons(self):
+        """위쪽 도구줄의 사용자 단추 다시 만들기"""
+        if not hasattr(self, "ubar_lay"):
+            return
+        while self.ubar_lay.count():
+            it = self.ubar_lay.takeAt(0)
+            if it.widget():
+                it.widget().deleteLater()
+        items = SETTINGS["user_buttons"] or []
+        for item in items:
+            b = QtWidgets.QToolButton()
+            b.setAutoRaise(True)
+            ic = userbtns.icon_for(item)
+            if not ic.isNull():
+                b.setIcon(ic)
+            b.setText(item.get("name") or "?")
+            b.setToolButtonStyle(Qt.ToolButtonTextBesideIcon if not ic.isNull() else Qt.ToolButtonTextOnly)
+            b.setToolTip(f"{item.get('cmd', '')} {item.get('args', '')}".strip() + "\n" + T("우클릭 = 사용자 단추 편집"))
+            b.setContextMenuPolicy(Qt.CustomContextMenu)
+            b.customContextMenuRequested.connect(lambda _p: self.edit_user_buttons())
+            b.clicked.connect(lambda _c=False, item=item: self.run_user_button(item))
+            self.ubar_lay.addWidget(b)
+        self.act_ubar.setVisible(bool(items))
+
+    def run_user_button(self, item):
+        v = self.pane().view() if self.pane() else None
+        files = [p for p in (v.selected_paths() if v else []) if not archives.is_arc(p) and not devices.is_dev(p)]
+        folder = v.path if v and os.path.isdir(v.path) else ""
+        op = self.other_pane(self.pane()) if self.pane() else None
+        other = op.view().path if op and op.view() and os.path.isdir(op.view().path) else ""
+        try:
+            userbtns.run(item, {"files": files, "folder": folder, "other": other})
+        except Exception as ex:
+            log.exception("사용자 단추 실행 실패")
+            self.show_notice(T("⚠ 실행하지 못했습니다: {0}  ✕").format(ex), ms=8000)
+
+    def toggle_winE(self):
+        root = os.path.dirname(BIN_DIR)
+        try:
+            if winhook.ours():
+                winhook.disable()
+                self.show_notice(T("Win+E 는 다시 윈도우 탐색기를 엽니다  ✕"), ms=6000)
+            else:
+                winhook.enable(root)
+                self.show_notice(T("이제 Win+E 를 누르면 4Dir 가 열립니다  ✕"), ms=6000)
+        except Exception as ex:
+            log.exception("Win+E 설정 실패")
+            self.show_notice(T("⚠ 바꾸지 못했습니다: {0}  ✕").format(ex), ms=8000)
+
+    def open_tag_view(self, tag):
+        return self.pane().add_tab(search_path(tags.TAG_Q + tag), activate=True)
+
+    def open_set_view(self, name):
+        return self.pane().add_tab(search_path(tags.SET_Q + name), activate=True)
+
+    def _fill_tags_menu(self, tm):
+        tm.clear()
+        for t in TAGS.all_tags():
+            tm.addAction(f"{t}  ({TAGS.count(t)})", lambda t=t: self.open_tag_view(t))
+        if not TAGS.tags:
+            a = tm.addAction(T("(태그 없음 — 파일 우클릭 ▸ 태그)"))
+            a.setEnabled(False)
+            return
+        tm.addSeparator()
+        dm = tm.addMenu(T("태그 지우기"))
+        for t in TAGS.all_tags():
+            dm.addAction(t, lambda t=t: (TAGS.delete_tag(t), refresh_tags_ui()))
+
+    def _fill_sets_menu(self, sm):
+        sm.clear()
+        for n in TAGS.all_sets():
+            sm.addAction(f"📚 {n}  ({len(TAGS.sets[n])})", lambda n=n: self.open_set_view(n))
+        if TAGS.sets:
+            sm.addSeparator()
+        sm.addAction(T("새 가상 그룹…"), self._new_set)
+        if TAGS.sets:
+            dm = sm.addMenu(T("가상 그룹 지우기 (파일은 그대로)"))
+            for n in TAGS.all_sets():
+                dm.addAction(n, lambda n=n: TAGS.delete_set(n))
+
+    def _new_set(self):
+        name, ok = QtWidgets.QInputDialog.getText(self, T("새 가상 그룹"), T("가상 그룹 이름 (흩어진 파일을 한곳에 모아 보기 — 진짜 파일은 그대로)"))
+        if ok and name.strip():
+            TAGS.new_set(name.strip())
+            self.open_set_view(name.strip())
 
     def find_dupes(self, v=None):
         """중복 파일 찾기 (빌드 20): 고른 폴더들(없으면 지금 폴더) 아래에서 내용이 같은 파일 → 창에서 골라 휴지통으로"""
@@ -7694,10 +8083,8 @@ class Main(QtWidgets.QMainWindow):
         if on and save:   # 메뉴에서 '공용'을 고르면 숨김 풀고 보임
             SETTINGS["side_shared_hidden"] = False
         self.shared_host.setVisible(on and not SETTINGS["side_shared_hidden"])
-        if on and self.shared_host.isVisible():
-            w = max(120, int(SETTINGS["side_shared_w"] or 240))
-            total = sum(self.lsplit.sizes()) or 1000
-            self.lsplit.setSizes([w, max(total - w, 200)])
+        if on and self.shared_host.isVisibleTo(self):   # 이슈 #4: 시작 때는 창이 아직 안 보여 isVisible() 이 거짓 → 폭 적용을 건너뛰던 것
+            self._apply_shared_w()
         for p in self.panes:
             p.set_sidebar(getattr(p, "side_on", False), save=False)
         if on:
@@ -7708,6 +8095,16 @@ class Main(QtWidgets.QMainWindow):
                 if w is not self:
                     w.set_shared_side(on, save=False)
             self.save_timer.start()
+
+    def _apply_shared_w(self):
+        """공용 탐색 창 폭 = 저장한 값 (창 폭이 허락하는 만큼). 창이 아직 안 보이면 처음 보일 때 다시 (showEvent)"""
+        w = max(120, int(SETTINGS["side_shared_w"] or 240))
+        total = sum(self.lsplit.sizes())
+        if not self.isVisible() or total <= 0:
+            self._shared_w_pending = True
+            total = total or max(self.width(), 1000)
+        w = min(w, max(120, total - 200))
+        self.lsplit.setSizes([w, max(total - w, 200)])
 
     def toggle_shared_visible(self):
         """공용 모드인 채로 공용 탐색 창만 숨기기/보이기 (v0.9.101 사용자 11/5) — 모든 창 같이"""
@@ -8843,6 +9240,18 @@ class Main(QtWidgets.QMainWindow):
         m.addAction(mlabel(T("패턴으로 고르기…"), "select_pattern"), lambda: self.pane().view() and self.pane().view().select_pattern())
         m.addAction(mlabel(T("하위 폴더 펼쳐 보기"), "flat_view"), lambda: self.pane().view() and self.pane().view().flat_view())   # 빌드 20
         m.addAction(mlabel(T("중복 파일 찾기…"), "find_dupes"), lambda: self.find_dupes(self.pane().view()))   # 빌드 20
+        m.addSeparator()   # 0.9.109 빌드 3
+        m.addAction(mlabel(T("폴더 맞추기 (두 칸)…"), "sync_dirs"), self.sync_dirs)
+        m.addAction(mlabel(T("디스크 사용량 트리맵"), "space_map"), lambda: self.space_map())
+        m.addAction(mlabel(T("FTP 연결…"), "ftp_connect"), self.ftp_connect)
+        tm = m.addMenu(T("태그로 보기"))
+        tm.aboutToShow.connect(lambda: self._fill_tags_menu(tm))
+        self._fill_tags_menu(tm)
+        sm2 = m.addMenu(T("가상 그룹"))
+        sm2.aboutToShow.connect(lambda: self._fill_sets_menu(sm2))
+        self._fill_sets_menu(sm2)
+        m.addAction(mlabel(T("사용자 단추 편집…"), "user_buttons"), self.edit_user_buttons)
+        m.addSeparator()
         m.addAction(mlabel(T("명령 찾기…"), "palette"), self.open_palette)
         # v0.9.104 사용자 11/5: 사용법·로그·문제 보고·새 버전·홈페이지·후원은 설정 창 '정보'로
 
@@ -9283,6 +9692,8 @@ eports.
             p._on_tab_changed(cur)
             if ps.get("body"):
                 p.body.setSizes(ps["body"])
+                if ps["body"][0] >= 60:
+                    p._side_w = ps["body"][0]   # 이슈 #5: 공용 모드라 숨긴 채 시작해도 칸별 폭 기억
             p.set_sidebar(bool(ps.get("sidebar", False)), save=False)
         if geometry and st.get("geometry"):
             self.restoreGeometry(QtCore.QByteArray.fromHex(st["geometry"].encode()))
@@ -9298,6 +9709,8 @@ eports.
         if 0 <= a < len(self.panes) and self.panes[a].isVisible():
             self.active_pane = self.panes[a]
         self._paint_active()
+        if SETTINGS["side_shared"]:
+            self.sync_shared_side()   # 이슈 #6: 불러온 뒤 공용 탐색 창 선택도 활성 칸 폴더로
 
     # 끌고 온 탭: 커서 모양만 '놓을 수 있음'으로. 실제 옮기기는 끌기를 시작한 칸이 놓은 위치로 처리 (Pane.finish_tab_drop)
     def dragEnterEvent(self, ev):
@@ -9324,6 +9737,9 @@ eports.
             self._relaunch_set = True
             set_taskbar_relaunch(self)
         olehook.install(int(self.winId()))   # v0.9.78: 창이 다시 만들어지면(항상 위 등) 새 창에 다시 끼움
+        if getattr(self, "_shared_w_pending", False):   # 이슈 #4: 처음 보일 때 공용 탐색 창 폭 복원
+            self._shared_w_pending = False
+            QtCore.QTimer.singleShot(0, lambda: SETTINGS["side_shared"] and self.shared_host.isVisible() and self._apply_shared_w())
 
     def closeEvent(self, ev):
         last = not [w for w in WINDOWS if w is not self]
@@ -9589,11 +10005,15 @@ def _on_second_launch():
         msg = {}
     c.disconnectFromServer()
     log.info("다시 실행 감지 → 마지막에 쓴 창 앞으로 %s (창 %d개)", msg, len(WINDOWS))
+    if WINDOWS and msg.get("new_window"):   # 0.9.109 빌드 5 Win+E: 빈 새 창 (칸 1개 · 내 PC) — 사용자 11/6 '새로운 빈 창'
+        w = WINDOWS[-1].open_window(THIS_PC)
+        w.bring_front()
+        return
     if WINDOWS:
         WINDOWS[-1].bring_front(msg.get("path"))
 
 
-def hand_off_to_running(arg_path):
+def hand_off_to_running(arg_path, new_window=False):
     """창 하나만 모드: 이미 실행 중이면 그 창에 알리고 True (이 프로세스는 종료)"""
     from PySide6 import QtNetwork
     s = QtNetwork.QLocalSocket()
@@ -9604,7 +10024,7 @@ def hand_off_to_running(arg_path):
         ctypes.windll.user32.AllowSetForegroundWindow(-1)   # 기존 창이 앞으로 나올 수 있게 허락
     except Exception:
         pass
-    s.write(json.dumps({"path": arg_path}).encode("utf-8"))
+    s.write(json.dumps({"path": arg_path, "new_window": new_window}).encode("utf-8"))
     s.flush()
     s.waitForBytesWritten(500)
     s.disconnectFromServer()
@@ -9622,6 +10042,9 @@ def main():
     QtWidgets.QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
     app = QtWidgets.QApplication(sys.argv)
     app.installEventFilter(TIP_GATE)   # 빌드 13: 풍선 도움말 끄기
+    if "--new-window" in sys.argv[1:] and hand_off_to_running(None, new_window=True):   # Win+E (빌드 5): 켜져 있으면 그 안에 빈 새 창
+        log.info("Win+E: 이미 실행 중 → 그 안에 빈 새 창 열고 종료")
+        return
     if not SETTINGS["allow_multi"] and hand_off_to_running(arg_path):
         log.info("창 하나만 모드: 이미 실행 중 → 기존 창으로 넘기고 종료")
         return
@@ -9637,6 +10060,10 @@ def main():
     w.show()
     if RESTORED:   # v0.9.94 설정 가져오기 적용됨
         w.show_notice(T("설정을 가져왔습니다. 이전 설정은 bin\\restore_backup 에 보관했습니다  ✕"), ms=12000)
+    try:
+        winhook.refresh(os.path.dirname(BIN_DIR))   # 0.9.109 Win+E 를 켜 뒀으면 지금 4Dir 경로로
+    except Exception:
+        log.exception("Win+E 경로 갱신 실패")
     w.start_single_server()   # 먼저 뜬 창이 이름을 차지 → 다음 실행(창 하나만 모드)이 이 창을 앞으로 부름
     hotkey_register()         # 어디서나 단축키 (v0.9.68)
     if arg_path:

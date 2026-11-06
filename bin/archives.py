@@ -18,7 +18,9 @@ import tempfile
 import threading
 import subprocess
 
-ARCHIVES_VER = "1.0.0"
+import ftpfs   # 1.1.0 FTP 를 폴더처럼 (열기·꺼내기·끌기는 압축 안과 같은 길)
+
+ARCHIVES_VER = "1.1.0"   # 1.1.0 (0.9.109 빌드 3): FTP 경로(::FTP:)도 같은 길 — ftpfs 로 넘김
 log = logging.getLogger("QE.arc")
 PREFIX = "::ARC:"
 EXTS = (".zip", ".7z", ".rar", ".tar", ".tgz", ".tar.gz", ".tbz2", ".tar.bz2", ".txz", ".tar.xz", ".cab", ".iso")
@@ -41,7 +43,12 @@ _LINE = re.compile(r"^([dl-])\S*\s+\d+\s+\S+\s+\S+\s+(\d+)\s+(\S+\s+\S+\s+\S+)\s
 
 
 def is_arc(p):
-    return bool(p) and p.startswith(PREFIX)
+    """압축 안 또는 FTP (둘 다 '진짜 폴더가 아닌 곳' — 열기·복사는 임시 폴더로 꺼내서)"""
+    return bool(p) and (p.startswith(PREFIX) or p.startswith(ftpfs.PREFIX))
+
+
+def is_ftp(p):
+    return ftpfs.is_ftp(p)
 
 
 def is_archive_file(name):
@@ -60,12 +67,16 @@ def split(p):
 
 
 def name_of(p):
+    if ftpfs.is_ftp(p):
+        return ftpfs.name_of(p)
     arc, inner = split(p)
     return inner.rsplit("/", 1)[-1] if inner else os.path.basename(arc)
 
 
 def parent_of(p):
     """한 단계 위: 안쪽 맨 위면 압축 파일이 있는 진짜 폴더"""
+    if ftpfs.is_ftp(p):
+        return ftpfs.parent_of(p)
     arc, inner = split(p)
     if not inner:
         return os.path.dirname(arc)
@@ -73,12 +84,16 @@ def parent_of(p):
 
 
 def friendly(p):
+    if ftpfs.is_ftp(p):
+        return ftpfs.friendly(p)
     arc, inner = split(p)
     return arc + ("\\" + inner.replace("/", "\\") if inner else "")
 
 
 def chain(p):
     """경로 버튼용 [(이름, 경로)] — 압축 파일부터 안쪽까지"""
+    if ftpfs.is_ftp(p):
+        return ftpfs.chain(p)
     arc, inner = split(p)
     out = [(os.path.basename(arc), make(arc))]
     acc = ""
@@ -151,6 +166,8 @@ def _index(arc):
 
 def list_dir(p, cancel=lambda: False):
     """압축 안 폴더 → [name, is_dir, size, mtime, attrs, full_path, sysidx, label]"""
+    if ftpfs.is_ftp(p):
+        return ftpfs.list_dir(p, cancel)
     arc, inner = split(p)
     try:
         idx = _index(arc)
@@ -170,6 +187,8 @@ def list_dir(p, cancel=lambda: False):
 
 
 def exists(p):
+    if ftpfs.is_ftp(p):
+        return ftpfs.exists(p)
     arc, inner = split(p)
     if not os.path.isfile(arc):
         return False
@@ -182,6 +201,8 @@ def exists(p):
 
 
 def is_dir(p):
+    if ftpfs.is_ftp(p):
+        return ftpfs.is_dir(p)
     arc, inner = split(p)
     if not inner:
         return True
@@ -203,6 +224,9 @@ def _new_tmp():
 def extract_temp(paths):
     """압축 안 항목들 → 임시 폴더에 풀어 진짜 경로 목록 (폴더는 안쪽 전부). 복사·열기·끌기에 씀"""
     out = []
+    if any(ftpfs.is_ftp(p) for p in paths):   # FTP 는 받아서
+        out += ftpfs.extract_temp([p for p in paths if ftpfs.is_ftp(p)])
+        paths = [p for p in paths if not ftpfs.is_ftp(p)]
     by_arc = {}
     for p in paths:
         arc, inner = split(p)
@@ -258,6 +282,7 @@ def extract_temp(paths):
 
 def cleanup():
     """4Dir 끌 때: 이 프로그램이 만든 임시 폴더만 지움"""
+    ftpfs.cleanup()
     if not os.path.isdir(TMP_ROOT):
         return
     for d in os.listdir(TMP_ROOT):

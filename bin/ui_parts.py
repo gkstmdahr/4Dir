@@ -75,6 +75,8 @@ class Settings:
                      "folder_size": True,         # 폴더 크기 계산 — 크기 칸 (v0.9.89, 네트워크 드라이브 제외)
                      "select_pattern": "",        # 패턴으로 고르기 마지막 입력 (v0.9.89)
                      "empty_click_up": True,      # 목록 빈 곳을 더블클릭하면 상위 폴더로 (v0.9.75 옵션, v0.9.82 기본 켬)
+                     "user_buttons": [],          # 0.9.109 사용자 단추 [{name, cmd, args}]
+                     "ftp_sites": [],             # 0.9.109 최근 FTP 사이트 (비밀번호 없음)
                      "preview_autoplay": True,    # 빌드 28 미리보기 GIF·동영상 자동 재생 (조작줄 단추)
                      "video_sound": True,         # 빌드 24 미리보기 동영상 소리 (단추로 끄면 기억)
                      "arc_browse": True,          # 빌드 20 압축 파일을 두 번 누르면 4Dir 안에서 폴더처럼 (끄면 윈도우 연결 프로그램)
@@ -99,7 +101,7 @@ class Settings:
                     self.data[tk].update({k: v for k, v in d.get(tk, {}).items() if k in THEME_KEYS})
                 if "theme_mode" not in d and d.get("dark"):   # 0.6.2 이전: 다크 모드 켜둔 사람은 '어둡게' 유지
                     self.data["theme_mode"] = "dark"
-                for k in ("theme_mode", "dark", "fav_expanded", "on_top", "allow_multi", "sysmon", "breadcrumb", "keys", "search_roots", "lang", "chrome_collapsed", "batch_rename", "guide_shown", "update_check", "update_last", "update_skip", "resume_after_reboot", "keep_favbar", "hide_single_tab", "empty_click_up", "columns", "mouse", "folder_size", "select_pattern", "status_col", "ws_slots", "side_shared", "side_shared_w", "side_shared_hidden", "memo_on", "memo_side", "memo_w", "memo_geo", "memo_top", "preview_pane", "preview_w", "preview_geo", "preview_top", "tooltips", "arc_browse", "video_sound", "preview_autoplay"):
+                for k in ("theme_mode", "dark", "fav_expanded", "on_top", "allow_multi", "sysmon", "breadcrumb", "keys", "search_roots", "lang", "chrome_collapsed", "batch_rename", "guide_shown", "update_check", "update_last", "update_skip", "resume_after_reboot", "keep_favbar", "hide_single_tab", "empty_click_up", "columns", "mouse", "folder_size", "select_pattern", "status_col", "ws_slots", "side_shared", "side_shared_w", "side_shared_hidden", "memo_on", "memo_side", "memo_w", "memo_geo", "memo_top", "preview_pane", "preview_w", "preview_geo", "preview_top", "tooltips", "arc_browse", "video_sound", "preview_autoplay", "user_buttons", "ftp_sites"):
                     if k in d:
                         self.data[k] = d[k]
             except Exception:
