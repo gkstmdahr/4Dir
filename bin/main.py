@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.109"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 6              # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.110"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 1              # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -719,6 +719,8 @@ def search_path(q, folder=None):
 
 def parse_search(p):
     body = p[len(SEARCH_PREFIX):]
+    if tags.is_view(body):   # 0.9.110 점검: 태그·가상 그룹 이름에 ' @ ' 가 있으면 폴더로 잘려 빈 목록이던 것
+        return body, None
     if " @ " in body:
         q, f = body.rsplit(" @ ", 1)
         return q, f
@@ -866,8 +868,9 @@ class ScanJob(QtCore.QRunnable):
 
                 def rows(lst):
                     return [[n, d, s, m, 0, pth, None, None] for pth, n, d, s, m in lst]
-                if tags.is_view(q):   # 0.9.109 태그·묶음 보기 (4Dir 안에 저장한 목록)
+                if tags.is_view(q):   # 0.9.109 태그·그룹 보기 (4Dir 안에 저장한 목록)
                     entries = rows(TAGS.rows(q))
+                    self.sig.info.emit(self.gen, T('{0:,}개').format(len(entries)))   # 0.9.110: '찾는 중…' 에 멈춰 있던 것
                 elif folder:   # 색인 없이 그 폴더 아래를 바로 훑기 (중간 결과를 계속 보냄)
                     flat = q == FLAT_Q   # 빌드 20 하위 폴더 펼쳐 보기: 파일만, 더 많이
                     total, scanned = search_index.folder_search(
@@ -1218,14 +1221,19 @@ class DirModel(QtCore.QAbstractTableModel):
         if not new or new == e[0]:
             return False
         src = self.full(e)
-        if archives.is_ftp(src):   # 0.9.109 FTP 이름 바꾸기
-            try:
-                ftpfs.rename(src, new)
-            except Exception as ex:
-                log.warning("FTP 이름 바꾸기 실패 %s: %s", src, ex)
-                QtWidgets.QMessageBox.warning(None, T("이름 바꾸기"), T('이름을 바꿀 수 없습니다.\n{0}').format(ex))
-                return False
-            DEV_SIG.done.emit(self.path, True, "", "")
+        if archives.is_ftp(src):   # 0.9.109 FTP 이름 바꾸기 — 0.9.110: 뒤 스레드로 (서버가 느리면 화면이 멈추던 것)
+            here = self.path
+
+            def run():
+                try:
+                    ftpfs.rename(src, new)
+                    DEV_SIG.done.emit(here, True, "", "")
+                except Exception as ex:
+                    log.warning("FTP 이름 바꾸기 실패 %s: %s", src, ex)
+                    DEV_SIG.done.emit(here, False, T('이름을 바꿀 수 없습니다.\n{0}').format(ex), "")
+            threading.Thread(target=run, daemon=True, name="ftp-rename").start()
+            e[0] = new
+            self.dataChanged.emit(idx, idx)
             return True
         if archives.is_arc(src):   # 압축 안: 읽기 전용
             return False
@@ -2628,7 +2636,7 @@ class Page(QtWidgets.QWidget):
         else:
             self.model_.set_entries(path, entries)
             self.apply_columns()   # 상태 열: 동기화 폴더에서만 (v0.9.94)
-            if is_search(path) and not entries and not err:
+            if is_search(path) and not entries and not err and not tags.is_view(parse_search(path)[0]):   # 0.9.110: 빈 태그·그룹엔 검색 범위 안내 안 함
                 # 빠른 검색 0개: 네트워크·구글드라이브 등은 처음엔 검색 범위 밖이라 '고장'처럼 보임 → 이유와 범위 설정 안내 (v0.9.68, 10/29)
                 main = main_of(self)
                 log.info("전체 검색 0개 '%s' → 범위 안내", parse_search(path)[0])
@@ -8132,8 +8140,9 @@ class Main(QtWidgets.QMainWindow):
         p.go(path, new_tab=new_tab)
 
     def sync_shared_side(self):
-        if self.shared_side is not None and self.shared_host.isVisible():
-            v = self.active_pane.view() if self.active_pane is not None else None
+        if self.shared_side is not None and self.shared_host.isVisibleTo(self):   # 0.9.110: 창 보이기 전(시작 때 apply_state)에도 (#6 점검)
+            ap = getattr(self, "active_pane", None)   # 0.9.110: 시작 중(활성 칸 정하기 전)에도 불림
+            v = ap.view() if ap is not None else None
             if v is not None:
                 self.shared_side.reveal(v.path)
 
@@ -8563,6 +8572,9 @@ class Main(QtWidgets.QMainWindow):
     def open_batch_rename(self, paths):
         """이름 일괄 변경 창 (BatchNamer 방식). 적용하면 되돌리기 기록 + 보이는 칸 새로 읽기"""
         import batchrename
+        if any(archives.is_arc(p) or devices.is_dev(p) for p in paths):   # 0.9.110 점검: FTP·압축 안 경로를 os.rename 하려다 전부 실패하던 것
+            self.show_notice(T("⚠ 이름 일괄 변경은 이 PC 폴더에서만 됩니다 (FTP·압축 안·휴대폰 제외)  ✕"), ms=6000)
+            return
 
         def done(pairs):
             push_undo("batch", pairs, T('이름 일괄 변경 {0}개').format(len(pairs)))

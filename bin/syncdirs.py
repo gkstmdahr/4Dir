@@ -18,7 +18,8 @@ from i18n import T
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-SYNCDIRS_VER = "1.0.0"
+SYNCDIRS_VER = "1.1.0"   # 1.1.0 (0.9.110 점검): 정션·바로가기 폴더는 따라가지 않음 · 숨김·시스템 파일 덮어쓰기 · 폴더↔파일 같은 이름 안쪽 건너뜀
+#   · 거울 맞춤 지우기 뒤 창이 '작업 중'에 멈추던 것 · 멈춤 뒤 '이미 같음'으로 잘못 나오던 것
 log = logging.getLogger("QE.sync")
 SKIP_DIRS = {"$recycle.bin", "system volume information"}
 TOL = 2.0
@@ -42,6 +43,8 @@ def scan(root, cancel=lambda: False):
             for de in it:
                 r = os.path.join(rel, de.name) if rel else de.name
                 try:
+                    if de.is_symlink() or de.is_junction():   # 1.1.0: 정션·바로가기 폴더는 건너뜀 (자기 자신을 가리키면 끝없이 돌던 것)
+                        continue
                     isd = de.is_dir(follow_symlinks=False)
                     st = de.stat(follow_symlinks=False)
                 except OSError:
@@ -59,8 +62,18 @@ def plan(a_root, b_root, direction, mirror, cancel=lambda: False):
     A = scan(a_root, cancel)
     B = scan(b_root, cancel)
     ops = []
+    clash = {k for k in set(A) & set(B) if A[k][1] != B[k][1]}   # 한쪽은 폴더, 한쪽은 파일 — 그 안쪽도 건드리지 않음 (1.1.0)
     for key in sorted(set(A) | set(B)):
         a, b = A.get(key), B.get(key)
+        par = os.path.dirname(key)
+        bad = False
+        while par:
+            if par in clash:
+                bad = True
+                break
+            par = os.path.dirname(par)
+        if bad:
+            continue
         if a and b:
             if a[1] or b[1]:
                 continue   # 폴더끼리(안쪽은 따로 비교) · 폴더↔파일 같은 이름은 건드리지 않음
@@ -104,26 +117,43 @@ def plan(a_root, b_root, direction, mirror, cancel=lambda: False):
     return out
 
 
+def _is_link(p):
+    try:
+        return os.path.islink(p) or os.path.isjunction(p)
+    except OSError:
+        return False
+
+
 def _copy(src, dst, cancel):
+    if _is_link(src):   # 1.1.0: 정션·바로가기 폴더는 복사하지 않음 (트리 밖·자기 자신을 끝없이 복사하던 것)
+        log.info("맞추기: 정션·링크 건너뜀 %s", src)
+        return
     if os.path.isdir(src):
-        if os.path.exists(dst):
-            for n in os.listdir(src):
-                if cancel():
-                    return
-                _copy(os.path.join(src, n), os.path.join(dst, n), cancel)
-        else:
-            shutil.copytree(src, dst, copy_function=shutil.copy2)
+        os.makedirs(dst, exist_ok=True)
+        try:
+            shutil.copystat(src, dst)
+        except OSError:
+            pass
+        for n in os.listdir(src):
+            if cancel():
+                return
+            _copy(os.path.join(src, n), os.path.join(dst, n), cancel)
         return
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     if os.path.exists(dst):
-        try:
-            os.chmod(dst, 0o666)   # 읽기 전용이면 덮어쓰기 전에 풂
-        except OSError:
-            pass
+        try:   # 읽기 전용·숨김·시스템이면 윈도우가 덮어쓰기를 거부 → 보통 파일로 바꾼 뒤 (속성은 원본 것이 따라옴)
+            import win32file, win32con
+            win32file.SetFileAttributesW(dst, win32con.FILE_ATTRIBUTE_NORMAL)
+        except Exception:
+            try:
+                os.chmod(dst, 0o666)
+            except OSError:
+                pass
     shutil.copy2(src, dst)
 
 
 class _Sig(QtCore.QObject):
+    trashed = QtCore.Signal()   # 휴지통 작업이 다른 스레드에서 끝남 → 화면 스레드에서 마무리 (1.1.0)
     planned = QtCore.Signal(list, str)
     progress = QtCore.Signal(int, int, str)
     finished = QtCore.Signal(int, list)
@@ -142,6 +172,8 @@ class SyncDialog(QtWidgets.QDialog):
         self.sig.planned.connect(self._on_plan)
         self.sig.progress.connect(self._on_progress)
         self.sig.finished.connect(self._on_finished)
+        self.sig.trashed.connect(lambda: self._end and self._end())
+        self._end = None
         self.stop = False
         self.busy = False
         self.setWindowTitle(T("폴더 맞추기"))
@@ -194,6 +226,7 @@ class SyncDialog(QtWidgets.QDialog):
     def compare(self):
         if self.busy:
             return
+        self.stop = False   # 1.1.0: [멈춤] 뒤 다시 비교가 바로 끝나 '이미 같음'으로 나오던 것
         self.busy = True
         self.tree.clear()
         self.info.setText(T("비교하는 중…"))
@@ -304,7 +337,8 @@ class SyncDialog(QtWidgets.QDialog):
             self.last_msg = msg
             self.compare()
         if self._dels and not self.stop:
-            self.trash(self._dels, lambda: QtCore.QTimer.singleShot(0, end))
+            self._end = end
+            self.trash(self._dels, self.sig.trashed.emit)   # 1.1.0: 다른 스레드의 singleShot 은 안 불려 창이 멈추던 것 → 신호로
         else:
             end()
 

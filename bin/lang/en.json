@@ -1166,5 +1166,6 @@
  "가상 그룹 '{0}' 에 {1}개 넣음 (도구 ▸ 가상 그룹 에서 열기)": "Added {1} to virtual group '{0}' (open it from Tools ▸ Virtual groups)",
  "4Dir 도구": "4Dir tools",
  "가상 그룹에서 빼기": "Remove from virtual group",
- "가상 그룹에 넣기": "Add to virtual group"
+ "가상 그룹에 넣기": "Add to virtual group",
+ "⚠ 이름 일괄 변경은 이 PC 폴더에서만 됩니다 (FTP·압축 안·휴대폰 제외)  ✕": "⚠ Batch rename works only in folders on this PC (not FTP, archives or phones)  ✕"
 }

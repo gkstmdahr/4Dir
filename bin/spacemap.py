@@ -17,7 +17,7 @@ from i18n import T
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-SPACEMAP_VER = "1.0.0"
+SPACEMAP_VER = "1.1.0"   # 1.1.0 (0.9.110 점검): 정션 건너뜀 · 훑기 실패해도 멈추지 않음
 log = logging.getLogger("QE.spacemap")
 SKIP = {"$recycle.bin", "system volume information"}
 EXT_COLORS = {
@@ -64,7 +64,7 @@ def build(root, cancel=lambda: False, progress=lambda n: None):
                     return
                 try:
                     if de.is_dir(follow_symlinks=False):
-                        if de.name.lower() in SKIP or de.is_symlink():
+                        if de.name.lower() in SKIP or de.is_symlink() or de.is_junction():   # 0.9.110: 정션도 (자기 위를 가리키면 끝없이·크기 부풀림)
                             continue
                         k = Node(de.name, de.path, True, node)
                         walk(k)
@@ -293,8 +293,13 @@ class SpaceMapDialog(QtWidgets.QDialog):
 
         def work():
             t0 = time.time()
-            tree = build(self.root, lambda: self.stop, self.sig.progress.emit)
-            self.sig.built.emit(tree, time.time() - t0)
+            try:
+                tree = build(self.root, lambda: self.stop, lambda n: not self.stop and self.sig.progress.emit(n))
+            except Exception:   # 0.9.110: 너무 깊은 폴더 등 → '훑는 중…' 에 멈추지 않고 빈 지도
+                log.exception("용량 지도 훑기 실패 %s", self.root)
+                tree = Node(os.path.basename(self.root.rstrip(chr(92) + "/")) or self.root, self.root, True)
+            if not self.stop:
+                self.sig.built.emit(tree, time.time() - t0)
         threading.Thread(target=work, daemon=True).start()
 
     def _on_built(self, tree, sec):

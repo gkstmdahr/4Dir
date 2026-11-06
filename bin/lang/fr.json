@@ -1166,5 +1166,6 @@
  "가상 그룹 '{0}' 에 {1}개 넣음 (도구 ▸ 가상 그룹 에서 열기)": "{1} ajoutés au groupe virtuel « {0} » (ouvrir via Outils ▸ Groupes virtuels)",
  "4Dir 도구": "Outils 4Dir",
  "가상 그룹에서 빼기": "Retirer du groupe virtuel",
- "가상 그룹에 넣기": "Ajouter au groupe virtuel"
+ "가상 그룹에 넣기": "Ajouter au groupe virtuel",
+ "⚠ 이름 일괄 변경은 이 PC 폴더에서만 됩니다 (FTP·압축 안·휴대폰 제외)  ✕": "⚠ Le renommage par lot ne fonctionne que dans les dossiers de ce PC (pas FTP, archives ni téléphones)  ✕"
 }

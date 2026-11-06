@@ -13,15 +13,29 @@ import os
 import re
 import time
 import ftplib
+import socket
+import calendar
 import logging
 import tempfile
 import threading
 from urllib.parse import urlsplit, unquote
 
-FTPFS_VER = "1.0.0"
+FTPFS_VER = "1.1.0"   # 1.1.0 (0.9.110 점검): 서버 이름으로 임시 폴더 밖에 쓰기 막기 · UTF-8 아닌 서버(CP949) · 연결 잠금 기다림 한도
+#   · 내 PC 쪽 오류(디스크 가득 등)를 끊김으로 착각해 처음부터 다시 하던 것 · LIST 날짜(해 넘김·2/29) · MLSD 시간 · 로그인 중 전송 깨짐
 log = logging.getLogger("QE.ftp")
 PREFIX = "::FTP:"
-TIMEOUT = 20
+TIMEOUT = 15
+LOCK_WAIT = 30    # 다른 작업(올리기 등)이 연결을 쓰는 중이면 이만큼만 기다리고 '사용 중' 오류 (화면이 오래 멈추지 않게)
+NET_ERRORS = (ftplib.error_temp, ftplib.error_reply, EOFError, ConnectionError, TimeoutError, socket.timeout, socket.gaierror)
+_BAD_NAME = re.compile(r'[\\/:*?"<>|\x00-\x1f]')
+_RESERVED = {"con", "prn", "aux", "nul"} | {f"com{i}" for i in range(1, 10)} | {f"lpt{i}" for i in range(1, 10)}
+
+
+def safe_name(name):
+    """서버가 준 이름을 이 PC 에 쓸 수 있나 — '..\\..\\x' 같은 이름으로 임시 폴더 밖에 쓰는 것 막기 (점검 1)"""
+    if not name or name in (".", "..") or _BAD_NAME.search(name) or name.rstrip(" .") != name:
+        return False
+    return name.split(".")[0].lower() not in _RESERVED
 _sites = {}       # 사이트 → {"pw", "conn", "lock"}
 _dirs = {}        # (사이트, 경로) → {이름: (폴더?, 크기, 날짜)}
 _glock = threading.Lock()
@@ -154,11 +168,11 @@ def ready(site):
     return saved_password(site) is not None
 
 
-def _open(site, pw):
+def _open(site, pw, enc="utf-8"):
     s = parse_site(site)
     t0 = time.time()
     ftp = ftplib.FTP_TLS(timeout=TIMEOUT) if s["tls"] else ftplib.FTP(timeout=TIMEOUT)
-    ftp.encoding = "utf-8"
+    ftp.encoding = enc   # UTF-8 이 아닌 서버면 _call 이 cp949 로 다시 연결
     ftp.connect(s["host"], s["port"])
     ftp.login(s["user"], pw if pw is not None else ("anonymous@" if s["user"] == "anonymous" else ""))
     if s["tls"]:
@@ -174,15 +188,26 @@ def _open(site, pw):
 
 def login(site, pw, remember=False):
     """비밀번호 확인 겸 연결 (실패하면 예외). remember = 윈도우 자격 증명에 저장"""
-    ftp = _open(site, pw)
     with _glock:
         old = _sites.get(site)
-        _sites[site] = {"pw": pw, "conn": ftp, "lock": old["lock"] if old else threading.RLock()}
-    if old and old.get("conn") is not None:
+    enc = old.get("enc", "utf-8") if old else "utf-8"
+    ftp = _open(site, pw, enc)
+    if old is not None:   # 점검 5: 같은 사이트 전송 중이면 끝날 때까지 기다렸다 바꿈 (전엔 쓰던 연결을 그냥 닫아 전송이 깨짐)
+        if not old["lock"].acquire(timeout=LOCK_WAIT):
+            ftp.close()
+            raise OSError("FTP 사용 중 — 잠시 뒤 다시")
         try:
-            old["conn"].close()
-        except Exception:
-            pass
+            if old.get("conn") is not None:
+                try:
+                    old["conn"].close()
+                except Exception:
+                    pass
+            old.update(pw=pw, conn=ftp)
+        finally:
+            old["lock"].release()
+    else:
+        with _glock:
+            _sites[site] = {"pw": pw, "conn": ftp, "lock": threading.RLock(), "enc": enc}
     if remember and pw:
         save_password(site, pw)
     return True
@@ -195,28 +220,52 @@ def _session(site):
             pw = saved_password(site)
             if pw is None and parse_site(site)["user"] != "anonymous":
                 raise NeedLogin(f"FTP 로그인 필요: {site}")
-            s = _sites[site] = {"pw": pw, "conn": None, "lock": threading.RLock()}
+            s = _sites[site] = {"pw": pw, "conn": None, "lock": threading.RLock(), "enc": "utf-8"}
     return s
 
 
 def _call(site, fn):
     """연결을 잡고 fn(ftp) — 끊겼으면 한 번 다시 연결"""
     s = _session(site)
-    with s["lock"]:
+    if not s["lock"].acquire(timeout=LOCK_WAIT):   # 점검 3: 다른 작업이 오래 쓰면 무한정 기다리지 않음
+        raise OSError("FTP 사용 중 — 다른 작업(올리기·받기)이 끝난 뒤 다시")
+    try:
         for attempt in (1, 2):
+            had = s["conn"] is not None
             try:
                 if s["conn"] is None:
-                    s["conn"] = _open(site, s["pw"])
+                    s["conn"] = _open(site, s["pw"], s.get("enc", "utf-8"))
                 return fn(s["conn"])
-            except (ftplib.error_temp, ftplib.error_reply, EOFError, OSError) as ex:
-                log.warning("FTP 끊김/오류 → 다시 연결 (%d) %s", attempt, ex)
-                try:
-                    s["conn"].close()
-                except Exception:
-                    pass
-                s["conn"] = None
-                if attempt == 2:
+            except UnicodeDecodeError:   # 점검 2: UTF-8 이 아닌 서버(옛 한국 서버 = CP949) → 그 사이트는 cp949 로 다시
+                if s.get("enc", "utf-8") != "utf-8" or attempt == 2:
                     raise
+                log.warning("FTP 이름이 UTF-8 아님 → cp949 로 다시 연결 %s", site)
+                s["enc"] = "cp949"
+                _drop(s)
+            except NET_ERRORS as ex:   # 점검 6: 네트워크 오류만 다시 연결 (디스크 가득·쓸 수 없는 이름 같은 내 PC 오류는 그대로 알림)
+                log.warning("FTP 끊김/오류 (%d) %s", attempt, ex)
+                _drop(s)
+                if attempt == 2 or not had:   # 점검 4: 처음 연결부터 안 되면 또 시도하지 않음 (응답 없는 서버로 목록 일꾼이 오래 묶이던 것)
+                    raise
+            except OSError as ex:
+                if isinstance(ex, (ConnectionError, TimeoutError)) or getattr(ex, "winerror", None) in (10053, 10054, 10060, 10061):
+                    log.warning("FTP 연결 오류 (%d) %s", attempt, ex)
+                    _drop(s)
+                    if attempt == 2 or not had:
+                        raise
+                else:
+                    raise
+    finally:
+        s["lock"].release()
+
+
+def _drop(s):
+    try:
+        if s["conn"] is not None:
+            s["conn"].close()
+    except Exception:
+        pass
+    s["conn"] = None
 
 
 def close_all():
@@ -231,12 +280,13 @@ def close_all():
 
 
 # ---------------------------------------------------------------- 목록
-_LIST = re.compile(r"^([dl-])\S+\s+\d+\s+\S+\s+\S+\s+(\d+)\s+(\w{3}\s+\d+\s+[\d:]+)\s+(.+)$")
+_LIST = re.compile(r"^([dl-])\S+\s+\d+\s+\S+(?:\s+\S+)?\s+(\d+)\s+(\w{3}\s+\d+\s+[\d:]+)\s+(.+)$")   # 그룹 칸 없는 서버도
+_DOS = re.compile(r"^(\d\d)-(\d\d)-(\d\d)\s+(\d\d):(\d\d)(AM|PM)\s+(<DIR>|\d+)\s+(.+)$")   # IIS·DOS 형식
 
 
 def _mtime(s):
     try:
-        return time.mktime(time.strptime(s[:14], "%Y%m%d%H%M%S")) - time.timezone   # MLSD 는 UTC
+        return calendar.timegm(time.strptime(s[:14], "%Y%m%d%H%M%S"))   # MLSD 는 UTC (점검 9: 서머타임 1시간 어긋남)
     except ValueError:
         return 0
 
@@ -255,24 +305,42 @@ def _listing(ftp, path):
         pass   # MLSD 없는 옛 서버 → LIST
     lines = []
     ftp.retrlines("LIST " + path, lines.append)
+    now = time.time()
     for ln in lines:
         m = _LIST.match(ln)
         if not m:
+            dm = _DOS.match(ln)
+            if dm:
+                mo, dd, yy, hh, mi, ap, sz, name = dm.groups()
+                h = int(hh) % 12 + (12 if ap == "PM" else 0)
+                try:
+                    mt = time.mktime((2000 + int(yy) if int(yy) < 70 else 1900 + int(yy), int(mo), int(dd), h, int(mi), 0, 0, 0, -1))
+                except (OverflowError, ValueError):
+                    mt = 0
+                if name not in (".", ".."):
+                    out[name] = (sz == "<DIR>", -1 if sz == "<DIR>" else int(sz), mt)
             continue
         kind, size, date, name = m.groups()
         if kind == "l":
             name = name.split(" -> ")[0]
         if name in (".", ".."):
             continue
-        try:
-            st = time.strptime(date, "%b %d %H:%M")
-            st = time.strptime(f"{time.localtime().tm_year} {date}", "%Y %b %d %H:%M")
-        except ValueError:
+        mt = 0
+        if ":" in date:   # 'Dec 20 10:00' = 최근 6개월 — 올해로 보고, 미래면 작년 (점검 7: 해 넘김·2/29)
+            y = time.localtime(now).tm_year
+            for yy in (y, y - 1):
+                try:
+                    mt = time.mktime(time.strptime(f"{yy} {date}", "%Y %b %d %H:%M"))
+                except ValueError:
+                    continue
+                if mt <= now + 86400:
+                    break
+        else:
             try:
-                st = time.strptime(date, "%b %d %Y")
+                mt = time.mktime(time.strptime(date, "%b %d %Y"))
             except ValueError:
-                st = None
-        out[name] = (kind == "d", -1 if kind == "d" else int(size), time.mktime(st) if st else 0)
+                mt = 0
+        out[name] = (kind == "d", -1 if kind == "d" else int(size), mt)
     return out
 
 
@@ -318,6 +386,9 @@ def _download(ftp, rpath, lpath, isd, n):
     if isd:
         os.makedirs(lpath, exist_ok=True)
         for name, (d, _s, _m) in _listing(ftp, rpath).items():
+            if not safe_name(name):   # 점검 1: '..\\..\\x' 같은 이름 → 임시 폴더 밖에 쓰지 않게 건너뜀
+                log.warning("FTP 받기: 이 PC 에 쓸 수 없는 이름 건너뜀 %r", name)
+                continue
             _download(ftp, rpath.rstrip("/") + "/" + name, os.path.join(lpath, name), d, n)
         return
     with open(lpath, "wb") as f:
@@ -334,6 +405,8 @@ def extract_temp(paths):
     for p in paths:
         site, path = split(p)
         name = path.rsplit("/", 1)[-1] or parse_site(site)["host"]
+        if not safe_name(name):
+            name = _BAD_NAME.sub("_", name).rstrip(" .") or "_"
         lp = os.path.join(dest, name)
         _call(site, lambda ftp: _download(ftp, path, lp, is_dir(p), n))
         out.append(lp)
@@ -368,12 +441,16 @@ def upload(srcs, dst_dir_path):
 
 
 def _rm(ftp, rpath, isd):
+    if not isd:
+        try:
+            ftp.delete(rpath)
+            return
+        except ftplib.error_perm:   # 목록 기억이 없어 파일로 봤는데 폴더인 경우 → 폴더로 다시
+            isd = True
     if isd:
         for name, (d, _s, _m) in _listing(ftp, rpath).items():
             _rm(ftp, rpath.rstrip("/") + "/" + name, d)
         ftp.rmd(rpath)
-    else:
-        ftp.delete(rpath)
 
 
 def delete(paths):

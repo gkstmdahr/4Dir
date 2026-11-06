@@ -14,7 +14,7 @@ from i18n import T
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-HEXVIEW_VER = "1.0.0"
+HEXVIEW_VER = "1.1.0"   # 1.1.0 (0.9.110 점검): 파일 안 잡고 있음 · 큰 파일 찾기 진행 창
 log = logging.getLogger("QE.hexview")
 TEXT_MAX = 8 * 1048576
 ENCODINGS = ["auto", "utf-8", "cp949", "utf-16", "latin-1", "shift_jis", "gb18030", "big5"]
@@ -49,8 +49,7 @@ class HexWidget(QtWidgets.QAbstractScrollArea):
         super().__init__(parent)
         self.path = path
         self.size = os.path.getsize(path)
-        self.f = open(path, "rb")
-        self.mark = -1   # 위치로 가기 표시
+        self.mark = -1   # 0.9.110: 파일을 계속 열어 두지 않음 (보는 동안 지우기·이름 바꾸기가 막히던 것) — 그릴 때만 잠깐 읽음   # 위치로 가기 표시
         f = QtGui.QFont("Consolas")
         f.setStyleHint(QtGui.QFont.Monospace)
         f.setPointSize(10)
@@ -80,10 +79,15 @@ class HexWidget(QtWidgets.QAbstractScrollArea):
         self._range()
 
     def close_file(self):
+        pass
+
+    def _read(self, off, n):
         try:
-            self.f.close()
-        except Exception:
-            pass
+            with open(self.path, "rb") as f:
+                f.seek(off)
+                return f.read(n)
+        except OSError:
+            return b""
 
     def goto(self, off):
         off = max(0, min(off, max(0, self.size - 1)))
@@ -97,8 +101,7 @@ class HexWidget(QtWidgets.QAbstractScrollArea):
         p.fillRect(self.viewport().rect(), pal.base())
         first = self.verticalScrollBar().value()
         vis = self.viewport().height() // self.lh + 1
-        self.f.seek(first * self.W)
-        data = self.f.read(vis * self.W)
+        data = self._read(first * self.W, vis * self.W)
         fg = pal.text().color()
         dim = QtGui.QColor(fg)
         dim.setAlpha(130)
@@ -249,19 +252,35 @@ class ViewerDialog(QtWidgets.QDialog):
             self.info.setText(T("찾음: 위치 {0:X}").format(pos))
 
     def _scan(self, needle, start):
-        with open(self.path, "rb") as f:
-            f.seek(start)
-            off, tail = start, b""
-            while True:
-                b = f.read(4 * 1048576)
-                if not b:
-                    return -1
-                buf = tail + b
-                i = buf.find(needle)
-                if i >= 0:
-                    return off - len(tail) + i
-                tail = buf[-(len(needle) - 1):] if len(needle) > 1 else b""
-                off += len(b)
+        """0.9.110: 큰 파일이면 진행 창(취소 가능) — 화면이 멈추던 것"""
+        big = self.size - start > 64 * 1048576
+        dlg = None
+        if big:
+            dlg = QtWidgets.QProgressDialog(T("찾는 중…"), T("취소"), 0, 1000, self)
+            dlg.setWindowModality(Qt.WindowModal)
+            dlg.setMinimumDuration(300)
+        try:
+            with open(self.path, "rb") as f:
+                f.seek(start)
+                off, tail = start, b""
+                while True:
+                    b = f.read(4 * 1048576)
+                    if not b:
+                        return -1
+                    buf = tail + b
+                    i = buf.find(needle)
+                    if i >= 0:
+                        return off - len(tail) + i
+                    tail = buf[-(len(needle) - 1):] if len(needle) > 1 else b""
+                    off += len(b)
+                    if dlg is not None:
+                        dlg.setValue(int(off * 1000 / max(1, self.size)))
+                        QtWidgets.QApplication.processEvents()
+                        if dlg.wasCanceled():
+                            return -1
+        finally:
+            if dlg is not None:
+                dlg.close()
 
     def goto(self):
         t = self.goto_edit.text().strip().lower().replace("0x", "")

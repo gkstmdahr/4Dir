@@ -17,7 +17,7 @@ import logging
 
 from i18n import T
 
-TAGS_VER = "1.0.0"
+TAGS_VER = "1.1.0"   # 1.1.0 (0.9.110 점검): 태그 합치기 중복·깨진 파일 보관·저장 실패·스레드에서 읽기
 log = logging.getLogger("QE.tags")
 TAG_Q = "🏷:"
 SET_Q = "📚:"
@@ -44,15 +44,22 @@ class Store:
             self.sets = {k: list(v) for k, v in d.get("sets", {}).items()}
         except FileNotFoundError:
             pass
-        except Exception:
-            log.exception("태그 파일 읽기 실패 %s", self.path)
+        except Exception:   # 0.9.110: 깨진 파일이면 옆에 보관해 두고 빈 채로 시작 (다음 저장이 덮어써 다 잃던 것)
+            log.exception("태그 파일 읽기 실패 %s → .bad 로 보관", self.path)
+            try:
+                os.replace(self.path, self.path + time.strftime(".%Y%m%d_%H%M%S.bad"))
+            except OSError:
+                pass
 
     def save(self):
         tmp = self.path + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as f:
-            json.dump({"ver": TAGS_VER, "tags": self.tags, "files": self.files, "real": self.real, "sets": self.sets},
-                      f, ensure_ascii=False, indent=1)
-        os.replace(tmp, self.path)
+        try:
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump({"ver": TAGS_VER, "tags": self.tags, "files": self.files, "real": self.real, "sets": self.sets},
+                          f, ensure_ascii=False, indent=1)
+            os.replace(tmp, self.path)
+        except OSError:   # 0.9.110: 쓰기 안 되는 폴더 → 메뉴 동작 중 예외로 튀지 않게 (기록만)
+            log.exception("태그 파일 저장 실패 %s", self.path)
 
     @staticmethod
     def key(p):
@@ -132,14 +139,20 @@ class Store:
         new = new.strip()
         if not new or old not in self.tags or new == old:
             return False
-        self.tags[new] = self.tags.pop(old)
+        col = self.tags.pop(old)
+        self.tags.setdefault(new, col)   # 0.9.110: 이미 있는 태그로 합칠 때 그 색 그대로, 같은 태그 두 번 안 붙음
         for k, v in self.files.items():
-            self.files[k] = [new if t == old else t for t in v]
+            out = []
+            for t in v:
+                t = new if t == old else t
+                if t not in out:
+                    out.append(t)
+            self.files[k] = out
         self.save()
         return True
 
     def files_with(self, tag):
-        return [self.real.get(k, k) for k, v in self.files.items() if tag in v]
+        return [self.real.get(k, k) for k, v in list(self.files.items()) if tag in v]   # 목록 일꾼 스레드에서도 불림 → 복사본으로
 
     def count(self, tag):
         return sum(1 for v in self.files.values() if tag in v)
@@ -213,7 +226,7 @@ class Store:
         if q.startswith(TAG_Q):
             ps = self.files_with(q[len(TAG_Q):])
         elif q.startswith(SET_Q):
-            ps = list(self.sets.get(q[len(SET_Q):], []))
+            ps = list(self.sets.get(q[len(SET_Q):], []) or [])
         else:
             return []
         out = []

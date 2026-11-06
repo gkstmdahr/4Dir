@@ -10,30 +10,48 @@
 로그: bin\\log\\4Dir.log [QE.userbtn]
 """
 import os
+import re
 import logging
 
 from i18n import T
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-USERBTNS_VER = "1.0.0"
+USERBTNS_VER = "1.1.0"   # 1.1.0: 따옴표·끝 \ 처리, 한 번에 바꿈
 log = logging.getLogger("QE.userbtn")
 
 
+def _q(v):
+    r"""명령줄용 따옴표 — 끝의 \ 는 두 번 (D:\ 를 "D:\" 로 감싸면 \" 가 따옴표로 읽혀 인자가 깨지던 것, 0.9.110 점검)"""
+    if not v:
+        return '""'
+    m = re.search(r"\\+$", v)
+    if m:
+        v = v + m.group(0)
+    return '"' + v + '"'
+
+
 def expand(args, ctx):
-    """ctx = {files: [...], folder, other}"""
+    """ctx = {files: [...], folder, other} — 자리 글자를 한 번에 바꿈 (바꾼 값 안의 '{...}' 를 다시 바꾸지 않음)"""
     files = ctx.get("files") or []
-    rep = {
-        "{files}": " ".join(f'"{p}"' for p in files),
-        "{file}": f'"{files[0]}"' if files else "",
-        "{name}": os.path.splitext(os.path.basename(files[0]))[0] if files else "",
-        "{folder}": f'"{ctx.get("folder") or ""}"' if ctx.get("folder") else "",
-        "{other}": f'"{ctx.get("other") or ""}"' if ctx.get("other") else "",
+    name = os.path.splitext(os.path.basename(files[0]))[0] if files else ""
+    vals = {
+        "files": (" ".join(_q(p) for p in files), None),
+        "file": (_q(files[0]) if files else "", files[0] if files else ""),
+        "name": (name, name),
+        "folder": (_q(ctx["folder"]) if ctx.get("folder") else "", ctx.get("folder") or ""),
+        "other": (_q(ctx["other"]) if ctx.get("other") else "", ctx.get("other") or ""),
     }
-    out = args or ""
-    for k, v in rep.items():
-        out = out.replace(f'"{k}"', v).replace(k, v)   # 사용자가 따옴표를 이미 쳤으면 두 번 감싸지 않음
-    return out.strip()
+
+    def sub(m):
+        k, quoted = m.group(2), bool(m.group(1))
+        bare, raw = vals[k]
+        if quoted:   # 사용자가 "{name}" 처럼 따옴표를 쳤으면 그 따옴표 안에 값 그대로 (끝 \ 는 두 번)
+            if k == "files":
+                return bare
+            return _q(raw)
+        return bare
+    return re.sub(r'("?)\{(files|file|name|folder|other)\}\1', sub, args or "").strip()
 
 
 def run(item, ctx):

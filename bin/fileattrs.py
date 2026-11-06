@@ -20,7 +20,7 @@ from i18n import T
 from PySide6 import QtCore, QtWidgets
 from PySide6.QtCore import Qt
 
-FILEATTRS_VER = "1.0.0"
+FILEATTRS_VER = "1.1.0"   # 1.1.0: 폴더 안까지 켜면 속성 칸 모두 ■ (안쪽 속성을 끌 수 있게)
 log = logging.getLogger("QE.attrs")
 ATTRS = [("readonly", win32con.FILE_ATTRIBUTE_READONLY), ("hidden", win32con.FILE_ATTRIBUTE_HIDDEN),
          ("system", win32con.FILE_ATTRIBUTE_SYSTEM), ("archive", win32con.FILE_ATTRIBUTE_ARCHIVE)]
@@ -117,8 +117,10 @@ class AttrDialog(QtWidgets.QDialog):
             gl2.addWidget(c)
             self.achk[name] = c
         lay.addWidget(g2)
+        self._a_first = dict(self._a_init)
         self.recurse = QtWidgets.QCheckBox(T("폴더 안의 파일·폴더까지"))
         self.recurse.setVisible(any(os.path.isdir(p) for p in self.paths))
+        self.recurse.toggled.connect(self._recurse_ui)
         lay.addWidget(self.recurse)
         self.info = QtWidgets.QLabel(T("대상: {0}").format(first if not many else T("{0} 외 {1}개").format(os.path.basename(first), len(self.paths) - 1)))
         self.info.setWordWrap(True)
@@ -128,6 +130,12 @@ class AttrDialog(QtWidgets.QDialog):
         bb.accepted.connect(self.run)
         bb.rejected.connect(self.reject)
         lay.addWidget(bb)
+
+    def _recurse_ui(self, on):
+        """1.1.0 (0.9.110 점검): 폴더 안까지면 칸을 모두 ■(그대로)로 — 폴더 자신의 상태로 시작하면 '끄기'를 고를 수 없던 것"""
+        for n, c in self.achk.items():
+            c.setCheckState(Qt.PartiallyChecked if on else self._a_first[n])
+            self._a_init[n] = c.checkState()
 
     def values(self):
         times = {k: self.tedit[k].dateTime().toSecsSinceEpoch() for k in self.tchk if self.tchk[k].isChecked()}
