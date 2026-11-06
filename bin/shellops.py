@@ -738,6 +738,16 @@ def _set_bmp(hmenu, pos, bmp):
     return bool(u.SetMenuItemInfoW(hmenu, pos, True, ctypes.byref(mii)))
 
 
+def _get_bmp(hmenu, pos):
+    """메뉴 pos 번째 항목 그림 핸들 (없으면 0). HBMMENU_CALLBACK(-1) 은 그리기 메시지를 alt 메뉴로 넘겨 그림"""
+    mii = _MII(ctypes.sizeof(_MII), 0x80)   # MIIM_BITMAP
+    u = ctypes.windll.user32
+    u.GetMenuItemInfoW.argtypes = [ctypes.c_void_p, ctypes.c_uint, ctypes.c_int, ctypes.POINTER(_MII)]
+    if not u.GetMenuItemInfoW(hmenu, pos, True, ctypes.byref(mii)):
+        return 0
+    return mii.hbmpItem or 0
+
+
 def _menu_flags(s):
     return (win32con.MF_STRING | (win32con.MF_GRAYED if s.get("off") else 0)
             | (win32con.MF_CHECKED if s.get("chk") else 0))
@@ -999,7 +1009,7 @@ class ShellMenu:
         if not src:
             log.info("빈 곳 하위 메뉴 '%s' 비었음 — 폴더 메뉴에도 같은 이름 없음", text)
             return 0
-        n = 0
+        n = nb = 0
         for j in range(win32gui.GetMenuItemCount(src)):
             t = _menu_text(src, j)
             idc = ctypes.windll.user32.GetMenuItemID(src, j)
@@ -1011,7 +1021,11 @@ class ShellMenu:
             else:
                 win32gui.AppendMenu(hsub, win32con.MF_STRING | (st & (win32con.MF_GRAYED | win32con.MF_CHECKED)), idc, t)
                 n += 1
-        log.info("빈 곳 하위 메뉴 '%s' 비었음 → 폴더 메뉴에서 %d개 채움", text, n)
+                bmp = _get_bmp(src, j)   # 0.9.112 아이콘도 옮김 (사용자 제보 11/6: 채운 항목에 아이콘 없음)
+                if bmp:
+                    if _set_bmp(hsub, win32gui.GetMenuItemCount(hsub) - 1, bmp):
+                        nb += 1
+        log.info("빈 곳 하위 메뉴 '%s' 비었음 → 폴더 메뉴에서 %d개 채움 (아이콘 %d개)", text, n, nb)
         return n
 
     def handle(self, msg, wparam, lparam):
@@ -1026,6 +1040,10 @@ class ShellMenu:
         if self.alt is not None and msg in (WM_INITMENUPOPUP, WM_DRAWITEM, WM_MEASUREITEM, WM_MENUCHAR):
             if msg == WM_INITMENUPOPUP and self._own_sub(wparam) is None and self.alt._own_sub(wparam) is not None:
                 return self.alt._handle(msg, wparam, lparam)
+            if msg in (WM_DRAWITEM, WM_MEASUREITEM) and lparam:   # 0.9.112 옮겨 온 항목 그림(HBMMENU_CALLBACK)은 alt 가 그림
+                item_id = ctypes.c_uint.from_address(lparam + 8).value   # MEASUREITEMSTRUCT·DRAWITEMSTRUCT 세 번째 칸 = itemID
+                if ShellMenu.ALT_BASE <= item_id < ShellMenu.EXTRA_BASE:
+                    return self.alt._handle(msg, wparam, lparam)
         return self._handle(msg, wparam, lparam)
 
     def _handle(self, msg, wparam, lparam):

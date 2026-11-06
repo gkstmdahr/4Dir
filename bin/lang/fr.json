@@ -1343,5 +1343,10 @@
  "루피아": "roupie indonésienne",
  "루피": "roupie",
  "링깃": "ringgit",
- "뉴질랜드 달러": "dollar néo-zélandais"
+ "뉴질랜드 달러": "dollar néo-zélandais",
+ "다른 칸을 같은 폴더로": "Ouvrir le même dossier dans l'autre volet",
+ "⚠ 다른 칸이 없습니다 — 칸을 둘 이상 보이게 하세요  ✕": "⚠ Aucun autre volet — affichez au moins deux volets  ✕",
+ "다른 칸도 같은 폴더로 열었습니다  ✕": "Même dossier ouvert dans l'autre volet  ✕",
+ "다른 칸 새 탭에 같은 폴더": "Même dossier dans un nouvel onglet de l'autre volet",
+ "다른 칸 새 탭에 같은 폴더를 열었습니다  ✕": "Même dossier ouvert dans un nouvel onglet de l'autre volet  ✕"
 }

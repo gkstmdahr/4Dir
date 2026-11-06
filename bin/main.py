@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.111"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 8              # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.112"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 5             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -448,6 +448,8 @@ import ftpfs  # noqa: E402  FTP (archives 를 거쳐 폴더처럼)
 import calc  # noqa: E402  0.9.111 계산기 (일반·회계·공학·단위)
 import mediaedit  # noqa: E402  0.9.111 동영상·GIF 편집 (ffmpeg)
 import toolicons  # noqa: E402  0.9.111 빌드 4 도구 아이콘
+import pinfix  # noqa: E402  0.9.112 고정 바로가기 새 버전 폴더로
+import fileicons  # noqa: E402  0.9.112 exe 등 파일마다 다른 아이콘
 
 
 def ti(label, name):
@@ -639,6 +641,26 @@ def overlay_service():
         OVL = overlays.Overlays()
         OVL.ready.connect(_ovl_ready)
     return OVL
+
+
+FICON = None          # 0.9.112 exe 등 파일마다 다른 아이콘 fileicons.FileIcons
+
+
+def ficon_service():
+    global FICON
+    if FICON is None:
+        FICON = fileicons.FileIcons()
+        FICON.ready.connect(_ficon_ready)
+    return FICON
+
+
+def _ficon_ready(path):
+    folder = os.path.dirname(path)
+    for m in list(MODELS):
+        try:
+            m.icon_ready(path, folder)
+        except RuntimeError:
+            MODELS.remove(m)
 
 
 def _ovl_ready(path, px):
@@ -1096,6 +1118,16 @@ class DirModel(QtCore.QAbstractTableModel):
                 self.dataChanged.emit(ix, ix, [Qt.DecorationRole])
                 return
 
+    def icon_ready(self, path, folder):
+        """0.9.112 파일 고유 아이콘 하나 받음 → 그 줄만 다시 그림"""
+        same = os.path.normcase(folder) == os.path.normcase(self.path or "")
+        low = path.lower()
+        for r, e in enumerate(self.rows):
+            if (same and not e[5] and os.path.join(self.path, e[0]).lower() == low) or (e[5] and e[5].lower() == low):
+                ix = self.index(r, 0)
+                self.dataChanged.emit(ix, ix, [Qt.DecorationRole])
+                return
+
     def full(self, e):
         return e[5] or os.path.join(self.path, e[0])
 
@@ -1199,6 +1231,12 @@ class DirModel(QtCore.QAbstractTableModel):
                 if pm:
                     pm.setDevicePixelRatio(max(1.0, pm.width() / max(1, self.icon_px)))
                     return pm
+            if e[6] is None and fileicons.wants(e[0], e[1]):   # 0.9.112 exe 등은 그 파일의 아이콘 (받기 전엔 기본 그림)
+                fp = self.full(e)
+                if not (devices.is_dev(fp) or archives.is_arc(fp)):
+                    idx = ficon_service().get(fp, e[3])
+                    if idx is not None and idx >= 0:
+                        return shellops.icon_for(e[0], e[1], self.icon_px, idx)
             return shellops.icon_for(e[0], e[1], self.icon_px, e[6])
         elif role == Qt.TextAlignmentRole and c in (3, 6):
             return int(Qt.AlignRight | Qt.AlignVCenter)
@@ -2237,6 +2275,34 @@ class DetailView(ViewMixin, QtWidgets.QTreeView):
 
 
 class IconView(ViewMixin, QtWidgets.QListView):
+    _wacc = 0
+
+    def _row_step(self):
+        """휠 한 칸 = 아이콘 한 줄 (0.9.112 빌드 2 사용자 11/6: 3줄씩 내려가 어디까지 봤는지 헷갈림)"""
+        if self.viewMode() == QtWidgets.QListView.ListMode and self.verticalScrollMode() == QtWidgets.QAbstractItemView.ScrollPerItem:
+            return 1   # 줄 단위 스크롤바 (작은 아이콘)
+        g = self.gridSize()
+        if g.isValid() and g.height() > 0:
+            return g.height()
+        m = self.model()
+        if m is not None and m.rowCount():
+            return max(1, self.visualRect(m.index(0, 0)).height() + self.spacing())
+        return max(1, self.verticalScrollBar().singleStep())
+
+    def wheelEvent(self, ev):
+        dy = ev.angleDelta().y()
+        if (not (ev.modifiers() & (Qt.ControlModifier | Qt.ShiftModifier)) and dy and ev.pixelDelta().isNull()
+                and self.flow() == QtWidgets.QListView.LeftToRight):   # 위아래로 넘기는 보기만 (목록 보기는 옆으로)
+            self._wacc += dy
+            n = int(self._wacc / 120)   # 고운 휠·터치패드는 조금씩 모아 120 마다 한 줄
+            if n:
+                self._wacc -= n * 120
+                sb = self.verticalScrollBar()
+                sb.setValue(sb.value() - n * self._row_step())
+            ev.accept()
+            return
+        super().wheelEvent(ev)
+
     def paintEvent(self, ev):
         super().paintEvent(ev)
         if self._drop_row >= 0:
@@ -3685,6 +3751,8 @@ class Page(QtWidgets.QWidget):
                     tools.append((ti(mlabel(T("디스크 사용량 트리맵"), "space_map"), "treemap"), lambda: self.space_map(dirs[0])))
                 if len(paths) == 1 and mediaedit.can_edit(paths[0]):   # 0.9.111
                     tools.append((ti(T("동영상·GIF 편집…"), "mediaedit"), lambda p=paths[0]: open_media_edit(p, 0, self.window())))
+                if main is not None:   # 0.9.112 빌드 3: 파일·폴더 우클릭에도 (사용자: 메뉴가 없다)
+                    tools.append((ti(mlabel(T("다른 칸 새 탭에 같은 폴더"), "same_folder"), "compare"), main.same_folder_other))
                 extras.append((T("4Dir 도구"), tools))
             if dirs:
                 extras.append(({"t": T("윈도우 즐겨찾기에 고정"), "unless": {"pintohome"}}, lambda: self.do_verb(dirs, "pintohome")))
@@ -3728,6 +3796,7 @@ class Page(QtWidgets.QWidget):
                      (ti(mlabel(T("하위 폴더 펼쳐 보기"), "flat_view"), "flat"), self.flat_view)]
             if main_of(self) is not None:
                 tools.append((ti(mlabel(T("두 칸 비교"), "compare"), "compare"), main_of(self).compare_panes))
+                tools.append((ti(mlabel(T("다른 칸 새 탭에 같은 폴더"), "same_folder"), "compare"), main_of(self).same_folder_other))   # 0.9.112
                 tools.append((ti(mlabel(T("중복 파일 찾기…"), "find_dupes"), "dupes"), lambda: main_of(self).find_dupes(self)))
             tools.append((ti(mlabel(T("디스크 사용량 트리맵"), "space_map"), "treemap"), lambda: self.space_map(self.path)))
             extras.append((T("4Dir 도구"), tools))
@@ -5563,6 +5632,12 @@ class Pane(QtWidgets.QFrame):
         if ev.type() == QtCore.QEvent.MouseButtonDblClick and (obj is self.tabrow or (obj is self.bar and self.bar.tabAt(ev.position().toPoint()) < 0)):
             self.add_tab(self.view().path if self.view() else THIS_PC)
             return True
+        if ev.type() == QtCore.QEvent.MouseButtonDblClick and obj is self.bar and ev.button() == Qt.LeftButton:   # 0.9.112 빌드 4: 탭 두 번 누르기 = 닫기 (사용자 11/6)
+            i = self.bar.tabAt(ev.position().toPoint())
+            if i >= 0:
+                log.info("탭 두 번 누름 → 닫기 pane=%d tab=%d", self.idx, i)
+                self.close_tab(i)
+                return True
         return super().eventFilter(obj, ev)
 
     # ---------------------------------------------------------- 보기
@@ -7522,6 +7597,7 @@ class Main(QtWidgets.QMainWindow):
             "toggle_calc": lambda: self.toggle_calc(),   # 0.9.111 계산기
             "toggle_memo": lambda: self.toggle_memo(),   # v0.9.108 메모 창 (빌드 10: 뒤에 숨었으면 앞으로)   # v0.9.101 공용이면 공용 창, 칸마다면 지금 칸
             "compare": lambda: self.compare_panes(),
+            "same_folder": lambda: self.same_folder_other(),   # 0.9.112
             "sync_dirs": lambda: self.sync_dirs(),   # 0.9.109
             "ftp_connect": lambda: self.ftp_connect(),
             "user_buttons": lambda: self.edit_user_buttons(),
@@ -8419,6 +8495,11 @@ class Main(QtWidgets.QMainWindow):
         t = ev.type()
         if t != QtCore.QEvent.MouseButtonPress and t != QtCore.QEvent.KeyPress:
             return False
+        if t == QtCore.QEvent.KeyPress and (ev.modifiers() & Qt.AltModifier or ev.nativeScanCode() == 0x0D) \
+                and obj is QtWidgets.QApplication.focusWidget() and isinstance(obj, QtWidgets.QWidget) and obj.window() is self:
+            # 0.9.112 빌드 4 진단: Alt+= 반응 없음 → 기록에 vk=0x17(입력기 전자/반자) 확인 → 빌드 5 기본 키 Ctrl+= (단축키로 처리되면 여기 안 옴)
+            log.info("Alt·= 키 입력 %s (key=0x%x vk=0x%x scan=0x%x 글자=%r, 위젯 %s)", keymap.event_key(ev), ev.key(),
+                     ev.nativeVirtualKey(), ev.nativeScanCode(), ev.text(), type(obj).__name__)
         if t == QtCore.QEvent.KeyPress and ev.key() == Qt.Key_Escape and obj is getattr(self, "gsearch", None):
             self.gsearch.clear()
             v = self.pane().view()
@@ -8924,6 +9005,23 @@ class Main(QtWidgets.QMainWindow):
         dlg.show()
         dlg.edit.setFocus()
 
+    def same_folder_other(self):
+        """0.9.112 다른 칸에 지금 칸과 같은 폴더를 새 탭으로 (사용자 제보 11/6 '양쪽 폴더 위치 일치')"""
+        a = self.pane()
+        b = self.other_pane(a) if a else None
+        va = a.view() if a else None
+        if va is None or not va.path:
+            return
+        if b is None:
+            self.show_notice(T("⚠ 다른 칸이 없습니다 — 칸을 둘 이상 보이게 하세요  ✕"), ms=6000)
+            return
+        log.info("다른 칸 새 탭에 같은 폴더 %s (칸 %d → %d)", va.path, a.idx + 1, b.idx + 1)
+        b.add_tab(va.path)   # 빌드 4 (사용자 11/6): 다른 칸 지금 폴더는 그대로 두고 새 탭으로 더함
+        self.active_pane = a
+        self._paint_active()
+        va.view().setFocus()
+        self.show_notice(T("다른 칸 새 탭에 같은 폴더를 열었습니다  ✕"), ms=3000)
+
     def other_pane(self, cur):
         """다른 칸으로 보낼 대상: 직전에 쓰던 칸(보이면), 아니면 보이는 다른 칸 중 첫 번째"""
         if self.prev_pane is not None and self.prev_pane is not cur and self.prev_pane.isVisible():
@@ -9351,6 +9449,7 @@ class Main(QtWidgets.QMainWindow):
         m.addAction(T("Explorer Check (탐색기 점검)"), self.open_check)
         m.addAction(T("이름 일괄 변경…"), lambda: self.open_batch_rename(self.pane().view().selected_paths() if self.pane().view() else []))
         m.addAction(mlabel(T("두 칸 비교"), "compare"), self.compare_panes)
+        m.addAction(mlabel(T("다른 칸 새 탭에 같은 폴더"), "same_folder"), self.same_folder_other)   # 0.9.112
         m.addAction(mlabel(T("패턴으로 고르기…"), "select_pattern"), lambda: self.pane().view() and self.pane().view().select_pattern())
         m.addAction(mlabel(T("하위 폴더 펼쳐 보기"), "flat_view"), lambda: self.pane().view() and self.pane().view().flat_view())   # 빌드 20
         m.addAction(mlabel(T("중복 파일 찾기…"), "find_dupes"), lambda: self.find_dupes(self.pane().view()))   # 빌드 20
@@ -10182,6 +10281,17 @@ def main():
         winhook.refresh(os.path.dirname(BIN_DIR))   # 0.9.109 Win+E 를 켜 뒀으면 지금 4Dir 경로로
     except Exception:
         log.exception("Win+E 경로 갱신 실패")
+
+    def _pinfix():   # 0.9.112 작업 표시줄 고정 바로가기가 지운 옛 버전 폴더를 가리키면 지금 폴더로 (뒤 스레드)
+        import pythoncom
+        pythoncom.CoInitialize()
+        try:
+            pinfix.fix(os.path.dirname(BIN_DIR), QE_VERSION)
+        except Exception:
+            log.exception("고정 바로가기 고치기 실패")
+        finally:
+            pythoncom.CoUninitialize()
+    threading.Thread(target=_pinfix, daemon=True, name="pinfix").start()
     w.start_single_server()   # 먼저 뜬 창이 이름을 차지 → 다음 실행(창 하나만 모드)이 이 창을 앞으로 부름
     hotkey_register()         # 어디서나 단축키 (v0.9.68)
     if arg_path:

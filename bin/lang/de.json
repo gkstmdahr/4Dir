@@ -1343,5 +1343,10 @@
  "루피아": "Rupiah",
  "루피": "Rupie",
  "링깃": "Ringgit",
- "뉴질랜드 달러": "NZ-Dollar"
+ "뉴질랜드 달러": "NZ-Dollar",
+ "다른 칸을 같은 폴더로": "Gleichen Ordner im anderen Bereich öffnen",
+ "⚠ 다른 칸이 없습니다 — 칸을 둘 이상 보이게 하세요  ✕": "⚠ Kein anderer Bereich — zeigen Sie zwei oder mehr Bereiche an  ✕",
+ "다른 칸도 같은 폴더로 열었습니다  ✕": "Gleicher Ordner im anderen Bereich geöffnet  ✕",
+ "다른 칸 새 탭에 같은 폴더": "Gleicher Ordner in neuem Tab im anderen Bereich",
+ "다른 칸 새 탭에 같은 폴더를 열었습니다  ✕": "Gleicher Ordner in neuem Tab im anderen Bereich geöffnet  ✕"
 }

@@ -63,6 +63,7 @@ ACTIONS = [
     ("toggle_memo", T("메모 창 보이기/숨기기"), "Alt+M", "window"),
     ("toggle_calc", T("계산기"), "Alt+C", "window"),   # 0.9.111   # v0.9.108   # v0.9.101 공용이면 공용 탐색 창, 칸마다면 지금 칸 (기본 키 없음)
     ("compare", T("두 칸 비교"), "Shift+F2", "window"),
+    ("same_folder", T("다른 칸 새 탭에 같은 폴더"), "Ctrl+=", "window"),   # 0.9.112 (빌드 5: Alt+= 는 한국어 입력기 전자/반자 전환이라 안 들어옴)
     ("sync_dirs", T("폴더 맞추기 (두 칸)…"), "", "window"),   # 0.9.109 빌드 3
     ("ftp_connect", T("FTP 연결…"), "", "window"),
     ("user_buttons", T("사용자 단추 편집…"), "", "window"),   # v0.9.89 (토탈 커맨더와 같은 키)

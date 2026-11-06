@@ -1343,5 +1343,10 @@
  "루피아": "rupia",
  "루피": "rupia",
  "링깃": "ringgit",
- "뉴질랜드 달러": "dólar neozelandês"
+ "뉴질랜드 달러": "dólar neozelandês",
+ "다른 칸을 같은 폴더로": "Abrir a mesma pasta no outro painel",
+ "⚠ 다른 칸이 없습니다 — 칸을 둘 이상 보이게 하세요  ✕": "⚠ Não há outro painel — mostre dois ou mais painéis  ✕",
+ "다른 칸도 같은 폴더로 열었습니다  ✕": "A mesma pasta foi aberta no outro painel  ✕",
+ "다른 칸 새 탭에 같은 폴더": "Mesma pasta em nova aba do outro painel",
+ "다른 칸 새 탭에 같은 폴더를 열었습니다  ✕": "A mesma pasta foi aberta em nova aba do outro painel  ✕"
 }

@@ -1343,5 +1343,10 @@
  "루피아": "rupia indonesia",
  "루피": "rupia",
  "링깃": "ringgit",
- "뉴질랜드 달러": "dólar neozelandés"
+ "뉴질랜드 달러": "dólar neozelandés",
+ "다른 칸을 같은 폴더로": "Abrir la misma carpeta en el otro panel",
+ "⚠ 다른 칸이 없습니다 — 칸을 둘 이상 보이게 하세요  ✕": "⚠ No hay otro panel — muestre dos o más paneles  ✕",
+ "다른 칸도 같은 폴더로 열었습니다  ✕": "Se abrió la misma carpeta en el otro panel  ✕",
+ "다른 칸 새 탭에 같은 폴더": "Misma carpeta en nueva pestaña del otro panel",
+ "다른 칸 새 탭에 같은 폴더를 열었습니다  ✕": "Se abrió la misma carpeta en una nueva pestaña del otro panel  ✕"
 }
