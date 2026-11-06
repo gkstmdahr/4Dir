@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.113"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_VERSION = "0.9.114"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
 QE_BUILD = 4             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
@@ -34,8 +34,10 @@ from PySide6.QtCore import Qt
 BIN_DIR = os.path.dirname(os.path.abspath(__file__))
 if BIN_DIR not in sys.path:   # 배포판 휴대용 파이썬(._pth)은 스크립트 폴더를 자동으로 안 넣음(실측)
     sys.path.insert(0, BIN_DIR)
-LOG_DIR = os.environ.get("QE_LOG_DIR") or os.path.join(BIN_DIR, "log")   # 시험은 따로 (실제 로그에 섞이지 않게)
-STATE_FILE = os.path.join(BIN_DIR, "4Dir_state.json")
+import datadir  # noqa: E402  0.9.114 빌드 2 (MS 스토어판 1단계): 사용자 데이터 폴더 — 압축판 = bin 그대로, 스토어판 = %LOCALAPPDATA%\4Dir
+DATA_DIR = datadir.DATA_DIR
+LOG_DIR = os.environ.get("QE_LOG_DIR") or os.path.join(DATA_DIR, "log")   # 시험은 따로 (실제 로그에 섞이지 않게)
+STATE_FILE = os.path.join(DATA_DIR, "4Dir_state.json")
 os.makedirs(LOG_DIR, exist_ok=True)
 
 log = logging.getLogger("QE")
@@ -237,6 +239,11 @@ def _ver_tuple(v):
 def start_update_check(w, manual=False):
     """manual = 도구 메뉴에서 누름 (결과를 항상 알려줌). 자동은 설정 켜짐 + 오늘 아직 안 했을 때만, 새 버전 있을 때만 알림"""
     today = time.strftime("%Y-%m-%d")
+    if datadir.PACKAGED:   # 0.9.114 빌드 2: 스토어판은 스토어가 업데이트함
+        log.info("새 버전 확인: 스토어판이라 건너뜀 (스토어가 업데이트)")
+        if manual:
+            w.show_notice(T("스토어판은 Microsoft Store 가 새 버전을 자동으로 설치합니다  ✕"), ms=6000)
+        return
     if not UPDATE_URL:
         log.info("새 버전 확인: 주소가 아직 없음 (UPDATE_URL)")
         if manual:
@@ -355,6 +362,9 @@ def _app_ico():
     p = os.path.join(BIN_DIR, "4Dir.ico")
     if os.path.exists(p):
         return p
+    p = os.path.join(DATA_DIR, "4Dir.ico")   # 0.9.114 빌드 2: 프로그램 폴더가 읽기 전용(스토어판)이면 데이터 폴더에
+    if os.path.exists(p):
+        return p
     import struct
     icon = ui_parts.app_icon()
     imgs = []
@@ -378,6 +388,8 @@ def _app_ico():
 
 def set_taskbar_relaunch(w):
     """창에 '다시 실행할 명령'을 달아 둠 → 작업표시줄에 고정하면 4Dir.vbs + 4Dir 아이콘으로 고정됨 (윈도우 표준 방식)"""
+    if datadir.PACKAGED:   # 0.9.114 빌드 2: 스토어판은 윈도우가 앱 정보로 고정 (vbs 없음)
+        return
     try:
         from win32com.propsys import propsys, pscon
         import pythoncom
@@ -407,9 +419,10 @@ def set_taskbar_relaunch(w):
         log.exception("작업표시줄 고정 정보 설정 실패")
 
 import backup  # noqa: E402  (v0.9.94 설정 가져오기 — 준비된 백업을 설정 읽기 전에 바꿔 넣음)
-RESTORED = backup.apply_pending(BIN_DIR)
+RESTORED = backup.apply_pending(DATA_DIR)
 import carryover  # noqa: E402  (v0.9.87 새 버전 폴더 첫 실행 때 이전 버전 설정 가져오기 — 설정 읽는 모듈보다 먼저)
-carryover.run(BIN_DIR)
+if not datadir.PACKAGED:   # 스토어판은 설정이 버전 폴더 밖이라 이어받기 필요 없음
+    carryover.run(BIN_DIR)
 import shellops  # noqa: E402  (로그 설정 뒤에 import)
 import favorg  # noqa: E402
 import favorites  # noqa: E402
@@ -449,6 +462,7 @@ import calc  # noqa: E402  0.9.111 계산기 (일반·회계·공학·단위)
 import mediaedit  # noqa: E402  0.9.111 동영상·GIF 편집 (ffmpeg)
 import toolicons  # noqa: E402  0.9.111 빌드 4 도구 아이콘
 import pinfix  # noqa: E402  0.9.112 고정 바로가기 새 버전 폴더로
+import gdrive  # noqa: E402  0.9.114 구글 드라이브 백업
 import funcdesc  # noqa: E402  0.9.113 빌드 2 기능 설명 (메뉴 풍선 도움말·기능 검색)
 import fileicons  # noqa: E402  0.9.112 exe 등 파일마다 다른 아이콘
 
@@ -580,7 +594,7 @@ PREVIEW_WIN = None   # 빌드 18: 미리보기도 4Dir 창 밖 따로 창 하나
 def memo_store():
     global MEMOS
     if MEMOS is None:
-        MEMOS = memo.MemoStore(BIN_DIR)
+        MEMOS = memo.MemoStore(DATA_DIR)
         MEMOS.remind.connect(_memo_remind)
     return MEMOS
 
@@ -664,8 +678,10 @@ FAV = favorites.Favorites()
 QE_FAV = T("★ 4Dir 즐겨찾기")
 QE_FAV_ADD = T("★ 4Dir 즐겨찾기에 추가")
 SETTINGS = ui_parts.Settings()   # 색상·즐겨찾기 바 펼침·항상 위 (세션과 무관한 전역 설정)
-WS_DIR = os.path.join(BIN_DIR, "workspaces")   # 이름 붙여 저장한 창 구성
+WS_DIR = os.path.join(DATA_DIR, "workspaces")   # 이름 붙여 저장한 창 구성
 SINGLE_NAME = "4Dir_single_" + os.environ.get("USERNAME", "user")   # 하나만 실행용 통신 이름
+if datadir.PACKAGED:   # 0.9.114 빌드 3: 스토어판과 압축판이 같이 깔려 있어도 서로 넘기지 않게 (설정 폴더가 달라서)
+    SINGLE_NAME += "_store"
 
 
 SEARCH_PREFIX = "🔎 "   # 검색 결과 탭의 '경로' 표시: "🔎 검색어" (전체 검색) / "🔎 검색어 @ 폴더" (그 폴더 아래 찾기)
@@ -679,8 +695,8 @@ SERVER = None          # 하나만 실행용 통신 (창이 아니라 프로그�
 THUMBS = None          # 그림 미리보기 (thumbs.Thumbs, 처음 필요할 때 만듦, 모든 창이 같이 씀)
 THUMB_MODES = ("small", "medium", "large", "xlarge")   # 미리보기를 보여줄 보기 방식 (자세히·목록은 안 함)
 MODELS = []            # 미리보기 완성 알림을 받을 목록 모델들 (약한 참조 대신 닫힐 때 빠짐)
-TAGS = tags.Store(os.path.join(BIN_DIR, "4Dir_tags.json"))   # 0.9.109 태그·묶음 — 4Dir 안에만 저장
-LABELS = labels.Store(os.path.join(BIN_DIR, "4Dir_labels.json"))   # 색 라벨 (v0.9.89) — 4Dir 안에만 저장
+TAGS = tags.Store(os.path.join(DATA_DIR, "4Dir_tags.json"))   # 0.9.109 태그·묶음 — 4Dir 안에만 저장
+LABELS = labels.Store(os.path.join(DATA_DIR, "4Dir_labels.json"))   # 색 라벨 (v0.9.89) — 4Dir 안에만 저장
 
 
 def thumbs_service():
@@ -3821,7 +3837,7 @@ class Page(QtWidgets.QWidget):
                 extras.append((T("🗜 압축 파일 안 보기 (4Dir)"), lambda p=paths[0]: self.navigate(archives.make(p))))
             if len(paths) == 1 and dirs:
                 extras.append((T("터미널에서 열기"), lambda: shellops.open_terminal(dirs[0])))
-        favs =[((f"{d['group']} ▸ {d['name']}" if d.get("group") else d["name"]), (lambda p=d["path"]: self.navigate(p))) for d in FAV.items]
+        favs =[((f"{d['group']} ▸ {d['name']}" if d.get("group") else d["name"]), (lambda p=d["path"]: open_fav_entry(p, self.navigate))) for d in FAV.items]
         if not paths and self.path != THIS_PC:
             favs += [("-", None), (mlabel(T("이 폴더를 ★4Dir 즐겨찾기에 추가"), "add_fav"), lambda: FAV.add(self.path))]
         fav_entry = (QE_FAV, favs or [(T("(비어 있음)"), lambda: None)])
@@ -3836,7 +3852,9 @@ class Page(QtWidgets.QWidget):
                 t = e[0]["t"] if isinstance(e[0], dict) else e[0]
                 t = t.split("	")[0].replace("&", "")
                 return next((i for i, o in enumerate(order) if t.startswith(o.replace("&", ""))), len(order))
-            extras = [fav_entry] + ([(QE_FAV_ADD, lambda: [FAV.add(p) for p in dirs])] if dirs else []) + sorted(extras, key=rank)
+            files = [p for p in paths if p not in dirs and os.path.isfile(p)]   # 0.9.114 파일도 즐겨찾기에 (이슈 #8)
+            extras = [fav_entry] + ([(QE_FAV_ADD, lambda: [FAV.add(p) for p in dirs] + [FAV.add(p, file=True) for p in files])]
+                                    if dirs or files else []) + sorted(extras, key=rank)
         else:
             # 빈 곳: 윈도우 탐색기 빈 곳 메뉴 순서 (10/8 사용자 확정) — 새 폴더 · 보기 · 정렬 기준 · 새로 고침 · ★4Dir 즐겨찾기
             # ─ 붙여넣기(복사한 것 없으면 흐림) ─ 윈도우 항목들(윈도우 '새 폴더' 자리에 되돌리기) … 속성
@@ -4058,17 +4076,76 @@ def fill_fav_menu(menu, go, new_tab):
     if not FAV.items:
         a = menu.addAction(T("(비어 있음)"))
         a.setEnabled(False)
-    icon = shellops.icon_for("", True, 16)
     menu.setToolTipsVisible(True)
     for start, end, g in FAV.entries():
         target = menu.addMenu(favorg.group_icon(16), g) if g else menu   # 묶음 = 하위 메뉴
         if g:
             target.setToolTipsVisible(True)
         for d in FAV.items[start:end]:
-            a = target.addAction(icon, d["name"])
+            a = target.addAction(fav_icon(d), d["name"])
             a.setToolTip(d["path"])
-            a.triggered.connect(lambda _=False, p=d["path"]: go(p))
+            a.triggered.connect(lambda _=False, p=d["path"]: open_fav_entry(p, go))
     return menu
+
+
+# ---------------------------------------------------------------- 파일 즐겨찾기 (0.9.114, GitHub 이슈 #8)
+# 파일·바로가기를 즐겨찾기 바에 끌어 놓으면 등록(경로만 기억) → 누르면 윈도우에서 '열기'한 것처럼 연결 프로그램으로.
+# 폴더를 가리키는 바로가기는 폴더 즐겨찾기처럼 칸에서 그 폴더로 (목록에서 두 번 누를 때와 같게)
+FAV_OWN_ICON = fileicons.OWN_EXT | {".lnk"}   # 파일마다 아이콘이 다른 종류 → 실제 파일에 물어봄(작업 스레드)
+
+
+def fav_item(path):
+    n = os.path.normcase(os.path.normpath(path))
+    return next((d for d in FAV.items if os.path.normcase(d["path"]) == n), None)
+
+
+def fav_icon(d, size=16):
+    if not d.get("file"):
+        return shellops.icon_for("", True, size)
+    p = d["path"]
+    if os.path.splitext(p)[1].lower() in FAV_OWN_ICON:
+        idx = ficon_service().get(p, 0)   # 없으면 요청만 → 받으면 즐겨찾기 바가 다시 그림(FavPanel._ficon)
+        if idx is not None and idx >= 0:
+            return shellops.icon_for(p, False, size, sysidx=idx)
+    return shellops.icon_for(os.path.basename(p), False, size)
+
+
+def _fav_notice(text):
+    w = QtWidgets.QApplication.activeWindow()
+    while w is not None and not hasattr(w, "show_notice"):
+        w = w.parentWidget()
+    if w is None:
+        w = next((x for x in QtWidgets.QApplication.topLevelWidgets() if hasattr(x, "show_notice") and x.isVisible()), None)
+    if w is not None:
+        w.show_notice(text)
+
+
+def open_fav_entry(path, go, notice=None):
+    """즐겨찾기 열기: 폴더 → go(path) / 파일 → 연결 프로그램 / 폴더 바로가기 → go(대상)"""
+    d = fav_item(path)
+    if not (d and d.get("file")):
+        go(path)
+        return
+    notice = notice or _fav_notice
+    if path.lower().endswith(".lnk"):
+        tgt = os.path.expandvars(shellops.link_target(path) or "")
+        if tgt and os.path.isdir(tgt):
+            log.info("즐겨찾기 폴더 바로가기 %s → %s", path, tgt)
+            go(tgt)
+            return
+    if not os.path.exists(path):
+        log.warning("즐겨찾기 파일 없음 %s", path)
+        notice(T("⚠ 즐겨찾기 파일을 찾을 수 없습니다 (옮겨졌거나 지워짐): {0}  ✕").format(path))
+        return
+    log.info("즐겨찾기 파일 열기 %s", path)
+    try:
+        os.startfile(path)
+    except OSError as ex:
+        log.warning("즐겨찾기 파일 열기 실패 %s : %s", path, ex)
+        notice(f"⚠ {ex}  ✕")
+
+
+favorg.ITEM_ICON = fav_icon   # 즐겨찾기 정리 창도 같은 아이콘
 
 
 # ================================================================ 사이드바 (탐색 창)
@@ -5871,6 +5948,7 @@ class FavPanel(QtWidgets.QFrame):
         self._svn_timer.timeout.connect(self._svn_start)
         SVN_SIG.changed.connect(self._svn_changed)
         FAV.listeners.append(self.rebuild)
+        ficon_service().ready.connect(self._ficon)   # 0.9.114 파일 즐겨찾기 아이콘
         self.rebuild()
         self.set_expanded(SETTINGS["fav_expanded"], save=False)
 
@@ -5886,7 +5964,6 @@ class FavPanel(QtWidgets.QFrame):
         except RuntimeError:
             return
         self.buttons = []
-        icon = shellops.icon_for("", True, 16)
         for start, end, group in FAV.entries():
             b = QtWidgets.QToolButton(self.box)
             b.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
@@ -5901,16 +5978,19 @@ class FavPanel(QtWidgets.QFrame):
                 b.clicked.connect(lambda _=False, b=b: self._group_popup(b))
             else:
                 d = FAV.items[start]
-                b.setIcon(self._fav_icon(icon, self.svn.get(d["path"])))
+                b.setIcon(self._fav_icon(fav_icon(d), self.svn.get(d["path"])))
                 b.setText(d["name"])
                 b.setProperty("favIndex", start)
-                b.setToolTip(T('{0}\n클릭: 선택된 칸에서 열기 · Ctrl+클릭: 새 탭 · 끌어서 순서 변경 · 우클릭: 이름/삭제').format(d['path']))
+                if d.get("file"):   # 0.9.114 이슈 #8
+                    b.setToolTip(T('{0}\n클릭: 연결 프로그램으로 열기 · 끌어서 순서 변경 · 우클릭: 이름/삭제').format(d['path']))
+                else:
+                    b.setToolTip(T('{0}\n클릭: 선택된 칸에서 열기 · Ctrl+클릭: 새 탭 · 끌어서 순서 변경 · 우클릭: 이름/삭제').format(d['path']))
                 b.clicked.connect(lambda _=False, p=d["path"]: self.main.open_fav(p))
             b.installEventFilter(self)
             self.flow.addWidget(b)
             self.buttons.append(b)
         if not FAV.items:
-            b = QtWidgets.QLabel(T("  폴더를 여기로 끌어다 놓기 · 우클릭 > ★ 4Dir 즐겨찾기에 추가 · Ctrl+D"))
+            b = QtWidgets.QLabel(T("  폴더·파일을 여기로 끌어다 놓기 · 우클릭 > ★ 4Dir 즐겨찾기에 추가 · Ctrl+D"))
             b.setStyleSheet("color:#8a939c;")
             self.flow.addWidget(b)
             self.buttons.append(b)
@@ -5949,20 +6029,26 @@ class FavPanel(QtWidgets.QFrame):
         if not force and st == self.svn and all(b.property("svnDone") for b in self.fav_buttons() if b.property("favIndex") is not None):
             return
         self.svn = st
-        icon = shellops.icon_for("", True, 16)
         for b in self.fav_buttons():
             i = b.property("favIndex")
             if i is not None and i < len(FAV.items):
-                b.setIcon(self._fav_icon(icon, st.get(FAV.items[i]["path"])))
+                b.setIcon(self._fav_icon(fav_icon(FAV.items[i]), st.get(FAV.items[i]["path"])))
                 b.setProperty("svnDone", True)
         log.info("즐겨찾기 SVN 표시 %d개 %s", len(st), {os.path.basename(k.rstrip("\\\\")): v for k, v in list(st.items())[:6]})
+
+    def _ficon(self, path):
+        """파일 즐겨찾기(exe·바로가기 등) 진짜 아이콘을 받으면 그 버튼만 다시 그림 (0.9.114)"""
+        n = os.path.normcase(path)
+        for b in self.fav_buttons():
+            i = b.property("favIndex")
+            if i is not None and i < len(FAV.items) and os.path.normcase(FAV.items[i]["path"]) == n:
+                b.setIcon(self._fav_icon(fav_icon(FAV.items[i]), self.svn.get(FAV.items[i]["path"])))
 
     def _group_popup(self, b):
         g = b.property("favGroup")
         m = QtWidgets.QMenu(self)
-        icon = shellops.icon_for("", True, 16)
         for d in FAV.items[b.property("favStart"):b.property("favEnd")]:
-            a = m.addAction(self._fav_icon(icon, self.svn.get(d["path"])), d["name"])
+            a = m.addAction(self._fav_icon(fav_icon(d), self.svn.get(d["path"])), d["name"])
             a.setToolTip(d["path"])
             a.triggered.connect(lambda _=False, p=d["path"]: self.main.open_fav(p))
         m.setToolTipsVisible(True)
@@ -6053,8 +6139,12 @@ class FavPanel(QtWidgets.QFrame):
     def _fav_menu(self, i, pos):
         d = FAV.items[i]
         m = QtWidgets.QMenu(self)
-        m.addAction(T("선택된 칸에서 열기"), lambda: self.main.open_fav(d["path"]))
-        m.addAction(T("새 탭에서 열기"), lambda: self.main.pane().go(d["path"], new_tab=True))
+        if d.get("file"):   # 0.9.114 파일 즐겨찾기
+            m.addAction(T("열기"), lambda: self.main.open_fav(d["path"]))
+            m.addAction(T("파일 위치 열기"), lambda: self.main.pane().go(os.path.dirname(d["path"]), new_tab=True))
+        else:
+            m.addAction(T("선택된 칸에서 열기"), lambda: self.main.open_fav(d["path"]))
+            m.addAction(T("새 탭에서 열기"), lambda: self.main.pane().go(d["path"], new_tab=True))
         m.addSeparator()
 
         def rename():
@@ -6075,7 +6165,9 @@ class FavPanel(QtWidgets.QFrame):
         fav = md.hasFormat(FAV_MIME)
         if not fav and not md.hasUrls():
             return None
-        has_dir = fav or any(os.path.isdir(u.toLocalFile()) for u in md.urls() if u.isLocalFile())
+        # 0.9.114 이슈 #8: 파일·바로가기도 등록 (전엔 폴더만). 즐겨찾기 폴더 버튼 '가운데'만 그 폴더로 복사·이동(진하게 표시),
+        #   가장자리·사이·빈 곳 = 즐겨찾기 등록(파란 세로줄 + '즐겨찾기에 추가')
+        has_dir = fav or any(os.path.exists(u.toLocalFile()) for u in md.urls() if u.isLocalFile())
         for b in self.fav_buttons():
             if not b.geometry().contains(p):
                 continue
@@ -6084,11 +6176,11 @@ class FavPanel(QtWidgets.QFrame):
             if not fav and g.width() * 0.25 <= x <= g.width() * 0.75:
                 if b.property("favGroup"):
                     if has_dir:
-                        return ("into", b)   # 폴더 → 그 묶음에 추가
-                elif os.path.isdir(FAV.items[b.property("favStart")]["path"]):
+                        return ("into", b)   # 폴더·파일 → 그 묶음에 추가
+                elif not FAV.items[b.property("favStart")].get("file") and os.path.isdir(FAV.items[b.property("favStart")]["path"]):
                     return ("into", b)
             if not has_dir:
-                return None   # 파일만 → 즐겨찾기에 못 넣음 (가장자리·사이)
+                return None   # 등록할 수 있는 것(실제 폴더·파일) 없음
             return ("gap", b.property("favStart") if x < g.width() / 2 else b.property("favEnd"))
         if not has_dir:
             return None
@@ -6180,8 +6272,8 @@ class FavPanel(QtWidgets.QFrame):
             g = spot[1].property("favGroup")
             for u in md.urls():
                 p = u.toLocalFile()
-                if p and os.path.isdir(p):
-                    FAV.add(p, group=g)
+                if p and os.path.exists(p):
+                    FAV.add(p, group=g, file=not os.path.isdir(p))
             ev.setDropAction(Qt.CopyAction)
             ev.accept()
             return
@@ -6207,9 +6299,9 @@ class FavPanel(QtWidgets.QFrame):
         else:
             for u in md.urls():
                 p = u.toLocalFile()
-                if p and os.path.isdir(p):
-                    FAV.add(p, pos=pos)
-                    pos += 1
+                if p and os.path.exists(p):
+                    if FAV.add(p, pos=pos, file=not os.path.isdir(p)):
+                        pos += 1
         ev.setDropAction(Qt.CopyAction)
         ev.accept()
 
@@ -6986,9 +7078,69 @@ class SettingsDialog(QtWidgets.QDialog):
         return self._embed(lay, self.main.search_panel)
 
     def _p_backup(self, lay):
+        self._gdrive_box(lay)   # 0.9.114 구글 드라이브 (선택)
+        sep = QtWidgets.QFrame()
+        sep.setFrameShape(QtWidgets.QFrame.HLine)
+        lay.addWidget(sep)
         self._btn(lay, T("설정 내보내기 (백업 파일로 저장)…"), self.main.export_settings,
                   T("보기·단축키·즐겨찾기·창과 탭(탭 색 포함)·색 라벨·저장한 창 구성을 zip 하나로 저장합니다. 포맷 뒤 되돌리기용."))
         self._btn(lay, T("설정 가져오기 (백업 파일에서 되돌리기)…"), self.main.import_settings)
+
+    def _gdrive_box(self, lay):
+        """구글 드라이브 백업 (0.9.114, 선택 사항 — 사용자 11/6 '필수 아님 표시, 포맷하면 메모 등이 날아간다 정도로')"""
+        g = QtWidgets.QGroupBox(T("구글 드라이브 자동 백업 (선택)"))
+        gl = QtWidgets.QVBoxLayout(g)
+        info = QtWidgets.QLabel(T("로그인하지 않아도 4Dir 는 모두 그대로 쓸 수 있습니다. 다만 설정·메모·즐겨찾기·태그는 이 PC 에만 있어서, "
+                                  "윈도우를 포맷하거나 PC 를 바꾸면 사라집니다. 구글로 로그인하면 내 구글 드라이브의 4Dir 전용 숨은 공간에 "
+                                  "하루 한 번 백업해 두고, 새 PC 에서 그대로 되살릴 수 있습니다. (개발자에게는 아무것도 전송되지 않습니다)"))
+        info.setWordWrap(True)
+        gl.addWidget(info)
+        self.gd_state = QtWidgets.QLabel()
+        self.gd_state.setWordWrap(True)
+        gl.addWidget(self.gd_state)
+        row = QtWidgets.QHBoxLayout()
+        self.gd_login = QtWidgets.QPushButton(T("구글로 로그인…"))
+        self.gd_logout = QtWidgets.QPushButton(T("연결 끊기"))
+        self.gd_now = QtWidgets.QPushButton(T("지금 백업"))
+        self.gd_restore = QtWidgets.QPushButton(T("구글 드라이브에서 되살리기…"))
+        for b, fn in ((self.gd_login, self.main.gdrive_login), (self.gd_logout, self.main.gdrive_logout),
+                      (self.gd_now, lambda: self.main.gdrive_backup(manual=True)), (self.gd_restore, self.main.gdrive_restore)):
+            b.clicked.connect(lambda *_, fn=fn: fn())
+            row.addWidget(b)
+        row.addStretch(1)
+        gl.addLayout(row)
+        self.gd_auto = QtWidgets.QCheckBox(T("하루 한 번 자동 백업 (최근 10개 보관)"))
+        self.gd_auto.setChecked(bool(SETTINGS["gdrive_auto"]))
+        self.gd_auto.toggled.connect(lambda on: (SETTINGS.__setitem__("gdrive_auto", on), log.info("구글 드라이브 자동 백업 %s", on)))
+        gl.addWidget(self.gd_auto)
+        lay.addWidget(g)
+        self.main.gdrive_changed.connect(self._gdrive_refresh)
+        self._gdrive_refresh()
+
+    def _gdrive_refresh(self, *_):
+        try:
+            ready = gdrive.client(BIN_DIR) is not None
+            mail = gdrive.account() if ready else ""
+            busy = bool(getattr(self.main, "_gd_busy", None))
+        except RuntimeError:
+            return
+        if not ready:
+            st = T("이 버전에는 아직 구글 연결 준비가 안 되어 있습니다.")
+        elif not mail and not gdrive._cred_read():
+            st = T("연결 안 됨")
+        else:
+            last = SETTINGS["gdrive_last"]
+            st = T("연결됨: {0}").format(mail or "?") + "   ·   " + (
+                T("마지막 백업: {0}").format(time.strftime("%Y-%m-%d %H:%M", time.localtime(last))) if last else T("아직 백업 없음"))
+        if busy:
+            st += "   ·   " + str(self.main._gd_busy)
+        self.gd_state.setText(st)
+        on = ready and bool(gdrive._cred_read())
+        self.gd_login.setVisible(ready and not on)
+        for b in (self.gd_logout, self.gd_now, self.gd_restore, self.gd_auto):
+            b.setVisible(on)
+        for b in (self.gd_login, self.gd_logout, self.gd_now, self.gd_restore):
+            b.setEnabled(not busy)
 
     def _p_about(self, lay):
         m = self.main
@@ -7549,7 +7701,16 @@ class PreviewPane(QtWidgets.QFrame):
         self._set_pic(pm)
 
 
+class _GdSig(QtCore.QObject):
+    done = QtCore.Signal(str, object, object)   # 일 이름, 결과, 오류 글자(없으면 None)
+
+
+GD_DUE = 20 * 3600   # 자동 백업 간격 (하루 한 번 — 20시간 지나면)
+
+
 class Main(QtWidgets.QMainWindow):
+    gdrive_changed = QtCore.Signal()   # 0.9.114 구글 드라이브 백업 상태 바뀜 (설정 창이 다시 그림)
+
     def __init__(self, crashed=False, open_path=None, src=None, open_state=None, restore_geometry=False):
         """open_path 가 있으면 '새 창으로 열기' — 저장 상태 대신 칸 1개 + 그 폴더로 시작 (src = 연 창, 위치 기준)
         open_state 가 있으면 그 기록(자동 기록 복구·지난번 함께 열려 있던 창)으로 새 창. restore_geometry = 그때 위치·크기"""
@@ -7739,7 +7900,7 @@ class Main(QtWidgets.QMainWindow):
             SSIG = SearchSig()
         SSIG.ev.connect(self._on_index_event)
         if SEARCH is None:   # 첫 창만 색인을 만듦, 다음 창들은 같이 씀
-            SEARCH = search_index.SearchIndex(os.path.join(BIN_DIR, "index"),
+            SEARCH = search_index.SearchIndex(os.path.join(DATA_DIR, "index"),
                                               notify=lambda k, i: SSIG.ev.emit(k, i))
             QtCore.QTimer.singleShot(2000, lambda: SEARCH and SEARCH.start(self.search_roots_enabled()))
         elif SEARCH.state == "ready":
@@ -8205,6 +8366,9 @@ class Main(QtWidgets.QMainWindow):
             self.show_notice(T("⚠ 실행하지 못했습니다: {0}  ✕").format(ex), ms=8000)
 
     def toggle_winE(self):
+        if datadir.PACKAGED:   # 0.9.114 빌드 2: 스토어판은 레지스트리가 앱 안에 갇혀 Win+E 연결이 안 됨 (2단계에서 검토)
+            self.show_notice(T("스토어판에서는 아직 Win+E 연결을 쓸 수 없습니다  ✕"), ms=6000)
+            return
         root = os.path.dirname(BIN_DIR)
         try:
             if winhook.ours():
@@ -8294,7 +8458,7 @@ class Main(QtWidgets.QMainWindow):
     # ---------------------------------------------------------- 메모 창 (v0.9.108)
     def folder_memo_check(self, path):
         """폴더 메모 (빌드 13): 그 폴더에 붙인 메모가 있으면 알림 줄 + [메모 보기]"""
-        if not path or MEMOS is None and not os.path.exists(os.path.join(BIN_DIR, memo.FILE)):
+        if not path or MEMOS is None and not os.path.exists(os.path.join(DATA_DIR, memo.FILE)):
             return
         ms = memo_store().for_folder(path)
         if not ms:
@@ -9673,13 +9837,130 @@ class Main(QtWidgets.QMainWindow):
             if not dest:
                 return None
         try:
-            n = backup.export_zip(BIN_DIR, dest, QE_VERSION)
+            n = backup.export_zip(DATA_DIR, dest, QE_VERSION)
         except Exception as ex:
             log.exception("설정 내보내기 실패 %s", dest)
             QtWidgets.QMessageBox.warning(self, T("설정 내보내기"), T("저장하지 못했습니다.\n{0}").format(ex))
             return None
         self.show_notice(T("설정을 저장했습니다 ({0}개 파일): {1}").format(n, dest) + "  ✕", ms=10000)
         return dest
+
+    # ---------------------------------------------------------- 0.9.114 구글 드라이브 백업 (선택)
+    def _gd_run(self, kind, fn, status):
+        """뒤 스레드에서 fn() → _gd_done(kind, 결과, 오류)"""
+        if getattr(self, "_gd_busy", None):
+            log.info("구글 드라이브: 이미 진행 중 (%s) → %s 건너뜀", self._gd_busy, kind)
+            return False
+        if not hasattr(self, "_gd_sig"):
+            self._gd_sig = _GdSig(self)
+            self._gd_sig.done.connect(self._gd_done)
+        self._gd_busy = status
+        self.gdrive_changed.emit()
+        sig = self._gd_sig
+
+        def work():
+            try:
+                r = fn()
+                sig.done.emit(kind, r, None)
+            except Exception as ex:
+                log.exception("구글 드라이브 %s 실패", kind)
+                sig.done.emit(kind, None, str(ex) or type(ex).__name__)
+        threading.Thread(target=work, daemon=True, name="gdrive-" + kind).start()
+        return True
+
+    def _gd_done(self, kind, r, err):
+        self._gd_busy = None
+        if kind == "login":
+            if err:
+                self.show_notice(T("⚠ 구글 로그인을 마치지 못했습니다: {0}  ✕").format(err), ms=10000)
+            else:
+                self.show_notice(T("구글 드라이브에 연결했습니다: {0} — 바로 첫 백업을 합니다  ✕").format(r or "?"), ms=8000)
+                QtCore.QTimer.singleShot(200, lambda: self.gdrive_backup(manual=True))
+        elif kind in ("backup", "auto"):
+            if err:
+                if kind == "backup":
+                    self.show_notice(T("⚠ 구글 드라이브 백업 실패: {0}  ✕").format(err), ms=10000)
+            else:
+                SETTINGS["gdrive_last"], SETTINGS["gdrive_last_name"] = time.time(), r[0]
+                log.info("구글 드라이브 백업 완료 %s (%d바이트, %s)", r[0], r[1], "수동" if kind == "backup" else "자동")
+                if kind == "backup":
+                    self.show_notice(T("구글 드라이브에 백업했습니다 ({0} KB)  ✕").format(max(1, r[1] // 1024)), ms=5000)
+        elif kind == "list":
+            if err:
+                self.show_notice(T("⚠ 구글 드라이브 백업 목록을 받지 못했습니다: {0}  ✕").format(err), ms=10000)
+            else:
+                self._gd_pick(r)
+        elif kind == "download":
+            if err:
+                self.show_notice(T("⚠ 백업을 받지 못했습니다: {0}  ✕").format(err), ms=10000)
+            else:
+                self.import_settings(r)
+        elif kind == "logout":
+            self.show_notice(T("구글 드라이브 연결을 끊었습니다 (드라이브에 있던 백업은 그대로)  ✕"), ms=6000)
+        self.gdrive_changed.emit()
+
+    def gdrive_login(self):
+        if not gdrive.client(BIN_DIR):
+            self.show_notice(T("이 버전에는 아직 구글 연결 준비가 안 되어 있습니다.") + "  ✕", ms=6000)
+            return
+        stop = self._gd_stop = threading.Event()
+        ok = T("4Dir: 구글 드라이브에 연결했습니다. 이 창을 닫고 4Dir 로 돌아가세요.")
+        bad = T("4Dir: 연결하지 못했습니다. 이 창을 닫고 다시 시도하세요.")
+        page = lambda m: f"<!doctype html><meta charset='utf-8'><body style='font:18px sans-serif;padding:40px'><h2>{__import__("html").escape(m)}</h2></body>"
+        if self._gd_run("login", lambda: gdrive.login(BIN_DIR, done_html=page(ok), fail_html=page(bad), stop=stop), T("브라우저에서 로그인 중…")):
+            self.show_notice(T("브라우저에서 구글 계정으로 로그인하고 '허용'을 누르세요 (5분 안에)  ✕"), ms=15000)
+
+    def gdrive_logout(self):
+        if QtWidgets.QMessageBox.question(self, T("연결 끊기"), T("구글 드라이브 연결을 끊을까요?\n드라이브에 저장된 백업은 지워지지 않습니다.")) != QtWidgets.QMessageBox.Yes:
+            return
+        self._gd_run("logout", lambda: gdrive.logout(BIN_DIR), T("연결 끊는 중…"))
+
+    def gdrive_backup(self, manual=False):
+        """지금 백업 (manual) / 자동 백업 (하루 한 번, 로그인했고 켜 둔 때만)"""
+        if not gdrive.client(BIN_DIR) or not gdrive._cred_read():
+            return False
+        if not manual and (not SETTINGS["gdrive_auto"] or time.time() - float(SETTINGS["gdrive_last"] or 0) < GD_DUE):
+            return False
+        self.save_state()
+        log.info("구글 드라이브 %s 백업 시작", "수동" if manual else "자동")
+        return self._gd_run("backup" if manual else "auto", lambda: gdrive.backup_now(BIN_DIR, QE_VERSION, data_dir=DATA_DIR), T("백업 중…"))
+
+    def gdrive_restore(self):
+        self._gd_run("list", lambda: gdrive.list_backups(BIN_DIR), T("백업 목록 받는 중…"))
+
+    def _gd_pick(self, files):
+        if not files:
+            QtWidgets.QMessageBox.information(self, T("구글 드라이브에서 되살리기"), T("구글 드라이브에 4Dir 백업이 아직 없습니다."))
+            return
+        dlg = QtWidgets.QDialog(self)
+        dlg.setWindowTitle(T("구글 드라이브에서 되살리기"))
+        dlg.resize(560, 360)
+        lay = QtWidgets.QVBoxLayout(dlg)
+        lay.addWidget(QtWidgets.QLabel(T("되살릴 백업을 고르세요 (새것부터). 고르면 지금 설정을 따로 보관한 뒤 바꾸고 4Dir 를 다시 시작합니다.")))
+        lst = QtWidgets.QListWidget()
+        for f in files:
+            m = re.match(r"4Dir_backup_(\d{8})_(\d{6})_(.*)\.zip$", f.get("name", ""))
+            when = f"{m.group(1)[:4]}-{m.group(1)[4:6]}-{m.group(1)[6:]} {m.group(2)[:2]}:{m.group(2)[2:4]}" if m else f.get("createdTime", "")
+            it = QtWidgets.QListWidgetItem(f"{when}   ·   {m.group(3) if m else f.get('name')}   ·   {max(1, int(f.get('size', 0) or 0) // 1024)} KB")
+            it.setData(Qt.UserRole, f.get("id"))
+            lst.addItem(it)
+        lst.setCurrentRow(0)
+        lst.itemDoubleClicked.connect(lambda *_: dlg.accept())
+        lay.addWidget(lst, 1)
+        bb = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
+        bb.button(QtWidgets.QDialogButtonBox.Ok).setText(T("되살리기"))
+        bb.button(QtWidgets.QDialogButtonBox.Cancel).setText(T("취소"))
+        bb.accepted.connect(dlg.accept)
+        bb.rejected.connect(dlg.reject)
+        lay.addWidget(bb)
+        self._gd_pick_dlg = dlg   # 시험용
+        if not dlg.exec() or lst.currentItem() is None:
+            return
+        fid = lst.currentItem().data(Qt.UserRole)
+        import tempfile
+        dest = os.path.join(tempfile.gettempdir(), "4Dir_gdrive_restore.zip")
+        log.info("구글 드라이브 백업 되살리기 고름 %s", lst.currentItem().text())
+        self._gd_run("download", lambda: gdrive.download(BIN_DIR, fid, dest), T("백업 받는 중…"))
 
     def import_settings(self, src=None, restart=True):
         """설정 가져오기 (v0.9.94): 백업 zip → 다음 시작 때 적용 → 4Dir 다시 시작. 지금 설정은 bin\\restore_backup 에 보관"""
@@ -9697,7 +9978,7 @@ class Main(QtWidgets.QMainWindow):
                 T("이 백업으로 모든 설정을 바꾸고 4Dir 를 다시 시작합니다.\n\n백업: v{0} · {1}\n\n지금 설정은 4Dir 폴더의 bin\\restore_backup 에 따로 보관합니다.")
                 .format(info.get("version", "?"), info.get("saved", "?"))) != QtWidgets.QMessageBox.Yes:
             return False
-        backup.stage_restore(BIN_DIR, src)
+        backup.stage_restore(DATA_DIR, src)
         if restart:
             restart_app()
         return True
@@ -9721,7 +10002,7 @@ eports.
             scr = self.screen()
             info = [f"4Dir {QE_VERSION} build {QE_BUILD}", f"저장 시각 {time.strftime('%Y-%m-%d %H:%M:%S')}",
                     f"윈도우 {platform.platform()} ({platform.version()})", f"파이썬 {sys.version.split()[0]} {sys.executable}",
-                    f"Qt {QtCore.qVersion()}", f"실행 위치 {BIN_DIR}",
+                    f"Qt {QtCore.qVersion()}", f"실행 위치 {BIN_DIR}", f"데이터 {DATA_DIR} (스토어판 {datadir.PACKAGED})",
                     f"화면 {scr.size().width()}x{scr.size().height()} 배율 {scr.devicePixelRatio():.2f} DPI {scr.logicalDotsPerInch():.0f}" if scr else "화면 ?",
                     f"레이아웃 {self.layout_mode}, 칸 {len(self.panes)}개", f"화면 테마 {SETTINGS['theme_mode']} 어둡게={SETTINGS['dark']}",
                     f"검색 색인 {SEARCH.state if SEARCH else '-'} {SEARCH.count() if SEARCH else 0}개"]
@@ -9776,7 +10057,7 @@ eports.
     def open_fav(self, path):
         new_tab = bool(QtWidgets.QApplication.keyboardModifiers() & Qt.ControlModifier)
         log.info("즐겨찾기 열기 pane=%d %s new_tab=%s", self.pane().idx, path, new_tab)
-        self.pane().go(path, new_tab=new_tab)
+        open_fav_entry(path, lambda p: self.pane().go(p, new_tab=new_tab), self.show_notice)   # 0.9.114 파일이면 연결 프로그램
 
     def restore_session(self, path):
         """자동 기록 복구 → 그 시점 창 구성을 새 창으로 (지금 창은 그대로)"""
@@ -10357,6 +10638,9 @@ RUNONCE_NAME = "4Dir_resume"
 
 def runonce_set(on):
     """다음 로그인 때 4Dir 한 번 실행 (윈도우 RunOnce — 실행되면 윈도우가 스스로 지움, 늘 남는 시작프로그램 아님)"""
+    if datadir.PACKAGED:   # 0.9.114 빌드 2: 스토어판은 레지스트리가 앱 안에 갇혀 RunOnce 가 안 먹음 → 2단계(StartupTask)에서
+        log.info("다음 로그인 때 다시 열기: 스토어판이라 건너뜀 (%s)", on)
+        return
     import winreg
     try:
         with winreg.CreateKey(winreg.HKEY_CURRENT_USER, RUNONCE_KEY) as k:
@@ -10445,6 +10729,7 @@ def hand_off_to_running(arg_path, new_window=False):
 
 def main():
     log.info("=" * 60)
+    log.info("데이터 폴더 %s (스토어판 %s)", DATA_DIR, datadir.PACKAGED)
     log.info("4Dir v%s (빌드 %s) 시작 python=%s pid=%d", QE_VERSION, QE_BUILD, sys.version.split()[0], os.getpid())
     arg_path = sys.argv[1] if len(sys.argv) > 1 and os.path.isdir(sys.argv[1]) else None
     try:  # 작업표시줄에 파이썬 아이콘 대신 4Dir 아이콘이 보이게
@@ -10473,11 +10758,14 @@ def main():
     if RESTORED:   # v0.9.94 설정 가져오기 적용됨
         w.show_notice(T("설정을 가져왔습니다. 이전 설정은 bin\\restore_backup 에 보관했습니다  ✕"), ms=12000)
     try:
-        winhook.refresh(os.path.dirname(BIN_DIR))   # 0.9.109 Win+E 를 켜 뒀으면 지금 4Dir 경로로
+        if not datadir.PACKAGED:
+            winhook.refresh(os.path.dirname(BIN_DIR))   # 0.9.109 Win+E 를 켜 뒀으면 지금 4Dir 경로로
     except Exception:
         log.exception("Win+E 경로 갱신 실패")
 
     def _pinfix():   # 0.9.112 작업 표시줄 고정 바로가기가 지운 옛 버전 폴더를 가리키면 지금 폴더로 (뒤 스레드)
+        if datadir.PACKAGED:   # 스토어판은 경로가 안 바뀌어 필요 없음
+            return
         import pythoncom
         pythoncom.CoInitialize()
         try:
@@ -10489,6 +10777,18 @@ def main():
     threading.Thread(target=_pinfix, daemon=True, name="pinfix").start()
     w.start_single_server()   # 먼저 뜬 창이 이름을 차지 → 다음 실행(창 하나만 모드)이 이 창을 앞으로 부름
     hotkey_register()         # 어디서나 단축키 (v0.9.68)
+
+    def _gd_tick():   # 0.9.114 구글 드라이브 자동 백업 (로그인·자동 켬·20시간 지남일 때만)
+        try:
+            if WINDOWS:
+                WINDOWS[-1].gdrive_backup(manual=False)
+        except Exception:
+            log.exception("구글 드라이브 자동 백업 확인 실패")
+    gd_timer = QtCore.QTimer(app)
+    gd_timer.setInterval(6 * 3600 * 1000)
+    gd_timer.timeout.connect(_gd_tick)
+    gd_timer.start()
+    QtCore.QTimer.singleShot(120 * 1000, _gd_tick)
     if arg_path:
         w.pane().add_tab(arg_path)
     for ws in getattr(w, "pending_windows", []):   # 지난번 한꺼번에 닫힌 창들도 그대로 다시
@@ -10501,7 +10801,7 @@ def main():
         log.info("지난번 창 %d개 더 다시 엶", len(w.pending_windows))
         w.raise_()
         w.activateWindow()
-    if os.path.exists(os.path.join(BIN_DIR, memo.FILE)):   # 빌드 13: 메모 알림은 메모 창을 안 열어도 울림
+    if os.path.exists(os.path.join(DATA_DIR, memo.FILE)):   # 빌드 13: 메모 알림은 메모 창을 안 열어도 울림
         QtCore.QTimer.singleShot(3000, memo_store)
     QtCore.QTimer.singleShot(10000, lambda: WINDOWS and start_update_check(WINDOWS[0]))   # 새 버전 확인 (하루 한 번, 뒤에서)
     if not SETTINGS["guide_shown"]:   # 처음 실행 → 사용법 한 번 (다시 보기: 도구 > 사용법)

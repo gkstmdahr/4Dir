@@ -25,7 +25,7 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.10.0"   # 1.10.0: 받기를 누르면 다운로드는 바로 시작 + 후원 안내 창(막지 않음, 닫기 가능 — 사용자 11/6 PureRef 처럼) / 1.9.3: 1.9.3: support 메일 링크에 제목 말머리 [4Dir] / 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
+MAKE_SITE_VER = "1.11.0"   # 1.11.0: 개인정보처리방침 privacy.html (구글 드라이브 백업 — 구글 앱 등록에 필요) / 1.10.0: 1.10.0: 받기를 누르면 다운로드는 바로 시작 + 후원 안내 창(막지 않음, 닫기 가능 — 사용자 11/6 PureRef 처럼) / 1.9.3: 1.9.3: support 메일 링크에 제목 말머리 [4Dir] / 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
 SUPPORT = "support@4dir.net"   # 문제 보고 메일 (1.1.1)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -320,12 +320,84 @@ Third-party components keep their own licenses (see the <code>licenses</code> fo
 </ul>
 <h2 id="privacy">Privacy policy</h2>
 <p>This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.</p>
-<p>The only network access is the new-version check: once a day 4Dir reads <code>{base}version.json</code> (a small public file; nothing about you or your files is sent).
-Turn it off in <b>Tools &gt; Check for new version at startup (once a day)</b>. There is no telemetry, no ads and no account.</p>
+<p>Network access: the new-version check (once a day 4Dir reads <code>{base}version.json</code>, a small public file; nothing about you or your files is sent),
+and the optional Google Drive backup if you sign in. Full details: <a href="privacy.html">Privacy policy</a>. There is no telemetry and no ads.</p>
 </section>
 </main>
 <footer><div class="wrap">
 <a href="{repo_url}">Source code</a> · <a href="{repo_url}/issues">Issues</a> · <a href="mailto:{SUPPORT}?subject=%5B4Dir%5D%20">{SUPPORT}</a>
+</div></footer>
+</body>
+</html>
+"""
+
+
+def privacy_page(cfg):
+    """1.11.0 개인정보처리방침 (영어 + 한국어) — 구글 OAuth 동의 화면에 넣는 주소"""
+    repo_url = f"https://github.com/{cfg['owner'] or 'OWNER'}/{cfg['repo']}"
+    base = site_base(cfg)
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4Dir - Privacy policy</title>
+<meta name="description" content="What data 4Dir uses: new-version check, optional Google Drive backup stored in your own Drive.">
+<link rel="canonical" href="{base}privacy.html">
+<link rel="icon" href="icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+<a class="logo" href="./"><img src="icon.png" alt="" width="28" height="28">4Dir</a>
+</div></header>
+<main class="wrap">
+<p><a href="./">Home</a> · <a href="#ko">한국어</a></p>
+<section><h1>Privacy policy</h1>
+<p>Last updated: 2026-11-06. 4Dir is a free Windows file manager made by an individual developer. 4Dir has no servers that receive your data, no telemetry and no ads.</p>
+<h2>Data on your PC</h2>
+<p>Settings, tabs, favorites, labels, tags and memos are stored only in the 4Dir folder on your PC.</p>
+<h2>New-version check</h2>
+<p>Once a day 4Dir downloads <code>{base}version.json</code> (a small public file). Nothing about you or your files is sent. You can turn this off in Settings.</p>
+<h2>Google Drive backup (optional)</h2>
+<ul>
+<li>Only if you choose <b>Sign in with Google</b>. 4Dir works fully without it.</li>
+<li>4Dir asks for these Google permissions only: <code>drive.appdata</code> (a hidden folder in <b>your own</b> Google Drive that only 4Dir can use)
+and <code>openid email</code> (to show which account is connected). 4Dir cannot see any other files in your Drive.</li>
+<li>What is stored: a zip of your 4Dir settings, tabs, favorites, labels, tags and memos — once a day, the latest 10 are kept.</li>
+<li>The data goes directly from your PC to your Google Drive. It is never sent to the developer or any other server.
+The sign-in key (refresh token) is stored in the Windows Credential Manager on your PC.</li>
+<li>To stop: Settings &gt; Backup &gt; <b>Disconnect</b> (this also revokes the permission). To delete the backups:
+Google Drive &gt; Settings &gt; Manage apps &gt; 4Dir &gt; Delete hidden app data. You can also remove access at
+<a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>.</li>
+<li>4Dir's use of information received from Google APIs adheres to the
+<a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements.</li>
+</ul>
+<h2>Contact</h2>
+<p><a href="mailto:{SUPPORT}?subject=%5B4Dir%5D%20">{SUPPORT}</a> · <a href="{repo_url}/issues">GitHub Issues</a></p>
+</section>
+<section id="ko"><h1>개인정보처리방침</h1>
+<p>최종 수정: 2026-11-06. 4Dir 는 개인 개발자가 만든 무료 윈도우 파일 관리자입니다. 사용자 정보를 받는 서버·사용 기록 수집·광고가 없습니다.</p>
+<h2>PC 에 있는 정보</h2>
+<p>설정·탭·즐겨찾기·라벨·태그·메모는 사용자 PC 의 4Dir 폴더에만 저장됩니다.</p>
+<h2>새 버전 확인</h2>
+<p>하루 한 번 <code>{base}version.json</code>(작은 공개 파일)을 읽습니다. 사용자나 파일에 대한 정보는 보내지 않으며, 설정에서 끌 수 있습니다.</p>
+<h2>구글 드라이브 백업 (선택)</h2>
+<ul>
+<li><b>구글로 로그인</b>을 직접 고른 경우에만 동작합니다. 로그인하지 않아도 4Dir 의 모든 기능을 쓸 수 있습니다.</li>
+<li>요청하는 구글 권한은 <code>drive.appdata</code>(<b>사용자 본인</b> 구글 드라이브 안의 4Dir 전용 숨은 폴더)와 <code>openid email</code>(연결된 계정 표시용)뿐입니다. 드라이브의 다른 파일은 볼 수 없습니다.</li>
+<li>저장하는 것: 4Dir 설정·탭·즐겨찾기·라벨·태그·메모 zip — 하루 한 번, 최근 10개만 보관.</li>
+<li>정보는 사용자 PC 에서 사용자 구글 드라이브로 바로 갑니다. 개발자나 다른 서버로는 보내지 않습니다. 로그인 열쇠는 PC 의 윈도우 자격 증명 관리자에 저장됩니다.</li>
+<li>그만두기: 설정 &gt; 백업 &gt; <b>연결 끊기</b>(권한도 취소). 백업 지우기: 구글 드라이브 &gt; 설정 &gt; 앱 관리 &gt; 4Dir &gt; 숨겨진 앱 데이터 삭제.
+<a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a> 에서도 권한을 없앨 수 있습니다.</li>
+<li>구글 API 에서 받은 정보는 Google API 서비스 사용자 데이터 정책(제한적 사용 요건 포함)을 따릅니다.</li>
+</ul>
+<h2>문의</h2>
+<p><a href="mailto:{SUPPORT}?subject=%5B4Dir%5D%20">{SUPPORT}</a></p>
+</section>
+</main>
+<footer><div class="wrap">
+<a href="{repo_url}">Source code</a> · <a href="code-signing.html">Code signing policy</a> · <a href="privacy.html">Privacy</a>
 </div></footer>
 </body>
 </html>
@@ -505,6 +577,9 @@ def main():
     with open(os.path.join(OUT, "code-signing.html"), "w", encoding="utf-8", newline="\n") as f:   # 1.7.0
         f.write(_beacon(signing_page(cfg), cfg))
     log("코드 서명 정책 code-signing.html")
+    with open(os.path.join(OUT, "privacy.html"), "w", encoding="utf-8", newline="\n") as f:   # 1.11.0
+        f.write(_beacon(privacy_page(cfg), cfg))
+    log("개인정보처리방침 privacy.html")
     open(os.path.join(OUT, "style.css"), "w", encoding="utf-8", newline="\n").write(CSS)
     shutil.copytree(os.path.join(SITE_SRC, "img"), os.path.join(OUT, "img"), dirs_exist_ok=True)
     # 1.3.0: 다른 앱 소개 페이지(_site\apps\<이름>\ → 사이트 /<이름>/) 그대로 복사 — 예: just-downloader. 매번 OUT 을 지우므로 여기서 다시 넣어야 남는다

@@ -14,7 +14,8 @@ import logging
 log = logging.getLogger("QE.i18n")
 BIN_DIR = os.path.dirname(os.path.abspath(__file__))
 LANG_DIR = os.path.join(BIN_DIR, "lang")
-SETTINGS_FILE = os.path.join(BIN_DIR, "4Dir_settings.json")
+from datadir import DATA_DIR  # 0.9.114 스토어판이면 사용자 폴더
+SETTINGS_FILE = os.path.join(DATA_DIR, "4Dir_settings.json")
 
 # (코드, 그 언어로 쓴 이름) — 메뉴에 이 순서로 나옴
 LANGS = [("ko", "한국어"), ("en", "English"), ("zh_CN", "简体中文"), ("zh_TW", "繁體中文"), ("ja", "日本語"),

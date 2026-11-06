@@ -16,8 +16,9 @@ import shutil
 import zipfile
 import logging
 
-BACKUP_VER = "1.0.0"
-FILES = ("4Dir_settings.json", "4Dir_state.json", "4Dir_favorites.json", "4Dir_labels.json", "4Dir_memos.json")   # v0.9.108 메모
+BACKUP_VER = "1.1.0"   # 1.1.0: 태그 파일 포함
+FILES = ("4Dir_settings.json", "4Dir_state.json", "4Dir_favorites.json", "4Dir_labels.json", "4Dir_memos.json",   # v0.9.108 메모
+         "4Dir_tags.json")   # 0.9.114 태그·가상 그룹도 (빠져 있던 것)
 DIRS = ("workspaces", "sessions", "memo_images")   # 빌드 13 메모 그림
 MANIFEST = "4Dir_backup.json"
 PENDING = "_restore_pending"

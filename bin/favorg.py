@@ -16,9 +16,11 @@ from i18n import T
 import shellops
 
 log = logging.getLogger("QE.favorg")
-VERSION = "1.0.0"
+VERSION = "1.1.0"   # 1.1.0 (0.9.114 이슈 #8): 파일 즐겨찾기 아이콘·있는지 확인
+ITEM_ICON = None   # main 이 넣음: 즐겨찾기 dict → QIcon
 PATH_ROLE = Qt.UserRole + 1     # 즐겨찾기 경로 (묶음은 None)
 KIND_ROLE = Qt.UserRole + 2     # "fav" / "group"
+FILE_ROLE = Qt.UserRole + 3     # 0.9.114 파일 즐겨찾기 표시 (정리 뒤에도 유지)
 
 
 class _Sig(QtCore.QObject):
@@ -124,9 +126,10 @@ class FavOrganizer(QtWidgets.QWidget):
     # ---------------------------------------------------------- 목록
     def _fav_item(self, d):
         it = QtWidgets.QTreeWidgetItem([d["name"], d["path"]])
-        it.setIcon(0, shellops.icon_for("", True, 16))
+        it.setIcon(0, ITEM_ICON(d) if ITEM_ICON else shellops.icon_for("", True, 16))   # 0.9.114 파일 즐겨찾기는 파일 아이콘
         it.setData(0, PATH_ROLE, d["path"])
         it.setData(0, KIND_ROLE, "fav")
+        it.setData(0, FILE_ROLE, bool(d.get("file")))
         it.setToolTip(1, d["path"])
         FavTree._fix_flags(it)
         return it
@@ -162,7 +165,7 @@ class FavOrganizer(QtWidgets.QWidget):
     def _check_exists(self, paths):
         for p in paths:
             try:
-                ok = os.path.isdir(p)
+                ok = os.path.exists(p)   # 0.9.114 파일 즐겨찾기도 (전엔 폴더만)
             except OSError:
                 ok = False
             self.sig.exists.emit(p, ok)
@@ -314,10 +317,19 @@ class FavOrganizer(QtWidgets.QWidget):
                 g = t.text(0).strip() or T("묶음")
                 for k in range(t.childCount()):
                     c = t.child(k)
-                    out.append({"name": c.text(0).strip() or os.path.basename(c.data(0, PATH_ROLE)), "path": c.data(0, PATH_ROLE), "group": g})
+                    out.append(self._out(c, g))
             else:
-                out.append({"name": t.text(0).strip() or os.path.basename(t.data(0, PATH_ROLE)), "path": t.data(0, PATH_ROLE)})
+                out.append(self._out(t, None))
         return out
+
+    @staticmethod
+    def _out(it, g):
+        d = {"name": it.text(0).strip() or os.path.basename(it.data(0, PATH_ROLE)), "path": it.data(0, PATH_ROLE)}
+        if g:
+            d["group"] = g
+        if it.data(0, FILE_ROLE):
+            d["file"] = True
+        return d
 
     def apply(self):
         items = self.result_items()

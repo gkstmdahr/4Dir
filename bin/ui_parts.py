@@ -10,7 +10,8 @@ from PySide6.QtCore import Qt
 
 log = logging.getLogger("QE.ui")
 BIN_DIR = os.path.dirname(os.path.abspath(__file__))
-SETTINGS_FILE = os.path.join(BIN_DIR, "4Dir_settings.json")
+from datadir import DATA_DIR  # 0.9.114 스토어판이면 사용자 폴더
+SETTINGS_FILE = os.path.join(DATA_DIR, "4Dir_settings.json")
 
 
 # ================================================================ 설정 (색상·즐겨찾기 바 펼침·항상 위) — 세션과 무관한 전역 설정
@@ -76,6 +77,7 @@ class Settings:
                      "select_pattern": "",        # 패턴으로 고르기 마지막 입력 (v0.9.89)
                      "empty_click_up": True,      # 목록 빈 곳을 더블클릭하면 상위 폴더로 (v0.9.75 옵션, v0.9.82 기본 켬)
                      "calc_geo": None, "calc_top": False, "calc_hist": [], "calc_tab": 0, "calc_deg": True, "calc_mode": "", "calc_mem": [], "calc_fx": {}, "calc_conv": {}, "calc_graph": [],   # 0.9.111 계산기
+                     "gdrive_auto": True, "gdrive_last": 0, "gdrive_last_name": "",   # 0.9.114 구글 드라이브 백업 (로그인했을 때만 동작)
                      "user_buttons": [],          # 0.9.109 사용자 단추 [{name, cmd, args}]
                      "ftp_sites": [],             # 0.9.109 최근 FTP 사이트 (비밀번호 없음)
                      "preview_autoplay": True,    # 빌드 28 미리보기 GIF·동영상 자동 재생 (조작줄 단추)
@@ -102,7 +104,7 @@ class Settings:
                     self.data[tk].update({k: v for k, v in d.get(tk, {}).items() if k in THEME_KEYS})
                 if "theme_mode" not in d and d.get("dark"):   # 0.6.2 이전: 다크 모드 켜둔 사람은 '어둡게' 유지
                     self.data["theme_mode"] = "dark"
-                for k in ("theme_mode", "dark", "fav_expanded", "on_top", "allow_multi", "sysmon", "breadcrumb", "keys", "search_roots", "lang", "chrome_collapsed", "batch_rename", "guide_shown", "update_check", "update_last", "update_skip", "resume_after_reboot", "keep_favbar", "hide_single_tab", "empty_click_up", "columns", "mouse", "folder_size", "select_pattern", "status_col", "ws_slots", "side_shared", "side_shared_w", "side_shared_hidden", "memo_on", "memo_side", "memo_w", "memo_geo", "memo_top", "preview_pane", "preview_w", "preview_geo", "preview_top", "tooltips", "arc_browse", "video_sound", "preview_autoplay", "user_buttons", "ftp_sites", "calc_geo", "calc_top", "calc_hist", "calc_tab", "calc_deg", "calc_mode", "calc_mem", "calc_fx", "calc_conv", "calc_graph"):
+                for k in ("theme_mode", "dark", "fav_expanded", "on_top", "allow_multi", "sysmon", "breadcrumb", "keys", "search_roots", "lang", "chrome_collapsed", "batch_rename", "guide_shown", "update_check", "update_last", "update_skip", "resume_after_reboot", "keep_favbar", "hide_single_tab", "empty_click_up", "columns", "mouse", "folder_size", "select_pattern", "status_col", "ws_slots", "side_shared", "side_shared_w", "side_shared_hidden", "memo_on", "memo_side", "memo_w", "memo_geo", "memo_top", "preview_pane", "preview_w", "preview_geo", "preview_top", "tooltips", "arc_browse", "video_sound", "preview_autoplay", "user_buttons", "ftp_sites", "calc_geo", "calc_top", "calc_hist", "calc_tab", "calc_deg", "calc_mode", "calc_mem", "calc_fx", "calc_conv", "calc_graph", "gdrive_auto", "gdrive_last", "gdrive_last_name"):
                     if k in d:
                         self.data[k] = d[k]
             except Exception:

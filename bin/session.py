@@ -16,8 +16,9 @@ import ctypes
 
 log = logging.getLogger("QE.session")
 BIN_DIR = os.path.dirname(os.path.abspath(__file__))
-SESS_DIR = os.path.join(BIN_DIR, "sessions")
-RUN_FILE = os.path.join(BIN_DIR, "4Dir.running")
+from datadir import DATA_DIR  # 0.9.114
+SESS_DIR = os.path.join(DATA_DIR, "sessions")
+RUN_FILE = os.path.join(DATA_DIR, "4Dir.running")
 KEEP = 20
 MIN_GAP = 60
 

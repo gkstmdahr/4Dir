@@ -13,7 +13,8 @@ import logging
 
 log = logging.getLogger("QE.fav")
 BIN_DIR = os.path.dirname(os.path.abspath(__file__))
-FAV_FILE = os.path.join(BIN_DIR, "4Dir_favorites.json")
+from datadir import DATA_DIR  # 0.9.114
+FAV_FILE = os.path.join(DATA_DIR, "4Dir_favorites.json")
 QUICK_ACCESS = "shell:::{3936E9E4-D92C-4EEE-A85A-BC16D5EA0819}"   # 즐겨찾기(고정+자주 쓰는 폴더)
 
 
@@ -78,12 +79,18 @@ class Favorites:
                 log.exception("즐겨찾기 갱신 알림 실패")
 
     # ---------------------------------------------------------- 편집
-    def add(self, path, name=None, pos=None, group=None):
+    def add(self, path, name=None, pos=None, group=None, file=False):
+        """file=True: 파일·바로가기 즐겨찾기 (0.9.114 이슈 #8) — 누르면 연결 프로그램으로 엶. 경로만 기억(원본은 안 건드림)"""
         path = os.path.normpath(path)
         if any(os.path.normcase(d["path"]) == os.path.normcase(path) for d in self.items):
             log.info("즐겨찾기 이미 있음 %s", path)
             return False
-        d = {"name": name or (os.path.basename(path.rstrip("\\")) or path), "path": path}
+        base = os.path.basename(path.rstrip("\\")) or path
+        if file and base.lower().endswith(".lnk"):
+            base = base[:-4]
+        d = {"name": name or base, "path": path}
+        if file:
+            d["file"] = True
         if group:   # 묶음 안으로 → 그 묶음 맨 끝
             d["group"] = group
             last = max((k for k, x in enumerate(self.items) if x.get("group") == group), default=None)
@@ -93,7 +100,7 @@ class Favorites:
             self.items.append(d)
         else:
             self.items.insert(pos, d)
-        log.info("즐겨찾기 추가 %s", path)
+        log.info("즐겨찾기 추가 %s%s", path, " (파일)" if file else "")
         self.save()
         return True
 
