@@ -13,7 +13,7 @@ import logging
 
 from PySide6 import QtCore, QtGui
 
-VIDEO_VER = "1.0.7"   # 1.0.7: 장면 띠를 끝까지 고르게 / 1.0.6: 소리 (사용자 11/6 '영상에서 소리 안 남') — 끄고 켜기 set_muted / 1.0.5: 글자 fps = 파일 정보 값(실측과 1% 안이면 — 윈도우 속성과 같게, 11/6 사용자) / 1.0.4: 첫 장면 시각(0 이 아닐 수 있음, 실측 33ms) 기준으로 번호·이동 / 1.0.3: 장면 띠 만드는 중에 닫아도 오류 없음(close) / 1.0.2: 장면 길이는 실제 장면에서 잼(파일 정보 60.08fps ≠ 실제 60 → 앞으로 안 감·뒤로 2장씩, 11/6 사용자), 장면 가운데로 이동 / 1.0.1: 하드웨어 해독 끔
+VIDEO_VER = "1.0.8"   # 1.0.8: 장면 길이 = 가장 잦은 간격 (간격이 고르지 않은 영상에서 34fps·장면 수 틀리던 것, 11/6 사용자) / 1.0.7: 장면 띠를 끝까지 고르게 / 1.0.6: 소리 (사용자 11/6 '영상에서 소리 안 남') — 끄고 켜기 set_muted / 1.0.5: 글자 fps = 파일 정보 값(실측과 1% 안이면 — 윈도우 속성과 같게, 11/6 사용자) / 1.0.4: 첫 장면 시각(0 이 아닐 수 있음, 실측 33ms) 기준으로 번호·이동 / 1.0.3: 장면 띠 만드는 중에 닫아도 오류 없음(close) / 1.0.2: 장면 길이는 실제 장면에서 잼(파일 정보 60.08fps ≠ 실제 60 → 앞으로 안 감·뒤로 2장씩, 11/6 사용자), 장면 가운데로 이동 / 1.0.1: 하드웨어 해독 끔
 log = logging.getLogger("QE.video")
 EXTS = {".mp4", ".m4v", ".mov", ".mkv", ".webm", ".avi", ".wmv", ".mpg", ".mpeg", ".ts", ".mts", ".m2ts", ".flv", ".3gp"}
 _MM = [None]   # QtMultimedia 모듈 (불러오기 실패 = False)
@@ -53,7 +53,8 @@ class VideoMovie(QtCore.QObject):
         self._n = 0
         self._t = 0            # 지금 장면의 실제 시작 시각(ms)
         self._t0 = None        # 첫 장면의 시작 시각(ms) — 0 이 아닌 영상이 있음 (장면 번호 기준점)
-        self._dur_us = 0       # 실제 장면 길이(µs) — 디코딩한 장면의 끝-시작 중 가장 짧은 값
+        self._dur_us = 0       # 실제 장면 길이(µs) — 디코딩한 장면 간격 중 가장 자주 나온 값 (1.0.8)
+        self._hist = {}        # 간격(0.1ms 단위) → 횟수
         self._img = QtGui.QImage()
         self._ok = False
         self.pl = mm.QMediaPlayer(self)
@@ -94,13 +95,19 @@ class VideoMovie(QtCore.QObject):
             return
         st, en = fr.startTime(), fr.endTime()
         d = en - st
-        if 1000 <= d <= 1000000 and (not self._dur_us or d < self._dur_us * 0.9 or (d < self._dur_us and self._dur_us - d < 2000)):
-            if not self._dur_us or abs(d - self._dur_us) > 50:   # 실제 장면 길이 (파일 정보 fps 는 60.08 처럼 틀릴 수 있음)
-                self._dur_us = d
-                self.fms = d / 1000.0
+        if 1000 <= d <= 1000000:
+            # 1.0.8: 실제 장면 길이 = 가장 자주 나온 간격 (가장 짧은 값을 쓰던 것 → 휴대폰 영상처럼 간격이 고르지 않으면
+            #   29.2ms 한 번에 34fps·장면 382장으로 잘못, 11/6 사용자 — 실제 332장 중 322장이 33.3ms)
+            k = int(round(d / 100.0))   # 0.1ms 단위로 묶음
+            self._hist[k] = self._hist.get(k, 0) + 1
+            mode_k, cnt = max(self._hist.items(), key=lambda kv: kv[1])
+            mode = mode_k * 100
+            if cnt >= 3 and (not self._dur_us or abs(mode - self._dur_us) > 50):   # 파일 정보 fps 는 60.08 처럼 틀릴 수 있어 실제로 잼
+                self._dur_us = mode
+                self.fms = mode / 1000.0
                 self.fps = 1000.0 / self.fms
                 self.frames = max(1, int(round(self.pl.duration() / self.fms)))
-                log.info("동영상 실제 장면 길이 %.3fms (%.2ffps) → 장면 %d", self.fms, self.fps, self.frames)
+                log.info("동영상 실제 장면 길이(가장 잦은 간격) %.3fms (%.2ffps, %d번) → 장면 %d", self.fms, self.fps, cnt, self.frames)
         self._img = im
         self._t = st / 1000.0
         if self._t0 is None or self._t < self._t0:

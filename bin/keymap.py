@@ -60,7 +60,8 @@ ACTIONS = [
     ("toggle_chrome", T("메뉴·즐겨찾기 접기/펼치기"), "Ctrl+Shift+M", "window"),
     ("toggle_preview", T("미리보기 창 보이기/숨기기"), "Alt+P", "window"),
     ("toggle_nav", T("탐색 창 보이기/숨기기"), "", "window"),
-    ("toggle_memo", T("메모 창 보이기/숨기기"), "Alt+M", "window"),   # v0.9.108   # v0.9.101 공용이면 공용 탐색 창, 칸마다면 지금 칸 (기본 키 없음)
+    ("toggle_memo", T("메모 창 보이기/숨기기"), "Alt+M", "window"),
+    ("toggle_calc", T("계산기"), "Alt+C", "window"),   # 0.9.111   # v0.9.108   # v0.9.101 공용이면 공용 탐색 창, 칸마다면 지금 칸 (기본 키 없음)
     ("compare", T("두 칸 비교"), "Shift+F2", "window"),
     ("sync_dirs", T("폴더 맞추기 (두 칸)…"), "", "window"),   # 0.9.109 빌드 3
     ("ftp_connect", T("FTP 연결…"), "", "window"),

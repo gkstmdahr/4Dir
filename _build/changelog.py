@@ -1,11 +1,43 @@
 # -*- coding: utf-8 -*-
-"""4Dir 버전별 바뀐 점 (CHANGELOG_VER 1.0.40 — 0.9.110 공개 11/6 점검 고침 · 0.9.109 바뀐 점 짧게(사용자 11/6 '간단 명료하게') · 0.9.109 공개 11/6 새 도구·태그·FTP·Win+E·메뉴 정리·이슈 #4~#7 · 0.9.108 공개 11/6 동영상·휴대폰 항목 · 0.9.108 빌드 20 압축 폴더·복사 대기열·펼쳐 보기·중복 찾기·스페이스 · 0.9.108 빌드 18 미리보기 따로 창·GIF 단추·형식 단추 색·메모 그림 크기 · 0.9.108 11/5 메모 창(따로 창·링크·폴더 메모·알림·휴지통 등) + 풍선 도움말 · 0.9.107 11/5 내용까지 비교 · 설정 창(톱니 아이콘, 카테고리 9개, 단축키·색상·검색 범위 안에)·창 저장/불러오기 도구로·즐겨찾기 메뉴 → 바 글자 (0.9.102~0.9.106 공개 전이라 합침) · 0.9.101 11/5 공용 탐색 창(이슈 #3, 0.9.100 공개 전이라 합침, +숨기기) · 0.9.99 11/5 (0.9.98 공개 전이라 합침, +단축키 칸 한글 입력기 끔·단축키만 내보내기/가져오기) 창 구성 단축키·지정·이름 변경(이슈 #1) · 0.9.97 11/5 (0.9.96 공개 안 해서 합침) 아이콘 이름 잘림·뺀 드라이브 탭·느린 드라이브·안전 제거·알림 ✕ · 0.9.95 11/5 탭 잠금·드라이브 꽂기 반영 · 0.9.94 11/4 상태 열·Ctrl+Enter 위치·설정 내보내기/가져오기·큰 폴더 빨라짐 · 0.9.93 11/4 (0.9.88~0.9.92 공개 전이라 합침, +레이아웃 16종·고르기 창·글자 메뉴 뺌·검색칸 자리, 새 도구 7개+빈 띠+색 13색·직접 고르기+날짜별 묶기+3칸 왼쪽 1+오른쪽 2+비교 깜빡임) · 0.9.88 11/4 닫을 때 바로 끝남 · 0.9.87 11/4 설정 이어받기·링크 실행 · 0.9.86 짧게 고침 11/3 (사용자 '간단명료하게') · 0.9.86 11/3 (0.9.85 공개 전이라 합침, 겹치면 옮김+되돌리기) · 0.9.85 11/3 (0.9.84 공개 전이라 합침, 겹침 알림 기능 칸) · 0.9.84 11/3 (0.9.83 공개 전이라 합침, 마우스 탭 키보드처럼) · 0.9.83 11/3 (0.9.82 공개 전이라 합침, 마우스 버튼 항목 추가) · 0.9.82 11/3 (0.9.81 공개 전이라 합침) · 0.9.81 11/3 (0.9.80 공개 전이라 합침) · 0.9.80 11/2 (0.9.79 공개 전이라 합침) · 0.9.79 11/2 (0.9.78 공개 전이라 합침) · 0.9.78 11/2 (0.9.77 공개 전이라 합침) · 0.9.77 11/2 (0.9.76 공개 전이라 합침) · 0.9.76 11/2 (0.9.75 는 공개 안 해서 합침) · 0.9.73 4Dir.exe 10/30 · 0.9.71 항목 10/29 (0.9.68~0.9.70 은 공개 안 해서 0.9.71 에 합침)) — make_site.py 가 읽어 메인 '새로 바뀐 점' + 지난 버전 페이지를 만듦.
+"""4Dir 버전별 바뀐 점 (CHANGELOG_VER 1.0.41 — 0.9.111 공개 11/6 편집·계산기 · 0.9.110 공개 11/6 점검 고침 · 0.9.109 바뀐 점 짧게(사용자 11/6 '간단 명료하게') · 0.9.109 공개 11/6 새 도구·태그·FTP·Win+E·메뉴 정리·이슈 #4~#7 · 0.9.108 공개 11/6 동영상·휴대폰 항목 · 0.9.108 빌드 20 압축 폴더·복사 대기열·펼쳐 보기·중복 찾기·스페이스 · 0.9.108 빌드 18 미리보기 따로 창·GIF 단추·형식 단추 색·메모 그림 크기 · 0.9.108 11/5 메모 창(따로 창·링크·폴더 메모·알림·휴지통 등) + 풍선 도움말 · 0.9.107 11/5 내용까지 비교 · 설정 창(톱니 아이콘, 카테고리 9개, 단축키·색상·검색 범위 안에)·창 저장/불러오기 도구로·즐겨찾기 메뉴 → 바 글자 (0.9.102~0.9.106 공개 전이라 합침) · 0.9.101 11/5 공용 탐색 창(이슈 #3, 0.9.100 공개 전이라 합침, +숨기기) · 0.9.99 11/5 (0.9.98 공개 전이라 합침, +단축키 칸 한글 입력기 끔·단축키만 내보내기/가져오기) 창 구성 단축키·지정·이름 변경(이슈 #1) · 0.9.97 11/5 (0.9.96 공개 안 해서 합침) 아이콘 이름 잘림·뺀 드라이브 탭·느린 드라이브·안전 제거·알림 ✕ · 0.9.95 11/5 탭 잠금·드라이브 꽂기 반영 · 0.9.94 11/4 상태 열·Ctrl+Enter 위치·설정 내보내기/가져오기·큰 폴더 빨라짐 · 0.9.93 11/4 (0.9.88~0.9.92 공개 전이라 합침, +레이아웃 16종·고르기 창·글자 메뉴 뺌·검색칸 자리, 새 도구 7개+빈 띠+색 13색·직접 고르기+날짜별 묶기+3칸 왼쪽 1+오른쪽 2+비교 깜빡임) · 0.9.88 11/4 닫을 때 바로 끝남 · 0.9.87 11/4 설정 이어받기·링크 실행 · 0.9.86 짧게 고침 11/3 (사용자 '간단명료하게') · 0.9.86 11/3 (0.9.85 공개 전이라 합침, 겹치면 옮김+되돌리기) · 0.9.85 11/3 (0.9.84 공개 전이라 합침, 겹침 알림 기능 칸) · 0.9.84 11/3 (0.9.83 공개 전이라 합침, 마우스 탭 키보드처럼) · 0.9.83 11/3 (0.9.82 공개 전이라 합침, 마우스 버튼 항목 추가) · 0.9.82 11/3 (0.9.81 공개 전이라 합침) · 0.9.81 11/3 (0.9.80 공개 전이라 합침) · 0.9.80 11/2 (0.9.79 공개 전이라 합침) · 0.9.79 11/2 (0.9.78 공개 전이라 합침) · 0.9.78 11/2 (0.9.77 공개 전이라 합침) · 0.9.77 11/2 (0.9.76 공개 전이라 합침) · 0.9.76 11/2 (0.9.75 는 공개 안 해서 합침) · 0.9.73 4Dir.exe 10/30 · 0.9.71 항목 10/29 (0.9.68~0.9.70 은 공개 안 해서 0.9.71 에 합침)) — make_site.py 가 읽어 메인 '새로 바뀐 점' + 지난 버전 페이지를 만듦.
 새 버전을 낼 때마다 맨 위에 한 줄 추가 (최신이 맨 위). 날짜는 한국 시간 기준 릴리스 날짜.
 항목 하나 = 10개 언어 글자 묶음 (순서: en ko zh-CN zh-TW ja es de fr pt-BR ru). <b> 만 허용."""
 
 ORDER = ["en", "ko", "zh-CN", "zh-TW", "ja", "es", "de", "fr", "pt-BR", "ru"]
 
 CHANGES = [
+("0.9.111", "2026-11-06", [
+    ("<b>Video & GIF editing</b> in the preview: trim, crop, resize, speed, save as MP4 or GIF, edit GIF frames.",
+     "미리보기에서 <b>동영상·GIF 편집</b>: 구간 자르기, 화면 자르기, 크기, 속도, MP4·GIF 저장, GIF 장면 편집.",
+     "预览中<b>编辑视频和 GIF</b>：截取片段、裁剪、调整大小、速度，保存为 MP4 或 GIF，编辑 GIF 帧。",
+     "預覽中<b>編輯影片和 GIF</b>：擷取片段、裁切、調整大小、速度，儲存為 MP4 或 GIF，編輯 GIF 影格。",
+     "プレビューで<b>動画・GIF 編集</b>：区間カット、切り抜き、サイズ、速度、MP4・GIF 保存、GIF のコマ編集。",
+     "<b>Edición de vídeo y GIF</b> en la vista previa: recortar tramo e imagen, tamaño, velocidad, guardar como MP4 o GIF, editar fotogramas GIF.",
+     "<b>Video- & GIF-Bearbeitung</b> in der Vorschau: kürzen, zuschneiden, Größe, Tempo, als MP4 oder GIF speichern, GIF-Bilder bearbeiten.",
+     "<b>Montage vidéo et GIF</b> dans l'aperçu : couper, recadrer, redimensionner, vitesse, enregistrer en MP4 ou GIF, modifier les images GIF.",
+     "<b>Edição de vídeo e GIF</b> na visualização: cortar trecho e imagem, tamanho, velocidade, salvar como MP4 ou GIF, editar quadros GIF.",
+     "<b>Правка видео и GIF</b> в просмотре: обрезка, кадрирование, размер, скорость, сохранение в MP4 или GIF, правка кадров GIF."),
+    ("<b>Calculator</b> (Alt+C): standard, scientific, graphing, programmer, date, finance and 13 converters including currency.",
+     "<b>계산기</b>(Alt+C): 표준·공학용·그래프·프로그래머·날짜·회계, 통화 환율 등 변환기 13개.",
+     "<b>计算器</b>（Alt+C）：标准、科学、绘图、程序员、日期、财务，以及含货币在内的 13 种换算。",
+     "<b>計算機</b>（Alt+C）：標準、工程、繪圖、程式設計人員、日期、財務，以及含貨幣在內的 13 種換算。",
+     "<b>電卓</b>（Alt+C）：標準・関数・グラフ・プログラマー・日付・会計、通貨など 13 種の換算。",
+     "<b>Calculadora</b> (Alt+C): estándar, científica, gráficas, programador, fechas, finanzas y 13 conversores, incluida moneda.",
+     "<b>Rechner</b> (Alt+C): Standard, wissenschaftlich, Grafik, Programmierer, Datum, Finanzen und 13 Umrechner inkl. Währung.",
+     "<b>Calculatrice</b> (Alt+C) : standard, scientifique, graphique, programmeur, dates, finance et 13 convertisseurs dont les devises.",
+     "<b>Calculadora</b> (Alt+C): padrão, científica, gráficos, programador, datas, finanças e 13 conversores, incluindo moeda.",
+     "<b>Калькулятор</b> (Alt+C): обычный, инженерный, графики, программист, даты, финансы и 13 конвертеров, включая валюту."),
+    ("Tool icons, and correct fps for phone videos.",
+     "도구 아이콘, 휴대폰 영상 fps 바르게.",
+     "工具图标；手机视频的帧率显示正确。",
+     "工具圖示；手機影片的影格率顯示正確。",
+     "ツールのアイコン、スマホ動画の fps を正しく表示。",
+     "Iconos de herramientas y fps correctos en vídeos de móvil.",
+     "Werkzeug-Symbole und korrekte fps bei Handyvideos.",
+     "Icônes des outils et fps correct pour les vidéos de téléphone.",
+     "Ícones das ferramentas e fps correto em vídeos de celular.",
+     "Значки инструментов и верный fps для видео с телефона."),
+]),
 ("0.9.110", "2026-11-06", [
     ("<b>Fixes</b>: FTP (non-UTF-8 servers, safer downloads, LIST dates), folder sync (junctions, hidden files), Win+E off restores the previous setting, custom button quoting, tags, treemap and viewer.",
      "<b>고침</b>: FTP(UTF-8 아닌 서버·안전한 받기·날짜), 폴더 맞추기(정션·숨김 파일), Win+E 끄면 이전 설정 되돌림, 사용자 단추 따옴표, 태그·트리맵·보기 창.",

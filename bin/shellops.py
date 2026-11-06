@@ -719,8 +719,23 @@ def _menu_spec(x):
     if isinstance(x, str):
         return {"t": x}
     if isinstance(x, tuple):
+        if isinstance(x[0], dict):   # 0.9.111: 글자 자리에 {"t", "bmp"…} (도구 아이콘)
+            d = dict(x[0])
+            d["sub"] = x[1]
+            return d
         return {"t": x[0], "sub": x[1]}
     return x
+
+
+def _set_bmp(hmenu, pos, bmp):
+    """메뉴 pos 번째 항목 그림 (0.9.111 도구 아이콘 — 없으면 4Dir 표시)"""
+    if not bmp:
+        return _mark_brand(hmenu, pos)
+    mii = _MII(ctypes.sizeof(_MII), 0x80)   # MIIM_BITMAP
+    mii.hbmpItem = bmp
+    u = ctypes.windll.user32
+    u.SetMenuItemInfoW.argtypes = [ctypes.c_void_p, ctypes.c_uint, ctypes.c_int, ctypes.POINTER(_MII)]
+    return bool(u.SetMenuItemInfoW(hmenu, pos, True, ctypes.byref(mii)))
 
 
 def _menu_flags(s):
@@ -917,14 +932,16 @@ class ShellMenu:
                                 win32gui.AppendMenu(sub, win32con.MF_SEPARATOR, 0, "")   # None 은 pywin32 가 거부(10/2 실제 오류)
                         else:
                             win32gui.AppendMenu(sub, _menu_flags(t), ShellMenu.EXTRA_BASE + n, t["t"])
+                            if t.get("bmp"):
+                                _set_bmp(sub, win32gui.GetMenuItemCount(sub) - 1, t["bmp"])
                             n += 1
                     win32gui.InsertMenu(self.hmenu, pos, win32con.MF_BYPOSITION | win32con.MF_POPUP, sub, ex["t"])
-                    _mark_brand(self.hmenu, pos)   # v0.9.66: 4Dir 가 넣은 항목 표시
+                    _set_bmp(self.hmenu, pos, ex.get("bmp"))   # v0.9.66: 4Dir 가 넣은 항목 표시 (0.9.111: 도구 아이콘이 있으면 그것)
                 else:
                     win32gui.InsertMenu(self.hmenu, pos, win32con.MF_BYPOSITION | _menu_flags(ex),
                                         ShellMenu.EXTRA_BASE + n, ex["t"])
                     if not ex.get("chk"):   # 체크 항목은 체크 표시와 겹치지 않게 아이콘 생략
-                        _mark_brand(self.hmenu, pos)
+                        _set_bmp(self.hmenu, pos, ex.get("bmp"))
                     n += 1
         if tail:
             # 메뉴 맨 아래에 붙이는 우리 항목

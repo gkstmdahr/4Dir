@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.110"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 1              # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.111"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 8              # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -445,6 +445,31 @@ import tags  # noqa: E402  태그·가상 그룹
 import fileattrs  # noqa: E402  날짜·속성 일괄
 import userbtns  # noqa: E402  사용자 단추
 import ftpfs  # noqa: E402  FTP (archives 를 거쳐 폴더처럼)
+import calc  # noqa: E402  0.9.111 계산기 (일반·회계·공학·단위)
+import mediaedit  # noqa: E402  0.9.111 동영상·GIF 편집 (ffmpeg)
+import toolicons  # noqa: E402  0.9.111 빌드 4 도구 아이콘
+
+
+def ti(label, name):
+    """우클릭(윈도우 메뉴) 항목 글자 + 도구 아이콘 (0.9.111 빌드 4)"""
+    return {"t": label, "bmp": toolicons.hbitmap(name)}
+
+
+TOOL_ICON_KEYS = [("계산기", "calc"), ("폴더 맞추기", "sync"), ("디스크 사용량 트리맵", "treemap"), ("FTP 연결", "ftp"),
+                  ("태그로 보기", "tag"), ("가상 그룹", "group"), ("사용자 단추 편집", "userbtn"), ("중복 파일 찾기", "dupes"),
+                  ("하위 폴더 펼쳐 보기", "flat"), ("두 칸 비교", "compare"), ("패턴으로 고르기", "pattern"), ("이름 일괄 변경", "rename"),
+                  ("Explorer Check", "check"), ("명령 찾기", "palette")]
+
+
+def set_menu_icons(m):
+    """Qt 메뉴(도구 메뉴 등) 항목 앞 글자로 도구 아이콘 붙임"""
+    keys = [(T(k).replace("&", ""), n) for k, n in TOOL_ICON_KEYS]
+    for a in m.actions():
+        t = a.text().split("\t")[0].replace("&", "")
+        for k, n in keys:
+            if t.startswith(k):
+                a.setIcon(toolicons.icon(n, 16))
+                break
 DEV_MIME = "application/x-4dir-devpaths"   # 휴대폰 안 항목 끌기 (파일 주소가 없어 4Dir 안에서만)
 DEV_CLIP = {"paths": None, "cut": False, "seq": -1}   # 휴대폰 항목 복사/잘라내기 — 4Dir 안 붙여넣기용 (윈도우 클립보드엔 셸 데이터로도 넣음)
 DEV_DRAG = {"paths": None}   # 4Dir 에서 끌기 시작한 휴대폰 항목 (4Dir 칸에 놓으면 이것으로 복사)
@@ -487,6 +512,7 @@ QUEUE_SIG = QueueSig()
 shellops.on_queue_change[0] = QUEUE_SIG.changed.emit
 MEMOS = None   # memo.MemoStore — 첫 메모 창을 열 때 만듦 (모든 창 공용)
 MEMO_WIN = None   # 빌드 8: 메모 창은 4Dir 창 밖 따로 창 하나 (모든 창 공용)
+CALC_WIN = None   # 0.9.111 계산기 창 (모든 창 공용)
 PREVIEW_WIN = None   # 빌드 18: 미리보기도 4Dir 창 밖 따로 창 하나 (모든 창 공용, 마지막으로 쓴 창의 고른 파일)
 
 
@@ -2025,6 +2051,23 @@ def refresh_tags_ui(show_col=False):
                 m = v.model_
                 if m.rows:
                     m.dataChanged.emit(m.index(0, 11), m.index(len(m.rows) - 1, 11))
+
+
+def open_media_edit(path, start=0, parent=None):
+    """동영상·GIF 편집 창 (0.9.111). 저장하면 그 폴더를 보는 칸에서 새 파일을 고름"""
+    def done(dst):
+        d, nm = os.path.dirname(dst), os.path.basename(dst)
+        for w in WINDOWS:
+            for p in w.panes:
+                for v in p.views():
+                    if v.path and os.path.normcase(v.path) == os.path.normcase(d):
+                        v.pending_select = nm
+                        v.reload("edit")
+    dlg = mediaedit.EditDialog(path, start, done, parent)
+    if parent is not None:
+        dlg.setStyleSheet(parent.styleSheet())
+    dlg.show()
+    return dlg
 
 
 def remember_ftp(site):
@@ -3624,22 +3667,24 @@ class Page(QtWidgets.QWidget):
                                + [("-", None), ({"t": T("다른 색 고르기…"), "chk": bool(own)}, lambda: self.pick_label(paths)),
                                   (T("색 라벨 지우기"), lambda: self.set_label(paths, None))]))
                 tg_items = [({"t": t, "chk": all(t in TAGS.tags_of(p) for p in paths)}, (lambda t=t: self.toggle_tag(paths, t))) for t in TAGS.all_tags()]
-                extras.append((T("태그"), tg_items + ([("-", None)] if tg_items else []) + [(T("새 태그…"), lambda: self.new_tag(paths))]
+                extras.append((ti(T("태그"), "tag"), tg_items + ([("-", None)] if tg_items else []) + [(T("새 태그…"), lambda: self.new_tag(paths))]
                                + ([(T("태그 모두 떼기"), lambda: self.clear_tags(paths))] if any(TAGS.tags_of(p) for p in paths) else [])))
                 st_items = [(n, (lambda n=n: self.add_to_set(n, paths))) for n in TAGS.all_sets()]
-                extras.append((T("가상 그룹에 넣기"), st_items + ([("-", None)] if st_items else []) + [(T("새 가상 그룹…"), lambda: self.add_to_set(None, paths))]))
+                extras.append((ti(T("가상 그룹에 넣기"), "group"), st_items + ([("-", None)] if st_items else []) + [(T("새 가상 그룹…"), lambda: self.add_to_set(None, paths))]))
                 tools = []   # 4Dir 도구 ▸
                 if main is not None:
-                    tools.append((mlabel(T("이름 일괄 변경…"), "rename" if len(paths) > 1 else None), lambda: main.open_batch_rename(self.selected_paths())))
-                tools.append((mlabel(T("날짜·속성 바꾸기…"), "file_attrs"), lambda: self.file_attrs(paths)))
+                    tools.append((ti(mlabel(T("이름 일괄 변경…"), "rename" if len(paths) > 1 else None), "rename"), lambda: main.open_batch_rename(self.selected_paths())))
+                tools.append((ti(mlabel(T("날짜·속성 바꾸기…"), "file_attrs"), "attrs"), lambda: self.file_attrs(paths)))
                 if any(imgbatch.is_image(p) for p in paths):
-                    tools.append((mlabel(T("그림 크기·형식 바꾸기…"), "img_batch"), lambda: self.img_batch(paths)))
+                    tools.append((ti(mlabel(T("그림 크기·형식 바꾸기…"), "img_batch"), "imgbatch"), lambda: self.img_batch(paths)))
                 if any(os.path.isfile(p) for p in paths):
-                    tools.append((mlabel(T("확인값(SHA256) 보기"), "sha256"), self.show_sha256))
+                    tools.append((ti(mlabel(T("확인값(SHA256) 보기"), "sha256"), "sha"), self.show_sha256))
                 if len(paths) == 1 and os.path.isfile(paths[0]):
-                    tools.append((mlabel(T("글자·16진수로 보기"), "view_file"), self.view_file))
+                    tools.append((ti(mlabel(T("글자·16진수로 보기"), "view_file"), "hexview"), self.view_file))
                 if dirs:
-                    tools.append((mlabel(T("디스크 사용량 트리맵"), "space_map"), lambda: self.space_map(dirs[0])))
+                    tools.append((ti(mlabel(T("디스크 사용량 트리맵"), "space_map"), "treemap"), lambda: self.space_map(dirs[0])))
+                if len(paths) == 1 and mediaedit.can_edit(paths[0]):   # 0.9.111
+                    tools.append((ti(T("동영상·GIF 편집…"), "mediaedit"), lambda p=paths[0]: open_media_edit(p, 0, self.window())))
                 extras.append((T("4Dir 도구"), tools))
             if dirs:
                 extras.append(({"t": T("윈도우 즐겨찾기에 고정"), "unless": {"pintohome"}}, lambda: self.do_verb(dirs, "pintohome")))
@@ -3679,12 +3724,12 @@ class Page(QtWidgets.QWidget):
                                     for o, lbl in ((Qt.AscendingOrder, T("오름차순")), (Qt.DescendingOrder, T("내림차순")))]
             extras.append((mlabel(T("정렬 기준"), None, "O"), srt))
             extras.append((mlabel(T("새로 고침"), "refresh", "E"), lambda: self.reload("menu")))
-            tools = [(mlabel(T("패턴으로 고르기…"), "select_pattern"), self.select_pattern),   # 0.9.109 빌드 5: 빈 곳도 '4Dir 도구 ▸' 하나로
-                     (mlabel(T("하위 폴더 펼쳐 보기"), "flat_view"), self.flat_view)]
+            tools = [(ti(mlabel(T("패턴으로 고르기…"), "select_pattern"), "pattern"), self.select_pattern),   # 0.9.109 빌드 5: 빈 곳도 '4Dir 도구 ▸' 하나로
+                     (ti(mlabel(T("하위 폴더 펼쳐 보기"), "flat_view"), "flat"), self.flat_view)]
             if main_of(self) is not None:
-                tools.append((mlabel(T("두 칸 비교"), "compare"), main_of(self).compare_panes))
-                tools.append((mlabel(T("중복 파일 찾기…"), "find_dupes"), lambda: main_of(self).find_dupes(self)))
-            tools.append((mlabel(T("디스크 사용량 트리맵"), "space_map"), lambda: self.space_map(self.path)))
+                tools.append((ti(mlabel(T("두 칸 비교"), "compare"), "compare"), main_of(self).compare_panes))
+                tools.append((ti(mlabel(T("중복 파일 찾기…"), "find_dupes"), "dupes"), lambda: main_of(self).find_dupes(self)))
+            tools.append((ti(mlabel(T("디스크 사용량 트리맵"), "space_map"), "treemap"), lambda: self.space_map(self.path)))
             extras.append((T("4Dir 도구"), tools))
             extras.append((T("터미널에서 열기"), lambda: shellops.open_terminal(self.path)))   # 윈도우 11 빈 곳 메뉴처럼 (v0.9.54)
             extras.append(fav_entry)
@@ -4587,6 +4632,13 @@ def gif_icon(kind, fg="#333333", sz=20):
         else:
             p.drawLine(P(13, 7.5), P(17.5, 12.5))
             p.drawLine(P(17.5, 7.5), P(13, 12.5))
+    elif kind == "edit":   # 0.9.111 가위 (편집)
+        p.setBrush(Qt.NoBrush)
+        p.setPen(QtGui.QPen(c, 1.6))
+        p.drawEllipse(QtCore.QRectF(3, 12, 5, 5))
+        p.drawEllipse(QtCore.QRectF(12, 12, 5, 5))
+        p.drawLine(QtCore.QPointF(7, 12.5), QtCore.QPointF(15.5, 3))
+        p.drawLine(QtCore.QPointF(13, 12.5), QtCore.QPointF(4.5, 3))
     elif kind == "save":
         body = QtGui.QPainterPath()   # 디스켓: 오른쪽 위 모서리를 깎은 몸통 + 위 셔터 + 아래 이름표
         body.moveTo(3.5, 3.5); body.lineTo(13.5, 3.5); body.lineTo(16.5, 6.5); body.lineTo(16.5, 16.5); body.lineTo(3.5, 16.5); body.closeSubpath()
@@ -6929,6 +6981,10 @@ class PreviewPane(QtWidgets.QFrame):
         sv.setIcon(gif_icon("save", self._gif_fg()))
         sv.setIconSize(QtCore.QSize(20, 20))
         self.gif_btns["save"] = sv
+        ed = b("", T("편집 — 구간 자르기·화면 자르기·크기·속도·GIF 만들기"), self._open_edit)   # 0.9.111
+        ed.setIcon(gif_icon("edit", self._gif_fg()))
+        ed.setIconSize(QtCore.QSize(20, 20))
+        self.gif_btns["edit"] = ed
         v.addLayout(row)
         self.gif_lbl = QtWidgets.QLabel()
         self.gif_lbl.setAlignment(Qt.AlignHCenter)
@@ -7100,6 +7156,19 @@ class PreviewPane(QtWidgets.QFrame):
                 self.gif_strip.setCurrentRow(row)
                 self.gif_strip.blockSignals(False)
             self.gif_strip.scrollToItem(self.gif_strip.item(row))
+
+    def _open_edit(self):
+        """0.9.111: 지금 GIF·동영상을 편집 창으로 (지금 장면에서 시작, 미리보기는 멈춤)"""
+        m = self.movie
+        if m is None:
+            return
+        path, n = m.fileName(), m.currentFrameNumber()
+        try:
+            m.setPaused(True)
+        except Exception:
+            pass
+        main = self.main or next(iter(WINDOWS), None)
+        open_media_edit(path, n, self.window())
 
     def _gif_save(self):
         m = self.movie
@@ -7450,6 +7519,7 @@ class Main(QtWidgets.QMainWindow):
             "toggle_chrome": lambda: self.set_chrome_collapsed(not SETTINGS["chrome_collapsed"]),
             "toggle_preview": lambda: self.toggle_preview(),
             "toggle_nav": lambda: self.pane().toggle_sidebar(),
+            "toggle_calc": lambda: self.toggle_calc(),   # 0.9.111 계산기
             "toggle_memo": lambda: self.toggle_memo(),   # v0.9.108 메모 창 (빌드 10: 뒤에 숨었으면 앞으로)   # v0.9.101 공용이면 공용 창, 칸마다면 지금 칸
             "compare": lambda: self.compare_panes(),
             "sync_dirs": lambda: self.sync_dirs(),   # 0.9.109
@@ -7672,6 +7742,12 @@ class Main(QtWidgets.QMainWindow):
         self.btn_memo.setToolTip(T("메모 창") + "  (Alt+M)")
         self.btn_memo.clicked.connect(lambda: self.toggle_memo())
         tb.addWidget(self.btn_memo)
+        self.btn_calc = QtWidgets.QToolButton()   # 0.9.111 빌드 4 (사용자 '계산기도 아이콘')
+        self.btn_calc.setIcon(toolicons.icon("calc", 20))
+        self.btn_calc.setAutoRaise(True)
+        self.btn_calc.setToolTip(T("계산기") + "  (Alt+C)")
+        self.btn_calc.clicked.connect(lambda: self.toggle_calc())
+        tb.addWidget(self.btn_calc)
         # 빌드 27 (사용자 11/6): 형식 단추 줄(데이터 종류 칩) 켜기/끄기 — 모든 창·칸에 적용
         self.btn_chips = QtWidgets.QToolButton()
         self.btn_chips.setIcon(chips_icon())
@@ -8046,6 +8122,31 @@ class Main(QtWidgets.QMainWindow):
             MEMO_WIN.panel.reveal(mid)
         names = ", ".join((m.get("title") or "") for m in ms[:3])
         self.show_notice(T("📝 이 폴더 메모: {0}").format(names), action=(T("메모 보기"), show))
+
+    def toggle_calc(self):
+        """계산기 창 (0.9.111): 없으면 열고, 뒤에 숨었으면 앞으로, 앞에 있으면 닫기"""
+        global CALC_WIN
+        if CALC_WIN is not None and CALC_WIN.isVisible():
+            if CALC_WIN.isActiveWindow():
+                CALC_WIN.close()
+                log.info("계산기 닫음")
+                return
+            CALC_WIN.raise_()
+            CALC_WIN.activateWindow()
+            return
+        if CALC_WIN is None:
+            CALC_WIN = calc.CalcWindow(SETTINGS)
+            CALC_WIN.setWindowIcon(self.windowIcon())
+        CALC_WIN.apply_theme(bool(SETTINGS["dark"]))   # 빌드 6: 4Dir 양식을 덮어씌우면 계산기 디자인이 지워짐(회색 기본 단추) → 계산기 것만
+        if not (SETTINGS["calc_geo"] and len(SETTINGS["calc_geo"]) == 5):   # 빌드 6: 예전 크기면 4Dir 창 옆에 새로
+            g = self.geometry()
+            CALC_WIN.move(g.right() - CALC_WIN.width() - 40, g.top() + 80)
+        CALC_WIN.show()
+        CALC_WIN.raise_()
+        CALC_WIN.activateWindow()
+        CALC_WIN.expr.setFocus()
+        log.info("계산기 열기")
+        return CALC_WIN
 
     def toggle_memo(self):
         """📌 버튼·Alt+M·도구 메뉴 (빌드 10 사용자 '뒤에 숨으면 껐다 켜야 올라옴'): 꺼져 있으면 켬, 뒤에 숨어 있으면 앞으로, 보고 있던 중이면 끔"""
@@ -9242,6 +9343,7 @@ class Main(QtWidgets.QMainWindow):
         mm = m.addAction(memo_icon(), mlabel(T("메모 창"), "toggle_memo"), lambda: self.toggle_memo())   # 빌드 9: 도구 맨 위
         mm.setCheckable(True)
         mm.setChecked(bool(SETTINGS["memo_on"]))
+        m.addAction(mlabel(T("계산기"), "toggle_calc"), self.toggle_calc)   # 0.9.111
         m.addSeparator()
         sm = m.addMenu(T("창 저장/불러오기"))   # v0.9.103 메뉴줄에서 여기로
         sm.aboutToShow.connect(lambda: self._fill_session_menu(sm))
@@ -9265,6 +9367,7 @@ class Main(QtWidgets.QMainWindow):
         m.addAction(mlabel(T("사용자 단추 편집…"), "user_buttons"), self.edit_user_buttons)
         m.addSeparator()
         m.addAction(mlabel(T("명령 찾기…"), "palette"), self.open_palette)
+        set_menu_icons(m)   # 0.9.111 빌드 4 도구 아이콘
         # v0.9.104 사용자 11/5: 사용법·로그·문제 보고·새 버전·홈페이지·후원은 설정 창 '정보'로
 
     def export_settings(self, dest=None):
@@ -9766,6 +9869,9 @@ eports.
             MEMO_WIN.save_geo()
             if last:   # 마지막 4Dir 창을 닫으면 메모 창도 닫음 (켜 둔 상태는 기억 → 다음에 다시 열림)
                 MEMO_WIN.hide()
+        if last and CALC_WIN is not None:   # 0.9.111 계산기도 같이 닫음 (위치 기억)
+            CALC_WIN.save_geo()
+            CALC_WIN.close()
         if PREVIEW_WIN is not None:   # 빌드 18 미리보기 따로 창도 같게
             PREVIEW_WIN.save_geo()
             if last:
