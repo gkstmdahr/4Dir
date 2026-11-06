@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.112"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 5             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.113"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 4             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -449,6 +449,7 @@ import calc  # noqa: E402  0.9.111 계산기 (일반·회계·공학·단위)
 import mediaedit  # noqa: E402  0.9.111 동영상·GIF 편집 (ffmpeg)
 import toolicons  # noqa: E402  0.9.111 빌드 4 도구 아이콘
 import pinfix  # noqa: E402  0.9.112 고정 바로가기 새 버전 폴더로
+import funcdesc  # noqa: E402  0.9.113 빌드 2 기능 설명 (메뉴 풍선 도움말·기능 검색)
 import fileicons  # noqa: E402  0.9.112 exe 등 파일마다 다른 아이콘
 
 
@@ -458,9 +459,67 @@ def ti(label, name):
 
 
 TOOL_ICON_KEYS = [("계산기", "calc"), ("폴더 맞추기", "sync"), ("디스크 사용량 트리맵", "treemap"), ("FTP 연결", "ftp"),
-                  ("태그로 보기", "tag"), ("가상 그룹", "group"), ("사용자 단추 편집", "userbtn"), ("중복 파일 찾기", "dupes"),
+                  ("태그로 보기", "tag"), ("가상 그룹", "group"), ("My메뉴 편집", "userbtn"), ("중복 파일 찾기", "dupes"),
                   ("하위 폴더 펼쳐 보기", "flat"), ("두 칸 비교", "compare"), ("패턴으로 고르기", "pattern"), ("이름 일괄 변경", "rename"),
-                  ("Explorer Check", "check"), ("명령 찾기", "palette")]
+                  ("Explorer Check", "check"), ("기능 검색", "palette")]
+
+
+ACTION_ICONS = {"toggle_calc": "calc", "sync_dirs": "sync", "space_map": "treemap", "ftp_connect": "ftp", "find_dupes": "dupes",
+                "flat_view": "flat", "compare": "compare", "same_folder": "compare", "select_pattern": "pattern", "batch_rename": "rename",
+                "explorer_check": "check", "palette": "palette", "user_buttons": "userbtn", "img_batch": "imgbatch", "file_attrs": "attrs",
+                "sha256": "sha", "view_file": "hexview"}
+
+
+def action_icon(a):
+    """0.9.113 기능 id → 아이콘 (My메뉴·기능 고르기). 없으면 None"""
+    try:
+        if a in ACTION_ICONS:
+            return toolicons.icon(ACTION_ICONS[a], 16)
+        if a == "toggle_memo":
+            return memo_icon()
+        if a.startswith("layout_") and a != "layout_custom":
+            return layout_icon(a[7:])
+    except Exception:
+        log.exception("기능 아이콘 %s", a)
+    return None
+
+
+userbtns.ACTION_ICON = action_icon
+
+
+class _MenuTipFilter(QtCore.QObject):
+    """메뉴 풍선 도움말: 설명이 있는 항목만 (Qt 기본은 설명 없으면 항목 이름을 또 보여 줌)"""
+
+    def eventFilter(self, obj, ev):
+        if ev.type() == QtCore.QEvent.ToolTip and isinstance(obj, QtWidgets.QMenu):
+            a = obj.actionAt(ev.pos())
+            tip = a.property("qe_tip") if a is not None else None
+            if tip:
+                QtWidgets.QToolTip.showText(ev.globalPos(), tip, obj, obj.actionGeometry(a))
+            else:
+                QtWidgets.QToolTip.hideText()
+            return True
+        return False
+
+
+_MENU_TIP_FILTER = None
+
+
+def set_menu_tips(m):
+    """0.9.113 빌드 2 (사용자 11/6 '각 메뉴에도 툴팁, 무슨 기능인지 모르겠다'): 메뉴 항목에 한 줄 설명 (하위 메뉴까지)"""
+    global _MENU_TIP_FILTER
+    if _MENU_TIP_FILTER is None:
+        _MENU_TIP_FILTER = _MenuTipFilter(QtWidgets.QApplication.instance())
+    if not m.property("qe_tips"):
+        m.setProperty("qe_tips", True)
+        m.installEventFilter(_MENU_TIP_FILTER)
+    for a in m.actions():
+        if a.isSeparator():
+            continue
+        tip = funcdesc.tip_for(a.text(), keymap.LABEL)
+        a.setProperty("qe_tip", tip or None)
+        if a.menu() is not None and a.menu() is not m:
+            set_menu_tips(a.menu())
 
 
 def set_menu_icons(m):
@@ -5680,6 +5739,7 @@ class Pane(QtWidgets.QFrame):
             a = show.addAction(lbl, lambda key=key: main.toggle_opt(key) if main is not None else None)
             a.setCheckable(True)
             a.setChecked(OPTS[key])
+        set_menu_tips(m)
 
         # v0.9.103: '탭이 하나면 탭 줄 숨기기' 등 동작 설정은 메뉴줄 '설정'으로 옮김 (사용자 11/5)
 
@@ -6162,6 +6222,43 @@ LAYOUTS = [("1", T("1칸")), ("2h", T("2칸 좌우")), ("2v", T("2칸 상하")),
            ("4l", T("4칸 (왼쪽 3 + 오른쪽 1)")), ("4r", T("4칸 (왼쪽 1 + 오른쪽 3)")),
            ("4t", T("4칸 (위 3 + 아래 1)")), ("4b", T("4칸 (위 1 + 아래 3)")), ("4", T("4칸")),
            ("3h", T("3칸 가로")), ("6", T("6칸 (3 x 2)"))]
+# 0.9.113 (사용자 11/6 '단축키에 기능이 전부 없더라'): 메뉴에만 있던 기능 → 단축키·마우스·기능 검색·My메뉴 공용 기능 표에 더함
+SHOW_OPTS = [("checkboxes", T("항목 확인란")), ("show_ext", T("파일 확장명")),
+             ("date_groups", T("날짜별로 묶기 (오늘·어제·이번 주…)")), ("type_groups", T("형식별로 묶기 (폴더·JPG·PNG…)"))]
+SET_TOGGLES = [("hide_single_tab", T("탭이 하나면 탭 줄 숨기기 (새 탭: Ctrl+T)")), ("empty_click_up", T("빈 곳을 더블클릭하면 상위 폴더로")),
+               ("arc_browse", T("압축 파일(ZIP·7Z·RAR…)을 두 번 누르면 4Dir 안에서 폴더처럼 열기")),
+               ("folder_size", T("폴더 크기 계산 (크기 칸 — 네트워크 드라이브 제외)")), ("keep_favbar", T("메뉴줄을 접어도 즐겨찾기 줄은 보이기"))]
+THEMES = [("system", T("시스템 설정 따름")), ("light", T("밝게 (Light)")), ("dark", T("어둡게 (Dark)"))]
+
+
+def _extra_actions():
+    w = "window"
+    out = [(f"view_{k}", T("보기: {0}").format(lbl), "", w, "view") for k, lbl, _px in VIEW_MODES]
+    out += [(f"show_{k}", T("표시: {0}").format(lbl), "", w, "view") for k, lbl in SHOW_OPTS]
+    out += [(f"sort_{c}", T("정렬: {0}").format(lbl), "", w, "sort") for c, lbl in SORT_COLS]
+    out += [("sort_asc", T("정렬: {0}").format(T("오름차순")), "", w, "sort"), ("sort_desc", T("정렬: {0}").format(T("내림차순")), "", w, "sort")]
+    out += [(f"layout_{k}", T("레이아웃: {0}").format(lbl), "", w, "layout") for k, lbl in LAYOUTS]
+    out += [("layout_custom", T("레이아웃: {0}").format(T("직접 지정 (가로 x 세로)…")), "", w, "layout")]
+    out += [("side_shared", T("탐색 창 공용/칸마다 바꾸기"), "", w, "panel"), ("toggle_favbar", T("즐겨찾기 바 펼치기"), "", w, "panel"),
+            ("toggle_sysmon", T("CPU·GPU 사용량 표시"), "", w, "panel"), ("toggle_on_top", T("항상 위"), "", w, "panel")]
+    out += [("batch_rename", T("이름 일괄 변경…"), "", w, "tools"), ("explorer_check", T("Explorer Check (탐색기 점검)"), "", w, "tools")]
+    out += [("fav_organize", T("즐겨찾기 정리…"), "", w, "fav"), ("fav_import", T("윈도우 탐색기 즐겨찾기 가져오기 (선택)"), "", w, "fav"),
+            ("ws_save", T("현재 창 구성 저장…"), "", w, "fav")]
+    out += [("keys_settings", T("단축키 설정…"), "", w, "settings"), ("color_settings", T("색상 설정…"), "", w, "settings"),
+            ("search_roots", T("검색 범위 설정…"), "", w, "settings")]
+    out += [(f"theme_{k}", T("화면 테마: {0}").format(lbl), "", w, "settings") for k, lbl in THEMES]
+    out += [(f"set_{k}", T("설정: {0}").format(lbl), "", w, "settings") for k, lbl in SET_TOGGLES]
+    out += [("set_allow_multi", T("설정: {0}").format(T("창 여러 개 열기 허용")), "", w, "settings"),
+            ("overlay_order", T("겹침 아이콘 순서 정리 (윈도우)…"), "", w, "settings"),
+            ("export_settings", T("설정 내보내기 (백업 파일로 저장)…"), "", w, "settings"),
+            ("import_settings", T("설정 가져오기 (백업 파일에서 되돌리기)…"), "", w, "settings"),
+            ("guide", T("사용법…"), "", w, "settings"), ("check_update", T("새 버전 확인"), "", w, "settings"),
+            ("open_logs", T("로그 폴더 열기"), "", w, "settings"), ("save_report", T("문제 보고용 로그 저장… (4Dir 폴더의 reports 에 zip)"), "", w, "settings")]
+    return out
+
+
+keymap.register(_extra_actions())
+
 # 레이아웃 고르기 창의 줄 (v0.9.92 사용자 11/4 '맥스처럼 전부 + 버튼 하나 눌러 팝업') — 맥스 순서 7개씩, 마지막 줄 + 직접 지정
 LAYOUT_POPUP_ROWS = [["1", "2h", "2v", "2t", "2b", "3r", "3l"], ["3", "3b", "4l", "4r", "4t", "4b", "4"], ["3h", "6"]]
 # 줄마다 보일 칸 번호. 위 줄 = 0,1,4 / 아래 줄 = 2,3,5 (예전 4칸·6칸 저장 상태와 번호 호환)
@@ -7609,6 +7706,7 @@ class Main(QtWidgets.QMainWindow):
         }
         for i in range(NPANES):
             self.win_actions[f"pane{i + 1}"] = (lambda i=i: self._focus_pane(i))
+        self.win_actions.update(self._extra_win_actions())   # 0.9.113 메뉴에만 있던 기능
         self.shortcuts = []
         self.apply_keys()
         # 마우스 뒤로/앞으로: 창 어디서 눌러도(주소줄·탭줄·사이드바 포함) 그 칸에서 동작.
@@ -8050,11 +8148,12 @@ class Main(QtWidgets.QMainWindow):
             self.pane().add_tab(ftpfs.make(*r), activate=True)
 
     def edit_user_buttons(self):
-        dlg = userbtns.EditDialog(SETTINGS["user_buttons"], self)
+        groups = [(cname, [(a, lbl) for a, lbl, _k, _s in rows]) for _c, cname, rows in keymap.grouped(("view", "window"))]   # 0.9.113 4Dir 기능도
+        dlg = userbtns.EditDialog(SETTINGS["user_buttons"], self, groups=groups)
         dlg.setStyleSheet(self.styleSheet())
         if dlg.exec():
             SETTINGS["user_buttons"] = dlg.result_items()
-            log.info("사용자 단추 %d개 저장", len(SETTINGS["user_buttons"]))
+            log.info("My메뉴 %d개 저장 (4Dir 기능 %d개)", len(SETTINGS["user_buttons"]), sum(1 for x in SETTINGS["user_buttons"] if x.get("action")))
             for w in WINDOWS:
                 w.build_user_buttons()
 
@@ -8075,7 +8174,10 @@ class Main(QtWidgets.QMainWindow):
                 b.setIcon(ic)
             b.setText(item.get("name") or "?")
             b.setToolButtonStyle(Qt.ToolButtonTextBesideIcon if not ic.isNull() else Qt.ToolButtonTextOnly)
-            b.setToolTip(f"{item.get('cmd', '')} {item.get('args', '')}".strip() + "\n" + T("우클릭 = 사용자 단추 편집"))
+            tip = keymap.LABEL.get(item["action"], item["action"]) if item.get("action") else f"{item.get('cmd', '')} {item.get('args', '')}".strip()
+            if item.get("action") and key_text(item["action"]):
+                tip += f"  ({key_text(item['action'])})"
+            b.setToolTip(tip + "\n" + T("우클릭 = My메뉴 편집"))
             b.setContextMenuPolicy(Qt.CustomContextMenu)
             b.customContextMenuRequested.connect(lambda _p: self.edit_user_buttons())
             b.clicked.connect(lambda _c=False, item=item: self.run_user_button(item))
@@ -8083,6 +8185,14 @@ class Main(QtWidgets.QMainWindow):
         self.act_ubar.setVisible(bool(items))
 
     def run_user_button(self, item):
+        if item.get("action"):   # 0.9.113 My메뉴의 4Dir 기능
+            try:
+                if not self.run_named(item["action"]):
+                    self.show_notice(T("⚠ 이 기능은 이 버전에 없습니다: {0}  ✕").format(item.get("name") or item["action"]), ms=6000)
+            except Exception as ex:
+                log.exception("My메뉴 기능 실행 실패 %s", item["action"])
+                self.show_notice(T("⚠ 실행하지 못했습니다: {0}  ✕").format(ex), ms=8000)
+            return
         v = self.pane().view() if self.pane() else None
         files = [p for p in (v.selected_paths() if v else []) if not archives.is_arc(p) and not devices.is_dev(p)]
         folder = v.path if v and os.path.isdir(v.path) else ""
@@ -8351,6 +8461,7 @@ class Main(QtWidgets.QMainWindow):
         top = m.addAction(T("항상 위"), self.toggle_on_top)
         top.setCheckable(True)
         top.setChecked(SETTINGS["on_top"])
+        set_menu_tips(m)
         # v0.9.103: 화면 테마·언어·색상·창 여러 개 열기는 '설정' 메뉴로
 
     def open_settings(self, page=None):
@@ -8428,6 +8539,7 @@ class Main(QtWidgets.QMainWindow):
         m.addAction(T("새 버전 확인"), lambda: start_update_check(self, manual=True))
         m.addAction(T("로그 폴더 열기"), lambda: os.startfile(LOG_DIR))
         m.addAction(T("문제 보고용 로그 저장… (4Dir 폴더의 reports 에 zip)"), self.save_report)
+        set_menu_tips(m)
 
     # ---------------------------------------------------------- CPU·GPU 사용량
     def set_sysmon(self, on, save=True):
@@ -8964,9 +9076,84 @@ class Main(QtWidgets.QMainWindow):
             T(" · 못 읽음 {0}").format(n_err) if n_err else "") + "  ✕", ms=15000)
         self.last_cmp_result = res
 
+    def _extra_win_actions(self):
+        """0.9.113 메뉴에만 있던 기능의 실행 (keymap.register 로 더한 id 와 짝)"""
+        cv = lambda: self.pane().view() if self.pane() else None
+
+        def sort(col=None, order=None):
+            v = cv()
+            if v:
+                v.set_sort(v.model_.sort_col if col is None else col, v.model_.sort_order if order is None else order)
+
+        def fav_import():
+            n = FAV.reimport()
+            self.show_notice(T('윈도우 탐색기 즐겨찾기에서 {0}개 가져옴 (이미 있던 것은 건너뜀)  ✕').format(n))
+        acts = {}
+        for k, _l, _px in VIEW_MODES:
+            acts[f"view_{k}"] = (lambda k=k: self.pane().set_mode(k))
+        for k, _l in SHOW_OPTS:
+            acts[f"show_{k}"] = (lambda k=k: self.toggle_opt(k))
+        for c, _l in SORT_COLS:
+            acts[f"sort_{c}"] = (lambda c=c: sort(col=c))
+        acts["sort_asc"] = lambda: sort(order=Qt.AscendingOrder)
+        acts["sort_desc"] = lambda: sort(order=Qt.DescendingOrder)
+        for k, _l in LAYOUTS:
+            acts[f"layout_{k}"] = (lambda k=k: self.set_layout(k, equalize=True))
+        acts["layout_custom"] = self.open_grid_dialog
+        acts["side_shared"] = lambda: self.set_shared_side(not SETTINGS["side_shared"])
+        acts["toggle_favbar"] = lambda: self.favbar.toggle()
+        acts["toggle_sysmon"] = lambda: self.set_sysmon(not SETTINGS["sysmon"])
+        acts["toggle_on_top"] = lambda: self.toggle_on_top()
+        acts["batch_rename"] = lambda: self.open_batch_rename(cv().selected_paths() if cv() else [])
+        acts["explorer_check"] = lambda: self.open_check()
+        acts["fav_organize"] = lambda: self.open_fav_organizer()
+        acts["fav_import"] = fav_import
+        acts["ws_save"] = lambda: self.save_workspace()
+        acts["keys_settings"] = lambda: self.open_keys()
+        acts["color_settings"] = lambda: self.open_colors()
+        acts["search_roots"] = lambda: self.open_search_roots()
+        for k, _l in THEMES:
+            acts[f"theme_{k}"] = (lambda k=k: self.set_theme_mode(k))
+        for k, _l in SET_TOGGLES:
+            acts[f"set_{k}"] = (lambda k=k: self.toggle_setting(k))
+        acts["set_allow_multi"] = lambda: self.toggle_multi()
+        acts["overlay_order"] = lambda: self.open_overlay_order()
+        acts["export_settings"] = lambda: self.export_settings()
+        acts["import_settings"] = lambda: self.import_settings()
+        acts["guide"] = lambda: self.open_guide()
+        acts["check_update"] = lambda: start_update_check(self, manual=True)
+        acts["open_logs"] = lambda: os.startfile(LOG_DIR)
+        acts["save_report"] = lambda: self.save_report()
+        return acts
+
+    def run_named(self, a):
+        """기능 id 하나 실행 (My메뉴·기능 검색 공용). 처리했으면 True"""
+        sc = keymap.SCOPE.get(a)
+        log.info("기능 실행 %s (%s)", a, sc)
+        if sc == "view":
+            v = self.pane().view() if self.pane() else None
+            return bool(v) and v.run_action(a) is not False
+        fn = self.win_actions.get(a)
+        if fn is None:
+            log.warning("기능 실행: 모르는 기능 %s", a)
+            return False
+        fn()
+        return True
+
     def open_palette(self):
         """명령 찾기 (v0.9.89, Ctrl+Shift+P): 단축키 기능 + 위 메뉴 항목 전부"""
+        dlg = getattr(self, "palette_dlg", None)   # 0.9.113 빌드 2: 따로 창 — 이미 열려 있으면 앞으로
+        try:
+            if dlg is not None and dlg.isVisible():
+                dlg.raise_()
+                dlg.activateWindow()
+                dlg.edit.setFocus()
+                dlg.edit.selectAll()
+                return
+        except RuntimeError:
+            pass
         items, seen = [], set()
+        descs = funcdesc.by_action()
         km = keymap.current(SETTINGS["keys"])
         for a, lbl, _k, sc in keymap.ACTIONS:
             if sc == "view":
@@ -8975,8 +9162,12 @@ class Main(QtWidgets.QMainWindow):
                 fn = self.win_actions[a]
             else:
                 continue
-            items.append((lbl, ", ".join(km.get(a, [])), fn))
+            cat = dict(keymap.CATS).get(keymap.CAT.get(a, "tools"), "")
+            items.append((lbl, ", ".join(km.get(a, [])), fn, cat, descs.get(a, "")))
             seen.add(lbl)
+            if ": " in lbl:   # '보기: 큰 아이콘' 이 있으면 메뉴의 '큰 아이콘' 은 겹치니 뺌
+                seen.add(lbl.split(": ", 1)[1])
+            seen.add(lbl.split(" (")[0].rstrip("…"))
         self._pal_menus = []   # 메뉴 항목을 실행할 때까지 메뉴를 살려 둠
 
         def collect(menu, where):
@@ -8988,7 +9179,7 @@ class Main(QtWidgets.QMainWindow):
                     collect(act.menu(), f"{where} ▸ {name}")
                 elif name and name not in seen:
                     seen.add(name)
-                    items.append((name, where, act.trigger))
+                    items.append((name, "", act.trigger, where, funcdesc.tip_for(name, keymap.LABEL)))
         for title, filler in getattr(self, "top_menus", []):
             mm = QtWidgets.QMenu(self)
             try:
@@ -8998,9 +9189,12 @@ class Main(QtWidgets.QMainWindow):
                 continue
             self._pal_menus.append(mm)
             collect(mm, title)
+        order = {n: i for i, (_c, n) in enumerate(keymap.CATS)}   # 분류 순서대로 (메뉴에서 모은 것은 뒤)
+        items.sort(key=lambda x: order.get(x[3], len(order)))
         dlg = palette.Palette(items, self)
+        dlg.setStyleSheet(self.styleSheet())
         dlg.move(self.mapToGlobal(QtCore.QPoint(max(0, (self.width() - dlg.width()) // 2), 50)))
-        log.info("명령 찾기 열기 (항목 %d개)", len(items))
+        log.info("기능 검색 열기 (항목 %d개)", len(items))
         self.palette_dlg = dlg
         dlg.show()
         dlg.edit.setFocus()
@@ -9463,10 +9657,11 @@ class Main(QtWidgets.QMainWindow):
         sm2 = m.addMenu(T("가상 그룹"))
         sm2.aboutToShow.connect(lambda: self._fill_sets_menu(sm2))
         self._fill_sets_menu(sm2)
-        m.addAction(mlabel(T("사용자 단추 편집…"), "user_buttons"), self.edit_user_buttons)
+        m.addAction(mlabel(T("My메뉴 편집…"), "user_buttons"), self.edit_user_buttons)   # 0.9.113 이름 (사용자 단추 → My메뉴)
         m.addSeparator()
-        m.addAction(mlabel(T("명령 찾기…"), "palette"), self.open_palette)
+        m.addAction(mlabel(T("기능 검색…"), "palette"), self.open_palette)   # 0.9.113 이름 (명령 찾기 → 기능 검색)
         set_menu_icons(m)   # 0.9.111 빌드 4 도구 아이콘
+        set_menu_tips(m)
         # v0.9.104 사용자 11/5: 사용법·로그·문제 보고·새 버전·홈페이지·후원은 설정 창 '정보'로
 
     def export_settings(self, dest=None):

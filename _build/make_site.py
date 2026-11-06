@@ -25,7 +25,7 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.9.3"   # 1.9.3: support 메일 링크에 제목 말머리 [4Dir] / 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
+MAKE_SITE_VER = "1.10.0"   # 1.10.0: 받기를 누르면 다운로드는 바로 시작 + 후원 안내 창(막지 않음, 닫기 가능 — 사용자 11/6 PureRef 처럼) / 1.9.3: 1.9.3: support 메일 링크에 제목 말머리 [4Dir] / 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
 SUPPORT = "support@4dir.net"   # 문제 보고 메일 (1.1.1)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -72,6 +72,38 @@ def latest_release():
     z = os.path.join(REL, f"4Dir_v{ver}.zip")
     sha = open(z + ".sha256.txt", encoding="utf-8-sig").read().split()[0].lower()
     return ver, z, os.path.getsize(z), sha, time.strftime("%Y-%m-%d", time.localtime(os.path.getmtime(z)))
+
+
+THX = {   # 1.10.0 받기 뒤 후원 안내 (제목, 본문, 나중에)
+    "en": ("Your download has started", "4Dir is free and always will be. If it helps you, a small donation keeps the updates coming.", "Maybe later"),
+    "ko": ("다운로드가 시작됐습니다", "4Dir 는 앞으로도 무료입니다. 도움이 됐다면 작은 후원이 다음 업데이트의 힘이 됩니다.", "다음에 할게요"),
+    "zh-CN": ("下载已开始", "4Dir 永久免费。如果它对你有帮助，一点小小的捐助能让更新持续下去。", "以后再说"),
+    "zh-TW": ("下載已開始", "4Dir 永久免費。如果它對你有幫助，一點小小的贊助能讓更新持續下去。", "下次再說"),
+    "ja": ("ダウンロードを開始しました", "4Dir はこれからも無料です。役に立ったなら、少額の寄付が次のアップデートの力になります。", "また今度"),
+    "es": ("La descarga ha comenzado", "4Dir es y seguirá siendo gratis. Si te resulta útil, una pequeña donación mantiene las actualizaciones.", "Quizá luego"),
+    "de": ("Der Download hat begonnen", "4Dir ist und bleibt kostenlos. Wenn es dir hilft, hält eine kleine Spende die Updates am Laufen.", "Vielleicht später"),
+    "fr": ("Le téléchargement a commencé", "4Dir est et restera gratuit. S'il vous aide, un petit don permet de continuer les mises à jour.", "Plus tard"),
+    "pt-BR": ("O download começou", "O 4Dir é e continuará gratuito. Se ele ajuda você, uma pequena doação mantém as atualizações.", "Talvez depois"),
+    "ru": ("Загрузка началась", "4Dir бесплатен и останется таким. Если он вам помогает, небольшое пожертвование поддержит обновления.", "Может, позже"),
+}
+
+
+def thx_box(lang, kofi_url, don_label):
+    """받기 버튼을 누르면 뜨는 후원 안내 (다운로드는 링크 그대로 시작 — 막지 않음)"""
+    if not kofi_url:
+        return ""
+    h, b, later = THX.get(lang, THX["en"])
+    e = html.escape
+    return (f'<div id="thx" class="thx" hidden role="dialog" aria-modal="true" aria-labelledby="thx-h"><div class="thx-in">'
+            f'<button class="thx-x" type="button" aria-label="close" onclick="document.getElementById(\'thx\').hidden=true">✕</button>'
+            f'<h2 id="thx-h">⬇ {e(h)}</h2><p>{e(b)}</p>'
+            f'<p><a class="btn don" href="{e(kofi_url)}" rel="noopener" target="_blank">♥ {e(don_label)}</a> '
+            f'<button class="btn line sm" type="button" onclick="document.getElementById(\'thx\').hidden=true">{e(later)}</button></p>'
+            '</div></div>'
+            "<script>(function(){var b=document.getElementById('dl'),t=document.getElementById('thx');if(!b||!t)return;"
+            "b.addEventListener('click',function(){setTimeout(function(){t.hidden=false},300)});"
+            "t.addEventListener('click',function(ev){if(ev.target===t)t.hidden=true});"
+            "document.addEventListener('keydown',function(ev){if(ev.key==='Escape')t.hidden=true})})();</script>")
 
 
 def page(lang, cfg, rel):
@@ -135,10 +167,11 @@ def page(lang, cfg, rel):
 <section class="hero">
 <h1>{e(t["tagline"])}</h1>
 <p class="sub">{e(t["sub"])}</p>
-<p><a class="btn big" href="{dl_url}">⬇ {e(t["dl"].format(**fmt))}</a></p>
+<p><a id="dl" class="btn big" href="{dl_url}">⬇ {e(t["dl"].format(**fmt))}</a></p>
 <p class="note">{e(t["dlnote"].format(**fmt))}</p>
 {guide_hero(lang)}</section>
 {donate}
+{thx_box(lang, ("https://ko-fi.com/" + cfg["kofi"]) if cfg["kofi"] else "", t["don_h"])}
 <section class="news"><h2>{e(t["new_h"].format(**fmt))}</h2><ul>{news}</ul><p><a href="versions.html">{e(t["hist_link"])} →</a></p></section>
 <figure class="shot"><img src="{up}img/{img}_1.png" alt="{e(t["shot1"])}" width="1280" height="760"><figcaption>{e(t["shot1"])}</figcaption></figure>
 <section><h2>{e(t["feat_h"])}</h2><div class="grid">{feats}</div></section>
@@ -400,6 +433,9 @@ footer{border-top:1px solid var(--line);padding:24px 0;color:var(--mut);font-siz
 .news{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin:8px 0 24px}.news h2{font-size:20px;margin:0 0 8px}.news ul{margin:0 0 8px;padding-left:20px}.news p{margin:0}
 .ver{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:12px 0}.ver ul{margin:8px 0 0;padding-left:20px}
 .vh{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}.vh h3{margin:0;font-size:20px}.date{color:var(--mut);font-size:14px}
+.thx{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}.thx[hidden]{display:none}
+.thx-in{position:relative;background:var(--card);color:inherit;max-width:440px;width:100%;border-radius:12px;padding:22px 24px;box-shadow:0 10px 40px rgba(0,0,0,.3);text-align:center}
+.thx-in h2{margin:0 0 8px;font-size:20px}.thx-x{position:absolute;top:8px;right:10px;border:0;background:none;font-size:18px;cursor:pointer;color:inherit}
 .btn.sm{padding:5px 12px;font-size:14px}a.sha{font-size:13px;color:var(--mut)}.tag{font-size:12px;background:var(--acc);color:#fff;border-radius:10px;padding:1px 8px;vertical-align:middle}
 .fast{font-size:clamp(18px,2.6vw,24px);font-weight:700;margin:0 0 8px}.fast a{color:var(--acc);text-decoration:none}.fast a:hover{text-decoration:underline}
 .nav{margin-left:auto;margin-right:8px;font-weight:700;text-decoration:none;color:var(--acc);border:2px solid var(--acc);border-radius:8px;padding:5px 14px;white-space:nowrap}.nav:hover{background:var(--acc);color:#fff}.nav.app{margin-left:0;margin-right:auto}.nav.app+.nav{margin-left:0}.nav+.nav.board{margin-left:0}.nav.app+.nav.board{margin-left:auto}@media (max-width:600px){.nav{padding:4px 8px;font-size:13px;margin-right:0}.top .wrap{height:auto;flex-wrap:wrap;gap:8px;padding-top:8px;padding-bottom:8px}.lang{font-size:0;margin-left:auto}.lang select{font-size:14px}}

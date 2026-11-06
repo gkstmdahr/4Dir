@@ -66,8 +66,8 @@ ACTIONS = [
     ("same_folder", T("다른 칸 새 탭에 같은 폴더"), "Ctrl+=", "window"),   # 0.9.112 (빌드 5: Alt+= 는 한국어 입력기 전자/반자 전환이라 안 들어옴)
     ("sync_dirs", T("폴더 맞추기 (두 칸)…"), "", "window"),   # 0.9.109 빌드 3
     ("ftp_connect", T("FTP 연결…"), "", "window"),
-    ("user_buttons", T("사용자 단추 편집…"), "", "window"),   # v0.9.89 (토탈 커맨더와 같은 키)
-    ("palette", T("명령 찾기…"), "Ctrl+Shift+P", "window"),
+    ("user_buttons", T("My메뉴 편집…"), "", "window"),   # v0.9.89 · 0.9.113 이름 '사용자 단추' → My메뉴 (사용자 11/6)
+    ("palette", T("기능 검색…"), "Ctrl+Shift+P", "window"),   # 0.9.113 이름 '명령 찾기' → 기능 검색
     ("settings", T("설정…"), "Ctrl+,", "window"),   # v0.9.104 설정 창
     ("ws_latest", T("최근 저장한 창 구성 불러오기"), "", "window"),   # v0.9.98 이슈 #1 (기본 키 없음 — 단축키 설정에서)
     ("ws_slot1", T("지정 1 창 구성 불러오기"), "", "window"),
@@ -79,6 +79,72 @@ ACTIONS = [
 LABEL = {a: lbl for a, lbl, _, _ in ACTIONS}
 SCOPE = {a: sc for a, _, _, sc in ACTIONS}
 DEFAULT = {a: k for a, _, k, _ in ACTIONS}
+
+# 0.9.113 (사용자 11/6 '단축키에 기능이 전부 없더라, 카테고리화해서 정렬'): 분류. 기능 표(ACTIONS)는 4칸 그대로 두고 분류만 따로
+CATS = [("file", T("파일 작업")), ("nav", T("이동")), ("tab", T("탭·창")), ("find", T("찾기·고르기")), ("view", T("보기")),
+        ("sort", T("정렬")), ("layout", T("레이아웃")), ("panel", T("화면 구성")), ("tools", T("도구")),
+        ("fav", T("즐겨찾기·창 구성")), ("settings", T("설정·정보"))]
+CAT = {}
+for _c, _ids in (
+        ("file", "open open_new_tab rename delete delete_perm new_folder copy cut paste send_copy send_move undo copy_path properties sha256"),
+        ("nav", "up back fwd refresh focus_addr same_folder pane1 pane2 pane3 pane4 pane5 pane6"),
+        ("tab", "new_tab close_tab reopen_tab next_tab prev_tab lock_tab new_window"),
+        ("find", "focus_filter global_search global_hotkey select_pattern palette"),
+        ("view", "toggle_hidden toggle_chips quick_preview flat_view"),
+        ("panel", "toggle_preview toggle_nav toggle_chrome toggle_memo"),
+        ("tools", "toggle_calc compare find_dupes view_file file_attrs img_batch space_map sync_dirs ftp_connect user_buttons"),
+        ("fav", "add_fav ws_latest ws_slot1 ws_slot2"),
+        ("settings", "settings")):
+    for _a in _ids.split():
+        CAT[_a] = _c
+
+
+def register(items):
+    """main 이 메뉴에만 있던 기능을 더함 [(id, 이름, 기본 키, 범위, 분류)] — 단축키·마우스·기능 검색·My메뉴가 같이 씀"""
+    for a, lbl, key, sc, cat in items:
+        if a in LABEL:
+            continue
+        ACTIONS.append((a, lbl, key, sc))
+        LABEL[a], SCOPE[a], DEFAULT[a], CAT[a] = lbl, sc, key, cat
+
+
+def stripe_colors(widget):
+    """0.9.113 빌드 3 (사용자 11/6 '흰색과 밝은 파스텔 파란색 번갈아'): (번갈아 줄 색, 분류 제목 줄 색) — 어두운 테마면 어둡게"""
+    dark = widget.palette().base().color().lightness() < 128
+    return ("#232b38", "#2c3e5c") if dark else ("#edf4ff", "#cfe0fa")
+
+
+def cat_combo(parent):
+    """카테고리 고르기 상자 (흰 바탕 — 입력칸처럼 보이게)"""
+    cb = QtWidgets.QComboBox(parent)
+    cb.addItem(T("모든 카테고리"), "")
+    for c, n in CATS:
+        cb.addItem(n, c)
+    dark = parent.palette().base().color().lightness() < 128
+    bg, fg, bd = ("#1e1f22", "#e6e6e6", "#5a5d63") if dark else ("#ffffff", "#1f2328", "#9aa4b2")
+    cb.setStyleSheet(f"QComboBox {{ background:{bg}; color:{fg}; border:1px solid {bd}; border-radius:3px; padding:2px 8px; min-width:150px; }}"
+                     f"QComboBox QAbstractItemView {{ background:{bg}; color:{fg}; }}")
+    return cb
+
+
+def head_item(text, color):
+    h = QtWidgets.QTableWidgetItem(text)
+    f = h.font()
+    f.setBold(True)
+    h.setFont(f)
+    h.setFlags(Qt.ItemIsEnabled)
+    h.setBackground(QtGui.QColor(color))
+    return h
+
+
+def grouped(scopes=None):
+    """[(분류 id, 분류 이름, [(id, 이름, 기본 키, 범위)…])] — 분류 순서대로, 분류 안은 등록 순서"""
+    out = []
+    for c, name in CATS:
+        rows = [x for x in ACTIONS if CAT.get(x[0], "tools") == c and (scopes is None or x[3] in scopes)]
+        if rows:
+            out.append((c, name, rows))
+    return out
 
 
 def norm(seq):
@@ -134,7 +200,7 @@ def builtin_use(c):
 
 def mouse_rows():
     """설정 창 기능 줄 [(id, 이름)] — 우클릭 메뉴 + 단축키 기능 전부(어디서나 단축키 제외)"""
-    return [(MENU, T("우클릭 메뉴"))] + [(a, lbl) for a, lbl, _k, sc in ACTIONS if sc != "global"]
+    return [(MENU, T("우클릭 메뉴"))] + [(a, lbl) for _c, _n, rows in grouped(("view", "window")) for a, lbl, _k, _s in rows]   # 0.9.113 분류 순서
 
 
 def mouse_combo(button, mods):
@@ -215,17 +281,39 @@ class KeyDialog(QtWidgets.QDialog):
         self.search = QtWidgets.QLineEdit()
         self.search.setPlaceholderText(T("🔍 기능 이름이나 키로 찾기 (예: 탭, Ctrl+W)"))
         self.search.textChanged.connect(self._filter)
-        lay.addWidget(self.search)
-        self.tbl = QtWidgets.QTableWidget(len(ACTIONS), 3)
+        frow = QtWidgets.QHBoxLayout()   # 0.9.113 빌드 3: 분류 고르기 (3ds Max 단축키 창의 Group 처럼)
+        frow.addWidget(QtWidgets.QLabel(T("카테고리")))   # 빌드 4 사용자: '분류' → '카테고리', 회색 상자는 누를 것 같지 않음 → 흰 상자
+        self.cat_box = cat_combo(self)
+        self.cat_box.currentIndexChanged.connect(lambda *_: self._filter(self.search.text()))
+        frow.addWidget(self.cat_box)
+        frow.addWidget(self.search, 1)
+        lay.addLayout(frow)
+        groups = grouped()
+        self.tbl = QtWidgets.QTableWidget(sum(len(g[2]) + 1 for g in groups), 3)
         self.tbl.setHorizontalHeaderLabels([T("기능"), T("단축키 1"), T("단축키 2")])
         self.tbl.verticalHeader().setVisible(False)
+        alt, head_bg = stripe_colors(self)
+        self.tbl.setAlternatingRowColors(True)
+        self.tbl.setStyleSheet(f"QTableWidget {{ alternate-background-color: {alt}; }}")
         self.tbl.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
         self.tbl.setColumnWidth(1, 150)
         self.tbl.setColumnWidth(2, 150)
         km = current(custom)
         self.edits = {}
         self.kbase = {}
-        for r, (a, lbl, _d, sc) in enumerate(ACTIONS):
+        self.row_of = {}   # 0.9.113 기능 → 표 줄 (분류 제목 줄이 끼어 있음)
+        self.head_rows = {}   # 분류 → 제목 줄
+        order, r = [], 0
+        for c, cname, rows in groups:
+            self.tbl.setItem(r, 0, head_item(cname, head_bg))
+            self.tbl.setSpan(r, 0, 1, 3)
+            self.head_rows[c] = (r, [x[0] for x in rows])
+            r += 1
+            for x in rows:
+                order.append((r, x))
+                r += 1
+        for r, (a, lbl, _d, sc) in order:
+            self.row_of[a] = r
             self.kbase[a] = lbl + {"window": "", "view": T("  (파일 목록에서)"), "global": T("  (어디서나)")}[sc]
             it = QtWidgets.QTableWidgetItem(self.kbase[a])
             it.setFlags(Qt.ItemIsEnabled)
@@ -307,9 +395,23 @@ class KeyDialog(QtWidgets.QDialog):
         lb.setWordWrap(True)
         lay.addWidget(lb)
         rows = mouse_rows()
-        self.mtbl = QtWidgets.QTableWidget(len(rows), 3)
+        frow = QtWidgets.QHBoxLayout()   # 0.9.113 빌드 4 (사용자: 마우스쪽은 키보드와 다르다) — 같은 모양
+        frow.addWidget(QtWidgets.QLabel(T("카테고리")))
+        self.mcat_box = cat_combo(self)
+        self.mcat_box.currentIndexChanged.connect(lambda *_: self._mfilter())
+        frow.addWidget(self.mcat_box)
+        self.msearch = QtWidgets.QLineEdit()
+        self.msearch.setPlaceholderText(T("🔍 기능 이름으로 찾기"))
+        self.msearch.textChanged.connect(lambda *_: self._mfilter())
+        frow.addWidget(self.msearch, 1)
+        lay.addLayout(frow)
+        mgroups = grouped(("view", "window"))
+        self.mtbl = QtWidgets.QTableWidget(1 + sum(len(g[2]) + 1 for g in mgroups), 3)
         self.mtbl.setHorizontalHeaderLabels([T("기능"), T("마우스 1"), T("마우스 2")])
         self.mtbl.verticalHeader().setVisible(False)
+        alt, head_bg = stripe_colors(self)
+        self.mtbl.setAlternatingRowColors(True)
+        self.mtbl.setStyleSheet(f"QTableWidget {{ alternate-background-color: {alt}; }}")
         self.mtbl.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)   # 기능 칸(알림 포함)이 남는 폭을 씀
         for c in (1, 2):
             self.mtbl.setColumnWidth(c, 200)
@@ -318,7 +420,18 @@ class KeyDialog(QtWidgets.QDialog):
         for c, a in sorted(mouse_map(mouse).items(), key=lambda x: (x[0].count("+"), x[0])):
             by_act.setdefault(a, []).append(c)
         self.medits = {}
-        for r, (a, lbl) in enumerate(rows):
+        self.mrow_of, self.mhead_rows = {}, {}
+        order, r = [(0, rows[0])], 1   # 맨 위 = 우클릭 메뉴 (분류 없음)
+        for c, cname, grows in mgroups:
+            self.mtbl.setItem(r, 0, head_item(cname, head_bg))
+            self.mtbl.setSpan(r, 0, 1, 3)
+            self.mhead_rows[c] = (r, [x[0] for x in grows])
+            r += 1
+            for x in grows:
+                order.append((r, (x[0], x[1])))
+                r += 1
+        for r, (a, lbl) in order:
+            self.mrow_of[a] = r
             it = QtWidgets.QTableWidgetItem(lbl)
             it.setFlags(Qt.ItemIsEnabled)
             self.mtbl.setItem(r, 0, it)
@@ -542,7 +655,7 @@ class KeyDialog(QtWidgets.QDialog):
         for k, acts in conflicts(km):
             for a in acts:
                 notes.setdefault(a, []).append(T("{0}: '{1}'와 겹침").format(k, ", ".join(LABEL[o] for o in acts if o != a)))
-        for r, (a, *_x) in enumerate(ACTIONS):
+        for a, r in self.row_of.items():
             _mark(self.tbl.item(r, 0), self.kbase[a], list(dict.fromkeys(notes.get(a, []))))
             for e in self.edits[a]:   # Qt 기본 'Press shortcut' 대신 — 키를 바꾸거나 지울 때마다 Qt 가 영어로 되돌려서 매번 (실측)
                 le = e.findChild(QtWidgets.QLineEdit)
@@ -579,8 +692,8 @@ class KeyDialog(QtWidgets.QDialog):
             for c in cs:
                 if builtin_use(c) and MOUSE_DEFAULT.get(c) != a and not any(m[0] == c and m[2] == a for m in self._mmv):
                     notes.setdefault(a, []).append(T("{0}: 원래 {1}").format(combo_label(c), builtin_use(c)))
-        for r, a in enumerate(self.medits):
-            _mark(self.mtbl.item(r, 0), self.mbase[a], list(dict.fromkeys(notes.get(a, []))))
+        for a in self.medits:
+            _mark(self.mtbl.item(self.mrow_of[a], 0), self.mbase[a], list(dict.fromkeys(notes.get(a, []))))
 
     def mouse_collect(self):
         """설정에 넣을 것 — 기본과 다른 것만 ({조합: 기능}, 기본 조합을 뺐으면 "")"""
@@ -589,11 +702,26 @@ class KeyDialog(QtWidgets.QDialog):
         out.update({c: "" for c in MOUSE_DEFAULT if c not in now})
         return out
 
+    def _mfilter(self):
+        """마우스 탭 찾기 + 카테고리 (키보드 탭과 같음)"""
+        t = self.msearch.text().strip().lower()
+        cat = self.mcat_box.currentData()
+        for a, r in self.mrow_of.items():
+            lbl = self.mbase.get(a, "").lower()
+            combos = " ".join(e.combo for e in self.medits[a]).lower()
+            hide = (bool(t) and t not in lbl and t not in combos) or (bool(cat) and (a == MENU or CAT.get(a, "tools") != cat))
+            self.mtbl.setRowHidden(r, hide)
+        for c, (hr, ids) in self.mhead_rows.items():
+            self.mtbl.setRowHidden(hr, all(self.mtbl.isRowHidden(self.mrow_of[a]) for a in ids))
+
     def _filter(self, t):
         t = t.strip().lower()
-        for r, (a, lbl, _d, _s) in enumerate(ACTIONS):
+        cat = self.cat_box.currentData() if hasattr(self, "cat_box") else ""
+        for a, lbl, _d, _s in ACTIONS:
             keys = " ".join(e.keySequence().toString() for e in self.edits[a]).lower()
-            self.tbl.setRowHidden(r, bool(t) and t not in lbl.lower() and t not in keys)
+            self.tbl.setRowHidden(self.row_of[a], (bool(t) and t not in lbl.lower() and t not in keys) or (bool(cat) and CAT.get(a, "tools") != cat))
+        for c, (hr, ids) in self.head_rows.items():   # 0.9.113 분류 안이 다 숨으면 제목도
+            self.tbl.setRowHidden(hr, all(self.tbl.isRowHidden(self.row_of[a]) for a in ids))
 
     def _defaults(self):
         self._busy = True   # 한꺼번에 바꿈 → 되돌리기 한 번에 전부

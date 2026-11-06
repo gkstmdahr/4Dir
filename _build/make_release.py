@@ -402,7 +402,7 @@ def main():
     chk = subprocess.run([os.path.join(rt, "python.exe"), "-B", "-c",   # -B: 배포 폴더에 __pycache__ 안 남김
                           "import sys;sys.path.insert(0,r'%s');"
                           "from PySide6 import QtCore,QtGui,QtWidgets,QtNetwork;import win32gui,win32con,pythoncom;"
-                          "from win32com.shell import shell;import carryover,dupes,archives,video,calc,mediaedit,toolicons,pinfix,fileicons,hexview,syncdirs,winhook,imgbatch,spacemap,tags,fileattrs,userbtns,ftpfs,win32cred,i18n,shellops,sysmon,favorites,session,ui_parts,keymap,search_index,explorer_check,svnstat,batchrename,guide,favorg,thumbs,overlays,overlayorder,imgconvert;"
+                          "from win32com.shell import shell;import carryover,dupes,archives,video,calc,mediaedit,toolicons,pinfix,fileicons,funcdesc,hexview,syncdirs,winhook,imgbatch,spacemap,tags,fileattrs,userbtns,ftpfs,win32cred,i18n,shellops,sysmon,favorites,session,ui_parts,keymap,search_index,explorer_check,svnstat,batchrename,guide,favorg,thumbs,overlays,overlayorder,imgconvert;"
                           "print('모듈 OK', sys.version.split()[0], QtCore.qVersion(), search_index.__file__)" % os.path.join(out, "bin")],
                          capture_output=True, text=True, env=env, encoding="utf-8", errors="replace")
     log(f"실행 확인 rc={chk.returncode} {chk.stdout.strip()} {chk.stderr.strip()[-500:]}")
