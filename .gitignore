@@ -16,5 +16,6 @@ _release/
 _build/cache/
 _build/*_log.txt
 _build/corp_words.txt
+bin/gdrive_client.json
 _site/out/
 out/

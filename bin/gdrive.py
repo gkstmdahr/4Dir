@@ -28,7 +28,7 @@ import urllib.error
 import webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-GDRIVE_VER = "1.0.0"
+GDRIVE_VER = "1.1.0"   # 1.1.0 (0.9.115): 드라이브 권한 빠진 로그인 알아채기
 log = logging.getLogger("QE.gdrive")
 SCOPES = "https://www.googleapis.com/auth/drive.appdata openid email"
 ENDPOINTS = {
@@ -47,6 +47,10 @@ _LOCK = threading.Lock()
 
 class GDriveError(Exception):
     pass
+
+
+DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.appdata"
+NO_DRIVE = "no_drive_permission"   # 0.9.115: 구글 로그인 화면에서 드라이브 권한 체크를 끄고 넘어감 (11/7 실제 발생 — 받은 권한 email openid 만)
 
 
 # ---------------------------------------------------------------- 앱 등록 정보·열쇠 보관
@@ -107,6 +111,8 @@ def _req(method, url, data=None, headers=None, raw=False, timeout=TIMEOUT):
     except urllib.error.HTTPError as ex:
         msg = ex.read().decode("utf-8", "replace")[:400]
         log.warning("구글 응답 오류 %s %s → %s %s", method, url.split("?")[0], ex.code, msg)
+        if ex.code == 403 and ("insufficientPermissions" in msg or "insufficient authentication scopes" in msg):
+            raise GDriveError(NO_DRIVE)
         raise GDriveError(f"HTTP {ex.code}: {msg}")
     except (urllib.error.URLError, socket.timeout, OSError) as ex:
         log.warning("구글 연결 실패 %s %s : %s", method, url.split("?")[0], ex)
@@ -177,6 +183,15 @@ def login(bin_dir, opener=None, wait=300, done_html="<h2>4Dir: OK</h2>", fail_ht
                                      "grant_type": "authorization_code", "redirect_uri": redirect})
     if not tok.get("refresh_token"):
         raise GDriveError("no refresh token")
+    granted = tok.get("scope")
+    log.info("구글 로그인 받은 권한: %s", granted)
+    if granted is not None and DRIVE_SCOPE not in granted.split():
+        log.warning("구글 로그인: 드라이브 권한 없이 넘어옴 → 허가 취소, 저장 안 함")
+        try:
+            _form(ENDPOINTS["revoke"], {"token": tok["refresh_token"]})
+        except GDriveError:
+            pass
+        raise GDriveError(NO_DRIVE)
     email = _email_from_id_token(tok.get("id_token", ""))
     _cred_write({"refresh": tok["refresh_token"], "email": email})
     with _LOCK:

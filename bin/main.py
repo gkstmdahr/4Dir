@@ -10,12 +10,13 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.114"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_VERSION = "0.9.115"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
 QE_BUILD = 4             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
 import json
+import glob   # 0.9.115 기록 지우기
 import re
 import time
 import stat
@@ -687,6 +688,82 @@ if datadir.PACKAGED:   # 0.9.114 빌드 3: 스토어판과 압축판이 같이 �
 SEARCH_PREFIX = "🔎 "   # 검색 결과 탭의 '경로' 표시: "🔎 검색어" (전체 검색) / "🔎 검색어 @ 폴더" (그 폴더 아래 찾기)
 SEARCH = None          # search_index.SearchIndex (첫 창이 만듦, 모든 창이 같이 씀)
 WINDOWS = []           # 열린 4Dir 창들 (Main). 순서 = 마지막에 쓴 창이 맨 뒤
+
+
+def window_title():
+    """0.9.115 (사용자 11/7 '제목 표시줄에 구글 로그인 상태인지 게스트인지'): 연결됨 = ☁ 메일 / 안 됨 = 게스트.
+    구글 연결 준비(gdrive_client.json)가 없는 판이면 버전만"""
+    t = f"4Dir v{QE_VERSION}"
+    try:
+        if gdrive.client(BIN_DIR) is None:
+            return t
+        acct = gdrive.account()
+    except Exception:
+        log.exception("제목: 구글 연결 상태 읽기 실패")
+        return t
+    return t + ("   ·   ☁ " + acct + " " + T("백업 중") if acct else "   ·   " + T("게스트 (구글 백업 안 함)"))
+
+
+def gdrive_offer(w):
+    """처음 한 번만: 구글 드라이브 백업 권유 창 (로그인 안 해도 모두 쓸 수 있음을 함께)"""
+    try:
+        if SETTINGS["gdrive_asked"] or gdrive.client(BIN_DIR) is None or gdrive.account():
+            SETTINGS["gdrive_asked"] = True
+            return None
+    except Exception:
+        log.exception("구글 백업 권유: 상태 읽기 실패")
+        return None
+    SETTINGS["gdrive_asked"] = True
+    dlg = QtWidgets.QDialog(w)
+    dlg.setWindowTitle(T("구글 드라이브 자동 백업 (선택)"))
+    dlg.setAttribute(Qt.WA_DeleteOnClose)
+    lay = QtWidgets.QVBoxLayout(dlg)
+    lay.setContentsMargins(20, 18, 20, 14)
+    lay.setSpacing(12)
+    head = QtWidgets.QLabel(T("설정·메모를 구글 드라이브에 백업할까요?"))
+    f = head.font()
+    f.setPointSizeF(f.pointSizeF() + 2)
+    f.setBold(True)
+    head.setFont(f)
+    lay.addWidget(head)
+    # 빌드 3 (사용자 11/7 '줄바꿈하고 간결하게, 개발자에게는 아무것도 전송되지 않습니다 맨 앞에 ### 빨간 글씨')
+    body = QtWidgets.QLabel("\n".join("• " + T(x) for x in (
+        "로그인하지 않아도 4Dir 는 모두 쓸 수 있습니다.",
+        "설정·메모·즐겨찾기·태그는 이 PC 에만 있어서, 포맷하거나 PC 를 바꾸면 사라집니다.",
+        "로그인하면 하루 한 번 내 구글 드라이브에 백업하고, 새 PC 에서 되살립니다.")))
+    body.setWordWrap(True)
+    body.setFixedWidth(460)
+    lay.addWidget(body)
+    red = QtWidgets.QLabel("### " + T("개발자에게는 아무것도 전송되지 않습니다."))
+    red.setStyleSheet("color:#d32f2f; font-weight:bold;")
+    lay.addWidget(red)
+    tip = QtWidgets.QLabel(T("구글 화면에서 '구글 드라이브' 항목에 꼭 체크하세요.") + "\n" + T("나중에 하려면: 설정 → 백업"))
+    tip.setWordWrap(True)
+    tip.setStyleSheet("color:#6b7480;")
+    lay.addWidget(tip)
+    row = QtWidgets.QHBoxLayout()
+    row.addStretch(1)
+    later = QtWidgets.QPushButton(T("나중에"))
+    go = QtWidgets.QPushButton(T("구글로 로그인…"))
+    go.setDefault(True)
+    row.addWidget(later)
+    row.addWidget(go)
+    lay.addLayout(row)
+    later.clicked.connect(lambda: (log.info("구글 백업 권유: 나중에"), dlg.close()))
+    go.clicked.connect(lambda: (log.info("구글 백업 권유: 로그인"), dlg.close(), w.gdrive_login()))
+    log.info("구글 백업 권유 창 (처음 한 번)")
+    dlg.show()
+    return dlg
+
+
+def refresh_titles():
+    t = window_title()
+    for w in list(WINDOWS):
+        try:
+            w.setWindowTitle(t)
+        except RuntimeError:
+            pass
+    log.info("제목 표시줄: %s", t)
 SSIG = None            # 검색 색인 알림 (모든 창이 받음)
 CLOSED = []            # 다른 창이 남은 채 닫힌 창들 [(시각, 연 순서, 상태)] — 한꺼번에 닫힐 때 원래 메인 고르기
 _ORDER = [0]           # 창을 연 순서 번호
@@ -4146,6 +4223,7 @@ def open_fav_entry(path, go, notice=None):
 
 
 favorg.ITEM_ICON = fav_icon   # 즐겨찾기 정리 창도 같은 아이콘
+session.PRIVATE = lambda: bool(SETTINGS["private_mode"])   # 0.9.115 기록 안 남기기
 
 
 # ================================================================ 사이드바 (탐색 창)
@@ -7016,6 +7094,9 @@ class SettingsDialog(QtWidgets.QDialog):
                     lambda: SETTINGS["resume_after_reboot"], lambda: SETTINGS.__setitem__("resume_after_reboot", not SETTINGS["resume_after_reboot"]))
         self._set(lay, "hide_single_tab", T("탭이 하나면 탭 줄 숨기기 (새 탭: Ctrl+T)"))
         self._set(lay, "keep_favbar", T("메뉴줄을 접어도 즐겨찾기 줄은 보이기"))
+        self._check(lay, "private_mode", T("기록 안 남기기 — 열었던 폴더·탭을 저장하지 않고, 켤 때마다 처음 폴더로"),
+                    lambda: SETTINGS["private_mode"], m.toggle_private,
+                    T("켜면 지금까지 저장된 창 상태와 자동 기록도 지웁니다. 즐겨찾기·메모·설정은 그대로입니다"))
         self._sub(lay, T("도움말"))
         self._set(lay, "tooltips", T("풍선 도움말(툴팁) 보이기 — 단추에 마우스를 올리면 설명"))
         self._sub(lay, T("윈도우"))   # 0.9.109
@@ -7718,7 +7799,8 @@ class Main(QtWidgets.QMainWindow):
         _ORDER[0] += 1
         self.order = _ORDER[0]
         self.setAttribute(Qt.WA_DeleteOnClose)   # 창이 여러 개일 때 닫은 창 메모리 반환
-        self.setWindowTitle(f"4Dir v{QE_VERSION}")
+        self.setWindowTitle(window_title())
+        self.gdrive_changed.connect(refresh_titles)   # 0.9.115 제목 표시줄에 구글 백업 연결 상태
         self.resize(1400, 850)
         self.layout_mode = "4"
         self.crashed = crashed
@@ -9870,6 +9952,12 @@ class Main(QtWidgets.QMainWindow):
 
     def _gd_done(self, kind, r, err):
         self._gd_busy = None
+        if err == gdrive.NO_DRIVE:   # 0.9.115 구글 화면에서 드라이브 권한 체크를 끄고 넘어감 → 연결 풀고 다시 로그인 안내
+            log.warning("구글 드라이브 권한 없음 (%s) → 연결 끊고 다시 로그인 안내", kind)
+            gdrive._cred_delete()
+            self.show_notice(T("⚠ 구글 드라이브 권한이 빠졌습니다. 다시 '구글로 로그인'을 누르고, 구글 화면에서 '구글 드라이브' 항목에 체크한 뒤 계속을 누르세요  ✕"), sticky=True)
+            self.gdrive_changed.emit()
+            return
         if kind == "login":
             if err:
                 self.show_notice(T("⚠ 구글 로그인을 마치지 못했습니다: {0}  ✕").format(err), ms=10000)
@@ -10053,6 +10141,17 @@ eports.
         if not ok:
             QtWidgets.QApplication.clipboard().setText(SUPPORT_EMAIL)
             self.show_notice(T("메일 프로그램을 열지 못했습니다. 주소를 복사했습니다: {0} — 쓰시는 메일에서 zip 을 첨부해 보내 주세요  ✕").format(SUPPORT_EMAIL), sticky=True)
+
+    def toggle_private(self):
+        on = not SETTINGS["private_mode"]
+        SETTINGS["private_mode"] = on
+        log.info("기록 안 남기기 %s", "켬" if on else "끔")
+        if on:
+            n = clear_history()
+            self.show_notice(T("기록 안 남기기를 켰습니다 — 저장된 창 상태·자동 기록 {0}개를 지웠습니다. 다음부터 처음 폴더로 시작합니다  ✕").format(n), ms=8000)
+        else:
+            self.save_state()
+            self.show_notice(T("기록 안 남기기를 껐습니다 — 다음부터 지난번 폴더·탭으로 다시 엽니다  ✕"), ms=6000)
 
     def open_fav(self, path):
         new_tab = bool(QtWidgets.QApplication.keyboardModifiers() & Qt.ControlModifier)
@@ -10269,6 +10368,8 @@ eports.
     def save_state(self, st=None):
         if st is None and SESSION_END["on"]:
             return   # 윈도우 종료 중: 창 전부 묶음을 이미 저장함 → 남은 창의 자동 저장이 덮어쓰지 않게
+        if SETTINGS["private_mode"]:
+            return   # 0.9.115 기록 안 남기기: 열었던 폴더·탭·창 위치를 저장 안 함 (사용자 메일 11/7)
         st = st or self.collect_state()
         try:
             tmp = STATE_FILE + ".tmp"
@@ -10282,7 +10383,9 @@ eports.
 
     def load_state(self):
         st = {}
-        if os.path.exists(STATE_FILE):
+        if SETTINGS["private_mode"]:
+            log.info("기록 안 남기기 켜짐 → 지난 상태 안 읽음 (처음 폴더로 시작)")
+        elif os.path.exists(STATE_FILE):
             try:
                 with open(STATE_FILE, encoding="utf-8") as f:
                     st = json.load(f)
@@ -10727,11 +10830,42 @@ def hand_off_to_running(arg_path, new_window=False):
     return True
 
 
+def clear_history():
+    """기록 안 남기기를 켤 때: 지난 창 상태(4Dir_state.json)와 자동 기록(sessions\\session_*.json) 지움. 지운 개수"""
+    n = 0
+    for p in [STATE_FILE, STATE_FILE + ".tmp"] + glob.glob(os.path.join(session.SESS_DIR, "session_*.json")):
+        try:
+            if os.path.exists(p):
+                os.remove(p)
+                n += 1
+        except OSError:
+            log.exception("기록 지우기 실패 %s", p)
+    log.info("기록 지움 %d개 (창 상태·자동 기록)", n)
+    return n
+
+
+def neutral_cwd():
+    """0.9.115 (사용자 메일 11/7): 실행기가 4Dir 설치 폴더를 작업 폴더로 넘겨줌 → 4Dir 가 띄우는 프로그램(우클릭 메뉴 처리기가 띄운
+    AcroTray 등)이 그대로 물려받아 4Dir 를 닫아도 설치 폴더를 잡고 있음(이름 바꾸기·옮기기 안 됨).
+    윈도우 탐색기처럼 System32 로 옮김 (모든 경로는 절대 경로라 영향 없음)"""
+    before = os.getcwd()
+    for d in (os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "System32"), os.path.expanduser("~")):
+        try:
+            os.chdir(d)
+            log.info("작업 폴더 %s → %s (띄우는 프로그램이 설치 폴더를 잡지 않게)", before, d)
+            return d
+        except OSError:
+            continue
+    log.warning("작업 폴더 옮기기 실패 (그대로 %s)", before)
+    return None
+
+
 def main():
     log.info("=" * 60)
     log.info("데이터 폴더 %s (스토어판 %s)", DATA_DIR, datadir.PACKAGED)
     log.info("4Dir v%s (빌드 %s) 시작 python=%s pid=%d", QE_VERSION, QE_BUILD, sys.version.split()[0], os.getpid())
-    arg_path = sys.argv[1] if len(sys.argv) > 1 and os.path.isdir(sys.argv[1]) else None
+    arg_path = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 and os.path.isdir(sys.argv[1]) else None
+    neutral_cwd()
     try:  # 작업표시줄에 파이썬 아이콘 대신 4Dir 아이콘이 보이게
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_ID)
     except Exception:
@@ -10804,6 +10938,10 @@ def main():
     if os.path.exists(os.path.join(DATA_DIR, memo.FILE)):   # 빌드 13: 메모 알림은 메모 창을 안 열어도 울림
         QtCore.QTimer.singleShot(3000, memo_store)
     QtCore.QTimer.singleShot(10000, lambda: WINDOWS and start_update_check(WINDOWS[0]))   # 새 버전 확인 (하루 한 번, 뒤에서)
+    first_run = not SETTINGS["guide_shown"]
+    # 0.9.115 (사용자 11/7): 처음 한 번 '구글 드라이브에 백업할까요?' 권유 (필수 아님, 나중에 = 설정 → 백업). 사용법 창이 뜨는 첫 실행이면 그 뒤에
+    if not SETTINGS["gdrive_asked"] and not os.environ.get("QE_NO_PROMPT"):
+        QtCore.QTimer.singleShot(9000 if first_run else 2500, lambda: WINDOWS and gdrive_offer(WINDOWS[0]))
     if not SETTINGS["guide_shown"]:   # 처음 실행 → 사용법 한 번 (다시 보기: 도구 > 사용법)
         def first_guide():
             SETTINGS["guide_shown"] = True

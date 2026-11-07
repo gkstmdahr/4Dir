@@ -1483,5 +1483,20 @@
  "⚠ 즐겨찾기 파일을 찾을 수 없습니다 (옮겨졌거나 지워짐): {0}  ✕": "⚠ Favorite file not found (moved or deleted): {0}  ✕",
  "{0}\n클릭: 연결 프로그램으로 열기 · 끌어서 순서 변경 · 우클릭: 이름/삭제": "{0}\nClick: open with default app · Drag to reorder · Right-click: rename/delete",
  "  폴더·파일을 여기로 끌어다 놓기 · 우클릭 > ★ 4Dir 즐겨찾기에 추가 · Ctrl+D": "  Drag folders or files here · Right-click > ★ Add to 4Dir Favorites · Ctrl+D",
- "파일 위치 열기": "Open file location"
+ "파일 위치 열기": "Open file location",
+ "⚠ 구글 드라이브 권한이 빠졌습니다. 다시 '구글로 로그인'을 누르고, 구글 화면에서 '구글 드라이브' 항목에 체크한 뒤 계속을 누르세요  ✕": "⚠ Google Drive permission is missing. Click 'Sign in with Google' again, tick the 'Google Drive' item on Google's screen, then Continue  ✕",
+ "백업 중": "backed up",
+ "게스트 (구글 백업 안 함)": "Guest (no Google backup)",
+ "설정·메모를 구글 드라이브에 백업할까요?": "Back up your settings and notes to Google Drive?",
+ "구글 화면에서 '구글 드라이브' 항목에 꼭 체크해 주세요. 나중에 하려면 설정 → 백업.": "On Google's screen, be sure to tick the 'Google Drive' item. To do this later: Settings → Backup.",
+ "로그인하지 않아도 4Dir 는 모두 쓸 수 있습니다.": "You can use all of 4Dir without signing in.",
+ "설정·메모·즐겨찾기·태그는 이 PC 에만 있어서, 포맷하거나 PC 를 바꾸면 사라집니다.": "Settings, notes, favorites and tags live only on this PC — they are lost if you reinstall Windows or change PCs.",
+ "로그인하면 하루 한 번 내 구글 드라이브에 백업하고, 새 PC 에서 되살립니다.": "Sign in to back them up to your Google Drive once a day and restore them on a new PC.",
+ "개발자에게는 아무것도 전송되지 않습니다.": "Nothing is sent to the developer.",
+ "구글 화면에서 '구글 드라이브' 항목에 꼭 체크하세요.": "On Google's screen, be sure to tick 'Google Drive'.",
+ "나중에 하려면: 설정 → 백업": "To do it later: Settings → Backup",
+ "기록 안 남기기 — 열었던 폴더·탭을 저장하지 않고, 켤 때마다 처음 폴더로": "Private mode — don't save opened folders and tabs; start from the default folder each time",
+ "켜면 지금까지 저장된 창 상태와 자동 기록도 지웁니다. 즐겨찾기·메모·설정은 그대로입니다": "Turning it on also deletes the saved window state and automatic history. Favorites, notes and settings are kept",
+ "기록 안 남기기를 켰습니다 — 저장된 창 상태·자동 기록 {0}개를 지웠습니다. 다음부터 처음 폴더로 시작합니다  ✕": "Private mode on — deleted {0} saved window state / history files. 4Dir will start from the default folder from now on  ✕",
+ "기록 안 남기기를 껐습니다 — 다음부터 지난번 폴더·탭으로 다시 엽니다  ✕": "Private mode off — 4Dir will reopen your last folders and tabs from now on  ✕"
 }

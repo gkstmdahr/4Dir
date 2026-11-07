@@ -1483,5 +1483,20 @@
  "⚠ 즐겨찾기 파일을 찾을 수 없습니다 (옮겨졌거나 지워짐): {0}  ✕": "⚠ Favoritendatei nicht gefunden (verschoben oder gelöscht): {0}  ✕",
  "{0}\n클릭: 연결 프로그램으로 열기 · 끌어서 순서 변경 · 우클릭: 이름/삭제": "{0}\nKlick: mit Standard-App öffnen · Ziehen zum Sortieren · Rechtsklick: Umbenennen/Löschen",
  "  폴더·파일을 여기로 끌어다 놓기 · 우클릭 > ★ 4Dir 즐겨찾기에 추가 · Ctrl+D": "  Ordner oder Dateien hierher ziehen · Rechtsklick > ★ Zu 4Dir-Favoriten hinzufügen · Strg+D",
- "파일 위치 열기": "Dateispeicherort öffnen"
+ "파일 위치 열기": "Dateispeicherort öffnen",
+ "⚠ 구글 드라이브 권한이 빠졌습니다. 다시 '구글로 로그인'을 누르고, 구글 화면에서 '구글 드라이브' 항목에 체크한 뒤 계속을 누르세요  ✕": "⚠ Google Drive-Berechtigung fehlt. Klicken Sie erneut auf „Mit Google anmelden“, setzen Sie auf der Google-Seite das Häkchen bei „Google Drive“ und klicken Sie auf Weiter  ✕",
+ "백업 중": "Sicherung aktiv",
+ "게스트 (구글 백업 안 함)": "Gast (keine Google-Sicherung)",
+ "설정·메모를 구글 드라이브에 백업할까요?": "Einstellungen und Notizen in Google Drive sichern?",
+ "구글 화면에서 '구글 드라이브' 항목에 꼭 체크해 주세요. 나중에 하려면 설정 → 백업.": "Setzen Sie auf der Google-Seite unbedingt das Häkchen bei „Google Drive“. Später: Einstellungen → Sicherung.",
+ "로그인하지 않아도 4Dir 는 모두 쓸 수 있습니다.": "Sie können 4Dir ohne Anmeldung vollständig nutzen.",
+ "설정·메모·즐겨찾기·태그는 이 PC 에만 있어서, 포맷하거나 PC 를 바꾸면 사라집니다.": "Einstellungen, Notizen, Favoriten und Tags liegen nur auf diesem PC – bei Neuinstallation oder PC-Wechsel gehen sie verloren.",
+ "로그인하면 하루 한 번 내 구글 드라이브에 백업하고, 새 PC 에서 되살립니다.": "Nach der Anmeldung einmal täglich in Ihrem Google Drive sichern und auf einem neuen PC wiederherstellen.",
+ "개발자에게는 아무것도 전송되지 않습니다.": "An den Entwickler wird nichts gesendet.",
+ "구글 화면에서 '구글 드라이브' 항목에 꼭 체크하세요.": "Setzen Sie auf der Google-Seite unbedingt das Häkchen bei „Google Drive“.",
+ "나중에 하려면: 설정 → 백업": "Später: Einstellungen → Sicherung",
+ "기록 안 남기기 — 열었던 폴더·탭을 저장하지 않고, 켤 때마다 처음 폴더로": "Privatmodus — geöffnete Ordner und Tabs nicht speichern, jedes Mal im Startordner beginnen",
+ "켜면 지금까지 저장된 창 상태와 자동 기록도 지웁니다. 즐겨찾기·메모·설정은 그대로입니다": "Beim Einschalten werden auch gespeicherter Fensterzustand und automatischer Verlauf gelöscht. Favoriten, Notizen und Einstellungen bleiben",
+ "기록 안 남기기를 켰습니다 — 저장된 창 상태·자동 기록 {0}개를 지웠습니다. 다음부터 처음 폴더로 시작합니다  ✕": "Privatmodus an — {0} gespeicherte Fensterzustände/Verlaufsdateien gelöscht. 4Dir startet ab jetzt im Startordner  ✕",
+ "기록 안 남기기를 껐습니다 — 다음부터 지난번 폴더·탭으로 다시 엽니다  ✕": "Privatmodus aus — 4Dir öffnet ab jetzt wieder die letzten Ordner und Tabs  ✕"
 }

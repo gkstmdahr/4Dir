@@ -1483,5 +1483,20 @@
  "⚠ 즐겨찾기 파일을 찾을 수 없습니다 (옮겨졌거나 지워짐): {0}  ✕": "⚠ Arquivo favorito não encontrado (movido ou excluído): {0}  ✕",
  "{0}\n클릭: 연결 프로그램으로 열기 · 끌어서 순서 변경 · 우클릭: 이름/삭제": "{0}\nClique: abrir com o app padrão · Arraste para reordenar · Clique direito: renomear/excluir",
  "  폴더·파일을 여기로 끌어다 놓기 · 우클릭 > ★ 4Dir 즐겨찾기에 추가 · Ctrl+D": "  Arraste pastas ou arquivos para cá · Clique direito > ★ Adicionar aos favoritos do 4Dir · Ctrl+D",
- "파일 위치 열기": "Abrir local do arquivo"
+ "파일 위치 열기": "Abrir local do arquivo",
+ "⚠ 구글 드라이브 권한이 빠졌습니다. 다시 '구글로 로그인'을 누르고, 구글 화면에서 '구글 드라이브' 항목에 체크한 뒤 계속을 누르세요  ✕": "⚠ Falta a permissão do Google Drive. Clique de novo em \"Entrar com o Google\", marque \"Google Drive\" na tela do Google e clique em Continuar  ✕",
+ "백업 중": "com backup",
+ "게스트 (구글 백업 안 함)": "Convidado (sem backup no Google)",
+ "설정·메모를 구글 드라이브에 백업할까요?": "Fazer backup das configurações e notas no Google Drive?",
+ "구글 화면에서 '구글 드라이브' 항목에 꼭 체크해 주세요. 나중에 하려면 설정 → 백업.": "Na tela do Google, marque \"Google Drive\". Para fazer depois: Configurações → Backup.",
+ "로그인하지 않아도 4Dir 는 모두 쓸 수 있습니다.": "Você pode usar todo o 4Dir sem entrar.",
+ "설정·메모·즐겨찾기·태그는 이 PC 에만 있어서, 포맷하거나 PC 를 바꾸면 사라집니다.": "Configurações, notas, favoritos e tags ficam só neste PC — somem se você formatar ou trocar de PC.",
+ "로그인하면 하루 한 번 내 구글 드라이브에 백업하고, 새 PC 에서 되살립니다.": "Ao entrar, o backup é feito uma vez por dia no seu Google Drive e pode ser restaurado em um PC novo.",
+ "개발자에게는 아무것도 전송되지 않습니다.": "Nada é enviado ao desenvolvedor.",
+ "구글 화면에서 '구글 드라이브' 항목에 꼭 체크하세요.": "Na tela do Google, marque \"Google Drive\".",
+ "나중에 하려면: 설정 → 백업": "Para fazer depois: Configurações → Backup",
+ "기록 안 남기기 — 열었던 폴더·탭을 저장하지 않고, 켤 때마다 처음 폴더로": "Modo privado — não salvar pastas e abas abertas; sempre começar na pasta inicial",
+ "켜면 지금까지 저장된 창 상태와 자동 기록도 지웁니다. 즐겨찾기·메모·설정은 그대로입니다": "Ao ativar, também apaga o estado das janelas e o histórico automático salvos. Favoritos, notas e configurações são mantidos",
+ "기록 안 남기기를 켰습니다 — 저장된 창 상태·자동 기록 {0}개를 지웠습니다. 다음부터 처음 폴더로 시작합니다  ✕": "Modo privado ativado — {0} arquivos de estado/histórico apagados. O 4Dir vai começar na pasta inicial  ✕",
+ "기록 안 남기기를 껐습니다 — 다음부터 지난번 폴더·탭으로 다시 엽니다  ✕": "Modo privado desativado — o 4Dir vai reabrir suas últimas pastas e abas  ✕"
 }

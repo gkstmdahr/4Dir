@@ -1483,5 +1483,20 @@
  "⚠ 즐겨찾기 파일을 찾을 수 없습니다 (옮겨졌거나 지워짐): {0}  ✕": "⚠ Fichier favori introuvable (déplacé ou supprimé) : {0}  ✕",
  "{0}\n클릭: 연결 프로그램으로 열기 · 끌어서 순서 변경 · 우클릭: 이름/삭제": "{0}\nClic : ouvrir avec l'application par défaut · Glisser pour réordonner · Clic droit : renommer/supprimer",
  "  폴더·파일을 여기로 끌어다 놓기 · 우클릭 > ★ 4Dir 즐겨찾기에 추가 · Ctrl+D": "  Glissez des dossiers ou fichiers ici · Clic droit > ★ Ajouter aux favoris 4Dir · Ctrl+D",
- "파일 위치 열기": "Ouvrir l'emplacement du fichier"
+ "파일 위치 열기": "Ouvrir l'emplacement du fichier",
+ "⚠ 구글 드라이브 권한이 빠졌습니다. 다시 '구글로 로그인'을 누르고, 구글 화면에서 '구글 드라이브' 항목에 체크한 뒤 계속을 누르세요  ✕": "⚠ L'autorisation Google Drive manque. Cliquez à nouveau sur « Se connecter avec Google », cochez « Google Drive » sur l'écran de Google, puis Continuer  ✕",
+ "백업 중": "sauvegarde active",
+ "게스트 (구글 백업 안 함)": "Invité (pas de sauvegarde Google)",
+ "설정·메모를 구글 드라이브에 백업할까요?": "Sauvegarder vos paramètres et notes sur Google Drive ?",
+ "구글 화면에서 '구글 드라이브' 항목에 꼭 체크해 주세요. 나중에 하려면 설정 → 백업.": "Sur l'écran de Google, cochez bien « Google Drive ». Pour le faire plus tard : Paramètres → Sauvegarde.",
+ "로그인하지 않아도 4Dir 는 모두 쓸 수 있습니다.": "Vous pouvez utiliser tout 4Dir sans vous connecter.",
+ "설정·메모·즐겨찾기·태그는 이 PC 에만 있어서, 포맷하거나 PC 를 바꾸면 사라집니다.": "Paramètres, notes, favoris et étiquettes ne sont que sur ce PC : ils sont perdus si vous réinstallez ou changez de PC.",
+ "로그인하면 하루 한 번 내 구글 드라이브에 백업하고, 새 PC 에서 되살립니다.": "Connecté, 4Dir sauvegarde une fois par jour sur votre Google Drive et restaure sur un nouveau PC.",
+ "개발자에게는 아무것도 전송되지 않습니다.": "Rien n'est envoyé au développeur.",
+ "구글 화면에서 '구글 드라이브' 항목에 꼭 체크하세요.": "Sur l'écran de Google, cochez bien « Google Drive ».",
+ "나중에 하려면: 설정 → 백업": "Plus tard : Paramètres → Sauvegarde",
+ "기록 안 남기기 — 열었던 폴더·탭을 저장하지 않고, 켤 때마다 처음 폴더로": "Mode privé — ne pas enregistrer les dossiers et onglets ouverts ; démarrer à chaque fois dans le dossier par défaut",
+ "켜면 지금까지 저장된 창 상태와 자동 기록도 지웁니다. 즐겨찾기·메모·설정은 그대로입니다": "L'activer supprime aussi l'état des fenêtres et l'historique automatique enregistrés. Favoris, notes et paramètres sont conservés",
+ "기록 안 남기기를 켰습니다 — 저장된 창 상태·자동 기록 {0}개를 지웠습니다. 다음부터 처음 폴더로 시작합니다  ✕": "Mode privé activé — {0} fichiers d'état/historique supprimés. 4Dir démarrera désormais dans le dossier par défaut  ✕",
+ "기록 안 남기기를 껐습니다 — 다음부터 지난번 폴더·탭으로 다시 엽니다  ✕": "Mode privé désactivé — 4Dir rouvrira vos derniers dossiers et onglets  ✕"
 }

@@ -20,6 +20,7 @@ from datadir import DATA_DIR  # 0.9.114
 SESS_DIR = os.path.join(DATA_DIR, "sessions")
 RUN_FILE = os.path.join(DATA_DIR, "4Dir.running")
 KEEP = 20
+PRIVATE = lambda: False   # 0.9.115 기록 안 남기기 (main 이 SETTINGS['private_mode'] 로 바꿔 끼움)
 MIN_GAP = 60
 
 
@@ -42,6 +43,8 @@ class Sessions:
                 pass
 
     def snapshot(self, st, force=False):
+        if PRIVATE():
+            return False   # 기록 안 남기기: 시각별 보관 안 함
         sig = _sig(st)
         now = time.time()
         if sig == self._last_sig or (not force and now - self._last_time < MIN_GAP):
