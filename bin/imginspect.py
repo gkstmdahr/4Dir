@@ -20,6 +20,12 @@
 - 1.2.0 (빌드 5, 사용자 11/8): 끌어서 그림이 화면 밖으로 나가던 것 → Canvas.clamp (작으면 창 안, 크면 가장자리가 창 안으로 못 들어옴).
   미리보기 창에 자세히 보기 기능 전부(이전/다음 = 파일 목록 선택을 옮김, 채널, 어두운 바둑판, 픽셀 격자, 고른 색·최근 색·주요 색·팔레트 저장,
   아래 줄 좌표·RGBA·HEX·크기·비트·용량). 채널·바둑판·격자·최근 색은 다음 그림에도 이어짐(_PSTATE)
+- 1.4.0 (0.9.118 빌드 2, 사용자 11/8): [상세보기] → [색상 도구], 고른 색 = 'HEX #791110 [HEX 복사]' · 'R 121, G 17, B 16 [RGB 복사]' 두 줄,
+  ◀ ▶ 는 그림 밖 양옆 칸으로(그림을 가리지 않음), ↺ ↻ 는 직접 그린 아이콘(rotate_icon), 연번 그림 재생 단추는 색상 도구 칸 안(seq 가 있을 때)
+- 1.3.0 (0.9.118, 사용자 11/8): ◀ ▶ 를 그림 양옆(겹친 단추)으로, 맨 위 [상세보기] 단추 — 눌러야 채널·고른 색·최근·주요 색·팔레트가 보임
+  (열고 닫은 상태 기억: main 이 PREF_GET/PREF_SET 으로 설정 preview_detail), 맞춤·1:1·배율·배경 어둡게·격자는 그림 아래 줄로.
+  ↺ ↻ 회전 = 바로 파일에 저장(rotate_file): JPG 는 다시 압축하지 않고 EXIF 방향 값만 바꿈(화질 그대로, 다른 정보 유지),
+  PNG·BMP·WebP 등 Qt 가 쓸 수 있는 형식은 돌린 그림으로 다시 저장(임시 파일 → 바꿔치기), 못 쓰는 형식(PSD·TGA 등)은 안내만
 로그: bin\\log\\4Dir.log [QE.imginspect]
 """
 import os
@@ -32,7 +38,7 @@ from i18n import T
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-IMGINSPECT_VER = "1.2.0"
+IMGINSPECT_VER = "1.4.0"
 log = logging.getLogger("QE.imginspect")
 P = QtCore.QPointF
 R = QtCore.QRectF
@@ -101,6 +107,58 @@ def tool_icon(sz=16):
         p.drawEllipse(P(5.5, 6.0), 1.4, 1.4)
         p.setBrush(QtGui.QColor("#3fae68"))
         p.drawEllipse(P(9.0, 8.5), 1.4, 1.4)
+    return QtGui.QIcon(_icon_pm(d, sz))
+
+
+def rotate_icon(cw, color="#333333", sz=18):
+    """둥근 화살표 (cw=True 오른쪽/시계, False 왼쪽/반시계) — 위쪽이 트인 원, 끝에서 도는 방향을 가리키는 화살촉 (20칸 기준 좌표)"""
+    import math as _m
+
+    def d(p):
+        cx, cy, r = 10.0, 10.5, 6.2
+        a0, a1 = (60.0, -240.0) if cw else (120.0, 420.0)   # 화면에서 보는 각도(0=오른쪽, 90=위). cw 는 줄어드는 쪽으로 돎
+        n = 40
+        pts = []
+        for k in range(n + 1):
+            f = _m.radians(a0 + (a1 - a0) * k / n)
+            pts.append(P(cx + r * _m.cos(f), cy - r * _m.sin(f)))
+        p.setPen(QtGui.QPen(QtGui.QColor(color), 2.1, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        p.setBrush(Qt.NoBrush)
+        p.drawPolyline(QtGui.QPolygonF(pts[:-2]))
+        e, q = pts[-1], pts[-4]
+        tx, ty = e.x() - q.x(), e.y() - q.y()
+        ln = _m.hypot(tx, ty) or 1.0
+        tx, ty = tx / ln, ty / ln
+        nx, ny = -ty, tx
+        tip = P(e.x() + tx * 2.6, e.y() + ty * 2.6)
+        b1 = P(e.x() - tx * 2.2 + nx * 3.4, e.y() - ty * 2.2 + ny * 3.4)
+        b2 = P(e.x() - tx * 2.2 - nx * 3.4, e.y() - ty * 2.2 - ny * 3.4)
+        p.setPen(Qt.NoPen)
+        p.setBrush(QtGui.QColor(color))
+        p.drawPolygon(QtGui.QPolygonF([tip, b1, b2]))
+    return QtGui.QIcon(_icon_pm(d, sz))
+
+
+def checker_icon(color="#333333", sz=18):
+    """바둑판 (어두운 칸 + 밝은 칸)"""
+    def d(p):
+        p.setPen(QtGui.QPen(QtGui.QColor(color), 1.0))
+        p.setBrush(QtGui.QColor("#ffffff"))
+        p.drawRect(R(3, 3, 14, 14))
+        p.setPen(Qt.NoPen)
+        p.setBrush(QtGui.QColor("#555555"))
+        p.drawRect(R(3, 3, 7, 7)); p.drawRect(R(10, 10, 7, 7))
+    return QtGui.QIcon(_icon_pm(d, sz))
+
+
+def grid_icon(color="#333333", sz=18):
+    """픽셀 격자 (#)"""
+    def d(p):
+        p.setPen(QtGui.QPen(QtGui.QColor(color), 1.3))
+        p.setBrush(Qt.NoBrush)
+        p.drawRect(R(3, 3, 14, 14))
+        for v in (7.67, 12.33):
+            p.drawLine(P(v, 3), P(v, 17)); p.drawLine(P(3, v), P(17, v))
     return QtGui.QIcon(_icon_pm(d, sz))
 
 
@@ -1181,6 +1239,144 @@ def open_compare(parent, path_a, path_b):
     return w
 
 
+# ---------------------------------------------------------------- 회전 저장 (1.3.0)
+import struct as _st
+
+# EXIF 방향 값 ↔ (좌우 뒤집기 먼저 했나, 그다음 시계 방향 90도 몇 번)
+_ORI = {1: (0, 0), 6: (0, 1), 3: (0, 2), 8: (0, 3), 2: (1, 0), 7: (1, 1), 4: (1, 2), 5: (1, 3)}
+_ORI_BACK = {v: k for k, v in _ORI.items()}
+
+
+def next_orientation(cur, cw):
+    """지금 방향 값에 시계(cw=True)/반시계 90도를 더한 새 방향 값"""
+    m, k = _ORI.get(cur or 1, (0, 0))
+    return _ORI_BACK[(m, (k + (1 if cw else -1)) % 4)]
+
+
+def _jpeg_segments(data):
+    """(마커, 시작, 길이 포함 끝) — SOS 전까지"""
+    if data[:2] != b"\xff\xd8":
+        raise ValueError("JPEG 아님")
+    i, out = 2, []
+    while i + 4 <= len(data):
+        if data[i] != 0xFF:
+            raise ValueError("JPEG 구조 이상 @%d" % i)
+        mk = data[i + 1]
+        if mk == 0xFF:
+            i += 1
+            continue
+        if mk in (0xD8, 0x01) or 0xD0 <= mk <= 0xD7:
+            i += 2
+            continue
+        ln = _st.unpack(">H", data[i + 2:i + 4])[0]
+        out.append((mk, i, i + 2 + ln))
+        if mk == 0xDA:
+            break
+        i += 2 + ln
+    return out
+
+
+def jpeg_rotate(path, cw):
+    """JPG 를 다시 압축하지 않고 EXIF 방향(0x0112)만 바꿈 → 새 방향 값"""
+    data = bytearray(open(path, "rb").read())
+    segs = _jpeg_segments(data)
+    exif = next(((a, b) for mk, a, b in segs if mk == 0xE1 and data[a + 4:a + 10] == b"Exif\x00\x00"), None)
+    if exif is None:   # EXIF 없음 → 방향만 든 작은 EXIF 를 SOI(·JFIF) 뒤에 넣음
+        new = next_orientation(1, cw)
+        tiff = b"II*\x00" + _st.pack("<I", 8) + _st.pack("<H", 1) + _st.pack("<HHIHH", 0x0112, 3, 1, new, 0) + _st.pack("<I", 0)
+        body = b"Exif\x00\x00" + tiff
+        seg = b"\xff\xe1" + _st.pack(">H", len(body) + 2) + body
+        at = next((b for mk, a, b in segs if mk == 0xE0), 2)
+        data[at:at] = seg
+        log.info("JPG 방향: EXIF 없음 → 새로 넣음 %d", new)
+    else:
+        a, b = exif
+        t = a + 10                    # TIFF 머리 시작
+        bo = "<" if data[t:t + 2] == b"II" else ">"
+        ifd = _st.unpack(bo + "I", data[t + 4:t + 8])[0]
+        n = _st.unpack(bo + "H", data[t + ifd:t + ifd + 2])[0]
+        ent = None
+        for j in range(n):
+            e = t + ifd + 2 + j * 12
+            if _st.unpack(bo + "H", data[e:e + 2])[0] == 0x0112:
+                ent = e
+                break
+        if ent is not None:
+            cur = _st.unpack(bo + "H", data[ent + 8:ent + 10])[0]
+            new = next_orientation(cur, cw)
+            data[ent + 8:ent + 10] = _st.pack(bo + "H", new)
+            log.info("JPG 방향: %d → %d (EXIF 값만)", cur, new)
+        else:   # 방향 항목이 없음 → IFD0 를 항목 하나 더해 APP1 끝에 새로 쓰고 가리키는 곳만 바꿈 (다른 정보 위치는 그대로)
+            new = next_orientation(1, cw)
+            entries = [bytes(data[t + ifd + 2 + j * 12:t + ifd + 2 + (j + 1) * 12]) for j in range(n)]
+            nxt = bytes(data[t + ifd + 2 + n * 12:t + ifd + 2 + n * 12 + 4])
+            entries.append(_st.pack(bo + "HHI", 0x0112, 3, 1) + _st.pack(bo + "HH", new, 0))
+            entries.sort(key=lambda x: _st.unpack(bo + "H", x[:2])[0])
+            tail = b - t
+            pad = b"\x00" if tail % 2 else b""
+            new_ifd = tail + len(pad)
+            blob = pad + _st.pack(bo + "H", len(entries)) + b"".join(entries) + nxt
+            if (b - a - 2) + len(blob) + 2 > 65533:
+                raise ValueError("EXIF 가 너무 커서 방향을 넣을 수 없음")
+            data[b:b] = blob
+            data[t + 4:t + 8] = _st.pack(bo + "I", new_ifd)
+            data[a + 2:a + 4] = _st.pack(">H", (b - a - 2) + len(blob))
+            log.info("JPG 방향: 항목 없음 → IFD0 새로 (%d)", new)
+    tmp = path + ".4dir_tmp"
+    with open(tmp, "wb") as f:
+        f.write(data)
+    os.replace(tmp, path)
+    return new
+
+
+def rotate_file(path, cw):
+    """그림 파일을 90도 돌려 바로 저장 → (성공, 알림 글자)"""
+    ext = os.path.splitext(path)[1].lower().lstrip(".")
+    t0 = time.perf_counter()
+    try:
+        if ext in ("jpg", "jpeg", "jpe", "jfif"):
+            jpeg_rotate(path, cw)
+            log.info("회전 저장(JPG 무손실) %s %s %.0fms", path, "시계" if cw else "반시계", (time.perf_counter() - t0) * 1000)
+            return True, T("돌려서 저장함 (화질 그대로)")
+        writable = {bytes(f).decode("ascii", "ignore").lower() for f in QtGui.QImageWriter.supportedImageFormats()}
+        if ext not in writable:
+            log.info("회전 저장 못 함(쓸 수 없는 형식) %s", path)
+            return False, T("이 형식은 돌려서 저장할 수 없습니다")
+        with open(path, "rb") as f:   # 메모리로 읽음 — 읽기 부품이 파일을 잡고 있으면 바꿔치기(os.replace)가 막힘
+            raw = f.read()
+        buf = QtCore.QBuffer()
+        buf.setData(QtCore.QByteArray(raw))
+        buf.open(QtCore.QIODevice.ReadOnly)
+        rd = QtGui.QImageReader(buf, ext.encode())
+        rd.setAutoTransform(True)
+        img = rd.read()
+        del rd
+        buf.close()
+        if img.isNull():
+            return False, T("이 그림을 읽을 수 없습니다")
+        img = img.transformed(QtGui.QTransform().rotate(90 if cw else -90))
+        tmp = path + ".4dir_tmp." + ext
+        wr = QtGui.QImageWriter(tmp, ext.encode())
+        if ext in ("webp",):
+            wr.setQuality(100)
+        okw = wr.write(img)
+        err = wr.errorString()
+        del wr   # 쓴 파일 닫기 (바꿔치기 전에)
+        if not okw:
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+            log.warning("회전 저장 실패 %s: %s", path, err)
+            return False, T("저장하지 못했습니다")
+        os.replace(tmp, path)
+        log.info("회전 저장(다시 저장) %s %s %.0fms", path, "시계" if cw else "반시계", (time.perf_counter() - t0) * 1000)
+        return True, T("돌려서 저장함")
+    except Exception as ex:
+        log.exception("회전 저장 실패 %s", path)
+        return False, T("저장하지 못했습니다") + f": {ex}"
+
+
 # ---------------------------------------------------------------- 미리보기 창 안 (1.1.0)
 PREVIEW_MAX_PX = 60_000_000   # 이보다 픽셀이 많으면 미리보기 창에서는 원본을 읽지 않음 (메모리·시간)
 
@@ -1196,22 +1392,35 @@ def can_handle(path):
     return sz.isValid() and 0 < sz.width() * sz.height() <= PREVIEW_MAX_PX
 
 
-def make_widget(path, parent=None, nav=None):
-    return PreviewWidget(path, parent, nav)
+def make_widget(path, parent=None, nav=None, edit=None, seq=None):
+    return PreviewWidget(path, parent, nav, edit, seq)
 
 
 # 다음 그림으로 넘어가도 이어지는 것 (미리보기 위젯은 파일마다 새로 만듦)
-_PSTATE = {"chan": "RGBA", "dark": False, "grid": True, "recent": [], "picked": None, "focus": False}
-PREVIEW_STYLE = BTN_STYLE + "QToolButton#imgTb{padding:2px 6px;}"
+_PSTATE = {"chan": "RGBA", "dark": False, "grid": True, "recent": [], "picked": None, "focus": False, "detail": False}
+PREVIEW_STYLE = BTN_STYLE + ("QToolButton#imgTb{padding:2px 6px;}"
+                             "QToolButton#navBtn{background:rgba(0,0,0,70); color:white; border:none; border-radius:5px; font-size:15px;}"
+                             "QToolButton#navBtn:hover{background:rgba(0,0,0,150);}")
+PREF_GET = None   # main 이 설정 읽기·쓰기를 넣어 줌 (상세보기 열림 상태를 껐다 켜도 기억)
+PREF_SET = None
+
+
+def _pref(key, default):
+    try:
+        return PREF_GET(key, default) if PREF_GET else _PSTATE.get(key, default)
+    except Exception:
+        return default
 
 
 class PreviewWidget(QtWidgets.QWidget):
     """미리보기 창 안 그림 (1.2.0 — 자세히 보기 창 기능 전부)
     휠 = 확대, 끌기 = 이동, 짧은 클릭 = 스포이트(HEX 복사), ← → = 이전/다음 그림(파일 목록 선택을 옮김), F = 맞춤, 1 = 1:1"""
 
-    def __init__(self, path, parent=None, nav=None):
+    def __init__(self, path, parent=None, nav=None, edit=None, seq=None):
         super().__init__(parent)
         self.path = path
+        self.edit = edit          # edit(경로): 그림 편집 창 (0.9.118)
+        self.seq = seq            # seq(): 연번 그림 재생 (연번 그림일 때만)
         self.nav = nav            # nav(d): d 칸 옮김 (0 이면 안 옮김) → (지금 순번 0부터, 전체) 또는 None
         self.src = self.img = None
         self.cache = {}
@@ -1221,21 +1430,20 @@ class PreviewWidget(QtWidgets.QWidget):
         self.view.changed.connect(self._on_view)
         self.setStyleSheet(PREVIEW_STYLE)
 
-        # 1줄: ◀ ▶ 순번 · 맞춤 1:1 배율
-        r1 = QtWidgets.QHBoxLayout(); r1.setSpacing(3)
-        self.b_prev = _tb("◀", T("이전 그림 (←)")); self.b_prev.clicked.connect(lambda: self.go(-1))
-        self.b_next = _tb("▶", T("다음 그림 (→)")); self.b_next.clicked.connect(lambda: self.go(1))
-        self.lb_pos = QtWidgets.QLabel("")
-        self.b_fit = _tb(T("맞춤"), T("창에 맞춤 (F)")); self.b_fit.clicked.connect(self.fit)
-        self.b_one = _tb("1:1", T("실제 크기 (1)")); self.b_one.clicked.connect(self.actual)
-        self.b_zoom = _ZoomButton(self.set_zoom); self.b_zoom.setMinimumWidth(58)
-        for w in (self.b_prev, self.b_next, self.lb_pos):
-            r1.addWidget(w)
-        r1.addStretch(1)
-        for w in (self.b_fit, self.b_one, self.b_zoom):
-            r1.addWidget(w)
+        # 맨 위: [상세보기] — 눌러야 채널·색 도구가 보임 (열림 상태 기억)
+        top = QtWidgets.QHBoxLayout(); top.setSpacing(3)
+        self.b_detail = _tb(T("색상 도구"), T("채널·고른 색·최근 색·주요 색·팔레트 저장"), True)
+        self.b_detail.setChecked(bool(_pref("preview_detail", False)))
+        self.b_detail.toggled.connect(self._on_detail)
+        top.addWidget(self.b_detail); top.addStretch(1)
+        self.b_edit = _tb("✎ " + T("편집"), T("그림 편집 창 (자르기·글자·화살표·모자이크·밝기 등)"))   # 아래 줄은 좁아 위로
+        self.b_edit.clicked.connect(lambda: self.edit and self.edit(self.path))
+        self.b_edit.setVisible(edit is not None)
+        top.addWidget(self.b_edit)
 
-        # 2줄: 채널 · 바둑판 · 격자
+        # 상세 칸: 채널 / 고른 색 / 최근 / 주요 색
+        self.detail = QtWidgets.QWidget()
+        dl = QtWidgets.QVBoxLayout(self.detail); dl.setContentsMargins(0, 0, 0, 0); dl.setSpacing(4)
         r2 = QtWidgets.QHBoxLayout(); r2.setSpacing(3)
         self.ch_btns = {}
         grp = QtWidgets.QButtonGroup(self); grp.setExclusive(True)
@@ -1245,33 +1453,19 @@ class PreviewWidget(QtWidgets.QWidget):
             grp.addButton(b); r2.addWidget(b); self.ch_btns[ch] = b
         self.ch_btns[_PSTATE["chan"]].setChecked(True)
         r2.addStretch(1)
-        self.b_checker = _tb(T("배경 어둡게"), T("투명한 곳 뒤에 까는 바둑판을 어둡게 (밝은 그림의 가장자리 확인용)"), True)
-        self.b_grid = _tb(T("격자"), T("픽셀 격자 — 8배 이상 확대하면 픽셀 경계선"), True)
-        r2.addWidget(self.b_checker); r2.addWidget(self.b_grid)
-
-        self.canvas = Canvas(self.view)
-        self.canvas.setMinimumSize(120, 100)
-        self.canvas.message = T("읽는 중…")
-        self.canvas.hovered.connect(self._on_hover)
-        self.canvas.picked.connect(self.pick)
-        self.canvas.setToolTip(T("휠 = 확대·축소, 끌기 = 이동, 클릭 = 그 색 복사 (스포이트)"))
-        self.canvas.installEventFilter(self)
-        self.b_checker.setChecked(_PSTATE["dark"]); self.canvas.set_checker(_PSTATE["dark"])
-        self.b_grid.setChecked(_PSTATE["grid"]); self.canvas.grid = _PSTATE["grid"]
-        self.b_checker.toggled.connect(self._on_checker)
-        self.b_grid.toggled.connect(self._on_grid)
-
-        # 3줄: 고른 색 · RGB/HEX 복사
-        r3 = QtWidgets.QHBoxLayout(); r3.setSpacing(4)
-        r3.addWidget(QtWidgets.QLabel(T("고른 색")))
+        r3 = QtWidgets.QGridLayout(); r3.setHorizontalSpacing(6); r3.setVerticalSpacing(3)
+        r3.addWidget(QtWidgets.QLabel(T("고른 색")), 0, 0)
         self.sw_pick = Swatch(22); self.sw_pick.clicked.connect(self.copy_hex)
-        self.lb_pick = QtWidgets.QLabel("—"); self.lb_pick.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        self.lb_pick.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Preferred)
-        self.b_rgb = _tb(T("RGB 복사")); self.b_rgb.clicked.connect(self.copy_rgb)
-        self.b_hex = _tb(T("HEX 복사")); self.b_hex.clicked.connect(self.copy_hex)
-        r3.addWidget(self.sw_pick); r3.addWidget(self.lb_pick, 1); r3.addWidget(self.b_rgb); r3.addWidget(self.b_hex)
-
-        # 4줄: 최근 색
+        r3.addWidget(self.sw_pick, 0, 1, 2, 1, Qt.AlignVCenter)
+        self.lb_pick = QtWidgets.QLabel("HEX —"); self.lb_pick.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.lb_rgb = QtWidgets.QLabel("R —, G —, B —"); self.lb_rgb.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        for lb in (self.lb_pick, self.lb_rgb):
+            lb.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Preferred)
+        self.b_hex = _tb(T("HEX 복사"), T("#791110 같은 글자로 복사")); self.b_hex.clicked.connect(self.copy_hex)
+        self.b_rgb = _tb(T("RGB 복사"), T("121, 17, 16 같은 숫자로 복사")); self.b_rgb.clicked.connect(self.copy_rgb)
+        r3.addWidget(self.lb_pick, 0, 2); r3.addWidget(self.b_hex, 0, 3)
+        r3.addWidget(self.lb_rgb, 1, 2); r3.addWidget(self.b_rgb, 1, 3)
+        r3.setColumnStretch(2, 1)
         r4 = QtWidgets.QHBoxLayout(); r4.setSpacing(3)
         r4.addWidget(QtWidgets.QLabel(T("최근")))
         self.sw_recent = []
@@ -1279,8 +1473,6 @@ class PreviewWidget(QtWidgets.QWidget):
             sw = Swatch(20); sw.clicked.connect(lambda _=False, i=i: self._recopy(self.sw_recent[i]))
             r4.addWidget(sw); self.sw_recent.append(sw)
         r4.addStretch(1)
-
-        # 5줄: 주요 색 · 팔레트 저장
         r5 = QtWidgets.QHBoxLayout(); r5.setSpacing(3)
         self.b_main = _tb(T("주요 색 뽑기"), T("그림에서 많이 쓰인 색 6개")); self.b_main.clicked.connect(self.extract_main)
         r5.addWidget(self.b_main)
@@ -1292,17 +1484,68 @@ class PreviewWidget(QtWidgets.QWidget):
         self.b_pal = _tb(T("팔레트 PNG 저장"), T("주요 색을 가로 띠 그림으로 같은 폴더에 저장"))
         self.b_pal.clicked.connect(self.save_palette); self.b_pal.setEnabled(False)
         r5.addWidget(self.b_pal)
+        for r in (r2, r3, r4, r5):
+            dl.addLayout(r)
+        self.b_seq = _tb("▶ " + T("연번 그림 재생"), T("이름에 번호가 이어진 그림들을 영상처럼 재생"))
+        self.b_seq.clicked.connect(lambda: self.seq and self.seq())
+        self.b_seq.setVisible(seq is not None)
+        r6 = QtWidgets.QHBoxLayout(); r6.addWidget(self.b_seq); r6.addStretch(1)
+        dl.addLayout(r6)
+        self.detail.setVisible(self.b_detail.isChecked())
 
-        # 6줄: 마우스 아래 색 / 그림 정보 (알림도 여기)
+        # 그림 + 양옆 ◀ ▶ (그림 위에 겹침)
+        self.canvas = Canvas(self.view)
+        self.canvas.setMinimumSize(120, 100)
+        self.canvas.message = T("읽는 중…")
+        self.canvas.hovered.connect(self._on_hover)
+        self.canvas.picked.connect(self.pick)
+        self.canvas.setToolTip(T("휠 = 확대·축소, 끌기 = 이동, 클릭 = 그 색 복사 (스포이트)"))
+        self.canvas.installEventFilter(self)
+        self.b_prev = QtWidgets.QToolButton(); self.b_prev.setObjectName("navBtn"); self.b_prev.setText("◀")
+        self.b_next = QtWidgets.QToolButton(); self.b_next.setObjectName("navBtn"); self.b_next.setText("▶")
+        for b, tip, d in ((self.b_prev, T("이전 그림 (←)"), -1), (self.b_next, T("다음 그림 (→)"), 1)):   # 1.4.0: 그림 밖 양옆 (그림을 가리지 않음)
+            b.setToolTip(tip); b.setFixedSize(22, 64); b.setFocusPolicy(Qt.NoFocus); b.setCursor(Qt.PointingHandCursor)
+            b.clicked.connect(lambda _=False, d=d: self.go(d))
+            sp = b.sizePolicy(); sp.setRetainSizeWhenHidden(True); b.setSizePolicy(sp)   # 끝 그림에서 숨어도 자리는 그대로 (그림이 들썩이지 않게)
+        mid = QtWidgets.QHBoxLayout(); mid.setSpacing(3)
+        mid.addWidget(self.b_prev, 0, Qt.AlignVCenter); mid.addWidget(self.canvas, 1); mid.addWidget(self.b_next, 0, Qt.AlignVCenter)
+        self.pos_text = ""
+
+        # 그림 아래: 정보 줄 / 맞춤 1:1 배율 ↺ ↻ · 배경 어둡게 격자
         self.lb_st = QtWidgets.QLabel("")
         self.lb_st.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Preferred)
         self.lb_st.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        bot = QtWidgets.QHBoxLayout(); bot.setSpacing(3)
+        self.b_fit = _tb(T("맞춤"), T("창에 맞춤 (F)")); self.b_fit.clicked.connect(self.fit)
+        self.b_one = _tb("1:1", T("실제 크기 (1)")); self.b_one.clicked.connect(self.actual)
+        self.b_zoom = _ZoomButton(self.set_zoom); self.b_zoom.setMinimumWidth(58)
+        self.b_rl = _tb("", T("왼쪽으로 돌리기 (바로 저장)")); self.b_rl.clicked.connect(lambda: self.rotate(False))
+        self.b_rr = _tb("", T("오른쪽으로 돌리기 (바로 저장)")); self.b_rr.clicked.connect(lambda: self.rotate(True))
+        fg = self.palette().color(QtGui.QPalette.ButtonText).name()
+        self.b_rl.setIcon(rotate_icon(False, fg)); self.b_rr.setIcon(rotate_icon(True, fg))
+        for b_ in (self.b_rl, self.b_rr):
+            b_.setIconSize(QtCore.QSize(18, 18))
+        self.b_checker = _tb("", T("배경 어둡게") + " — " + T("투명한 곳 뒤에 까는 바둑판을 어둡게 (밝은 그림의 가장자리 확인용)"), True)
+        self.b_grid = _tb("", T("픽셀 격자 — 8배 이상 확대하면 픽셀 경계선"), True)
+        self.b_checker.setIcon(checker_icon(fg)); self.b_grid.setIcon(grid_icon(fg))   # 좁은 창에서 글자 단추가 잘려 그림 단추로
+        for b_ in (self.b_checker, self.b_grid):
+            b_.setIconSize(QtCore.QSize(18, 18))
+        for w in (self.b_fit, self.b_one, self.b_zoom):
+            bot.addWidget(w)
+        bot.addSpacing(6); bot.addWidget(self.b_rl); bot.addWidget(self.b_rr)
+
+        bot.addStretch(1); bot.addWidget(self.b_checker); bot.addWidget(self.b_grid)
+        self.b_checker.setChecked(_PSTATE["dark"]); self.canvas.set_checker(_PSTATE["dark"])
+        self.b_grid.setChecked(_PSTATE["grid"]); self.canvas.grid = _PSTATE["grid"]
+        self.b_checker.toggled.connect(self._on_checker)
+        self.b_grid.toggled.connect(self._on_grid)
 
         lay = QtWidgets.QVBoxLayout(self); lay.setContentsMargins(0, 0, 0, 0); lay.setSpacing(4)
-        lay.addLayout(r1); lay.addLayout(r2)
-        lay.addWidget(self.canvas, 1)
+        lay.addLayout(top)
+        lay.addWidget(self.detail)
+        lay.addLayout(mid, 1)
         lay.addWidget(self.lb_st)
-        lay.addLayout(r3); lay.addLayout(r4); lay.addLayout(r5)
+        lay.addLayout(bot)
         fm = self.fontMetrics()   # 좁은 창에서 한글 단추 글자가 '배…게' 처럼 잘리던 것 — 글자 폭만큼은 늘 확보
         for b in self.findChildren(QtWidgets.QToolButton):
             if b.objectName() == "imgTb" and b.text() and not isinstance(b, (Swatch, _ZoomButton)):
@@ -1333,7 +1576,8 @@ class PreviewWidget(QtWidgets.QWidget):
             fsz = os.path.getsize(self.path)
         except OSError:
             fsz = 0
-        self.info = f"{img.width()} x {img.height()} · {depth_text(src)} · {_size_text(fsz)}"
+        self.info_img = f"{img.width()} x {img.height()} · {depth_text(src)} · {_size_text(fsz)}"
+        self.info = (self.pos_text + "   " if self.pos_text else "") + self.info_img
         self._set_msg("")
         self.canvas.message = ""
         if _PSTATE["chan"] == "RGBA":
@@ -1352,12 +1596,46 @@ class PreviewWidget(QtWidgets.QWidget):
     def _update_pos(self):
         info = self.nav(0) if self.nav else None
         if not info:
-            self.lb_pos.setText("")
-            self.b_prev.setEnabled(False); self.b_next.setEnabled(False)
+            self.pos_text = ""
+            self.b_prev.setVisible(False); self.b_next.setVisible(False)
             return
         i, n = info
-        self.lb_pos.setText(f"{i + 1} / {n}")
-        self.b_prev.setEnabled(i > 0); self.b_next.setEnabled(i < n - 1)
+        self.pos_text = f"{i + 1} / {n}"
+        self.b_prev.setVisible(i > 0); self.b_next.setVisible(i < n - 1)
+
+    def _on_detail(self, on):
+        """상세보기 열고 닫기 — 상태 기억"""
+        self.detail.setVisible(on)
+        _PSTATE["detail"] = on
+        try:
+            if PREF_SET:
+                PREF_SET("preview_detail", bool(on))
+        except Exception:
+            log.exception("상세보기 상태 저장 실패")
+        log.info("미리보기 상세보기 %s", "열기" if on else "닫기")
+        QtCore.QTimer.singleShot(0, self.fit)
+
+    def rotate(self, cw):
+        """90도 돌려 바로 파일에 저장 (JPG 는 화질 그대로) — 화면 그림도 같이 돌림"""
+        ok, msg = rotate_file(self.path, cw)
+        self._notice(msg)
+        if ok and self.img is not None:
+            tr = QtGui.QTransform().rotate(90 if cw else -90)
+            self.img = self.img.transformed(tr)
+            self.src = self.src.transformed(tr) if self.src is not None else None
+            self.cache = {"RGBA": self.img}
+            if _PSTATE["chan"] == "RGBA":
+                self.canvas.set_image(self.img)
+            else:
+                self.set_channel(_PSTATE["chan"])
+            try:
+                fsz = os.path.getsize(self.path)
+            except OSError:
+                fsz = 0
+            self.info_img = f"{self.img.width()} x {self.img.height()} · {depth_text(self.src or self.img)} · {_size_text(fsz)}"
+            self.info = (self.pos_text + "   " if self.pos_text else "") + self.info_img
+            self.fit()
+        return ok
 
     def go(self, d):
         if self.nav:
@@ -1444,8 +1722,8 @@ class PreviewWidget(QtWidgets.QWidget):
 
     def _show_picked(self, c):
         self.sw_pick.set_color(c)
-        self.lb_pick.setText(hex_of(c))
-        self.lb_pick.setToolTip(rgb_of(c))
+        self.lb_pick.setText("HEX  " + hex_of(c))
+        self.lb_rgb.setText(f"R {c.red()},  G {c.green()},  B {c.blue()}" + (f",  A {c.alpha()}" if c.alpha() < 255 else ""))
 
     def _show_recent(self):
         rc = _PSTATE["recent"]

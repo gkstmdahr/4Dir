@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.117"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 2             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.118"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 7             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -60,11 +60,42 @@ class _SafeRotatingHandler(logging.handlers.RotatingFileHandler):
                 self.stream = self._open()
 
 
+_FILE_LOG = [None]
+
+
+def set_file_log(on):
+    """로그 파일(4Dir.log) 쓰기 켜고 끄기 — 0.9.118 기록 안 남기기면 끔 (사용자 메일 11/7 Ben: 로그도 쓰면 안 됨)"""
+    h = _FILE_LOG[0]
+    if on and h is None:
+        h = _SafeRotatingHandler(os.path.join(LOG_DIR, "4Dir.log"), maxBytes=2_000_000, backupCount=3, encoding="utf-8")
+        h.setFormatter(logging.Formatter("%(asctime)s.%(msecs)03d %(levelname)s [%(name)s] %(message)s", "%H:%M:%S"))
+        log.addHandler(h)
+        _FILE_LOG[0] = h
+    elif not on and h is not None:
+        log.removeHandler(h)
+        h.close()
+        _FILE_LOG[0] = None
+        if not log.handlers:
+            log.addHandler(logging.NullHandler())
+
+
+def _private_at_start():
+    """설정 파일을 미리 엿봐 '기록 안 남기기'면 처음부터 로그 파일을 안 만듦 (설정을 정식으로 읽기 전 줄도 남지 않게)"""
+    if os.environ.get("QE_LOG_DIR"):
+        return False
+    try:
+        import ui_parts as _up
+        with open(_up.SETTINGS_FILE, encoding="utf-8") as f:
+            return bool(json.load(f).get("private_mode"))
+    except Exception:
+        return False
+
+
 if not log.handlers:
-    _h = _SafeRotatingHandler(os.path.join(LOG_DIR, "4Dir.log"),
-                              maxBytes=2_000_000, backupCount=3, encoding="utf-8")
-    _h.setFormatter(logging.Formatter("%(asctime)s.%(msecs)03d %(levelname)s [%(name)s] %(message)s", "%H:%M:%S"))
-    log.addHandler(_h)
+    if _private_at_start():
+        log.addHandler(logging.NullHandler())
+    else:
+        set_file_log(True)
 
 
 def _excepthook(t, v, tb):
@@ -438,6 +469,7 @@ import gitstat  # noqa: E402  0.9.116 Git 상태 (SVN 과 같은 자리)
 import grepsearch  # noqa: E402  0.9.116 파일 내용 찾기
 import locksmith  # noqa: E402  0.9.116 파일을 잡고 있는 프로그램
 import textdiff  # noqa: E402  0.9.116 두 글자 파일 비교
+import imgedit  # noqa: E402  0.9.118 그림 편집 창
 import fileutil  # noqa: E402  0.9.116 링크·경로 형식·구조만 복사·나누기/합치기
 import session  # noqa: E402
 import ui_parts  # noqa: E402
@@ -484,6 +516,9 @@ toolicons.register("contact", sheets.contact_icon)
 toolicons.register("pdf", pdftools.tool_icon)
 toolicons.register("datefolders", datefolders.tool_icon)
 toolicons.register("oplog", oplog.tool_icon)
+toolicons.register("imgedit", imgedit.tool_icon)
+imginspect.PREF_GET = lambda k, d=None: SETTINGS.data.get(k, d)   # 0.9.118 미리보기 상세보기 열림 상태 기억
+imginspect.PREF_SET = lambda k, v: SETTINGS.__setitem__(k, v)
 toolicons.register("grep", grepsearch.grep_icon)
 toolicons.register("lock", locksmith.lock_icon)
 toolicons.register("diff", textdiff.diff_icon)
@@ -746,6 +781,9 @@ FAV = favorites.Favorites()
 QE_FAV = T("★ 4Dir 즐겨찾기")
 QE_FAV_ADD = T("★ 4Dir 즐겨찾기에 추가")
 SETTINGS = ui_parts.Settings()   # 색상·즐겨찾기 바 펼침·항상 위 (세션과 무관한 전역 설정)
+if SETTINGS["private_mode"] and not os.environ.get("QE_LOG_DIR"):   # 0.9.118 기록 안 남기기 = 로그 파일도 안 씀 (시험 로그는 그대로)
+    log.info("기록 안 남기기 켜짐 → 로그 파일 쓰기 끔")
+    set_file_log(False)
 WS_DIR = os.path.join(DATA_DIR, "workspaces")   # 이름 붙여 저장한 창 구성
 SINGLE_NAME = "4Dir_single_" + os.environ.get("USERNAME", "user")   # 하나만 실행용 통신 이름
 if datadir.PACKAGED:   # 0.9.114 빌드 3: 스토어판과 압축판이 같이 깔려 있어도 서로 넘기지 않게 (설정 폴더가 달라서)
@@ -2404,6 +2442,21 @@ def refresh_tags_ui(show_col=False):
                     m.dataChanged.emit(m.index(0, 11), m.index(len(m.rows) - 1, 11))
 
 
+def open_img_edit(path, parent=None):
+    """그림 편집 창 (0.9.118). 저장하면 그 폴더 칸을 다시 읽고 새 파일을 고름 + 미리보기 새로"""
+    def done(dst):
+        d, nm = os.path.dirname(dst), os.path.basename(dst)
+        for w in WINDOWS:
+            for p in w.panes:
+                for v in p.views():
+                    if v.path and os.path.normcase(v.path) == os.path.normcase(d):
+                        v.pending_select = nm
+                        v.reload("imgedit")
+        if PREVIEW_WIN is not None and PREVIEW_WIN.pane.isVisible():
+            QtCore.QTimer.singleShot(600, PREVIEW_WIN.pane.schedule)
+    return open_tool(imgedit.open_editor, parent, path, on_saved=done)
+
+
 def open_media_edit(path, start=0, parent=None):
     """동영상·GIF 편집 창 (0.9.111). 저장하면 그 폴더를 보는 칸에서 새 파일을 고름"""
     def done(dst):
@@ -3798,6 +3851,8 @@ class Page(QtWidgets.QWidget):
         imgs = [p for p in files if imginspect.can_open(p)]
         if len(imgs) == 1:
             out.append((ti(T("그림 자세히 보기…"), "imginspect"), lambda: open_tool(imginspect.open_viewer, self.window(), imgs[0])))
+        if len(files) == 1 and imgedit.can_edit(files[0]):   # 0.9.118
+            out.append((ti(T("그림 편집…"), "imgedit"), lambda: open_img_edit(files[0], self.window())))
         if len(imgs) == 2:
             out.append((ti(T("두 그림 비교…"), "imgcompare"), lambda: open_tool(imginspect.open_compare, self.window(), imgs[0], imgs[1])))
         pics = [p for p in files if thumbs.is_image(os.path.basename(p))]
@@ -7850,6 +7905,12 @@ class PreviewPane(QtWidgets.QFrame):
         self.timer.timeout.connect(self.refresh)
 
     def schedule(self, main=None):
+        try:   # 0.9.118 빌드 3: 누가 다시 그리라고 했는지 (반복될 때 로그에 남김)
+            import traceback as _tb
+            self._last_callers = (getattr(self, "_last_callers", [])
+                                  + [" <- ".join(f"{f.name}:{f.lineno}" for f in _tb.extract_stack(limit=6)[:-1])])[-4:]
+        except Exception:
+            pass
         if main is not None and main in WINDOWS + [self.main]:
             self.main = main   # 빌드 18: 마지막으로 쓴 4Dir 창의 고른 파일을 보여 줌
         if self.isVisible() and not self.window().isMinimized():   # 빌드 18: 최소화한 미리보기 창은 안 그림 (되살리면 다시)
@@ -7875,6 +7936,7 @@ class PreviewPane(QtWidgets.QFrame):
 
     def _drop_extra(self):
         w, self.extra = self.extra, None
+        self._extra_key = None
         if w is not None:
             if hasattr(w, "stop"):   # 폴더 세기 등 뒤 작업 멈춤
                 w.stop()
@@ -7901,7 +7963,12 @@ class PreviewPane(QtWidgets.QFrame):
                     continue
                 t0 = time.time()
                 if name == "imginspect":
-                    w = mod.make_widget(path, self, nav=self._nav_image)
+                    pv = self.main.pane().view() if self.main.pane() else None
+                    sq = (lambda p=path: open_tool(sequence.open_player, self.window(), os.path.dirname(p), p)) \
+                        if pv is not None and seq_in_view(pv, path) is not None else None
+                    w = mod.make_widget(path, self, nav=self._nav_image, seq=sq,
+                                        edit=(lambda p: open_img_edit(p, self.window())) if imgedit.can_edit(path) else None)
+                    self.btn_seq.setVisible(False)   # 0.9.118 빌드 2: 연번 재생은 색상 도구 칸 안으로
                 elif name == "folderprev":
                     w = mod.make_widget(path, self, thumb=thumbs_service() if OPTS["thumbnails"] else None, open_cb=self._open_from_folder,
                                         icon_for=lambda n, d: shellops.icon_for(n, d, 16), info_cb=self._folder_count)
@@ -7990,7 +8057,8 @@ class PreviewPane(QtWidgets.QFrame):
             open_tool(imginspect.open_viewer, self.window(), self.cur[0])
 
     GIF_MAX = 64 * 1048576   # 이보다 큰 GIF 는 움직임 없이 첫 장만 (메모리·CPU)
-    GIF_SEEK_MAX = 24 * 1048576   # 이 크기까지만 모든 장면을 기억해 아무 장면으로나 이동 (넘으면 재생·다음 장면만)
+    GIF_SEEK_MAX = 24 * 1048576   # (파일 크기) 이 크기까지는 모든 장면을 기억
+    GIF_CACHE_MAX = 400 * 1048576  # 0.9.118: 또는 풀어 놓은 장면 전체(장면 수 x 가로 x 세로 x 4)가 이만큼까지면 기억. 넘으면 '차례로 풀어 이동'(느린 이동)
     # 빌드 17: 윈도우 미리보기(썸네일 처리기)가 있는 문서·영상은 첫 장면/첫 쪽을 크게 (LibreOffice 없이 — 윈도우·오피스가 주는 것)
     DOC_PREVIEW = {".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx", ".hwp", ".hwpx", ".mp4", ".mov", ".avi", ".mkv",
                    ".wmv", ".webm", ".m4v", ".fbx", ".obj", ".3mf", ".stl", ".glb", ".svg", ".heic", ".avif", ".raw", ".cr2", ".nef"}
@@ -8047,6 +8115,11 @@ class PreviewPane(QtWidgets.QFrame):
         ed.setIconSize(QtCore.QSize(20, 20))
         self.gif_btns["edit"] = ed
         v.addLayout(row)
+        self.gif_warn = QtWidgets.QLabel(T("용량이 큰 GIF 라 장면을 옮길 때 잠깐 멈출 수 있습니다"))
+        self.gif_warn.setToolTip(T("메모리를 아끼려고 처음부터 차례로 풀어서 찾아갑니다"))
+        self.gif_warn.setStyleSheet("QLabel{color:#d32f2f; font-weight:bold;}")   # 0.9.118 빌드 6 (사용자: 렉 생긴다고 빨간 글씨로)
+        self.gif_warn.setVisible(False)
+        v.addWidget(self.gif_warn)
         self.gif_lbl = QtWidgets.QLabel()
         self.gif_lbl.setAlignment(Qt.AlignHCenter)
         v.addWidget(self.gif_lbl)
@@ -8072,7 +8145,15 @@ class PreviewPane(QtWidgets.QFrame):
 
     def _gif_seek(self, n):
         m = self.movie
-        if m is None or not self.gif_seekable:
+        if m is None:
+            return
+        if not self.gif_seekable:   # 0.9.118 (사용자: 슬라이더를 움직여도 장면이 안 움직임) — 큰 GIF 는 멈춘 뒤 차례로 풀어 이동 (끄는 동안은 0.15초 모아서)
+            self._seek_target = int(n)
+            if not hasattr(self, "_seek_tm"):
+                self._seek_tm = QtCore.QTimer(self)
+                self._seek_tm.setSingleShot(True)
+                self._seek_tm.timeout.connect(self._gif_seek_slow)
+            self._seek_tm.start(150)
             return
         n = max(0, min(int(n), m.frameCount() - 1))
         m.setPaused(True)
@@ -8085,6 +8166,28 @@ class PreviewPane(QtWidgets.QFrame):
                 steps += 1
             ok = m.currentFrameNumber() == n
         log.debug("GIF 장면 이동 %s → %s (지금 %d)", n, ok, m.currentFrameNumber())
+        self._gif_ui()
+
+    def _gif_seek_slow(self):
+        m = self.movie
+        if m is None:
+            return
+        t0 = time.time()
+        n = max(0, min(self._seek_target, m.frameCount() - 1))
+        m.setPaused(True)
+        self._seeking = True   # 지나가는 장면은 화면에 안 그림
+        try:
+            if m.currentFrameNumber() > n:
+                m.stop()
+                m.start()
+                m.setPaused(True)
+            steps = 0
+            while m.currentFrameNumber() < n and steps < 5000 and m.jumpToNextFrame():
+                steps += 1
+        finally:
+            self._seeking = False
+        self._set_pic(m.currentPixmap())
+        log.info("GIF 느린 장면 이동 → %d (지금 %d, %d장 풂, %.0fms)", n, m.currentFrameNumber(), steps, (time.time() - t0) * 1000)
         self._gif_ui()
 
     def _gif_step(self, d):
@@ -8273,9 +8376,11 @@ class PreviewPane(QtWidgets.QFrame):
             it = QtWidgets.QListWidgetItem(QtGui.QIcon(QtGui.QPixmap.fromImage(im)), str(i + 1))
             it.setData(Qt.UserRole, i)
             self.gif_strip.addItem(it)
-        self.gif_strip.setEnabled(self.gif_seekable)
+        self.gif_strip.setEnabled(True)   # 0.9.118: 큰 GIF 도 장면 띠로 이동 (느린 이동, 사용자 '하단 슬라이드 선택이 안 됨')
 
     def _stop_movie(self):
+        if hasattr(self, "gif_warn"):
+            self.gif_warn.setVisible(False)
         if self.movie is not None:
             self.movie.stop()
             self.movie.deleteLater()
@@ -8302,7 +8407,7 @@ class PreviewPane(QtWidgets.QFrame):
         m = video.VideoMovie(path, self, muted=not SETTINGS["video_sound"])
         self.movie = m
         self.gif_seekable = True
-        m.frameChanged.connect(lambda _i, m=m: m is self.movie and (self._set_pic(m.currentPixmap()), self._gif_ui()))
+        m.frameChanged.connect(lambda _i, m=m: m is self.movie and not getattr(self, "_seeking", False) and (self._set_pic(m.currentPixmap()), self._gif_ui()))
         m.ready.connect(lambda m=m: m is self.movie and (self._gif_ui(), self._video_strip(m)))
         m.failed.connect(lambda _s, m=m, p=path, t=mtime: m is self.movie and self._video_failed(p, t))
         pm = thumbs_service().get(path, mtime, self.PX)   # 첫 장면이 오기 전엔 윈도우 미리보기 그림
@@ -8346,13 +8451,19 @@ class PreviewPane(QtWidgets.QFrame):
         if size > self.GIF_MAX or b"gif" not in [bytes(f) for f in QtGui.QMovie.supportedFormats()]:
             return False
         m = QtGui.QMovie(path)
-        self.gif_seekable = size <= self.GIF_SEEK_MAX
+        dim = QtGui.QImageReader(path).size()
+        est = max(1, m.frameCount()) * max(1, dim.width()) * max(1, dim.height()) * 4   # 풀어 놓은 장면 전체 크기 추정
+        self.gif_seekable = size <= self.GIF_SEEK_MAX or est <= self.GIF_CACHE_MAX
+        self._seeking = False
+        log.info("GIF 장면 기억 판단 %s 파일 %s · 풀면 약 %s (%dx%d x %d장) → %s", os.path.basename(path), size_short(size), size_short(est),
+                 dim.width(), dim.height(), m.frameCount(), "전부 기억" if self.gif_seekable else "차례로 풀어 이동")
         m.setCacheMode(QtGui.QMovie.CacheAll if self.gif_seekable else QtGui.QMovie.CacheNone)   # 다 기억해야 아무 장면으로 이동
+        self.gif_warn.setVisible(not self.gif_seekable)
         if not m.isValid() or m.frameCount() == 1:
             m.deleteLater()
             return False
         self.movie = m
-        m.frameChanged.connect(lambda _i, m=m: m is self.movie and (self._set_pic(m.currentPixmap()), self._gif_ui()))
+        m.frameChanged.connect(lambda _i, m=m: m is self.movie and not getattr(self, "_seeking", False) and (self._set_pic(m.currentPixmap()), self._gif_ui()))
         m.start()
         if not SETTINGS["preview_autoplay"]:   # 빌드 28: 첫 장면에서 멈춘 채
             m.setPaused(True)
@@ -8395,8 +8506,19 @@ class PreviewPane(QtWidgets.QFrame):
         rows = v.selected_rows()
         if len(rows) == 1 and self.movie is not None and os.path.normcase(self.movie.fileName()) == os.path.normcase(v.model_.full(v.model_.rows[rows[0]])):
             return   # 같은 GIF 가 재생 중 (선택 글자만 다시 그려진 경우) — 처음부터 다시 틀지 않음
+        if len(rows) == 1:   # 0.9.118 빌드 3 (사용자: 그림 미리보기가 계속 깜박임) — 같은 파일·같은 수정 시각이면 형식별 화면을 다시 만들지 않음
+            e0 = v.model_.rows[rows[0]]
+            key = (os.path.normcase(v.model_.full(e0)), e0[3])
+            now = time.time()
+            self._rf = [t for t in getattr(self, "_rf", []) if now - t < 1.5] + [now]
+            if len(self._rf) == 5:
+                log.warning("미리보기 다시 그리기가 몰림 (1.5초에 5번) %s — 부른 곳: %s", key[0], " | ".join(getattr(self, "_last_callers", [])))
+            if self.extra is not None and getattr(self, "_extra_key", None) == key and self.extra.isVisible():
+                return
+        ekey = key if len(rows) == 1 else None
         self._stop_movie()
         self._drop_extra()
+        self._extra_key = ekey   # _drop_extra 가 지우므로 그 뒤에
         self.btn_inspect.setVisible(False)
         self.btn_seq.setVisible(False)
         if len(rows) != 1:
@@ -10840,8 +10962,13 @@ eports.
         log.info("기록 안 남기기 %s", "켬" if on else "끔")
         if on:
             n = clear_history()
-            self.show_notice(T("기록 안 남기기를 켰습니다 — 저장된 창 상태·자동 기록 {0}개를 지웠습니다. 다음부터 처음 폴더로 시작합니다  ✕").format(n), ms=8000)
+            self.save_state()   # 0.9.118: 화면 설정은 남김 (폴더·탭만 뺀 상태로 다시 씀)
+            set_file_log(False)
+            n += clear_logs()
+            self.show_notice(T("기록 안 남기기를 켰습니다 — 열었던 폴더·탭·자동 기록·로그 {0}개를 지웠습니다. 칸 배치·열 너비 같은 화면 설정은 그대로입니다  ✕").format(n), ms=9000)
         else:
+            set_file_log(True)
+            log.info("기록 안 남기기 끔 → 로그 파일 다시 씀")
             self.save_state()
             self.show_notice(T("기록 안 남기기를 껐습니다 — 다음부터 지난번 폴더·탭으로 다시 엽니다  ✕"), ms=6000)
 
@@ -11060,24 +11187,24 @@ eports.
     def save_state(self, st=None):
         if st is None and SESSION_END["on"]:
             return   # 윈도우 종료 중: 창 전부 묶음을 이미 저장함 → 남은 창의 자동 저장이 덮어쓰지 않게
-        if SETTINGS["private_mode"]:
-            return   # 0.9.115 기록 안 남기기: 열었던 폴더·탭·창 위치를 저장 안 함 (사용자 메일 11/7)
+        private = SETTINGS["private_mode"]
         st = st or self.collect_state()
+        if private:   # 0.9.118 (Ben 11/7 '설정이 전부 기본값으로 돌아감'): 화면 설정(칸 배치·열 너비·보기·창 위치)은 저장, 열었던 폴더·탭만 뺌
+            st = strip_history(st)
         try:
             tmp = STATE_FILE + ".tmp"
             with open(tmp, "w", encoding="utf-8") as f:
                 json.dump(st, f, ensure_ascii=False, indent=1)
             os.replace(tmp, STATE_FILE)
-            log.debug("상태 저장")
-            self.sessions.snapshot(st)
+            log.debug("상태 저장%s", " (기록 뺌)" if private else "")
+            if not private:
+                self.sessions.snapshot(st)
         except Exception:
             log.exception("상태 저장 실패")
 
     def load_state(self):
         st = {}
-        if SETTINGS["private_mode"]:
-            log.info("기록 안 남기기 켜짐 → 지난 상태 안 읽음 (처음 폴더로 시작)")
-        elif os.path.exists(STATE_FILE):
+        if os.path.exists(STATE_FILE):
             try:
                 with open(STATE_FILE, encoding="utf-8") as f:
                     st = json.load(f)
@@ -11090,6 +11217,9 @@ eports.
                         st = self.sessions.read(snaps[0][1])
                     except Exception:
                         st = {}
+        if SETTINGS["private_mode"] and st:   # 화면 설정만 쓰고 폴더·탭은 처음 폴더로
+            st = strip_history(st)
+            log.info("기록 안 남기기 켜짐 → 화면 설정만 불러옴 (폴더·탭은 처음 폴더)")
         self.pending_windows = list(st.get("windows") or [])   # 지난번 함께 열려 있던 창들 → main() 이 엶
         self.apply_state(st, geometry=True)
         return st.get("saved", "")[11:]
@@ -11520,6 +11650,31 @@ def hand_off_to_running(arg_path, new_window=False):
     s.waitForBytesWritten(500)
     s.disconnectFromServer()
     return True
+
+
+def strip_history(st):
+    """상태에서 열었던 폴더·탭·다른 창 목록만 뺀 사본 (칸 배치·나눔 크기·창 위치·보기 옵션·칸 보기 방식·열 너비·정렬은 그대로)"""
+    st = json.loads(json.dumps(st))
+    st.pop("windows", None)
+    for ps in st.get("panes") or []:
+        vs = ps.get("views") or []
+        cur = min(max(0, ps.get("current", 0) or 0), len(vs) - 1) if vs else 0
+        ps["views"] = [dict(vs[cur], color="", locked=False)] if vs else []   # 보던 탭의 정렬·열 너비만
+        ps["tabs"] = []          # → 처음 폴더(내 PC)
+        ps["current"] = 0
+    return st
+
+
+def clear_logs():
+    """로그 파일 지우기 (기록 안 남기기를 켤 때) — 지운 개수"""
+    n = 0
+    for f in glob.glob(os.path.join(LOG_DIR, "4Dir.log*")):
+        try:
+            os.remove(f)
+            n += 1
+        except OSError:
+            pass
+    return n
 
 
 def clear_history():
