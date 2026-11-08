@@ -1958,5 +1958,16 @@
  "투명한 곳 뒤에 까는 바둑판을 어둡게 (밝은 그림의 가장자리 확인용)": "Darken the checkerboard behind transparent areas (to check edges of light images)",
  "배경 어둡게": "Dark bg",
  "격자": "Grid",
- "픽셀 격자 — 8배 이상 확대하면 픽셀 경계선": "Pixel grid — pixel borders at 8x zoom and above"
+ "픽셀 격자 — 8배 이상 확대하면 픽셀 경계선": "Pixel grid — pixel borders at 8x zoom and above",
+ "빈 폴더": "Empty folder",
+ "그림 {0}장": "{0} images",
+ " (앞 {0}장 보기)": " (showing first {0})",
+ "그림 없음 — 안에 든 것": "No images — contents",
+ "세는 중…": "Counting…",
+ "파일 {0}개 · 폴더 {1}개 · {2}": "{0} files · {1} folders · {2}",
+ "(세는 중…)": "(counting…)",
+ "(너무 많아 여기까지만 셈)": "(too many — counted this far)",
+ "내용": "Contents",
+ "파일 {0}개 · 폴더 {1}개": "{0} files · {1} folders",
+ "전체 크기": "Total size"
 }

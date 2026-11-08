@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.116"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 6             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.117"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 2             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -7803,15 +7803,24 @@ class PreviewPane(QtWidgets.QFrame):
         self.pic.setAlignment(Qt.AlignCenter)
         self.pic.setMinimumHeight(120)
         self.pic.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Expanding)
+        self.sep = QtWidgets.QFrame()   # 0.9.117 빌드 2: 미리보기와 정보 사이 가는 선
+        self.sep.setFrameShape(QtWidgets.QFrame.HLine)
+        self.sep.setFrameShadow(QtWidgets.QFrame.Plain)
+        self.sep.setStyleSheet("QFrame{color:palette(midlight);}")
         self.name = QtWidgets.QLabel()
         self.name.setWordWrap(True)
-        self.name.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
+        self.name.setTextFormat(Qt.PlainText)
+        self.name.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.name.setAlignment(Qt.AlignLeft | Qt.AlignTop)
         f = self.name.font()
         f.setBold(True)
+        f.setPointSizeF(f.pointSizeF() + 1.5)
         self.name.setFont(f)
-        self.info = QtWidgets.QLabel()
+        self.info = QtWidgets.QLabel()   # 0.9.117 빌드 2: '이름표 | 값' 표 (사용자: 정신없으니 가독성 좋게)
         self.info.setWordWrap(True)
-        self.info.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
+        self.info.setTextFormat(Qt.RichText)
+        self.info.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        self._rows = []
         self.info.setTextInteractionFlags(Qt.TextSelectableByMouse)
         lay.addWidget(self.pic, 1)
         self.gifbar = self._build_gifbar()   # 빌드 17: GIF 장면 조작 (galleryV8 참고)
@@ -7820,6 +7829,7 @@ class PreviewPane(QtWidgets.QFrame):
         self.extra_lay = QtWidgets.QVBoxLayout()
         self.extra_lay.setContentsMargins(0, 0, 0, 0)
         lay.addLayout(self.extra_lay, 0)
+        lay.addWidget(self.sep)
         lay.addWidget(self.name)
         lay.addWidget(self.info)
         self.btn_inspect = QtWidgets.QPushButton(T("🔍 그림 자세히 보기 (확대·스포이트)"))   # 0.9.116 #1 #2
@@ -7860,12 +7870,14 @@ class PreviewPane(QtWidgets.QFrame):
         self._drop_extra()   # 0.9.116 숨으면 소리 재생 등도 멈춤
 
     # 0.9.116: 형식별 미리보기 모듈 (can_handle(path) · make_widget(path, parent)). 처음 쓸 때 불러옴 (시작 속도 그대로)
-    EXTRA_MODS = ("psdlayers", "fontprev", "audioprev", "xlsxprev", "codeview", "imginspect")   # 빌드 4: 그림도 창 안에서 확대·스포이트
+    EXTRA_MODS = ("folderprev", "psdlayers", "fontprev", "audioprev", "xlsxprev", "codeview", "imginspect")   # 0.9.117 폴더 = 안 그림·개수·크기   # 빌드 4: 그림도 창 안에서 확대·스포이트
     KEEP_PIC = ("psdlayers",)   # 그림(윈도우 미리보기)은 그대로 두고 아래에 붙임
 
     def _drop_extra(self):
         w, self.extra = self.extra, None
         if w is not None:
+            if hasattr(w, "stop"):   # 폴더 세기 등 뒤 작업 멈춤
+                w.stop()
             self.extra_lay.removeWidget(w)
             w.hide()
             w.deleteLater()
@@ -7888,7 +7900,13 @@ class PreviewPane(QtWidgets.QFrame):
                 if not mod.can_handle(path):
                     continue
                 t0 = time.time()
-                w = mod.make_widget(path, self, nav=self._nav_image) if name == "imginspect" else mod.make_widget(path, self)
+                if name == "imginspect":
+                    w = mod.make_widget(path, self, nav=self._nav_image)
+                elif name == "folderprev":
+                    w = mod.make_widget(path, self, thumb=thumbs_service() if OPTS["thumbnails"] else None, open_cb=self._open_from_folder,
+                                        icon_for=lambda n, d: shellops.icon_for(n, d, 16), info_cb=self._folder_count)
+                else:
+                    w = mod.make_widget(path, self)
             except Exception:
                 log.exception("미리보기 %s 실패 %s", name, path)
                 continue
@@ -7904,6 +7922,45 @@ class PreviewPane(QtWidgets.QFrame):
             lay.setStretchFactor(self.extra_lay, 2 if keep else 1)
             return keep or True
         return False
+
+    def _set_rows(self, rows):
+        """정보 표: [(이름표, 값)] → 왼쪽 회색 이름표 · 오른쪽 값 (빈 값 줄은 뺌)"""
+        import html as _h
+        self._rows = [(k, v) for k, v in rows if v]
+        pal = self.palette()   # 이름표 = 글자색과 바탕색의 중간 (밝은·어두운 테마 둘 다)
+        t, bg = pal.color(QtGui.QPalette.WindowText), pal.color(QtGui.QPalette.Window)
+        dim = QtGui.QColor((t.red() + bg.red()) // 2, (t.green() + bg.green()) // 2, (t.blue() + bg.blue()) // 2).name()
+        trs = "".join(f'<tr><td style="color:{dim}; padding:1px 12px 1px 0; white-space:nowrap;">{_h.escape(k)}</td>'
+                      f'<td style="padding:1px 0;">{_h.escape(v)}</td></tr>' for k, v in self._rows)
+        self.info.setText(f'<table cellspacing="0" cellpadding="0">{trs}</table>' if trs else "")
+
+    def _set_row(self, key, val):
+        rows = list(self._rows)
+        for i, (k, _v) in enumerate(rows):
+            if k == key:
+                rows[i] = (k, val)
+                break
+        else:
+            rows.append((key, val))
+        self._set_rows(rows)
+
+    def _folder_count(self, files, dirs, size, state):
+        """폴더 미리보기가 센 결과 → 표의 '내용'·'전체 크기' 줄"""
+        tail = "" if state == 1 else ("  " + (T("(세는 중…)") if state == 0 else T("(너무 많아 여기까지만 셈)")))
+        self._set_row(T("내용"), T("파일 {0}개 · 폴더 {1}개").format(f"{files:,}", f"{dirs:,}") + tail)
+        self._set_row(T("전체 크기"), size_short(size) if size_short else str(size))
+
+    def _open_from_folder(self, p):
+        """폴더 미리보기에서 두 번 누름 (0.9.117): 폴더면 지금 칸에서 열고, 파일이면 기본 프로그램으로"""
+        if os.path.isdir(p):
+            pane = self.main.pane()
+            if pane and pane.view():
+                pane.view().navigate(p)
+            return
+        try:
+            os.startfile(p)
+        except OSError as ex:
+            log.warning("폴더 미리보기 파일 열기 실패 %s: %s", p, ex)
 
     def _nav_image(self, d):
         """미리보기 그림 이전/다음 (빌드 5): 지금 칸 목록에서 그림 파일끼리 d 칸 옮겨 선택. 반환 (순번, 전체) — d=0 이면 옮기지 않음"""
@@ -8349,20 +8406,25 @@ class PreviewPane(QtWidgets.QFrame):
                 es = [v.model_.rows[r] for r in rows]
                 self.name.setText(T('    {0:,}개 항목 선택함').format(len(rows)).strip())   # 상태줄과 같은 문구
                 fs = [e[2] for e in es if not e[1] and e[2] >= 0]
-                self.info.setText(size_short(sum(fs)) if fs else "")
+                nd = sum(1 for e in es if e[1])
+                self._set_rows([(T("파일"), f"{len(es) - nd:,}" if len(es) - nd else ""), (T("폴더"), f"{nd:,}" if nd else ""),
+                                (T("크기"), size_short(sum(fs)) if fs else "")])
             else:
                 self.name.setText("")
+                self._rows = []
                 self.info.setText(T("파일을 고르면 여기에 미리보기가 나옵니다"))
             return
         e = v.model_.rows[rows[0]]
         path = v.model_.full(e)
         self.name.setText(e[7] or e[0])
-        lines = [shellops.type_for(e[0], e[1])]
+        rows = [(T("종류"), shellops.type_for(e[0], e[1]))]
+        if e[1] and os.path.isdir(path) and not (devices.is_dev(path) or archives.is_arc(path)):
+            rows += [(T("내용"), T("세는 중…")), (T("전체 크기"), "…")]
         if not e[1] and e[2] >= 0:
-            lines.append(win_kbsize(e[2]))
+            rows.append((T("크기"), win_kbsize(e[2])))
         if e[3]:
-            lines.append(T("수정한 날짜") + ": " + win_datetime(e[3]))
-        self.info.setText("\n".join(x for x in lines if x))
+            rows.append((T("수정한 날짜"), win_datetime(e[3])))
+        self._set_rows(rows)
         pm = None
         if devices.is_dev(path) or archives.is_arc(path):   # 휴대폰·압축 안 파일: 그림 없이 정보만
             self.cur = None
@@ -8375,7 +8437,7 @@ class PreviewPane(QtWidgets.QFrame):
             self.cur = None
             return
         self.btn_seq.setVisible(not e[1] and thumbs.is_image(e[0]) and seq_in_view(v, path) is not None)
-        if not e[1] and self._try_extra(path):   # 0.9.116 코드·글꼴·소리·PSD 레이어·엑셀·그림(확대·스포이트)
+        if (not e[1] or os.path.isdir(path)) and self._try_extra(path):   # 0.9.116 + 0.9.117 폴더 코드·글꼴·소리·PSD 레이어·엑셀·그림(확대·스포이트)
             if not self.pic.isVisible():
                 self.cur = None
                 self._set_pic(None)

@@ -1958,5 +1958,16 @@
  "투명한 곳 뒤에 까는 바둑판을 어둡게 (밝은 그림의 가장자리 확인용)": "Oscurecer el tablero detrás de las zonas transparentes (para revisar bordes de imágenes claras)",
  "배경 어둡게": "Fondo oscuro",
  "격자": "Cuadrícula",
- "픽셀 격자 — 8배 이상 확대하면 픽셀 경계선": "Cuadrícula de píxeles — bordes de píxel a partir de 8x"
+ "픽셀 격자 — 8배 이상 확대하면 픽셀 경계선": "Cuadrícula de píxeles — bordes de píxel a partir de 8x",
+ "빈 폴더": "Carpeta vacía",
+ "그림 {0}장": "{0} imágenes",
+ " (앞 {0}장 보기)": " (primeras {0})",
+ "그림 없음 — 안에 든 것": "Sin imágenes — contenido",
+ "세는 중…": "Contando…",
+ "파일 {0}개 · 폴더 {1}개 · {2}": "{0} archivos · {1} carpetas · {2}",
+ "(세는 중…)": "(contando…)",
+ "(너무 많아 여기까지만 셈)": "(demasiados — contado hasta aquí)",
+ "내용": "Contenido",
+ "파일 {0}개 · 폴더 {1}개": "{0} archivos · {1} carpetas",
+ "전체 크기": "Tamaño total"
 }

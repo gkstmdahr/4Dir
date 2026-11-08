@@ -1958,5 +1958,16 @@
  "투명한 곳 뒤에 까는 바둑판을 어둡게 (밝은 그림의 가장자리 확인용)": "Schachbrett hinter transparenten Stellen abdunkeln (zum Prüfen heller Ränder)",
  "배경 어둡게": "Dunkler Hgr.",
  "격자": "Raster",
- "픽셀 격자 — 8배 이상 확대하면 픽셀 경계선": "Pixelraster — Pixelgrenzen ab 8-fachem Zoom"
+ "픽셀 격자 — 8배 이상 확대하면 픽셀 경계선": "Pixelraster — Pixelgrenzen ab 8-fachem Zoom",
+ "빈 폴더": "Leerer Ordner",
+ "그림 {0}장": "{0} Bilder",
+ " (앞 {0}장 보기)": " (erste {0})",
+ "그림 없음 — 안에 든 것": "Keine Bilder — Inhalt",
+ "세는 중…": "Wird gezählt…",
+ "파일 {0}개 · 폴더 {1}개 · {2}": "{0} Dateien · {1} Ordner · {2}",
+ "(세는 중…)": "(wird gezählt…)",
+ "(너무 많아 여기까지만 셈)": "(zu viele — bis hier gezählt)",
+ "내용": "Inhalt",
+ "파일 {0}개 · 폴더 {1}개": "{0} Dateien · {1} Ordner",
+ "전체 크기": "Gesamtgröße"
 }

@@ -1958,5 +1958,16 @@
  "투명한 곳 뒤에 까는 바둑판을 어둡게 (밝은 그림의 가장자리 확인용)": "Assombrir le damier derrière les zones transparentes (pour vérifier les bords des images claires)",
  "배경 어둡게": "Fond sombre",
  "격자": "Grille",
- "픽셀 격자 — 8배 이상 확대하면 픽셀 경계선": "Grille de pixels — bords des pixels à partir de 8x"
+ "픽셀 격자 — 8배 이상 확대하면 픽셀 경계선": "Grille de pixels — bords des pixels à partir de 8x",
+ "빈 폴더": "Dossier vide",
+ "그림 {0}장": "{0} images",
+ " (앞 {0}장 보기)": " ({0} premières)",
+ "그림 없음 — 안에 든 것": "Aucune image — contenu",
+ "세는 중…": "Comptage…",
+ "파일 {0}개 · 폴더 {1}개 · {2}": "{0} fichiers · {1} dossiers · {2}",
+ "(세는 중…)": "(comptage…)",
+ "(너무 많아 여기까지만 셈)": "(trop nombreux — compté jusqu'ici)",
+ "내용": "Contenu",
+ "파일 {0}개 · 폴더 {1}개": "{0} fichiers · {1} dossiers",
+ "전체 크기": "Taille totale"
 }

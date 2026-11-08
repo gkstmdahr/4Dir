@@ -25,7 +25,7 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.11.0"   # 1.11.0: 개인정보처리방침 privacy.html (구글 드라이브 백업 — 구글 앱 등록에 필요) / 1.10.0: 1.10.0: 받기를 누르면 다운로드는 바로 시작 + 후원 안내 창(막지 않음, 닫기 가능 — 사용자 11/6 PureRef 처럼) / 1.9.3: 1.9.3: support 메일 링크에 제목 말머리 [4Dir] / 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
+MAKE_SITE_VER = "1.11.1"   # 1.11.1: 후원 버튼 새 창(target=_blank) / 1.11.0: 개인정보처리방침 privacy.html (구글 드라이브 백업 — 구글 앱 등록에 필요) / 1.10.0: 1.10.0: 받기를 누르면 다운로드는 바로 시작 + 후원 안내 창(막지 않음, 닫기 가능 — 사용자 11/6 PureRef 처럼) / 1.9.3: 1.9.3: support 메일 링크에 제목 말머리 [4Dir] / 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
 SUPPORT = "support@4dir.net"   # 문제 보고 메일 (1.1.1)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -128,7 +128,7 @@ def page(lang, cfg, rel):
     img = ST.APP_LANG[lang]
     btns = []
     if cfg["kofi"]:
-        btns.append(f'<a class="btn don" href="https://ko-fi.com/{e(cfg["kofi"])}" rel="noopener">♥ {e(t["don_h"])}</a>')   # 1.9.2 사용자 11/5: 'Ko-fi' 대신 위와 같은 이름
+        btns.append(f'<a class="btn don" href="https://ko-fi.com/{e(cfg["kofi"])}" rel="noopener" target="_blank">♥ {e(t["don_h"])}</a>')   # 1.11.1 사용자 11/8: 새 창으로   # 1.9.2 사용자 11/5: 'Ko-fi' 대신 위와 같은 이름
     if cfg["sponsors"]:
         btns.append(f'<a class="btn don" href="https://github.com/sponsors/{e(owner)}" rel="noopener">♥ GitHub Sponsors</a>')
     donate = (f'<section id="donate"><h2>{e(t["don_h"])}</h2><p>{e(t["don"])}</p><p class="btns">{"".join(btns)}</p></section>'
