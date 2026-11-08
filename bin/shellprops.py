@@ -12,12 +12,13 @@ import logging
 
 log = logging.getLogger("QE")
 
-SHELLPROPS_VER = "1.1.0"   # 1.1.0: 사진 크기 가로·세로(열 표시)
+SHELLPROPS_VER = "1.2.0"   # 1.2.0 (0.9.116): 쪽 수(PDF·워드·파워포인트) / 1.1.0: 사진 크기 가로·세로(열 표시)
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tif", ".tiff", ".webp", ".heic", ".heif", ".jfif", ".ico", ".dng",
              ".cr2", ".nef", ".arw", ".raw"}
 VIDEO_EXT = {".mp4", ".mov", ".avi", ".mkv", ".wmv", ".m4v", ".mpg", ".mpeg", ".webm", ".flv", ".3gp", ".ts", ".mts", ".m2ts"}
 AUDIO_EXT = {".mp3", ".wav", ".flac", ".m4a", ".aac", ".ogg", ".wma", ".opus", ".aiff", ".aif"}
-MEDIA_EXT = IMAGE_EXT | VIDEO_EXT | AUDIO_EXT
+PAGE_EXT = {".pdf", ".docx", ".pptx"}   # 1.2.0 쪽 수 열 (pdftools.page_count — 셸 안 부름)
+MEDIA_EXT = IMAGE_EXT | VIDEO_EXT | AUDIO_EXT | PAGE_EXT
 
 _cache = {}   # (경로 소문자, mtime) → dict
 _CACHE_MAX = 200000
@@ -32,6 +33,13 @@ def _ts(v):
 
 
 def _read(path):
+    if os.path.splitext(path)[1].lower() in PAGE_EXT:   # 1.2.0 문서 쪽 수
+        try:
+            import pdftools
+            return {"pages": pdftools.page_count(path)}
+        except Exception:
+            log.exception("쪽 수 못 읽음 %s", path)
+            return {"pages": None}
     from win32com.propsys import propsys, pscon
     out = {}
     try:

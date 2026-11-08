@@ -49,7 +49,7 @@ EMBED_URL = f"https://www.python.org/ftp/python/{PYVER}/{EMBED}"
 
 # bin 에서 배포하지 않는 것 (개인 데이터)
 BIN_SKIP_DIRS = {"__pycache__", "log", "sessions", "workspaces", "index", "restore_backup", "_restore_pending", "memo_images"}   # index = 검색 색인(개인 데이터)
-BIN_SKIP_FILES = re.compile(r"(4Dir_(state|favorites|settings|labels|memos|tags).*|.*\.running|.*\.tmp|.*백업.*)$", re.I)
+BIN_SKIP_FILES = re.compile(r"(4Dir_(state|favorites|settings|labels|memos|tags|ratings|frecent|viewmem).*|.*\.running|.*\.tmp|.*백업.*)$", re.I)
 
 # PySide6 에서 필요한 것만 (이름 규칙)
 PYSIDE_KEEP = re.compile(r"^(__init__\.py|_config\.py|_git_pyside_version\.py|"

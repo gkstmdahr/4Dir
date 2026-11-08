@@ -14,9 +14,10 @@ import glob
 import shutil
 import logging
 
-CARRYOVER_VER = "1.0.1"   # 1.0.1: 로그에 경로를 원래 대소문자로
-FILES = ("4Dir_settings.json", "4Dir_state.json", "4Dir_favorites.json", "4Dir_labels.json")   # v0.9.89 색 라벨
-DIRS = ("workspaces",)
+CARRYOVER_VER = "1.1.0"   # 1.0.1: 로그에 경로를 원래 대소문자로
+FILES = ("4Dir_settings.json", "4Dir_state.json", "4Dir_favorites.json", "4Dir_labels.json",   # v0.9.89 색 라벨
+         "4Dir_memos.json", "4Dir_tags.json", "4Dir_ratings.json", "4Dir_frecent.json")   # 1.1.0 (0.9.116): 메모·태그가 빠져 있던 것 + 별점·자주 간 폴더
+DIRS = ("workspaces", "memo_images")   # 1.1.0: 메모에 붙인 그림
 log = logging.getLogger("QE.carryover")
 
 

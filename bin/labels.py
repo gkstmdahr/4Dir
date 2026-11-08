@@ -104,3 +104,55 @@ class Store:
             os.replace(tmp, self.path)
         except OSError:
             log.exception("색 라벨 저장 실패 %s", self.path)
+
+
+class Ratings:
+    """별점 1~5 (0.9.116 빌드 3, 사용자 11/8 #8 — Adobe Bridge·Eagle 처럼). 4Dir 안에만 저장 (4Dir_ratings.json {경로(소문자): 1~5})"""
+    STARS = "★★★★★"
+
+    def __init__(self, path):
+        self.path = path
+        self.data = {}
+        try:
+            if os.path.exists(path):
+                with open(path, encoding="utf-8") as f:
+                    self.data = {k: int(v) for k, v in json.load(f).items() if str(v).isdigit() and 1 <= int(v) <= 5}
+        except Exception:
+            log.exception("별점 파일 깨짐 → 빈 것으로 %s", path)
+
+    def get(self, full):
+        return self.data.get(os.path.normcase(full), 0) if self.data else 0
+
+    @staticmethod
+    def text(n):
+        return ("★" * n + "☆" * (5 - n)) if n else ""
+
+    def set(self, paths, n):
+        for p in paths:
+            k = os.path.normcase(p)
+            if n:
+                self.data[k] = int(n)
+            else:
+                self.data.pop(k, None)
+        self.save()
+        log.info("별점 %s → %d개 %s", n or "없음", len(paths), paths[:3])
+
+    def rename(self, old, new):
+        """4Dir 안에서 이름 바꾸기·옮기기 → 따라감 (폴더면 그 안 것까지)"""
+        o, nn = os.path.normcase(old), os.path.normcase(new)
+        moved = {}
+        for k in list(self.data):
+            if k == o or k.startswith(o + os.sep):
+                moved[nn + k[len(o):]] = self.data.pop(k)
+        if moved:
+            self.data.update(moved)
+            self.save()
+
+    def save(self):
+        tmp = self.path + ".tmp"
+        try:
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(self.data, f, ensure_ascii=False, indent=1)
+            os.replace(tmp, self.path)
+        except OSError:
+            log.exception("별점 저장 실패 %s", self.path)

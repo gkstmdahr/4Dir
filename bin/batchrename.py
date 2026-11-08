@@ -6,12 +6,15 @@
 - 같은 이름 겹침·못 쓰는 글자·이미 있는 파일은 빨간 줄 → 적용 막음.
 - 적용은 2단계(임시 이름 → 새 이름)라 a↔b 처럼 서로 바꾸기도 안전. 실패하면 되돌림.
 - 적용한 것은 4Dir 의 Ctrl+Z(되돌리기) 한 번으로 전부 되돌림.
+- 1.0.8 (0.9.116 — 사용자 11/8 요청 '회계·인사 팀용'): [날짜 붙이기] 이름 앞에 날짜(수정 날짜/오늘/사진 찍은 날짜),
+  형식 YYYYMMDD / YYYY-MM-DD / YYMMDD, 구분 글자 '_'. 이미 같은 날짜로 시작하면 안 붙임 (date_prefix 순수 함수)
 """
 import os
 import re
 import time
 import shutil
 import logging
+import datetime
 
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
@@ -21,7 +24,8 @@ import shellops
 
 log = logging.getLogger("QE.rename")
 BAD = re.compile(r'[\\/:*?"<>|]')
-VERSION = "1.0.7"
+VERSION = "1.0.8"
+DATE_FMTS = ["%Y%m%d", "%Y-%m-%d", "%y%m%d"]
 
 
 def split_ext(name, is_dir, orig=None):
@@ -194,6 +198,7 @@ class BatchRename(QtWidgets.QWidget):
         btn(left, T("숫자 지우기"), lambda: self.op_digits(keep=False))
         btn(left, T("자릿수 맞춤"), self.op_pad, T("이름 속 숫자를 같은 자릿수로 (1 → 001)"))
         btn(left, T("번호 붙이기"), self.op_number)
+        btn(left, T("날짜 붙이기"), self.op_date, T("이름 앞에 날짜 붙이기 (예: 20261108_영수증) — 이미 같은 날짜로 시작하면 그대로"))
         btn(left, T("대소문자"), self.op_case)
         left.addStretch(1)
         btn(right, T("이름 되돌림"), self.op_reset, T("바뀔이름을 현재이름으로"))
@@ -410,6 +415,28 @@ class BatchRename(QtWidgets.QWidget):
             return (num + a["sep"] + s, e) if a["pos"] == 0 else (s + a["sep"] + num, e)
         self._each(f)
 
+    def op_date(self):
+        a = ask(self, T("날짜 붙이기"), [("basis", T("어떤 날짜"), "choice", 0, [T("수정한 날짜"), T("오늘"), T("사진 찍은 날짜 (없으면 수정한 날짜)")]),
+                                    ("fmt", T("모양"), "choice", 0, ["YYYYMMDD", "YYYY-MM-DD", "YYMMDD"]),
+                                    ("sep", T("구분 글자"), "text", "_", None)], self.store)
+        if not a:
+            return
+        today = datetime.date.today()
+        log.info("날짜 붙이기 기준=%d 모양=%d 구분=%r", a["basis"], a["fmt"], a["sep"])
+
+        def f(it, s, e, k):
+            if a["basis"] == 1:
+                d = today
+            else:
+                d = None
+                if a["basis"] == 2 and not it.is_dir:
+                    import datefolders
+                    d = datefolders.exif_date(it.src)
+                if d is None:
+                    d = datetime.datetime.fromtimestamp(it.mtime) if it.mtime else today
+            return date_prefix(s, d, a["fmt"], a["sep"]), e
+        self._each(f)
+
     def op_case(self):
         a = ask(self, T("대소문자"), [("mode", T("바꾸기"), "choice", 0, [T("모두 소문자"), T("모두 대문자"), T("단어 첫 글자만 대문자")]),
                                   ("ext", T("확장자도"), "bool", False, None)], self.store)
@@ -497,6 +524,14 @@ class BatchRename(QtWidgets.QWidget):
             self.on_done(pairs)
         self.refresh()
         self.status.setText(self.status.text() + "  ·  " + T('✔ {0}개 바꿈 (4Dir 에서 Ctrl+Z 로 되돌리기)').format(len(pairs)))
+
+
+def date_prefix(stem, d, fmt=0, sep="_"):
+    """이름 앞에 날짜. 이미 그 날짜로 시작하면 그대로 (두 번 눌러도 한 번만)"""
+    ds = d.strftime(DATE_FMTS[fmt])
+    if stem.startswith(ds):
+        return stem
+    return ds + sep + stem if stem else ds
 
 
 def _move(a, b):

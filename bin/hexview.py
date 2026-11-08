@@ -5,18 +5,24 @@
 - 글자: 앞 8MB 까지. 인코딩 = BOM → UTF-8 → CP949(한국어 윈도우) 순으로 맞춰 봄, 위에서 바꿀 수 있음. 줄 바꿈 켜기/끄기
 - 16진수: 파일 크기와 상관없이 — 화면에 보이는 줄만 그때그때 파일에서 읽어 그림(1GB 파일도 메모리 거의 안 씀)
 - 글자 찾기(Ctrl+F) · 16진수 칸에서 위치로 가기(Ctrl+G)
+- 끝 따라가기(1.2.0, 0.9.116 — 사용자 11/8 요청 '커지는 기록 파일 실시간 보기'): 켜면 파일이 커질 때 늘어난 부분만 읽어 덧붙이고 맨 아래로.
+  QFileSystemWatcher 알림 + (윈도우는 열린 파일 변경 알림이 늦을 수 있어) 켜져 있을 때만 1초 간격 크기 확인 — 끄면 멈춤.
+  파일이 작아지면(새로 씀) 처음부터 다시. 8MB 넘는 파일이면 끝 1MB 부터 보여 줌
 로그: bin\\log\\4Dir.log [QE.hexview]
 """
 import os
+import codecs
 import logging
 
 from i18n import T
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-HEXVIEW_VER = "1.1.0"   # 1.1.0 (0.9.110 점검): 파일 안 잡고 있음 · 큰 파일 찾기 진행 창
+HEXVIEW_VER = "1.2.0"   # 1.2.0 (0.9.116): 끝 따라가기 · 1.1.0 (0.9.110 점검): 파일 안 잡고 있음 · 큰 파일 찾기 진행 창
 log = logging.getLogger("QE.hexview")
 TEXT_MAX = 8 * 1048576
+TAIL_START = 1048576          # 끝 따라가기: 큰 파일이면 끝 1MB 부터
+TAIL_READ_MAX = 4 * 1048576   # 한 번에 덧붙일 최대 (넘으면 끝 부분만)
 ENCODINGS = ["auto", "utf-8", "cp949", "utf-16", "latin-1", "shift_jis", "gb18030", "big5"]
 
 
@@ -161,6 +167,10 @@ class ViewerDialog(QtWidgets.QDialog):
         self.wrap = QtWidgets.QCheckBox(T("줄 바꿈"))
         self.wrap.setChecked(True)
         bar.addWidget(self.wrap)
+        self.b_tail = QtWidgets.QPushButton(T("끝 따라가기"))
+        self.b_tail.setCheckable(True)
+        self.b_tail.setToolTip(T("파일이 커지면 늘어난 부분을 바로 덧붙여 보여 줌 (기록 파일 보기)"))
+        bar.addWidget(self.b_tail)
         self.find_edit = QtWidgets.QLineEdit()
         self.find_edit.setPlaceholderText(T("찾기 (Enter = 다음)"))
         self.find_edit.setClearButtonEnabled(True)
@@ -189,6 +199,10 @@ class ViewerDialog(QtWidgets.QDialog):
         self.wrap.toggled.connect(lambda on: self.text.setLineWrapMode(QtWidgets.QPlainTextEdit.WidgetWidth if on else QtWidgets.QPlainTextEdit.NoWrap))
         self.find_edit.returnPressed.connect(self.find_next)
         self.goto_edit.returnPressed.connect(self.goto)
+        self._tail_on = False
+        self._watch = None
+        self._tail_timer = None
+        self.b_tail.toggled.connect(self.set_tail)
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+F"), self, lambda: (self.find_edit.setFocus(), self.find_edit.selectAll()))
         QtGui.QShortcut(QtGui.QKeySequence("Ctrl+G"), self, lambda: (self.set_mode("hex"), self.goto_edit.setFocus(), self.goto_edit.selectAll()))
         QtGui.QShortcut(QtGui.QKeySequence("Escape"), self, self.close)
@@ -205,6 +219,115 @@ class ViewerDialog(QtWidgets.QDialog):
         if "\x00" in s:
             s = s.replace("\x00", "·")
         self.text.setPlainText(s)
+        self._tail_pos = len(self.head)
+        if getattr(self, "_tail_on", False):
+            self._tail_dec = codecs.getincrementaldecoder(self._dec_name())(errors="replace")
+        self._info()
+
+    # ------------------------------------------------------------ 끝 따라가기 (1.2.0)
+    def set_tail(self, on):
+        on = bool(on)
+        if on == self._tail_on:
+            return
+        self._tail_on = on
+        if self.b_tail.isChecked() != on:
+            self.b_tail.setChecked(on)
+        if on:
+            if self.mode != "text":
+                self.set_mode("text")
+            try:
+                size = os.path.getsize(self.path)
+            except OSError:
+                size = self.size
+            if size > TEXT_MAX:      # 큰 파일: 끝 1MB 부터 (앞 8MB 는 버림)
+                start = size - TAIL_START
+                with open(self.path, "rb") as f:
+                    f.seek(start)
+                    b = f.read(TAIL_START)
+                nl = b.find(b"\n")
+                if 0 <= nl < 4096:
+                    b, start = b[nl + 1:], start + nl + 1
+                self.text.setPlainText(b.decode(self.cur_enc(), "replace").replace("\x00", "·"))
+                self._tail_pos = start + len(b)
+                log.info("끝 따라가기: 큰 파일이라 %d 부터 보임", start)
+            self._tail_dec = codecs.getincrementaldecoder(self._dec_name())(errors="replace")
+            self._watch = QtCore.QFileSystemWatcher([self.path], self)
+            self._watch.fileChanged.connect(lambda _p: self._tail_check())
+            self._tail_timer = QtCore.QTimer(self)      # 켜져 있을 때만 (윈도우 알림이 늦을 때 대비)
+            self._tail_timer.setInterval(1000)
+            self._tail_timer.timeout.connect(self._tail_check)
+            self._tail_timer.start()
+            self._tail_check()
+            self._scroll_end()
+        else:
+            self._tail_stop()
+        log.info("끝 따라가기 %s %s 위치 %s", "켬" if on else "끔", self.path, getattr(self, "_tail_pos", None))
+
+    def _tail_stop(self):
+        if self._tail_timer is not None:
+            self._tail_timer.stop()
+            self._tail_timer.deleteLater()
+            self._tail_timer = None
+        if self._watch is not None:
+            if self._watch.files():
+                self._watch.removePaths(self._watch.files())
+            self._watch.deleteLater()
+            self._watch = None
+
+    def _dec_name(self):
+        e = self.cur_enc()
+        return "utf-8" if e == "utf-8-sig" else e
+
+    def _scroll_end(self):
+        sb = self.text.verticalScrollBar()
+        sb.setValue(sb.maximum())
+
+    def _tail_check(self):
+        if not self._tail_on:
+            return
+        if self._watch is not None and self.path not in self._watch.files() and os.path.exists(self.path):
+            self._watch.addPath(self.path)    # 지웠다 새로 만든 파일이면 다시 감시
+        try:
+            size = os.path.getsize(self.path)
+        except OSError:
+            return
+        if size == self._tail_pos:
+            return
+        if size < self._tail_pos:            # 작아짐 = 새로 씀 → 처음부터
+            log.info("끝 따라가기: 파일이 작아짐 %d → %d, 처음부터 다시", self._tail_pos, size)
+            try:
+                with open(self.path, "rb") as f:
+                    self.head = f.read(TEXT_MAX)
+            except OSError as e:
+                log.debug("끝 따라가기 읽기 실패 %s", e)
+                return
+            self.text.setPlainText(self.head.decode(self.cur_enc(), "replace").replace("\x00", "·"))
+            self._tail_pos = len(self.head)
+            self._tail_dec = codecs.getincrementaldecoder(self._dec_name())(errors="replace")
+        else:
+            start = self._tail_pos
+            if size - start > TAIL_READ_MAX:
+                start = size - TAIL_READ_MAX
+                self._tail_dec = codecs.getincrementaldecoder(self._dec_name())(errors="replace")
+            try:
+                with open(self.path, "rb") as f:
+                    f.seek(start)
+                    b = f.read(size - start)
+            except OSError as e:
+                log.debug("끝 따라가기 읽기 실패 %s", e)
+                return
+            self._tail_pos = start + len(b)
+            s = self._tail_dec.decode(b).replace("\x00", "·")
+            if s:
+                cur = QtGui.QTextCursor(self.text.document())
+                cur.movePosition(QtGui.QTextCursor.End)
+                cur.insertText(s)
+            log.debug("끝 따라가기: %d바이트 덧붙임 (위치 %d)", len(b), self._tail_pos)
+        self.size = size
+        self.hex.size = size
+        self.hex._range()
+        self.hex.viewport().update()
+        self._scroll_end()
         self._info()
 
     def set_mode(self, mode):
@@ -293,5 +416,7 @@ class ViewerDialog(QtWidgets.QDialog):
         self.hex.goto(off)
 
     def closeEvent(self, ev):
+        self._tail_on = False
+        self._tail_stop()
         self.hex.close_file()
         super().closeEvent(ev)

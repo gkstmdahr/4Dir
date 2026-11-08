@@ -13,6 +13,11 @@
   (윈도우는 PSD 미리보기가 없음). 둘 다 실패하면 윈도우 미리보기. 파일은 앞부분·요약 정보만 읽음(전체 안 읽음).
 1.3.0 (4Dir 빌드 17, galleryV8 참고): 형식 딱지(왼쪽 위 PSD·PNG·GIF…, 64~299px 미리보기에만 — 미리보기 창 큰 그림엔 안 넣음),
   폴더 표지(폴더 안 첫 그림을 폴더 모양 위에 겹쳐 그림, 이름순 첫 그림, 앞 2000개까지만 훑음). 둘 다 작업 스레드에서 QImage 로 그림.
+1.4.0 (0.9.116 빌드 4, 사용자 11/8 '폴더 모양이 왜 다르지'): 그림 없는 폴더는 윈도우 폴더 아이콘이 나와 표지 폴더와 모양이 달랐음
+  → empty_folder(px) = 표지와 같은 색·모양의 빈 폴더 (화면 스레드, 크기별 1장 기억). 표지 만드는 중에도 이것을 보여 줌.
+1.5.0 (빌드 6, 사용자 '탐색기처럼 바꿔'): 표지 바탕 = 윈도우 폴더 아이콘(256 큰 아이콘, main 이 화면 스레드에서 set_folder_base 로 넘김)
+  → 아이콘 그림 + 안 첫 그림 카드 + 아이콘 아랫부분(앞판)을 다시 그려 그림이 폴더에 꽂힌 모양. 빈 폴더는 윈도우 아이콘 그대로(empty_folder 안 씀).
+  바탕을 못 받았으면 예전처럼 직접 그린 폴더.
 """
 import os
 import time
@@ -26,7 +31,7 @@ from ctypes import wintypes
 from PySide6 import QtCore, QtGui
 
 log = logging.getLogger("QE.thumb")
-VERSION = "1.3.0"
+VERSION = "1.5.0"
 BADGES = True    # 형식 딱지 (main 이 OPTS 로 정함)
 COVERS = True    # 폴더 표지
 BADGE_COLORS = {".psd": "#1f6fd1", ".png": "#2e9d4f", ".jpg": "#e07b00", ".jpeg": "#e07b00", ".gif": "#8e44ad", ".max": "#0f8b8d",
@@ -288,20 +293,113 @@ def first_image(folder, limit=2000):
     return best[1] if best else None
 
 
-def folder_cover(folder, px):
-    """폴더 표지: 폴더 모양 + 안 첫 그림 카드 (그림이 없으면 None → 보통 폴더 아이콘)"""
-    pic_path = first_image(folder)
-    if not pic_path:
-        return None
-    pic = make_image(pic_path, px, badges=False)
-    if pic is None or pic.isNull():
-        return None
+FOLDER_BACK, FOLDER_FRONT = "#d9a520", "#f5c84c"
+_EMPTY = {}
+FOLDER_BASE = None    # 1.5.0 윈도우 폴더 아이콘 QImage (256) — 작업 스레드는 읽기만
+FOLDER_BOX = None     # 그 아이콘에서 실제로 그려진 곳 (투명 아닌 곳) QRectF, 256 기준
+FRONT_FROM = 0.50     # (앞판 못 찾을 때) 아이콘 높이에서 이 비율 아래를 앞판으로 다시 그림
+FLAP = None           # 윈도우 10 처럼 왼쪽 비스듬한 앞판 — 그 모양 QPainterPath (256 기준). None 이면 FRONT_FROM 방식
+
+
+def _lum(c):
+    return (c.red() + c.green() + c.blue()) / 3.0
+
+
+def _find_flap(img, box):
+    """줄마다 왼쪽 끝에서 오른쪽으로 가다 밝기가 확 떨어지는 곳(앞판 → 뒤판) = 앞판 오른쪽 끝. 가운데 줄 절반 넘게 찾으면 앞판 모양"""
+    path = QtGui.QPainterPath()
+    found = mid = 0
+    top, bot = int(box.top()), int(box.bottom())
+    for y in range(top, bot):
+        xs = [x for x in range(int(box.left()), int(box.right())) if img.pixelColor(x, y).alpha() > 40]
+        if not xs:
+            continue
+        x0 = xs[0]
+        edge = None
+        prev = _lum(img.pixelColor(x0, y))
+        for x in range(x0 + 1, xs[-1] + 1):
+            c = img.pixelColor(x, y)
+            if c.alpha() <= 40:
+                break
+            cur = _lum(c)
+            if prev - cur > 16:
+                edge = x
+                break
+            prev = cur
+        in_mid = top + (bot - top) * 0.2 <= y <= top + (bot - top) * 0.8
+        mid += in_mid
+        if edge is None:
+            edge = xs[-1] + 1 if (xs[-1] - x0) < box.width() * 0.45 else None   # 앞판만 있는 아래 줄
+        elif in_mid:
+            found += 1
+        if edge is not None and edge - x0 < box.width() * 0.45:
+            path.addRect(QtCore.QRectF(x0, y, edge - x0, 1))
+    ok = mid and found / mid > 0.5
+    log.info("폴더 아이콘 앞판 찾기: 가운데 줄 %d 중 %d → %s", mid, found, "비스듬한 앞판" if ok else "아랫부분 앞판")
+    return path.simplified() if ok else None
+
+
+def set_folder_base(img):
+    """main 이 화면 스레드에서 한 번: 윈도우 폴더 아이콘 → 표지 바탕"""
+    global FOLDER_BASE, FOLDER_BOX
+    if img is None or img.isNull():
+        log.info("폴더 아이콘 바탕 없음 → 직접 그린 폴더")
+        return
+    img = img.convertToFormat(QtGui.QImage.Format_ARGB32_Premultiplied)
+    if img.width() != 256:
+        img = img.scaled(256, 256, QtCore.Qt.IgnoreAspectRatio, QtCore.Qt.SmoothTransformation)
+    xs, ys = [], []
+    for y in range(0, 256, 2):
+        for x in range(0, 256, 2):
+            if img.pixelColor(x, y).alpha() > 40:
+                xs.append(x); ys.append(y)
+    if not xs:
+        log.info("폴더 아이콘이 비어 있음 → 직접 그린 폴더")
+        return
+    global FLAP
+    FOLDER_BOX = QtCore.QRectF(min(xs), min(ys), max(xs) - min(xs) + 2, max(ys) - min(ys) + 2)
+    FLAP = _find_flap(img, FOLDER_BOX)
+    FOLDER_BASE = img
+    log.info("폴더 표지 바탕 = 윈도우 폴더 아이콘, 그려진 곳 %s", FOLDER_BOX.getRect())
+
+
+def _cover_on_base(pic, px):
+    """윈도우 폴더 아이콘 위에 그림 카드 → 아랫부분 앞판 다시 (그림이 폴더에 꽂힌 모양)"""
+    k = px / 256.0
+    base = FOLDER_BASE.scaled(px, px, QtCore.Qt.IgnoreAspectRatio, QtCore.Qt.SmoothTransformation)
+    b = QtCore.QRectF(FOLDER_BOX.x() * k, FOLDER_BOX.y() * k, FOLDER_BOX.width() * k, FOLDER_BOX.height() * k)
     img = QtGui.QImage(px, px, QtGui.QImage.Format_ARGB32_Premultiplied)
     img.fill(QtCore.Qt.transparent)
     p = QtGui.QPainter(img)
     p.setRenderHint(QtGui.QPainter.Antialiasing, True)
     p.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
-    s = px / 100.0
+    p.drawImage(0, 0, base)
+    if FLAP is not None:   # 뒤판 위 (왼쪽 앞판 뒤로 살짝 들어감)
+        area = QtCore.QRectF(b.x() + b.width() * 0.24, b.y() + b.height() * 0.06, b.width() * 0.70, b.height() * 0.72)
+    else:
+        area = QtCore.QRectF(b.x() + b.width() * 0.12, b.y() + b.height() * 0.04, b.width() * 0.76, b.height() * 0.70)
+    sc = min(area.width() / pic.width(), area.height() / pic.height())
+    pw, ph = pic.width() * sc, pic.height() * sc
+    if FLAP is not None:
+        card = QtCore.QRectF(area.center().x() - pw / 2, area.center().y() - ph / 2, pw, ph)
+    else:
+        card = QtCore.QRectF(area.center().x() - pw / 2, area.bottom() - ph, pw, ph)
+    p.setPen(QtCore.Qt.NoPen)
+    p.setBrush(QtGui.QColor(0, 0, 0, 40))   # 옅은 그림자
+    p.drawRect(card.adjusted(-1.5 * k * 4, -1.5 * k * 4, 2.5 * k * 4, 2.5 * k * 4))
+    p.setBrush(QtGui.QColor("#ffffff"))
+    p.drawRect(card.adjusted(-1.5 * k * 4, -1.5 * k * 4, 1.5 * k * 4, 1.5 * k * 4))
+    p.drawImage(card, pic)
+    if FLAP is not None:
+        p.setClipPath(QtGui.QTransform.fromScale(k, k).map(FLAP))
+    else:
+        p.setClipRect(QtCore.QRectF(0, b.y() + b.height() * FRONT_FROM, px, px))
+    p.drawImage(0, 0, base)
+    p.end()
+    return img
+
+
+def _folder_back(p, s):
     back = QtGui.QPainterPath()   # 뒤판 + 탭
     back.moveTo(6 * s, 22 * s)
     back.lineTo(6 * s, 14 * s)
@@ -314,8 +412,46 @@ def folder_cover(folder, px):
     back.lineTo(6 * s, 84 * s)
     back.closeSubpath()
     p.setPen(QtCore.Qt.NoPen)
-    p.setBrush(QtGui.QColor("#d9a520"))
+    p.setBrush(QtGui.QColor(FOLDER_BACK))
     p.drawPath(back)
+
+
+def empty_folder(px):
+    """그림 없는 폴더 — 표지와 같은 색·모양 (1.4.0). 화면 스레드에서 QPixmap, 크기별 기억"""
+    pm = _EMPTY.get(px)
+    if pm is None:
+        img = QtGui.QImage(px, px, QtGui.QImage.Format_ARGB32_Premultiplied)
+        img.fill(QtCore.Qt.transparent)
+        p = QtGui.QPainter(img)
+        p.setRenderHint(QtGui.QPainter.Antialiasing, True)
+        s = px / 100.0
+        _folder_back(p, s)
+        front = QtGui.QPainterPath()   # 앞판 — 뒤판 대부분을 덮음 (탭과 윗단만 보이게)
+        front.addRoundedRect(QtCore.QRectF(4 * s, 28 * s, 92 * s, 62 * s), 3 * s, 3 * s)
+        p.setBrush(QtGui.QColor(FOLDER_FRONT))
+        p.drawPath(front)
+        p.end()
+        pm = _EMPTY[px] = QtGui.QPixmap.fromImage(img)
+    return pm
+
+
+def folder_cover(folder, px):
+    """폴더 표지: 폴더 모양 + 안 첫 그림 카드 (그림이 없으면 None → 빈 폴더 empty_folder)"""
+    pic_path = first_image(folder)
+    if not pic_path:
+        return None
+    pic = make_image(pic_path, px, badges=False)
+    if pic is None or pic.isNull():
+        return None
+    if FOLDER_BASE is not None:
+        return _cover_on_base(pic, px)
+    img = QtGui.QImage(px, px, QtGui.QImage.Format_ARGB32_Premultiplied)
+    img.fill(QtCore.Qt.transparent)
+    p = QtGui.QPainter(img)
+    p.setRenderHint(QtGui.QPainter.Antialiasing, True)
+    p.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
+    s = px / 100.0
+    _folder_back(p, s)
     # 그림 카드 (흰 테두리)
     area = QtCore.QRectF(14 * s, 22 * s, 72 * s, 56 * s)
     k = min(area.width() / pic.width(), area.height() / pic.height())
@@ -327,7 +463,7 @@ def folder_cover(folder, px):
     # 앞판 (아래 띠) — 그림 아래쪽만 살짝 덮어 폴더처럼
     front = QtGui.QPainterPath()
     front.addRoundedRect(QtCore.QRectF(4 * s, 70 * s, 92 * s, 20 * s), 3 * s, 3 * s)
-    p.setBrush(QtGui.QColor("#f5c84c"))
+    p.setBrush(QtGui.QColor(FOLDER_FRONT))
     p.drawPath(front)
     p.end()
     return img
