@@ -10,10 +10,11 @@
 로그: bin\\log\\4Dir.log [QE.winhook]
 """
 import os
+import sys
 import logging
 import winreg
 
-WINHOOK_VER = "1.2.0"   # 1.2.0 (0.9.110 점검): 끌 때 우리 것만 지움·이전 값 되돌림, 다른 프로그램이 가져간 Win+E 는 안 빼앗음
+WINHOOK_VER = "1.3.0"   # 1.3.0 (0.9.119): runtime 없는 판도 --new-window (지금 파이썬으로) / 1.2.0 (0.9.110 점검): 끌 때 우리 것만 지움·이전 값 되돌림, 다른 프로그램이 가져간 Win+E 는 안 빼앗음
 log = logging.getLogger("QE.winhook")
 CLSID = r"Software\Classes\CLSID\{52205fd8-5dfb-447d-801a-d0b52f2e83e1}"
 BASE = [CLSID]   # 시험은 다른 곳으로 바꿈 (사용자 레지스트리를 건드리지 않게)
@@ -32,6 +33,14 @@ def launch_command(root):
         mp = os.path.join(root, "bin", m)
         if os.path.isfile(pyw) and os.path.isfile(mp):
             return f'"{pyw}" "{mp}" --new-window'
+    # 1.3.0 (0.9.119 회사 PC 실측 11/10): runtime 없는 판(개발 폴더·소스)은 vbs 로 떨어져 --new-window 가 빠짐
+    #   → Win+E 가 '기존 창 앞으로'만 하고 새 창이 안 뜸. 지금 4Dir 를 돌리는 파이썬(pythonw)으로 직접
+    cur = sys.executable or ""
+    if cur.lower().endswith("python.exe"):
+        cur = cur[:-len("python.exe")] + "pythonw.exe"
+    mp = os.path.join(root, "bin", "main.py")
+    if cur.lower().endswith("pythonw.exe") and os.path.isfile(cur) and os.path.isfile(mp):
+        return f'"{cur}" "{mp}" --new-window'
     exe = os.path.join(root, "4Dir.exe")
     if os.path.isfile(exe):
         return f'"{exe}"'

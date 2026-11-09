@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.118"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 7             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.119"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 3             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -497,6 +497,7 @@ import devices  # noqa: E402  (v0.9.108 빌드 4 휴대폰 등 드라이브 글�
 import hexview  # noqa: E402  글자·16진수 보기 (F3)
 import syncdirs  # noqa: E402  폴더 맞추기
 import winhook  # noqa: E402  Win+E 로 4Dir
+import ptlink  # noqa: E402  0.9.119 PowerToys 로 Win+E (26H2)
 import imgbatch  # noqa: E402  그림 일괄 크기·형식
 import spacemap  # noqa: E402  디스크 사용량 트리맵
 import tags  # noqa: E402  태그·가상 그룹
@@ -7669,6 +7670,44 @@ class SettingsDialog(QtWidgets.QDialog):
         self._sub(lay, T("윈도우"))   # 0.9.109
         self._check(lay, "win_e", T("Win+E 를 누르면 탐색기 대신 4Dir 열기"), winhook.ours, m.toggle_winE,
                     T("이 사용자 계정에만 적용 — 끄면 원래 탐색기로 돌아옵니다"))
+        # 0.9.119 빌드 3 (사용자 11/10): 26H2 는 위 방식이 안 먹는 것으로 보임 → PowerToys 로 연결 (자동 + 그림 안내)
+        if ptlink.registry_may_fail():
+            warn = QtWidgets.QLabel("⚠ " + T("이 윈도우(26H2, 빌드 {0})에서는 위 방식이 안 될 수 있습니다 — 아래 PowerToys 연결을 쓰세요").format(ptlink.windows_build()))
+            warn.setWordWrap(True)
+            warn.setStyleSheet("color:#d93025;")
+            lay.addWidget(warn)
+        row = QtWidgets.QHBoxLayout()
+        self.pt_state = QtWidgets.QLabel()
+        self.pt_state.setWordWrap(True)
+        b1 = QtWidgets.QPushButton("⚡ " + T("PowerToys 로 Win+E 연결"))
+        b1.setToolTip(T("PowerToys 키보드 관리자에 'Win+E → 4Dir 새 창'을 자동으로 넣습니다 (원래 설정은 보관). PowerToys 가 없으면 받는 곳을 엽니다"))
+        b1.clicked.connect(lambda *_: (m.pt_link(), self._pt_state()))
+        b2 = QtWidgets.QPushButton("🖼 " + T("그림 안내"))
+        b2.setToolTip(T("PowerToys 설치부터 Win+E 연결까지 그림으로 보기"))
+        b2.clicked.connect(lambda *_: (m.open_pt_guide(self), self._pt_state()))
+        b3 = QtWidgets.QPushButton(T("연결 끊기"))
+        b3.setToolTip(T("PowerToys 에서 4Dir 의 Win+E 항목만 지웁니다"))
+        b3.clicked.connect(lambda *_: (m.pt_unlink(), self._pt_state()))
+        self.pt_unlink_btn = b3
+        for b in (b1, b2, b3):
+            b.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+            row.addWidget(b)
+        row.addStretch(1)
+        lay.addLayout(row)
+        lay.addWidget(self.pt_state)
+        self._pt_state()
+
+    def _pt_state(self):
+        inst = ptlink.exe_path() is not None
+        lk = inst and ptlink.linked()
+        if not inst:
+            t = "⚪ " + T("PowerToys 가 설치되어 있지 않습니다")
+        elif lk:
+            t = "🟢 " + T("PowerToys 연결됨 — Win+E 를 누르면 4Dir 새 창") + ("" if ptlink.running() else "  ·  ⚠ " + T("PowerToys 를 실행해야 동작합니다"))
+        else:
+            t = "🟡 " + T("PowerToys 설치됨 — 아직 연결 안 됨")
+        self.pt_state.setText(t)
+        self.pt_unlink_btn.setVisible(bool(lk))
 
     def _p_list(self, lay):
         self._sub(lay, T("표시"))
@@ -8582,6 +8621,38 @@ class _GdSig(QtCore.QObject):
 GD_DUE = 20 * 3600   # 자동 백업 간격 (하루 한 번 — 20시간 지나면)
 
 
+def gd_result_page(ok, title, msg):
+    """구글 로그인 뒤 브라우저에 보이는 결과 페이지 (0.9.119 사용자 11/10: 큰 글자 한 줄은 전문성이 없어 보임)
+    — 가운데 카드 · 4Dir 아이콘 · 결과 표시(✓/!) · 제목 · 안내 · 아래 4dir.net. 밝게/어둡게 자동, 바깥 파일 안 씀"""
+    import html as _h
+    import base64
+    icon = ""
+    try:
+        ba = QtCore.QByteArray()
+        buf = QtCore.QBuffer(ba)
+        buf.open(QtCore.QIODevice.WriteOnly)
+        ui_parts.app_icon().pixmap(96, 96).save(buf, "PNG")
+        icon = f"<img class='logo' alt='4Dir' src='data:image/png;base64,{base64.b64encode(bytes(ba)).decode()}'>"
+    except Exception:
+        log.exception("결과 페이지 아이콘 실패")
+    mark = ("<svg viewBox='0 0 24 24' width='22' height='22'><path d='M5 12.5l4.2 4.2L19 7' fill='none' stroke='#fff' stroke-width='2.6' "
+            "stroke-linecap='round' stroke-linejoin='round'/></svg>") if ok else            ("<svg viewBox='0 0 24 24' width='22' height='22'><path d='M12 6v8' stroke='#fff' stroke-width='2.6' stroke-linecap='round'/>"
+            "<circle cx='12' cy='18' r='1.6' fill='#fff'/></svg>")
+    return f"""<!doctype html><html><head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'><title>4Dir</title><style>
+:root{{--bg:#f3f5f8;--card:#fff;--fg:#1f2328;--sub:#59636e;--line:#e3e7ec;--ok:#1e8e3e;--bad:#d93025}}
+@media (prefers-color-scheme:dark){{:root{{--bg:#16181c;--card:#202329;--fg:#e8eaed;--sub:#a0a8b2;--line:#30353c}}}}
+*{{box-sizing:border-box}}html,body{{height:100%;margin:0}}
+body{{background:var(--bg);color:var(--fg);font-family:'Segoe UI','Malgun Gothic',system-ui,sans-serif;display:flex;align-items:center;justify-content:center;padding:24px}}
+.card{{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.08);width:100%;max-width:420px;padding:36px 32px 26px;text-align:center}}
+.logo{{width:56px;height:56px;display:block;margin:0 auto 18px}}
+.mark{{width:44px;height:44px;border-radius:50%;background:var({'--ok' if ok else '--bad'});display:flex;align-items:center;justify-content:center;margin:0 auto 16px}}
+h1{{font-size:20px;font-weight:600;margin:0 0 8px;letter-spacing:-.2px;word-break:keep-all}}p{{font-size:14px;line-height:1.55;color:var(--sub);margin:0;word-break:keep-all}}
+.foot{{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);font-size:12px;color:var(--sub)}}.foot a{{color:inherit;text-decoration:none}}
+</style></head><body><div class='card'>{icon}<div class='mark'>{mark}</div><h1>{_h.escape(title)}</h1><p>{_h.escape(msg)}</p>
+<div class='foot'>4Dir &middot; <a href='https://4dir.net'>4dir.net</a></div></div></body></html>"""
+
+
 class Main(QtWidgets.QMainWindow):
     gdrive_changed = QtCore.Signal()   # 0.9.114 구글 드라이브 백업 상태 바뀜 (설정 창이 다시 그림)
 
@@ -9239,6 +9310,52 @@ class Main(QtWidgets.QMainWindow):
         except Exception as ex:
             log.exception("사용자 단추 실행 실패")
             self.show_notice(T("⚠ 실행하지 못했습니다: {0}  ✕").format(ex), ms=8000)
+
+    def _pt_cmd(self):
+        return winhook.launch_command(os.path.dirname(BIN_DIR))
+
+    def pt_link(self):
+        """PowerToys 키보드 관리자에 Win+E → 4Dir 새 창 (0.9.119 빌드 3). 없으면 받는 곳 + 그림 안내"""
+        if datadir.PACKAGED:   # 스토어판은 앱 밖 설정 파일을 못 씀 → 그림 안내로 손으로
+            self.show_notice(T("스토어판에서는 자동 연결을 할 수 없습니다 — 그림 안내대로 PowerToys 에서 직접 넣어 주세요  ✕"), ms=9000)
+            return self.open_pt_guide()
+        if ptlink.exe_path() is None:
+            self.show_notice(T("PowerToys 가 없습니다 — 설치한 뒤 다시 누르세요  ✕"), ms=9000,
+                             action=(T("PowerToys 받기"), lambda: QtGui.QDesktopServices.openUrl(QtCore.QUrl(ptlink.STORE_URL))))
+            return False
+        try:
+            ok, why = ptlink.link(os.path.dirname(BIN_DIR), self._pt_cmd())
+        except Exception as ex:
+            log.exception("PowerToys 연결 실패")
+            self.show_notice(T("⚠ PowerToys 연결 실패: {0}  ✕").format(ex), ms=10000)
+            return False
+        if not ok:
+            msg = {"admin": T("4Dir 가 관리자 권한으로 실행 중이라 PowerToys 설정을 바꾸지 않았습니다 — 보통 권한으로 다시 켜 주세요")}.get(why, why)
+            self.show_notice("⚠ " + msg + "  ✕", ms=10000)
+            return False
+        if ptlink.kbm_enabled() is False:
+            self.show_notice(T("연결했습니다. PowerToys 설정에서 '키보드 관리자'를 켜야 동작합니다  ✕"), ms=12000)
+        elif not ptlink.running():
+            self.show_notice(T("연결했습니다. PowerToys 를 실행하면 Win+E 가 4Dir 를 엽니다  ✕"), ms=12000)
+        else:
+            self.show_notice(T("연결했습니다 — 이제 Win+E 를 누르면 4Dir 새 창이 열립니다  ✕"), ms=9000)
+        return True
+
+    def pt_unlink(self):
+        try:
+            done = ptlink.unlink()
+        except Exception as ex:
+            log.exception("PowerToys 연결 끊기 실패")
+            self.show_notice(T("⚠ 바꾸지 못했습니다: {0}  ✕").format(ex), ms=8000)
+            return False
+        self.show_notice((T("PowerToys 에서 Win+E 연결을 지웠습니다  ✕") if done else T("지울 연결이 없습니다  ✕")), ms=6000)
+        return done
+
+    def open_pt_guide(self, parent=None):
+        import ptguide
+        prog, args, start = ptlink.launch_parts(os.path.dirname(BIN_DIR), self._pt_cmd())
+        dlg = ptguide.PtGuide(parent or self, prog, args, start, on_auto=None if datadir.PACKAGED else self.pt_link)
+        dlg.exec()
 
     def toggle_winE(self):
         if datadir.PACKAGED:   # 0.9.114 빌드 2: 스토어판은 레지스트리가 앱 안에 갇혀 Win+E 연결이 안 됨 (2단계에서 검토)
@@ -10806,10 +10923,9 @@ class Main(QtWidgets.QMainWindow):
                              action=(T("홈페이지 열기"), lambda: QtGui.QDesktopServices.openUrl(QtCore.QUrl(SITE_URL))))
             return
         stop = self._gd_stop = threading.Event()
-        ok = T("4Dir: 구글 드라이브에 연결했습니다. 이 창을 닫고 4Dir 로 돌아가세요.")
-        bad = T("4Dir: 연결하지 못했습니다. 이 창을 닫고 다시 시도하세요.")
-        page = lambda m: f"<!doctype html><meta charset='utf-8'><body style='font:18px sans-serif;padding:40px'><h2>{__import__("html").escape(m)}</h2></body>"
-        if self._gd_run("login", lambda: gdrive.login(BIN_DIR, done_html=page(ok), fail_html=page(bad), stop=stop), T("브라우저에서 로그인 중…")):
+        ok = gd_result_page(True, T("구글 드라이브에 연결했습니다"), T("이 탭을 닫고 4Dir 로 돌아가세요. 설정 백업이 곧 시작됩니다."))
+        bad = gd_result_page(False, T("연결하지 못했습니다"), T("이 탭을 닫고 4Dir 에서 다시 시도해 주세요."))
+        if self._gd_run("login", lambda: gdrive.login(BIN_DIR, done_html=ok, fail_html=bad, stop=stop), T("브라우저에서 로그인 중…")):
             self.show_notice(T("브라우저에서 구글 계정으로 로그인하고 '허용'을 누르세요 (5분 안에)  ✕"), ms=15000)
 
     def gdrive_logout(self):
