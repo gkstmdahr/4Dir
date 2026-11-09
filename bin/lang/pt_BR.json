@@ -2111,5 +2111,11 @@
  "PowerToys 설정 왼쪽 '{0}' 아래 '{1}' 를 누르고 켭니다. (4Dir 설정의 [키보드 관리자 켜러 가기] 가 이 화면을 바로 엽니다)": "Nas configurações do PowerToys, clique em '{1}' em '{0}' à esquerda e ative. (O botão do 4Dir [Ir ativar o Gerenciador de Teclado] abre esta página)",
  "3. {0} → {1}": "3. {0} → {1}",
  "같은 화면의 [{0}] 를 누르고, 열린 {1} 창에서 [+ {2}] 을 누릅니다.": "Na mesma página clique em [{0}] e depois em [+ {2}] na janela do {1} que abrir.",
- "'{0}' 칸을 누르고 Win+E 를 누릅니다. '{1}'을 '{2}'(으)로 바꾸고 아래 값을 넣은 뒤, '{3}'을 '{4}'(으)로 → {5}.": "Clique no campo '{0}' e pressione Win+E. Defina '{1}' como '{2}', preencha os valores abaixo, '{3}' = '{4}' → {5}."
+ "'{0}' 칸을 누르고 Win+E 를 누릅니다. '{1}'을 '{2}'(으)로 바꾸고 아래 값을 넣은 뒤, '{3}'을 '{4}'(으)로 → {5}.": "Clique no campo '{0}' e pressione Win+E. Defina '{1}' como '{2}', preencha os valores abaixo, '{3}' = '{4}' → {5}.",
+ "이름 바꾸기(F2) 때 확장명 숨기기 — 이름만 고치고 확장명은 그대로": "Ocultar a extensão ao renomear (F2) — só o nome muda, a extensão fica",
+ "두 번 누르면 기본 프로그램으로 열기 · 휠로 쪽 넘기기": "Clique duplo para abrir no app padrão · roda para virar páginas",
+ "이전 쪽": "Página anterior",
+ "다음 쪽": "Próxima página",
+ "암호가 걸린 PDF 라 미리보기를 할 수 없습니다": "Este PDF tem senha e não pode ser visualizado",
+ "PDF 를 읽지 못했습니다": "Não foi possível ler o PDF"
 }

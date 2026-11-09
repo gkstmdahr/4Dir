@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.120"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 4             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.121"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 2             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -1495,7 +1495,7 @@ class DirModel(QtCore.QAbstractTableModel):
             st = cloud.state(e[4])
             return cloud.icon(st, self.icon_px if self.icon_px <= 20 else 16) if role == Qt.DecorationRole else cloud.STATES[st][1]
         elif role == Qt.DecorationRole and c == 0:
-            if self.thumbs_on and not e[1] and thumbs.is_image(e[0]) and not devices.is_dev(self.full(e)) and not archives.is_arc(self.full(e)):   # 휴대폰 사진 미리보기는 2차
+            if self.thumbs_on and not e[1] and thumbs.has_preview(e[0]) and not devices.is_dev(self.full(e)) and not archives.is_arc(self.full(e)):   # 휴대폰 사진 미리보기는 2차 · 0.9.121 PDF 첫 쪽
                 pm = thumbs_service().get(self.full(e), e[3], self.thumb_px)
                 if pm is not None:
                     pm.setDevicePixelRatio(self.thumb_px / max(1, self.icon_px))
@@ -1925,15 +1925,28 @@ class CheckDelegate(QtWidgets.QStyledItemDelegate):
                 ed.mapToGlobal(QtCore.QPoint(0, ed.height())),
                 T("파일 이름에는 다음 문자를 사용할 수 없습니다:") + '\n\\ / : * ? " < > |', ed))
             ed.installEventFilter(_SEL_ARROWS)
+            # 0.9.121: 윈도우 11 스타일 편집칸은 반투명이라 칸 뒤 원래 이름(확장명)이 비쳐 보임 → 불투명 바탕
+            base = ed.palette().color(QtGui.QPalette.Base)
+            base.setAlpha(255)
+            ed.setStyleSheet(f"QLineEdit{{background:{base.name()};}}")
         return ed
 
     def setEditorData(self, ed, idx):
-        """이름 바꾸기(F2): 윈도우 탐색기처럼 파일은 확장자 앞까지만 선택 (폴더·확장자 없는 이름은 전체)"""
+        """이름 바꾸기(F2): 윈도우 탐색기처럼 파일은 확장자 앞까지만 선택 (폴더·확장자 없는 이름은 전체).
+        0.9.121 (사용자 문의 '이름 바꾸기 때 확장자 안 보이게'): 설정 rename_hide_ext(기본 켬)면 칸에 이름만 — 확장명은 저장할 때 다시 붙임"""
         super().setEditorData(ed, idx)
         if not isinstance(ed, QtWidgets.QLineEdit) or idx.column() != 0:
             return
         rows = getattr(idx.model(), "rows", None)
         isdir = rows[idx.row()][1] if rows and idx.row() < len(rows) else True
+        ed.setProperty("hidden_ext", "")
+        if SETTINGS["rename_hide_ext"] and not isdir:
+            stem, ext = os.path.splitext(ed.text())
+            if stem and ext:
+                ed.setProperty("hidden_ext", ext)
+                ed.setText(stem)
+                QtCore.QTimer.singleShot(0, lambda: ed.selectAll() if ed is not None else None)
+                return
         stem = os.path.splitext(ed.text())[0]
         if not isdir and 0 < len(stem) < len(ed.text()):
             def sel():   # 보기가 편집칸을 띄운 뒤 '전체 선택'을 하므로 그 다음에 다시 고름
@@ -1942,6 +1955,15 @@ class CheckDelegate(QtWidgets.QStyledItemDelegate):
                 except RuntimeError:
                     pass
             QtCore.QTimer.singleShot(0, sel)
+
+    def setModelData(self, ed, model, idx):
+        ext = ed.property("hidden_ext") if isinstance(ed, QtWidgets.QLineEdit) else ""
+        if ext and idx.column() == 0:   # 숨겨 둔 확장명 다시 붙임 (0.9.121)
+            stem = ed.text().strip()
+            if stem:
+                model.setData(idx, stem + ext, Qt.EditRole)
+            return
+        super().setModelData(ed, model, idx)
 
     # SVN 상태 배지 (TortoiseSVN 과 비슷한 색): 정상 초록✓ · 수정 빨강! · 추가 파랑+ · 충돌 주황! · 삭제 빨강× · 밖 회색?
     # 폴더: 안쪽 어딘가 변경 = 빨강!, 없음 = 초록✓ (작업 폴더 전체 감시 svnstat.WcWatch, 처음 훑는 동안은 배지 없음)
@@ -7802,6 +7824,7 @@ class SettingsDialog(QtWidgets.QDialog):
     def _p_list(self, lay):
         self._sub(lay, T("표시"))
         self._opt(lay, "show_ext", T("파일 확장명"))
+        self._set(lay, "rename_hide_ext", T("이름 바꾸기(F2) 때 확장명 숨기기 — 이름만 고치고 확장명은 그대로"))
         self._opt(lay, "show_hidden", T("숨긴 항목"))
         self._opt(lay, "checkboxes", T("항목 확인란"))
         self._opt(lay, "thumbnails", T("그림 미리보기 (아이콘 보기)"))
@@ -8063,7 +8086,7 @@ class PreviewPane(QtWidgets.QFrame):
         self._drop_extra()   # 0.9.116 숨으면 소리 재생 등도 멈춤
 
     # 0.9.116: 형식별 미리보기 모듈 (can_handle(path) · make_widget(path, parent)). 처음 쓸 때 불러옴 (시작 속도 그대로)
-    EXTRA_MODS = ("folderprev", "psdlayers", "fontprev", "audioprev", "xlsxprev", "codeview", "imginspect")   # 0.9.117 폴더 = 안 그림·개수·크기   # 빌드 4: 그림도 창 안에서 확대·스포이트
+    EXTRA_MODS = ("folderprev", "pdfprev", "psdlayers", "fontprev", "audioprev", "xlsxprev", "codeview", "imginspect")   # 0.9.121 PDF 직접 그림   # 0.9.117 폴더 = 안 그림·개수·크기   # 빌드 4: 그림도 창 안에서 확대·스포이트
     KEEP_PIC = ("psdlayers",)   # 그림(윈도우 미리보기)은 그대로 두고 아래에 붙임
 
     def _drop_extra(self):

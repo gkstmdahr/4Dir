@@ -2111,5 +2111,11 @@
  "PowerToys 설정 왼쪽 '{0}' 아래 '{1}' 를 누르고 켭니다. (4Dir 설정의 [키보드 관리자 켜러 가기] 가 이 화면을 바로 엽니다)": "In PowerToys settings, click '{1}' under '{0}' on the left and turn it on. (4Dir's [Turn on Keyboard Manager] button opens this page directly)",
  "3. {0} → {1}": "3. {0} → {1}",
  "같은 화면의 [{0}] 를 누르고, 열린 {1} 창에서 [+ {2}] 을 누릅니다.": "On the same page click [{0}], then [+ {2}] in the {1} window that opens.",
- "'{0}' 칸을 누르고 Win+E 를 누릅니다. '{1}'을 '{2}'(으)로 바꾸고 아래 값을 넣은 뒤, '{3}'을 '{4}'(으)로 → {5}.": "Click the '{0}' box and press Win+E. Set '{1}' to '{2}', enter the values below, set '{3}' to '{4}' → {5}."
+ "'{0}' 칸을 누르고 Win+E 를 누릅니다. '{1}'을 '{2}'(으)로 바꾸고 아래 값을 넣은 뒤, '{3}'을 '{4}'(으)로 → {5}.": "Click the '{0}' box and press Win+E. Set '{1}' to '{2}', enter the values below, set '{3}' to '{4}' → {5}.",
+ "이름 바꾸기(F2) 때 확장명 숨기기 — 이름만 고치고 확장명은 그대로": "Hide the extension when renaming (F2) — edit just the name, the extension stays",
+ "두 번 누르면 기본 프로그램으로 열기 · 휠로 쪽 넘기기": "Double-click to open in the default app · scroll to turn pages",
+ "이전 쪽": "Previous page",
+ "다음 쪽": "Next page",
+ "암호가 걸린 PDF 라 미리보기를 할 수 없습니다": "This PDF is password-protected, so it can't be previewed",
+ "PDF 를 읽지 못했습니다": "Could not read the PDF"
 }

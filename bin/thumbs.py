@@ -34,7 +34,7 @@ log = logging.getLogger("QE.thumb")
 VERSION = "1.5.0"
 BADGES = True    # 형식 딱지 (main 이 OPTS 로 정함)
 COVERS = True    # 폴더 표지
-BADGE_COLORS = {".psd": "#1f6fd1", ".png": "#2e9d4f", ".jpg": "#e07b00", ".jpeg": "#e07b00", ".gif": "#8e44ad", ".max": "#0f8b8d",
+BADGE_COLORS = {".pdf": "#c62828", ".psd": "#1f6fd1", ".png": "#2e9d4f", ".jpg": "#e07b00", ".jpeg": "#e07b00", ".gif": "#8e44ad", ".max": "#0f8b8d",
                 ".tga": "#b03a2e", ".tif": "#6d4c41", ".tiff": "#6d4c41", ".bmp": "#546e7a", ".webp": "#00897b", ".dds": "#5d4037",
                 ".exr": "#37474f", ".hdr": "#37474f", ".ico": "#7cb342"}
 IMAGE_EXT = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tga", ".psd", ".dds", ".tif", ".tiff", ".webp", ".ico", ".exr", ".hdr", ".max"}
@@ -479,8 +479,21 @@ def make_image(path, px, badges=True):
     return img
 
 
+def has_preview(name):
+    """아이콘 보기에서 미리보기를 만들 파일 — 그림 + PDF(첫 쪽, 0.9.121)"""
+    return is_image(name) or name.lower().endswith(".pdf")
+
+
 def _make_image(path, px):
     ext = os.path.splitext(path)[1].lower()
+    if ext == ".pdf":   # 0.9.121: 윈도우 미리보기 처리기가 없는 PC 도 — QtPdf 로 첫 쪽 (실패하면 윈도우 미리보기)
+        try:
+            import pdfprev
+            img = pdfprev.first_page(path, px)
+            if img is not None:
+                return img
+        except Exception as ex:
+            log.debug("PDF 첫 쪽 못 만듦 %s: %s", path, ex)
     if ext in (".max", ".psd"):
         try:
             img = _fit(max_preview(path) if ext == ".max" else psd_preview(path), px)
