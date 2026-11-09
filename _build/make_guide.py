@@ -525,7 +525,7 @@ dlg.close()
 QtWidgets.QMenu = _RealMenu
 
 # ---------------------------------------------------------------- 설명까지 한 장 (웹 게시용)
-g = guide.GuideWindow()
+g = guide.ClassicGuideWindow()   # 사이트용 예전 그림 (사용법 2.0 은 make_demos.py)
 g.resize(1400, 720)
 g.move(G.x() + 20, G.y() + 20)
 g.show()

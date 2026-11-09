@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.125"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 1             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.126"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 5             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -270,13 +270,18 @@ def _ver_tuple(v):
         return ()
 
 
-def start_update_check(w, manual=False):
-    """manual = 도구 메뉴에서 누름 (결과를 항상 알려줌). 자동은 설정 켜짐 + 오늘 아직 안 했을 때만, 새 버전 있을 때만 알림"""
+def start_update_check(w, manual=False, report=None):
+    """manual = 도구 메뉴에서 누름 (결과를 항상 알려줌). 자동은 설정 켜짐 + 오늘 아직 안 했을 때만, 새 버전 있을 때만 알림.
+    report(글자, 받는 주소 또는 None) = 0.9.125 사용자 '설정에서 눌렀는데 그 자리에 결과가 안 보여 응?': 누른 곳(설정 창)에도 결과"""
+    _UPD["report"] = report
+    if report:
+        report(T("확인 중…"), None)
     today = time.strftime("%Y-%m-%d")
     if datadir.PACKAGED:   # 0.9.114 빌드 2: 스토어판은 스토어가 업데이트함
         log.info("새 버전 확인: 스토어판이라 건너뜀 (스토어가 업데이트)")
         if manual:
             w.show_notice(T("스토어판은 Microsoft Store 가 새 버전을 자동으로 설치합니다  ✕"), ms=6000)
+            _update_report(T("스토어판은 Microsoft Store 가 새 버전을 자동으로 설치합니다"))
         return
     if not UPDATE_URL:
         log.info("새 버전 확인: 주소가 아직 없음 (UPDATE_URL)")
@@ -284,6 +289,7 @@ def start_update_check(w, manual=False):
             w.show_notice(T("새 버전 확인 주소가 아직 없습니다 (배포 사이트 준비 중)  ✕"))
         return
     if not manual and (not SETTINGS["update_check"] or SETTINGS["update_last"] == today):
+        _UPD["report"] = None
         return
     if _UPD["busy"]:
         return
@@ -309,6 +315,16 @@ def start_update_check(w, manual=False):
     threading.Thread(target=run, daemon=True, name="update-check").start()
 
 
+def _update_report(text, page=None):
+    """설정 창 '새 버전 확인' 단추 옆 결과 (창이 닫혔으면 무시)"""
+    rp = _UPD.get("report")
+    if rp:
+        try:
+            rp(text, page)
+        except RuntimeError:
+            _UPD["report"] = None
+
+
 def _update_done(data, err, manual):
     _UPD["busy"] = False
     w = _UPD.get("win")
@@ -321,6 +337,7 @@ def _update_done(data, err, manual):
     if err is not None:
         if manual:
             w.show_notice(T("⚠ 새 버전을 확인하지 못했습니다 (인터넷 연결 확인)  ✕"))
+        _update_report("⚠ " + T("새 버전을 확인하지 못했습니다 (인터넷 연결 확인)"))   # 설정 창에서 눌렀을 때만 (report 있을 때)
         return
     new = str(data.get("version", ""))
     page = data.get("page") or ""
@@ -331,8 +348,12 @@ def _update_done(data, err, manual):
             log.info("새 버전 팝업 생략: 사용자가 v%s 를 건너뛰기로 함", new)
             return
         show_update_notice(w, new, notes, page)
-    elif manual:
-        w.show_notice(T("지금 최신 버전입니다 (v{0})").format(QE_VERSION))
+        if True:   # 설정 창에서 눌렀으면 그 자리에도 (자동 확인이 먼저 돌던 중이어도)
+            _update_report("★ " + T("새 버전 4Dir v{0} 이 나왔습니다 (지금 v{1})").format(new, QE_VERSION), safe_update_page(page) if page else None)
+    else:
+        if manual:
+            w.show_notice(T("지금 최신 버전입니다 (v{0})").format(QE_VERSION))
+        _update_report("✔ " + T("지금 최신 버전입니다 (v{0})").format(QE_VERSION))
 
 
 def show_update_notice(w, new, notes, page):
@@ -3639,7 +3660,7 @@ class Page(QtWidgets.QWidget):
             if real:
                 log.info("압축 안 파일 열기 %s → %s", fp, real[0])
                 try:
-                    os.startfile(real[0])
+                    open_file(real[0])
                 except OSError as ex:
                     self.status.emit(f"⚠ {ex}")
             return
@@ -3661,7 +3682,7 @@ class Page(QtWidgets.QWidget):
             log.info("바로 가기 대상이 폴더 아님(%s) → 윈도우로 열기", tgt or "경로 없음")
         log.info("파일 열기 %s", fp)
         try:
-            os.startfile(fp)
+            open_file(fp)
         except OSError as ex:
             log.warning("열기 실패 %s : %s", fp, ex)
             self.status.emit(f"⚠ {ex}")
@@ -4992,7 +5013,7 @@ def open_fav_entry(path, go, notice=None):
         return
     log.info("즐겨찾기 파일 열기 %s", path)
     try:
-        os.startfile(path)
+        open_file(path)
     except OSError as ex:
         log.warning("즐겨찾기 파일 열기 실패 %s : %s", path, ex)
         notice(f"⚠ {ex}  ✕")
@@ -5705,6 +5726,35 @@ def open_in_explorer(path):
         subprocess.Popen(["explorer.exe", target])
     except OSError:
         log.exception("탐색기 열기 실패 %s", target)
+
+
+def view_scope():
+    """보기 방식 범위: folder(폴더마다 기억) / pane(칸마다) / all(모든 칸·폴더 같게)"""
+    return "all" if SETTINGS["view_all"] else ("folder" if SETTINGS["folder_view_memory"] else "pane")
+
+
+def set_view_scope(key, main=None):
+    """설정 창·보기 메뉴 공용 (0.9.126). all 로 켜면 지금 칸 보기로 모두 맞춤"""
+    SETTINGS["folder_view_memory"] = key == "folder"
+    SETTINGS["view_all"] = key == "all"
+    log.info("보기 방식 범위 = %s", key)
+    if key == "all" and main is not None and main.pane() is not None:
+        p = main.pane()
+        p.set_mode(p.mode)
+
+
+SCRIPT_EXTS = {".vbs", ".vbe", ".js", ".jse", ".wsf", ".wsh"}
+
+
+def open_file(path):
+    """파일 열기 (연결 프로그램). 0.9.126 사용자 'VideoTag.vbs 가 4Dir 에서 안 열림':
+    4Dir 를 4Dir.vbs 로 띄운 줄기(탐색기 → wscript → pythonw)에서 os.startfile 로 스크립트(.vbs 등)를 열면 새 wscript 가
+    실행 시작 전에 붙잡혀 멈춤(모듈 0개, 보안 프로그램 추정 — 재현 확인). 탐색기에게 넘기면 정상 → 스크립트만 탐색기로"""
+    if os.path.splitext(path)[1].lower() in SCRIPT_EXTS:
+        log.info("스크립트 파일은 탐색기에게 넘겨 엶 %s", path)
+        subprocess.Popen(["explorer.exe", path])
+        return
+    os.startfile(path)
 
 
 def same_folder_label():
@@ -7107,6 +7157,19 @@ class Pane(QtWidgets.QFrame):
         self.base_mode = m
 
     def set_mode(self, mode):
+        if SETTINGS["view_all"]:   # 0.9.126 모든 칸·폴더 같게: 열린 모든 창·칸·탭을 같은 보기로
+            n = 0
+            for w in WINDOWS or [main_of(self)]:
+                if w is None:
+                    continue
+                for p in w.panes:
+                    p.base_mode = mode
+                    for v in p.views():
+                        v.set_mode(mode)
+                        n += 1
+                    p.changed.emit()
+            log.info("보기 방식 %s (모든 칸·탭 %d개)", mode, n)
+            return
         cur = self.view()
         if cur is not None and cur._vm_ok():   # 0.9.116 폴더마다 보기 기억: 그 폴더만 바꾸고 기억 (칸 기본은 그대로)
             VIEWMEM.remember(cur.path, mode=mode)
@@ -7133,6 +7196,15 @@ class Pane(QtWidgets.QFrame):
             a.setCheckable(True)
             a.setChecked(self.mode == k)
             g.addAction(a)
+        # 0.9.126 사용자 '폴더마다 보기 기억 관련된 게 보기 메뉴에도': 보기 방식 범위 셋 중 하나
+        sc = m.addMenu(T("보기 방식 범위"))
+        g3 = QtGui.QActionGroup(sc)
+        cur = view_scope()
+        for key, lbl in (("folder", T("폴더마다 기억")), ("pane", T("칸마다 따로")), ("all", T("모든 칸·폴더 같게"))):
+            a = sc.addAction(lbl, lambda key=key: set_view_scope(key, main_of(self)))
+            a.setCheckable(True)
+            a.setChecked(cur == key)
+            g3.addAction(a)
         m.addSeparator()
         self.fill_sort_menu(m.addMenu(T("정렬 기준")))
         show = m.addMenu(T("표시"))
@@ -8204,7 +8276,7 @@ class SettingsDialog(QtWidgets.QDialog):
         super().__init__(main)
         self.main = main
         self.setWindowTitle(T("설정 (Settings)"))
-        self.resize(1000, 700)   # v0.9.105 단축키 표가 안에 들어감
+        self.resize(820, 640)   # 0.9.125 사용자 '너무 넓다' (예전 1000x700 이 실제론 1016x973 — 일반 페이지 높이·단축키 버튼 한 줄 때문)
         self.setAttribute(Qt.WA_DeleteOnClose)
         outer = QtWidgets.QHBoxLayout(self)
         self.cats = QtWidgets.QListWidget()
@@ -8271,14 +8343,25 @@ class SettingsDialog(QtWidgets.QDialog):
             hf.setBold(True)
             h.setFont(hf)
             lay.addWidget(h)
-            if not build(lay):   # 안에 창을 넣는 페이지는 아래 여백 없이 꽉 채움
+            if key == "keys":   # 0.9.126 설정 창이 열릴 때 1.4초 중 1초가 이 페이지(입력칸 수백 개) → 처음 볼 때 만듦
+                self._lazy = {key: (lay, build)}
+                self.stack.addWidget(w)
+            elif not build(lay):   # 안에 창을 넣는 페이지는 아래 여백 없이 꽉 채움
                 lay.addStretch(1)
-            self.stack.addWidget(w)
+                sc = QtWidgets.QScrollArea()   # 0.9.125 사용자 '설정 창이 너무 넓다': 항목이 많은 페이지(일반 903px)가 창 높이를 붙잡던 것 → 넘치면 스크롤
+                sc.setWidgetResizable(True)
+                sc.setFrameShape(QtWidgets.QFrame.NoFrame)
+                sc.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+                sc.setWidget(w)
+                self.stack.addWidget(sc)
+            else:
+                self.stack.addWidget(w)
             it = QtWidgets.QListWidgetItem(title)
             it.setData(Qt.UserRole, key)
             it.setSizeHint(QtCore.QSize(160, 32))
             self.cats.addItem(it)
         self.cats.setFixedHeight(sum(self.cats.sizeHintForRow(i) for i in range(self.cats.count())) + 6)
+        self.cats.currentRowChanged.connect(self._ensure_page)
         self.cats.currentRowChanged.connect(self.stack.setCurrentIndex)
         self.cats.currentRowChanged.connect(lambda r: self.note.setVisible(self.PAGES[r] not in ("keys", "search")))
         self.cats.setCurrentRow(0)
@@ -8368,6 +8451,41 @@ class SettingsDialog(QtWidgets.QDialog):
         build()
         return True
 
+    def _ensure_page(self, row):
+        """늦게 만드는 페이지(단축키)를 처음 볼 때 만듦"""
+        key = self.PAGES[row] if 0 <= row < len(self.PAGES) else None
+        lz = getattr(self, "_lazy", {})
+        if key in lz:
+            lay, build = lz.pop(key)
+            t0 = time.perf_counter()
+            QtWidgets.QApplication.setOverrideCursor(Qt.WaitCursor)
+            try:
+                if not build(lay):
+                    lay.addStretch(1)
+            finally:
+                QtWidgets.QApplication.restoreOverrideCursor()
+            log.info("설정 창 %s 페이지 처음 만듦 %.0fms", key, (time.perf_counter() - t0) * 1000)
+
+    def _card(self, lay, title):
+        """설정 묶음 상자 (0.9.126): 굵은 제목 + 옅은 테두리 안에 항목 → 어떤 항목이 어느 설정에 속하는지 한눈에. 돌려줌: 안쪽 줄 배치"""
+        box = QtWidgets.QFrame()
+        box.setObjectName("setCard")
+        box.setStyleSheet("#setCard{border:1px solid rgba(128,128,128,70); border-radius:6px;}")
+        bl = QtWidgets.QVBoxLayout(box)
+        bl.setContentsMargins(12, 8, 12, 10)
+        bl.setSpacing(6)
+        t = QtWidgets.QLabel(title)
+        f = t.font()
+        f.setBold(True)
+        t.setFont(f)
+        bl.addWidget(t)
+        lay.addSpacing(4)
+        lay.addWidget(box)
+        return bl
+
+    def _set_view_scope(self, key):
+        set_view_scope(key, self.main)   # 보기 메뉴와 같은 함수
+
     def _set_same_folder(self, cur):
         if bool(SETTINGS["same_folder_current"]) != cur:
             SETTINGS["same_folder_current"] = cur
@@ -8397,32 +8515,47 @@ class SettingsDialog(QtWidgets.QDialog):
         self.theme.currentIndexChanged.connect(lambda i: (m.set_theme_mode(self.theme.itemData(i)), self.setStyleSheet(m.styleSheet())))
         form.addRow(T("화면 테마"), self.theme)
         lay.addLayout(form)
-        self._sub(lay, T("창"))
-        self._check(lay, "allow_multi", T("창 여러 개 열기 허용"), lambda: SETTINGS["allow_multi"], m.toggle_multi,
+        # 0.9.126 사용자 '정리해 달라 — Ctrl+= 밑 두 개만 해당되는데 다음 줄과 안 나뉘어 헷갈림': 주제별 상자로 묶음
+        c = self._card(lay, T("창"))
+        self._check(c, "allow_multi", T("창 여러 개 열기 허용"), lambda: SETTINGS["allow_multi"], m.toggle_multi,
                     T("끄면 4Dir 는 하나만 실행되고, 다시 실행하면 기존 창이 앞으로 나옵니다"))
-        self._check(lay, "resume_after_reboot", T("재부팅 후 다시 열기 (켜 둔 채 윈도우를 끄면 다음 로그인 때)"),
+        self._check(c, "resume_after_reboot", T("재부팅 후 다시 열기 (켜 둔 채 윈도우를 끄면 다음 로그인 때)"),
                     lambda: SETTINGS["resume_after_reboot"], lambda: SETTINGS.__setitem__("resume_after_reboot", not SETTINGS["resume_after_reboot"]))
-        self._set(lay, "hide_single_tab", T("탭이 하나면 탭 줄 숨기기 (새 탭: Ctrl+T)"))
-        self._set(lay, "tab_multirow", T("탭이 넘치면 여러 줄로"), T("끄면 한 줄 + 좌우 화살표"))
-        # 0.9.125 사용자 '이 문장 이해가 안 된다': 체크 한 줄 → 제목 + 둘 중 고르기
-        self._sub(lay, T("Ctrl+= 누르면 옆 칸에도 지금 폴더 열기"))
+        self._check(c, "private_mode", T("기록 안 남기기 — 열었던 폴더·탭을 저장하지 않고, 켤 때마다 처음 폴더로"),
+                    lambda: SETTINGS["private_mode"], m.toggle_private,
+                    T("켜면 지금까지 저장된 창 상태와 자동 기록도 지웁니다. 즐겨찾기·메모·설정은 그대로입니다"))
+        c = self._card(lay, T("탭"))
+        self._set(c, "hide_single_tab", T("탭이 하나면 탭 줄 숨기기 (새 탭: Ctrl+T)"))
+        self._set(c, "tab_multirow", T("탭이 넘치면 여러 줄로"), T("끄면 한 줄 + 좌우 화살표"))
+        # 0.9.125 사용자 '이 문장 이해가 안 된다': 체크 한 줄 → 제목 + 둘 중 고르기 · 0.9.126 상자로 따로
+        c = self._card(lay, T("Ctrl+= 누르면 옆 칸에도 지금 폴더 열기"))
         g = QtWidgets.QButtonGroup(self)
         self.same_folder_radio = {}
         for cur, lbl in ((False, T("옆 칸에 새 탭을 만들어 열기 (기본)")), (True, T("옆 칸에서 보고 있던 탭을 이 폴더로 바꾸기"))):
             r = QtWidgets.QRadioButton(lbl)
             r.setChecked(bool(SETTINGS["same_folder_current"]) == cur)
-            r.toggled.connect(lambda c, cur=cur: c and self._set_same_folder(cur))
+            r.toggled.connect(lambda c_, cur=cur: c_ and self._set_same_folder(cur))
             g.addButton(r)
-            lay.addWidget(r)
+            c.addWidget(r)
             self.same_folder_radio[cur] = r
-        self._set(lay, "keep_favbar", T("메뉴줄을 접어도 즐겨찾기 줄은 보이기"))
-        self._set(lay, "folder_view_memory", T("폴더마다 보기 기억 — 그 폴더에서 바꾼 보기 방식·정렬을 다음에도 그대로"))
-        self._set(lay, "show_favbar", T("즐겨찾기 줄 보이기"), T("끄면 즐겨찾기 줄이 통째로 사라집니다. 다시 켜려면: 보기 → 즐겨찾기 줄 보이기"))
-        self._check(lay, "private_mode", T("기록 안 남기기 — 열었던 폴더·탭을 저장하지 않고, 켤 때마다 처음 폴더로"),
-                    lambda: SETTINGS["private_mode"], m.toggle_private,
-                    T("켜면 지금까지 저장된 창 상태와 자동 기록도 지웁니다. 즐겨찾기·메모·설정은 그대로입니다"))
-        self._sub(lay, T("도움말"))
-        self._set(lay, "tooltips", T("풍선 도움말(툴팁) 보이기 — 단추에 마우스를 올리면 설명"))
+        c = self._card(lay, T("즐겨찾기 줄"))
+        self._set(c, "show_favbar", T("즐겨찾기 줄 보이기"), T("끄면 즐겨찾기 줄이 통째로 사라집니다. 다시 켜려면: 보기 → 즐겨찾기 줄 보이기"))
+        self._set(c, "keep_favbar", T("메뉴줄을 접어도 즐겨찾기 줄은 보이기"))
+        c = self._card(lay, T("보기 방식 (자세히·아이콘 등)"))   # 0.9.126 사용자 '전체 통일 옵션이 없다'
+        g2 = QtWidgets.QButtonGroup(self)
+        self.view_scope_radio = {}
+        cur_scope = view_scope()
+        for key, lbl in (("folder", T("폴더마다 기억 — 그 폴더에서 바꾼 보기·정렬을 다음에도 그대로")),
+                         ("pane", T("칸마다 따로 — 칸에서 바꾼 보기가 그 칸의 모든 폴더에")),
+                         ("all", T("모든 칸·폴더 같게 — 한 곳에서 바꾸면 전부 같은 보기"))):
+            r = QtWidgets.QRadioButton(lbl)
+            r.setChecked(key == cur_scope)
+            r.toggled.connect(lambda c_, key=key: c_ and self._set_view_scope(key))
+            g2.addButton(r)
+            c.addWidget(r)
+            self.view_scope_radio[key] = r
+        c = self._card(lay, T("도움말"))
+        self._set(c, "tooltips", T("풍선 도움말(툴팁) 보이기 — 단추에 마우스를 올리면 설명"))
         self._sub(lay, T("윈도우"))   # 0.9.109
         # 0.9.120 빌드 2 (사용자 11/10): 두 방식 칸을 다 보여 주고, 이 윈도우에 안 맞는 칸은 흐리게(눌러 볼 수는 있음 — 시험용).
         # 맨 위 체크 = 켜면 이 윈도우에 맞는 방식, 끄면 둘 다 끊음
@@ -8691,11 +8824,37 @@ class SettingsDialog(QtWidgets.QDialog):
             hp.linkActivated.connect(lambda *_: open_link(SITE_URL, "홈페이지"))
             lay.addWidget(hp)
         lay.addSpacing(6)
-        self._btn(lay, T("새 버전 확인"), lambda: start_update_check(m, manual=True))
+        upd_row = QtWidgets.QHBoxLayout()
+        b_upd = QtWidgets.QPushButton(T("새 버전 확인"))
+        b_upd.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        self.upd_result = QtWidgets.QLabel()   # 0.9.125 결과를 누른 자리에도 (사용자 '응??')
+        self.upd_result.setObjectName("updResult")
+        self.upd_result.setTextFormat(Qt.RichText)
+        self.upd_result.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        self.upd_result.linkActivated.connect(lambda url: open_link(url, "새 버전"))
+
+        def show_result(text, page, lbl=self.upd_result):
+            import html as _h
+            t = _h.escape(text)
+            if page:
+                t += f'  <a href="{_h.escape(page)}">{_h.escape(T("받으러 가기"))}</a>'
+            lbl.setText(t)
+        b_upd.clicked.connect(lambda *_: start_update_check(m, manual=True, report=show_result))
+        upd_row.addWidget(b_upd)
+        upd_row.addWidget(self.upd_result, 1)
+        lay.addLayout(upd_row)
         self._check(lay, "update_check", T("시작할 때 새 버전 확인 (하루 한 번)"), lambda: SETTINGS["update_check"],
                     lambda: SETTINGS.__setitem__("update_check", not SETTINGS["update_check"]))
         self._sub(lay, T("도움말"))
-        self._btn(lay, T("사용법…"), m.open_guide)
+        gb = QtWidgets.QPushButton("📖 " + T("사용법…"))   # 0.9.126 사용자: 네이버 초록 · 크게
+        gb.setObjectName("guideBtn")
+        gb.setCursor(Qt.PointingHandCursor)
+        gb.setStyleSheet("QPushButton#guideBtn{background:#03C75A; color:#ffffff; font-weight:bold; font-size:14px; border:none;"
+                         " border-radius:6px; padding:10px 28px;} QPushButton#guideBtn:hover{background:#02b350;}")
+        gb.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        gb.clicked.connect(lambda *_: m.open_guide())
+        self.guide_btn = gb
+        lay.addWidget(gb)
         self._sub(lay, T("문제가 있을 때"))
         self._btn(lay, T("로그 폴더 열기"), lambda: os.startfile(LOG_DIR))
         self._btn(lay, T("문제 보고용 로그 저장… (4Dir 폴더의 reports 에 zip)"), m.save_report)
@@ -8908,7 +9067,7 @@ class PreviewPane(QtWidgets.QFrame):
                 pane.view().navigate(p)
             return
         try:
-            os.startfile(p)
+            open_file(p)
         except OSError as ex:
             log.warning("폴더 미리보기 파일 열기 실패 %s: %s", p, ex)
 
@@ -12083,6 +12242,8 @@ eports.
         while len(self.panes) < n:
             i = len(self.panes)
             p = Pane(i)
+            if SETTINGS["view_all"] and self.panes:   # 0.9.126 모든 칸 같은 보기 → 새 칸도
+                p.base_mode = self.panes[0].base_mode
             p.changed.connect(self.save_timer.start)
             self.rows[_SLOT[i][0]].addWidget(p)
             p.hide()
@@ -12153,6 +12314,8 @@ eports.
         """켜고 끄는 전역 설정 (v0.9.75 사용자 의견: 탭 하나면 탭줄 숨김 · 빈 곳 클릭 상위 폴더 · 메뉴줄 접어도 즐겨찾기 남김)"""
         SETTINGS[key] = not SETTINGS[key]
         log.info("설정 %s=%s", key, SETTINGS[key])
+        if key == "folder_view_memory" and SETTINGS["folder_view_memory"]:   # 0.9.126 메뉴로 켜면 '모든 칸 같게'는 끔 (둘 중 하나)
+            SETTINGS["view_all"] = False
         if key == "hide_single_tab":
             for p in self.all_panes():
                 p.update_tabrow()

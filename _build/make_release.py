@@ -29,7 +29,7 @@ import subprocess
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import usage_text   # 1.8.0: 언어별 사용법 글
 
-MAKE_VER = "1.9.10"   # 1.9.10: 가져오기 확인에 pdfedit / 1.9.9: PDF 미리보기 부품(QtPdf·Qt6Pdf), 가져오기 확인에 pdfprev / 1.9.8: 편집용 ffmpeg.exe(runtime\ffmpeg)·라이선스 안내, 가져오기 확인에 calc·mediaedit / 1.9.7: 가져오기 확인에 새 모듈 9개·win32cred, 태그 파일(4Dir_tags.json) 빼기 / 1.9.6: 동영상 부품(QtMultimedia·FFmpeg·ffmpegmediaplugin) 넣음 / 1.9.5: 가져오기 확인에 dupes·archives / 1.9.4: changelog 에 아직 이번 공개 번호가 없으면(빌드 중) 바뀐 점만 생략하고 계속 / 1.9.3: 설정 가져오기 보관·준비 폴더(restore_backup·_restore_pending) 빼기 / 1.9.2: 색 라벨 파일(4Dir_labels.json, 개인 데이터) 빼기 / 1.9.1: carryover 가져오기 확인 / 1.9.0: 사용법 파일 맨 위에 이번 버전 바뀐 점(changelog) / 1.8.0: 사용법 10개 언어 파일(이름도 그 언어)·Guide\<언어> 그림 10개 언어, 한국어 사용법에서 영어 부분 뺌 / 1.7.0: 4Dir.exe 실행기 포함(사용법은 exe 우선, vbs 예비) / 1.6.0: 일본어 설명서 お読みください.txt (Vector 掲載基準) / 1.5.0: qwebp·qjpeg 포함, imgconvert 가져오기 확인 / 1.4.1: 프로그램 안 사용법 그림은 ko·en p1~p6 만 / 1.4.0: qgif.dll(GIF 재생) 포함 / 1.3.0: 회사 글자 목록 별도 파일(corp_words.txt, 비공개), 4Dir 본체 GPL-3.0 라이선스 포함, 패키지 정보 없을 때 버전·pywin32 라이선스 대체 / 1.2.5: 소스 백업에 _dev(시험·번역) 포함 / 1.2.4: overlays·overlayorder 가져오기 확인 / 1.2.3: thumbs 가져오기 확인 / 1.2.2: 사용법에 즐겨찾기 정리·탭 끌기·일괄 변경 / 1.2.1: favorg 가져오기 확인 / 1.2.0: 이전 배포판은 _release\백업\배포판 으로 옮김(최근 10개), 버전마다 소스 백업 _release\백업\소스 / 1.1.5: 사용법 그림(bin\guide, 사용법 그림\ko·en) / 1.1.4: batchrename 가져오기 확인 / 1.1.3: 회사 관련 글자 검사(있으면 배포 중단) / 1.1.1: 언어 파일(bin\lang) 포함·영어 안내 / 1.1.0: .pyc 배포, SHA256 지문 파일, 라이선스 문서, 사용법(차단 해제 안내) 갱신
+MAKE_VER = "1.9.11"   # 1.9.11: 사용법 2.0 장면 영상(bin\guide\demo) 넣음 / 1.9.10: 가져오기 확인에 pdfedit / 1.9.9: PDF 미리보기 부품(QtPdf·Qt6Pdf), 가져오기 확인에 pdfprev / 1.9.8: 편집용 ffmpeg.exe(runtime\ffmpeg)·라이선스 안내, 가져오기 확인에 calc·mediaedit / 1.9.7: 가져오기 확인에 새 모듈 9개·win32cred, 태그 파일(4Dir_tags.json) 빼기 / 1.9.6: 동영상 부품(QtMultimedia·FFmpeg·ffmpegmediaplugin) 넣음 / 1.9.5: 가져오기 확인에 dupes·archives / 1.9.4: changelog 에 아직 이번 공개 번호가 없으면(빌드 중) 바뀐 점만 생략하고 계속 / 1.9.3: 설정 가져오기 보관·준비 폴더(restore_backup·_restore_pending) 빼기 / 1.9.2: 색 라벨 파일(4Dir_labels.json, 개인 데이터) 빼기 / 1.9.1: carryover 가져오기 확인 / 1.9.0: 사용법 파일 맨 위에 이번 버전 바뀐 점(changelog) / 1.8.0: 사용법 10개 언어 파일(이름도 그 언어)·Guide\<언어> 그림 10개 언어, 한국어 사용법에서 영어 부분 뺌 / 1.7.0: 4Dir.exe 실행기 포함(사용법은 exe 우선, vbs 예비) / 1.6.0: 일본어 설명서 お読みください.txt (Vector 掲載基準) / 1.5.0: qwebp·qjpeg 포함, imgconvert 가져오기 확인 / 1.4.1: 프로그램 안 사용법 그림은 ko·en p1~p6 만 / 1.4.0: qgif.dll(GIF 재생) 포함 / 1.3.0: 회사 글자 목록 별도 파일(corp_words.txt, 비공개), 4Dir 본체 GPL-3.0 라이선스 포함, 패키지 정보 없을 때 버전·pywin32 라이선스 대체 / 1.2.5: 소스 백업에 _dev(시험·번역) 포함 / 1.2.4: overlays·overlayorder 가져오기 확인 / 1.2.3: thumbs 가져오기 확인 / 1.2.2: 사용법에 즐겨찾기 정리·탭 끌기·일괄 변경 / 1.2.1: favorg 가져오기 확인 / 1.2.0: 이전 배포판은 _release\백업\배포판 으로 옮김(최근 10개), 버전마다 소스 백업 _release\백업\소스 / 1.1.5: 사용법 그림(bin\guide, 사용법 그림\ko·en) / 1.1.4: batchrename 가져오기 확인 / 1.1.3: 회사 관련 글자 검사(있으면 배포 중단) / 1.1.1: 언어 파일(bin\lang) 포함·영어 안내 / 1.1.0: .pyc 배포, SHA256 지문 파일, 라이선스 문서, 사용법(차단 해제 안내) 갱신
 # PySide6·Qt 라이선스 원문 (LGPLv3 는 GPLv3 를 참조). gnu.org 는 이 네트워크에서 응답 없음(10/2 실측) → SPDX 공식 원문 저장소
 LICENSE_URLS = {"LGPL-3.0.txt": "https://raw.githubusercontent.com/spdx/license-list-data/main/text/LGPL-3.0-only.txt",
                 "GPL-3.0.txt": "https://raw.githubusercontent.com/spdx/license-list-data/main/text/GPL-3.0-only.txt"}
@@ -370,6 +370,8 @@ def main():
         glangs.append(lg)
     for lg in os.listdir(os.path.join(out, "bin", "guide")):
         d = os.path.join(out, "bin", "guide", lg)
+        if lg == "demo" or not os.path.isdir(d):   # 1.9.11 사용법 2.0 장면 영상은 그대로
+            continue
         for fn in [x for x in os.listdir(d) if x.startswith("full_p")]:
             os.remove(os.path.join(d, fn))   # 프로그램 안에는 화면 그림(pN)만
     if len(glangs) != len(usage_text.FILES):
@@ -379,12 +381,19 @@ def main():
     keep = {f"p{i}.png" for i in range(1, 7)}
     for lg in os.listdir(gout):
         d = os.path.join(gout, lg)
+        if lg == "demo":   # 1.9.11 사용법 2.0 장면 영상 (ko·en mp4) — 지우지 않음
+            continue
         if lg not in ("ko", "en"):
             shutil.rmtree(d)
             continue
         for fn in os.listdir(d):
             if fn not in keep:
                 os.remove(os.path.join(d, fn))
+    dm = os.path.join(gout, "demo")
+    nclip = sum(len([f for f in os.listdir(os.path.join(dm, l)) if f.endswith(".mp4")]) for l in ("ko", "en")) if os.path.isdir(dm) else 0
+    if nclip < 40:
+        raise SystemExit(f"사용법 장면 영상 부족 ({nclip}개) — _build 의 make_demos.py ko / en 먼저 실행")
+    log(f"사용법 장면 영상 {nclip}개 ({size_mb(dm):.1f}MB)")
     log(f"사용법 그림 {nimg}장 → Guide ({len(glangs)}개 언어), 프로그램 안 그림 ko·en p1~p6 만 ({size_mb(gout):.1f}MB)")
     if not nimg:
         raise SystemExit("사용법 그림 없음 — _build 의 make_guide.py ko / en 먼저 실행")

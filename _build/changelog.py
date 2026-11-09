@@ -1,11 +1,53 @@
 # -*- coding: utf-8 -*-
-"""4Dir 버전별 바뀐 점 (CHANGELOG_VER 1.0.55 — 0.9.125 공개 11/10 Ctrl+= 설정 문구 · 1.0.54 — 0.9.124 공개 11/10 내 PC 탐색기처럼·폴더 고정·글자로 찾기·탐색 창 끌어 놓기 고침 · 1.0.53 — 0.9.123 공개 11/10 여러 줄 탭·PDF 편집 한곳·미리보기 PDF 안 붙잡음 · 1.0.52 — 0.9.122 공개 11/10 PDF 편집·탐색 창 4Dir 즐겨찾기·형식 단추 맨 위 한 줄 · 1.0.51 — 0.9.121 공개 11/10 PDF 직접 미리보기·이름 바꾸기 확장명 숨김 · 0.9.120 공개 11/10 Win+E 체크 하나·윈도우 버전·그림 안내 언어별·설정 글자 복사 · 0.9.119 공개 11/10 Win+E PowerToys 연결·구글 로그인 페이지 · 0.9.118 공개 11/9 그림 편집·미리보기 정리·기록 안 남기기 고침 · 0.9.117 공개 11/8 폴더 미리보기·정보 표 · 0.9.116 공개 11/8 새 기능 33개·폴더 표지 탐색기처럼·이슈 #9 · 0.9.115 공개 11/7 구글 백업·기록 안 남기기 · 0.9.114 공개 11/7 파일 즐겨찾기 · 0.9.113 공개 11/6 이름 변경·My메뉴·단축키 카테고리 · 0.9.112 공개 11/6 같은 폴더·exe 아이콘 · 0.9.111 공개 11/6 편집·계산기 · 0.9.110 공개 11/6 점검 고침 · 0.9.109 바뀐 점 짧게(사용자 11/6 '간단 명료하게') · 0.9.109 공개 11/6 새 도구·태그·FTP·Win+E·메뉴 정리·이슈 #4~#7 · 0.9.108 공개 11/6 동영상·휴대폰 항목 · 0.9.108 빌드 20 압축 폴더·복사 대기열·펼쳐 보기·중복 찾기·스페이스 · 0.9.108 빌드 18 미리보기 따로 창·GIF 단추·형식 단추 색·메모 그림 크기 · 0.9.108 11/5 메모 창(따로 창·링크·폴더 메모·알림·휴지통 등) + 풍선 도움말 · 0.9.107 11/5 내용까지 비교 · 설정 창(톱니 아이콘, 카테고리 9개, 단축키·색상·검색 범위 안에)·창 저장/불러오기 도구로·즐겨찾기 메뉴 → 바 글자 (0.9.102~0.9.106 공개 전이라 합침) · 0.9.101 11/5 공용 탐색 창(이슈 #3, 0.9.100 공개 전이라 합침, +숨기기) · 0.9.99 11/5 (0.9.98 공개 전이라 합침, +단축키 칸 한글 입력기 끔·단축키만 내보내기/가져오기) 창 구성 단축키·지정·이름 변경(이슈 #1) · 0.9.97 11/5 (0.9.96 공개 안 해서 합침) 아이콘 이름 잘림·뺀 드라이브 탭·느린 드라이브·안전 제거·알림 ✕ · 0.9.95 11/5 탭 잠금·드라이브 꽂기 반영 · 0.9.94 11/4 상태 열·Ctrl+Enter 위치·설정 내보내기/가져오기·큰 폴더 빨라짐 · 0.9.93 11/4 (0.9.88~0.9.92 공개 전이라 합침, +레이아웃 16종·고르기 창·글자 메뉴 뺌·검색칸 자리, 새 도구 7개+빈 띠+색 13색·직접 고르기+날짜별 묶기+3칸 왼쪽 1+오른쪽 2+비교 깜빡임) · 0.9.88 11/4 닫을 때 바로 끝남 · 0.9.87 11/4 설정 이어받기·링크 실행 · 0.9.86 짧게 고침 11/3 (사용자 '간단명료하게') · 0.9.86 11/3 (0.9.85 공개 전이라 합침, 겹치면 옮김+되돌리기) · 0.9.85 11/3 (0.9.84 공개 전이라 합침, 겹침 알림 기능 칸) · 0.9.84 11/3 (0.9.83 공개 전이라 합침, 마우스 탭 키보드처럼) · 0.9.83 11/3 (0.9.82 공개 전이라 합침, 마우스 버튼 항목 추가) · 0.9.82 11/3 (0.9.81 공개 전이라 합침) · 0.9.81 11/3 (0.9.80 공개 전이라 합침) · 0.9.80 11/2 (0.9.79 공개 전이라 합침) · 0.9.79 11/2 (0.9.78 공개 전이라 합침) · 0.9.78 11/2 (0.9.77 공개 전이라 합침) · 0.9.77 11/2 (0.9.76 공개 전이라 합침) · 0.9.76 11/2 (0.9.75 는 공개 안 해서 합침) · 0.9.73 4Dir.exe 10/30 · 0.9.71 항목 10/29 (0.9.68~0.9.70 은 공개 안 해서 0.9.71 에 합침)) — make_site.py 가 읽어 메인 '새로 바뀐 점' + 지난 버전 페이지를 만듦.
+"""4Dir 버전별 바뀐 점 (CHANGELOG_VER 1.0.56 — 0.9.126 공개 11/10 사용법 2.0·보기 범위·설정 창·.vbs 열기 · 1.0.55 — 0.9.125 공개 11/10 Ctrl+= 설정 문구 · 1.0.54 — 0.9.124 공개 11/10 내 PC 탐색기처럼·폴더 고정·글자로 찾기·탐색 창 끌어 놓기 고침 · 1.0.53 — 0.9.123 공개 11/10 여러 줄 탭·PDF 편집 한곳·미리보기 PDF 안 붙잡음 · 1.0.52 — 0.9.122 공개 11/10 PDF 편집·탐색 창 4Dir 즐겨찾기·형식 단추 맨 위 한 줄 · 1.0.51 — 0.9.121 공개 11/10 PDF 직접 미리보기·이름 바꾸기 확장명 숨김 · 0.9.120 공개 11/10 Win+E 체크 하나·윈도우 버전·그림 안내 언어별·설정 글자 복사 · 0.9.119 공개 11/10 Win+E PowerToys 연결·구글 로그인 페이지 · 0.9.118 공개 11/9 그림 편집·미리보기 정리·기록 안 남기기 고침 · 0.9.117 공개 11/8 폴더 미리보기·정보 표 · 0.9.116 공개 11/8 새 기능 33개·폴더 표지 탐색기처럼·이슈 #9 · 0.9.115 공개 11/7 구글 백업·기록 안 남기기 · 0.9.114 공개 11/7 파일 즐겨찾기 · 0.9.113 공개 11/6 이름 변경·My메뉴·단축키 카테고리 · 0.9.112 공개 11/6 같은 폴더·exe 아이콘 · 0.9.111 공개 11/6 편집·계산기 · 0.9.110 공개 11/6 점검 고침 · 0.9.109 바뀐 점 짧게(사용자 11/6 '간단 명료하게') · 0.9.109 공개 11/6 새 도구·태그·FTP·Win+E·메뉴 정리·이슈 #4~#7 · 0.9.108 공개 11/6 동영상·휴대폰 항목 · 0.9.108 빌드 20 압축 폴더·복사 대기열·펼쳐 보기·중복 찾기·스페이스 · 0.9.108 빌드 18 미리보기 따로 창·GIF 단추·형식 단추 색·메모 그림 크기 · 0.9.108 11/5 메모 창(따로 창·링크·폴더 메모·알림·휴지통 등) + 풍선 도움말 · 0.9.107 11/5 내용까지 비교 · 설정 창(톱니 아이콘, 카테고리 9개, 단축키·색상·검색 범위 안에)·창 저장/불러오기 도구로·즐겨찾기 메뉴 → 바 글자 (0.9.102~0.9.106 공개 전이라 합침) · 0.9.101 11/5 공용 탐색 창(이슈 #3, 0.9.100 공개 전이라 합침, +숨기기) · 0.9.99 11/5 (0.9.98 공개 전이라 합침, +단축키 칸 한글 입력기 끔·단축키만 내보내기/가져오기) 창 구성 단축키·지정·이름 변경(이슈 #1) · 0.9.97 11/5 (0.9.96 공개 안 해서 합침) 아이콘 이름 잘림·뺀 드라이브 탭·느린 드라이브·안전 제거·알림 ✕ · 0.9.95 11/5 탭 잠금·드라이브 꽂기 반영 · 0.9.94 11/4 상태 열·Ctrl+Enter 위치·설정 내보내기/가져오기·큰 폴더 빨라짐 · 0.9.93 11/4 (0.9.88~0.9.92 공개 전이라 합침, +레이아웃 16종·고르기 창·글자 메뉴 뺌·검색칸 자리, 새 도구 7개+빈 띠+색 13색·직접 고르기+날짜별 묶기+3칸 왼쪽 1+오른쪽 2+비교 깜빡임) · 0.9.88 11/4 닫을 때 바로 끝남 · 0.9.87 11/4 설정 이어받기·링크 실행 · 0.9.86 짧게 고침 11/3 (사용자 '간단명료하게') · 0.9.86 11/3 (0.9.85 공개 전이라 합침, 겹치면 옮김+되돌리기) · 0.9.85 11/3 (0.9.84 공개 전이라 합침, 겹침 알림 기능 칸) · 0.9.84 11/3 (0.9.83 공개 전이라 합침, 마우스 탭 키보드처럼) · 0.9.83 11/3 (0.9.82 공개 전이라 합침, 마우스 버튼 항목 추가) · 0.9.82 11/3 (0.9.81 공개 전이라 합침) · 0.9.81 11/3 (0.9.80 공개 전이라 합침) · 0.9.80 11/2 (0.9.79 공개 전이라 합침) · 0.9.79 11/2 (0.9.78 공개 전이라 합침) · 0.9.78 11/2 (0.9.77 공개 전이라 합침) · 0.9.77 11/2 (0.9.76 공개 전이라 합침) · 0.9.76 11/2 (0.9.75 는 공개 안 해서 합침) · 0.9.73 4Dir.exe 10/30 · 0.9.71 항목 10/29 (0.9.68~0.9.70 은 공개 안 해서 0.9.71 에 합침)) — make_site.py 가 읽어 메인 '새로 바뀐 점' + 지난 버전 페이지를 만듦.
 새 버전을 낼 때마다 맨 위에 한 줄 추가 (최신이 맨 위). 날짜는 한국 시간 기준 릴리스 날짜.
 항목 하나 = 10개 언어 글자 묶음 (순서: en ko zh-CN zh-TW ja es de fr pt-BR ru). <b> 만 허용."""
 
 ORDER = ["en", "ko", "zh-CN", "zh-TW", "ja", "es", "de", "fr", "pt-BR", "ru"]
 
 CHANGES = [
+("0.9.126", "2026-11-10", [
+    ("<b>New How to use</b>: categories on the left, a short moving demo of each feature on the right, with the shortcut keys — 21 topics plus a shortcut list. Settings ▸ About ▸ How to use.",
+     "<b>새 사용법</b>: 왼쪽 카테고리, 오른쪽에 기능마다 실제로 움직이는 짧은 영상과 단축키 — 21가지 + 단축키 모음. 설정 ▸ 정보 ▸ 사용법.",
+     "<b>全新使用说明</b>：左侧分类，右侧为每项功能的动态演示和快捷键 — 21 个主题 + 快捷键一览。设置 ▸ 关于 ▸ 使用说明。",
+     "<b>全新使用說明</b>：左側分類，右側為每項功能的動態示範和快速鍵 — 21 個主題 + 快速鍵一覽。設定 ▸ 關於 ▸ 使用說明。",
+     "<b>新しい使い方</b>：左にカテゴリー、右に機能ごとの動くデモとショートカット — 21 項目 + ショートカット一覧。設定 ▸ 情報 ▸ 使い方。",
+     "<b>Nuevo «Cómo se usa»</b>: categorías a la izquierda y, a la derecha, una breve demostración animada de cada función con sus atajos — 21 temas y una lista de atajos. Configuración ▸ Acerca de ▸ Cómo se usa.",
+     "<b>Neue Anleitung</b>: links Kategorien, rechts eine kurze animierte Vorführung jeder Funktion mit Tastenkürzeln — 21 Themen und eine Kürzelliste. Einstellungen ▸ Info ▸ Anleitung.",
+     "<b>Nouveau mode d'emploi</b> : catégories à gauche, courte démonstration animée de chaque fonction à droite avec ses raccourcis — 21 sujets et une liste de raccourcis. Paramètres ▸ À propos ▸ Mode d'emploi.",
+     "<b>Novo Como usar</b>: categorias à esquerda e, à direita, uma breve demonstração animada de cada recurso com os atalhos — 21 tópicos e uma lista de atalhos. Configurações ▸ Sobre ▸ Como usar.",
+     "<b>Новая инструкция</b>: слева разделы, справа короткая анимированная демонстрация каждой функции с сочетаниями клавиш — 21 тема и список сочетаний. Настройки ▸ О программе ▸ Инструкция."),
+    ("<b>View for everything</b>: choose whether the view (Details, icons…) is remembered per folder, per pane, or the same everywhere — Settings ▸ General or View ▸ View applies to.",
+     "<b>보기 방식 범위</b>: 보기(자세히·아이콘 등)를 폴더마다 기억 / 칸마다 / 모든 칸·폴더 같게 중에서 고르기 — 설정 ▸ 일반 또는 보기 ▸ 보기 방식 범위.",
+     "<b>视图适用范围</b>：视图（详细信息、图标…）可选择按文件夹记住 / 按窗格 / 全部相同 — 设置 ▸ 常规 或 视图 ▸ 视图适用范围。",
+     "<b>檢視套用範圍</b>：檢視（詳細資料、圖示…）可選擇依資料夾記住 / 依窗格 / 全部相同 — 設定 ▸ 一般 或 檢視 ▸ 檢視套用範圍。",
+     "<b>表示方法の範囲</b>：表示（詳細・アイコンなど）をフォルダーごとに記憶 / ペインごと / すべて同じ から選択 — 設定 ▸ 全般 または 表示 ▸ 表示方法の範囲。",
+     "<b>Alcance de la vista</b>: elija si la vista (Detalles, iconos…) se recuerda por carpeta, por panel o es igual en todas partes — Configuración ▸ General o Vista ▸ La vista se aplica a.",
+     "<b>Geltung der Ansicht</b>: wählen, ob die Ansicht (Details, Symbole…) pro Ordner, pro Bereich oder überall gleich gilt — Einstellungen ▸ Allgemein oder Ansicht ▸ Ansicht gilt für.",
+     "<b>Portée de l'affichage</b> : l'affichage (Détails, icônes…) peut être mémorisé par dossier, par volet ou identique partout — Paramètres ▸ Général ou Affichage ▸ L'affichage s'applique à.",
+     "<b>Alcance do modo de exibição</b>: escolha se o modo (Detalhes, ícones…) é lembrado por pasta, por painel ou igual em todo lugar — Configurações ▸ Geral ou Exibir ▸ O modo vale para.",
+     "<b>Область вида</b>: вид (таблица, значки…) запоминается для каждой папки, для каждой панели или одинаков везде — Настройки ▸ Общие или Вид ▸ Вид применяется к."),
+    ("Settings open about 10× faster and the window is smaller; General settings are grouped into boxes; “Check for new version” shows the result right next to the button.",
+     "설정 창이 약 10배 빨리 열리고 크기도 작아짐, 일반 설정을 주제별 상자로 정리, '새 버전 확인' 결과를 단추 바로 옆에도 표시.",
+     "设置窗口打开速度约快 10 倍且更小；常规设置按主题分组；“检查新版本”的结果直接显示在按钮旁边。",
+     "設定視窗開啟速度約快 10 倍且更小；一般設定依主題分組；「檢查新版本」的結果直接顯示在按鈕旁邊。",
+     "設定ウィンドウが約 10 倍速く開き、小さくなりました。全般設定をテーマ別の枠に整理。「新しいバージョンを確認」の結果をボタンのすぐ横にも表示。",
+     "La configuración se abre unas 10 veces más rápido y la ventana es más pequeña; los ajustes generales se agrupan en recuadros; «Buscar nueva versión» muestra el resultado junto al botón.",
+     "Einstellungen öffnen etwa 10× schneller und das Fenster ist kleiner; allgemeine Einstellungen in Gruppen; „Nach neuer Version suchen“ zeigt das Ergebnis direkt neben der Schaltfläche.",
+     "Les paramètres s'ouvrent environ 10 fois plus vite et la fenêtre est plus petite ; les réglages généraux sont regroupés ; « Rechercher une nouvelle version » affiche le résultat à côté du bouton.",
+     "As configurações abrem cerca de 10× mais rápido e a janela ficou menor; as opções gerais foram agrupadas; “Procurar nova versão” mostra o resultado ao lado do botão.",
+     "Настройки открываются примерно в 10 раз быстрее, окно стало меньше; общие параметры сгруппированы; результат «Проверить новую версию» виден прямо рядом с кнопкой."),
+    ("Fixed: script files (.vbs and similar) sometimes did not open from 4Dir.",
+     "고침: 4Dir 에서 스크립트 파일(.vbs 등)이 가끔 열리지 않던 것.",
+     "修复：有时无法从 4Dir 打开脚本文件（.vbs 等）。",
+     "修正：有時無法從 4Dir 開啟指令碼檔（.vbs 等）。",
+     "修正：4Dir からスクリプト ファイル（.vbs など）が開かないことがあった問題。",
+     "Corregido: a veces los archivos de script (.vbs y similares) no se abrían desde 4Dir.",
+     "Behoben: Skriptdateien (.vbs u. ä.) ließen sich aus 4Dir manchmal nicht öffnen.",
+     "Corrigé : les fichiers de script (.vbs, etc.) ne s'ouvraient parfois pas depuis 4Dir.",
+     "Corrigido: às vezes arquivos de script (.vbs e semelhantes) não abriam pelo 4Dir.",
+     "Исправлено: файлы сценариев (.vbs и подобные) иногда не открывались из 4Dir."),
+]),
 ("0.9.125", "2026-11-10", [
     ("Settings ▸ General: the Ctrl+= option is now a clear choice — “Open it in a new tab in the other pane (default)” or “Switch the tab you were viewing in the other pane to this folder”.",
      "설정 ▸ 일반: Ctrl+= 설정을 알기 쉽게 — '옆 칸에 새 탭을 만들어 열기 (기본)' / '옆 칸에서 보고 있던 탭을 이 폴더로 바꾸기' 중 고르기.",

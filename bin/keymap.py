@@ -373,6 +373,9 @@ class KeyDialog(QtWidgets.QDialog):
         row.addWidget(b_def)
         row.addWidget(self.b_undo)
         row.addWidget(self.b_redo)
+        row.addStretch(1)
+        lay.addLayout(row)
+        row = QtWidgets.QHBoxLayout()   # 0.9.125: 단추 7개가 한 줄이라 설정 창 폭을 818px 로 붙잡던 것 → 두 줄
         # v0.9.99 사용자 11/5: 단축키만 따로 저장·불러오기 (탭·창 구성은 안 건드림)
         self.b_exp = QtWidgets.QPushButton(T("단축키 내보내기…"))
         self.b_imp = QtWidgets.QPushButton(T("단축키 가져오기…"))
