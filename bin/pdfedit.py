@@ -4,6 +4,7 @@
 한 창에 두 탭:
 - 쪽(Pages): 쪽 그림 목록 — 끌어서 순서 바꾸기, 왼쪽·오른쪽 돌리기, 지우기(Del), 다른 PDF·그림 끼워 넣기(바깥에서 끌어 넣기도), 고른 쪽 빼서 새 파일
 - 주석(Annotate): 펜 · 형광펜 · 글상자 · 지우개(이번에 넣은 주석만), 색 · 굵기 · 글자 크기, 되돌리기(Ctrl+Z)
+- 나누기(Split) 1.1.0: 쪽마다 한 파일('이름_나눔' 폴더) / 원하는 쪽만 한 파일('1-3,5,8-') / 몇 쪽씩 — 지금 편집한 상태(돌림·순서·주석) 그대로
 저장: [다른 이름으로 저장] (기본 '이름_편집.pdf') / [원본에 저장] (확인 후 임시 파일 → 바꿔치기)
 
 구현 메모
@@ -37,7 +38,7 @@ try:
 except Exception:   # 배포판에 QtPdf 가 없으면 창 대신 안내
     HAVE_QTPDF = False
 
-PDFEDIT_VER = "1.0.0"
+PDFEDIT_VER = "1.1.0"   # 1.1.0: 나누기 탭(우클릭 따로 있던 나누기 창을 합침, 편집한 쪽 그대로 나눔), 열 때 탭·쪽 지정, 저장하면 미리보기 다시 그림
 log = logging.getLogger("QE.pdfedit")
 THUMB = 150          # 쪽 목록 그림 긴 변(px)
 TEXT_SCALE = 4       # 글상자 그림 해상도 (pt 당 px)
@@ -299,6 +300,33 @@ def text_annot(w, a):
         d[NameObject("/Rotate")] = NumberObject(Rc)
     d[NameObject("/AP")] = DictionaryObject({NameObject("/N"): ap})
     return d
+
+
+def split_items(items, path, mode, arg=None):
+    """편집한 쪽 목록 나누기. mode='each' | 'range'(arg='1-3,5') | 'every'(arg=N). 돌려줌: 만든 파일 목록 (pdftools.split 과 같은 이름 규칙)"""
+    n = len(items)
+    stem = os.path.splitext(os.path.basename(path))[0]
+    folder = os.path.dirname(path)
+    log.info("나누기 %s (%d쪽) mode=%s arg=%r", path, n, mode, arg)
+    if mode == "range":
+        idx = pdftools.parse_ranges(str(arg), n)
+        jobs = [(idx, pdftools.unique_path(os.path.join(folder, f"{stem}_{T('쪽')}{pdftools._range_label(idx)}.pdf")))]
+    else:
+        step = 1 if mode == "each" else max(1, int(arg or 1))
+        out_dir = pdftools.unique_path(os.path.join(folder, f"{stem}_{T('나눔')}"), is_dir=True)
+        os.makedirs(out_dir)
+        wd = len(str(n))
+        jobs = []
+        for a in range(0, n, step):
+            b = min(n, a + step)
+            lab = str(a + 1).zfill(wd) if b - a == 1 else f"{str(a + 1).zfill(wd)}-{str(b).zfill(wd)}"
+            jobs.append((list(range(a, b)), os.path.join(out_dir, f"{stem}_{T('쪽')}{lab}.pdf")))
+    made = []
+    for idx, out in jobs:
+        build_pdf([items[i] for i in idx], out)
+        made.append(out)
+    log.info("나누기 끝 %d개 (첫 %s)", len(made), made[:1])
+    return made
 
 
 def build_pdf(items, out_path):
@@ -588,6 +616,7 @@ class PdfEditDialog(QtWidgets.QDialog):
         lay.addWidget(self.tabs, 1)
         self.tabs.addTab(self._build_pages(), T("쪽 (Pages)"))
         self.tabs.addTab(self._build_annot(), T("주석 (Annotate)"))
+        self.tabs.addTab(self._build_split(), T("나누기 (Split)"))
         self.tabs.currentChanged.connect(self._on_tab)
         self.info = QtWidgets.QLabel()
         self.info.setTextInteractionFlags(Qt.TextSelectableByMouse)
@@ -634,6 +663,89 @@ class PdfEditDialog(QtWidgets.QDialog):
         col.addStretch(1)
         lay.addLayout(col)
         return w
+
+    def _build_split(self):
+        w = QtWidgets.QWidget()
+        lay = QtWidgets.QVBoxLayout(w)
+        self.split_info = QtWidgets.QLabel()
+        self.split_info.setWordWrap(True)
+        lay.addWidget(self.split_info)
+        box = QtWidgets.QGroupBox(T("어떻게 나눌까요?"))
+        g = QtWidgets.QGridLayout(box)
+        self.r_each = QtWidgets.QRadioButton(T("쪽마다 한 파일"))
+        self.r_range = QtWidgets.QRadioButton(T("원하는 쪽만 빼서 한 파일로"))
+        self.r_every = QtWidgets.QRadioButton(T("몇 쪽씩 나누기"))
+        self.r_range.setChecked(True)
+        self.e_range = QtWidgets.QLineEdit()
+        self.e_range.setPlaceholderText(T("예: 1-3,5,8-   (8- 는 8쪽부터 끝까지)"))
+        self.e_range.textChanged.connect(lambda *_: self.r_range.setChecked(True))
+        self.sp_every = QtWidgets.QSpinBox()
+        self.sp_every.setRange(1, 9999)
+        self.sp_every.setValue(2)
+        self.sp_every.setSuffix(T("쪽씩"))
+        self.sp_every.valueChanged.connect(lambda *_: self.r_every.setChecked(True))
+        g.addWidget(self.r_each, 0, 0)
+        g.addWidget(QtWidgets.QLabel(T("→ '{0}' 폴더에 쪽마다 파일").format(os.path.splitext(os.path.basename(self.path))[0] + "_" + T("나눔"))), 0, 1)
+        g.addWidget(self.r_range, 1, 0)
+        g.addWidget(self.e_range, 1, 1)
+        g.addWidget(self.r_every, 2, 0)
+        g.addWidget(self.sp_every, 2, 1)
+        lay.addWidget(box)
+        lay.addWidget(QtWidgets.QLabel(T("지금 편집한 상태(돌림·순서·주석) 그대로 나눕니다. 원본 파일은 바뀌지 않고, 새 파일은 같은 폴더에 만듭니다.")))
+        row = QtWidgets.QHBoxLayout()
+        self.btn_split = QtWidgets.QPushButton(T("나누기"))
+        self.btn_split.setStyleSheet("font-weight:bold;")
+        self.btn_split.clicked.connect(self.do_split)
+        self.btn_split_show = QtWidgets.QPushButton(T("만든 파일 위치 열기"))
+        self.btn_split_show.setVisible(False)
+        self.btn_split_show.clicked.connect(self._show_split)
+        row.addWidget(self.btn_split)
+        row.addWidget(self.btn_split_show)
+        row.addStretch(1)
+        lay.addLayout(row)
+        self.split_result = QtWidgets.QLabel()
+        self.split_result.setWordWrap(True)
+        self.split_result.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        lay.addWidget(self.split_result)
+        lay.addStretch(1)
+        self._split_out = None
+        return w
+
+    def do_split(self):
+        self.canvas.commit_text()
+        if self.r_each.isChecked():
+            mode, arg = "each", None
+        elif self.r_every.isChecked():
+            mode, arg = "every", self.sp_every.value()
+        else:
+            mode, arg = "range", self.e_range.text()
+            try:
+                pdftools.parse_ranges(arg, len(self.items))
+            except ValueError as ex:
+                QtWidgets.QMessageBox.warning(self, self.windowTitle(), str(ex))
+                return
+        QtWidgets.QApplication.setOverrideCursor(Qt.WaitCursor)
+        try:
+            made = split_items(self.items, self.path, mode, arg)
+        except Exception as ex:
+            log.exception("나누기 실패")
+            QtWidgets.QMessageBox.warning(self, self.windowTitle(), pdftools._err_text(ex))
+            return
+        finally:
+            QtWidgets.QApplication.restoreOverrideCursor()
+        self._split_out = made[0] if made else None
+        where = made[0] if len(made) == 1 else os.path.dirname(made[0])
+        self.split_result.setText(T("✔ 파일 {0}개를 만들었습니다:\n{1}").format(len(made), where))
+        self.btn_split_show.setVisible(bool(made))
+        self.split_made = made
+
+    def _show_split(self):
+        if not self._split_out:
+            return
+        if self.open_loc:
+            self.open_loc(self._split_out)
+        else:
+            QtGui.QDesktopServices.openUrl(QtCore.QUrl.fromLocalFile(os.path.dirname(self._split_out)))
 
     def _tool_btn(self, key, text, tip):
         b = QtWidgets.QToolButton()
@@ -941,6 +1053,8 @@ class PdfEditDialog(QtWidgets.QDialog):
 
     def _on_tab(self, i):
         self.canvas.commit_text()
+        if i == 2:
+            self.split_info.setText(T("모두 {0}쪽").format(len(self.items)) + ("  · " + T("저장 안 한 편집도 반영") if self.dirty else ""))
         if i == 1:
             rows = self.sel_rows()
             if rows and not (0 <= self.cur < len(self.items) and self.cur in rows):
@@ -1011,6 +1125,11 @@ class PdfEditDialog(QtWidgets.QDialog):
         self._update_info()
         self.info.setText(self.info.text() + "  ·  " + T("✔ 저장했습니다: {0}").format(out))
         self.saved = out
+        try:   # 미리보기 창이 이 파일을 보고 있으면 새 내용으로
+            import pdfprev
+            pdfprev.reload(out)
+        except Exception:
+            log.exception("미리보기 다시 그리기 실패")
         return n
 
     def closeEvent(self, ev):
@@ -1028,7 +1147,17 @@ class PdfEditDialog(QtWidgets.QDialog):
         super().closeEvent(ev)
 
 
-def open_editor(parent, path, open_loc=None):
+def open_editor(parent, path, open_loc=None, tab="pages", page=0):
+    """tab = 'pages' | 'annot' | 'split', page = 처음 볼 쪽(0부터) — 미리보기 단추에서 그 탭·그 쪽으로"""
     d = PdfEditDialog(parent, path, open_loc)
+    if d.ok and d.items:
+        d.cur = max(0, min(int(page or 0), len(d.items) - 1))
+        if 0 <= d.cur < d.list.count():
+            d.list.clearSelection()
+            d.list.item(d.cur).setSelected(True)
+            d.list.setCurrentRow(d.cur)
+            d.list.scrollToItem(d.list.item(d.cur))
+        d.tabs.setCurrentIndex({"pages": 0, "annot": 1, "split": 2}.get(tab, 0))
     d.show()
+    log.info("PDF 편집 열기 탭=%s 쪽=%d", tab, (page or 0) + 1)
     return d

@@ -2158,5 +2158,17 @@
  "둘 다 (4Dir 위 · Windows 아래)": "Both (4Dir on top · Windows below)",
  "4Dir 즐겨찾기만": "4Dir Favorites only",
  "Windows 즐겨찾기만": "Windows Favorites only",
- "(비어 있음 — 우클릭 > ★ 4Dir 즐겨찾기에 추가)": "(empty — right-click > ★ Add to 4Dir Favorites)"
+ "(비어 있음 — 우클릭 > ★ 4Dir 즐겨찾기에 추가)": "(empty — right-click > ★ Add to 4Dir Favorites)",
+ "탭이 넘치면 여러 줄로": "Wrap tabs onto several rows when they don't fit",
+ "끄면 한 줄 + 좌우 화살표": "When off: one row with left/right arrows",
+ "PDF 편집 (쪽·주석·나누기)…": "Edit PDF (pages · annotations · split)…",
+ "나누기 (Split)": "Split",
+ "지금 편집한 상태(돌림·순서·주석) 그대로 나눕니다. 원본 파일은 바뀌지 않고, 새 파일은 같은 폴더에 만듭니다.": "Splits the pages as edited now (rotation · order · annotations). The original file is not changed; new files go in the same folder.",
+ "모두 {0}쪽": "{0} pages",
+ "저장 안 한 편집도 반영": "unsaved edits included",
+ "주석": "Annotate",
+ "펜·형광펜·글상자 (PDF 편집)": "Pen · highlighter · text box (Edit PDF)",
+ "쪽 편집": "Pages",
+ "쪽 돌리기·지우기·순서·끼워 넣기 (PDF 편집)": "Rotate · delete · reorder · insert pages (Edit PDF)",
+ "쪽마다·범위·몇 쪽씩 나누기 (PDF 편집)": "Split by page · range · every N pages (Edit PDF)"
 }

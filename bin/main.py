@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.122"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 3             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.123"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 2             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -3894,8 +3894,7 @@ class Page(QtWidgets.QWidget):
         if len(pdfs) >= 2 or (pdfs and len(pics) and len(pdfs) + len(pics) == len(files)):
             out.append((ti(T("PDF 합치기…"), "pdf"), lambda: open_tool(pdftools.open_merge, self.window(), pdfs + pics if len(pdfs) + len(pics) == len(files) else pdfs, open_loc=loc)))
         if len(pdfs) == 1 and len(files) == 1:
-            out.append((ti(T("PDF 편집 (쪽·주석)…"), "pdf"), lambda: open_tool(pdfedit.open_editor, self.window(), pdfs[0], open_loc=loc)))
-            out.append((ti(T("PDF 쪽 나누기·빼기…"), "pdf"), lambda: open_tool(pdftools.open_split, self.window(), pdfs[0], open_loc=loc)))
+            out.append((ti(T("PDF 편집 (쪽·주석·나누기)…"), "pdf"), lambda: open_tool(pdfedit.open_editor, self.window(), pdfs[0], open_loc=loc)))   # 0.9.123 나누기 창을 합침 (사용자 11/10)
         if pics and not pdfs:
             out.append((ti(T("그림을 PDF 한 파일로 묶기…"), "pdf"), lambda: open_tool(pdftools.open_images_to_pdf, self.window(), pics, open_loc=loc)))
         if len(files) == 2 and all(textdiff_ok(p) for p in files):
@@ -5541,16 +5540,185 @@ class PaneTabBar(QtWidgets.QTabBar):
     CLOSE_SHIFT = 4
     countChanged = QtCore.Signal()   # 탭 수가 바뀜 (v0.9.75: 탭 하나면 탭줄 숨김 옵션)
 
+    # 0.9.123 여러 줄 탭: 탭 목록·신호·우클릭·끌어 떼기는 QTabBar 그대로, '놓는 자리·그리기·누르기·끌어 순서 바꾸기'만 직접.
+    # tabAt·tabRect 를 파이썬에서 덮어써서 Pane 의 + 단추 자리·가운데 클릭·두 번 누르기·우클릭 메뉴가 그대로 새 자리를 씀
+    multi = False
+
     def __init__(self, *a):
         super().__init__(*a)
         # 탭 선택·추가 때 Qt 가 전체 배치 없이 그 탭 단추만 다시 놓음(실측) → 그 직후에도 옮김
         self.currentChanged.connect(self._fix_later)
+        self._rects = []
+        self._rows = 1
+        self._hover = -1
+        self._press = None    # (누른 탭 번호, 누른 자리) — 여러 줄에서 끌어 순서 바꾸기
+
+    def set_multi(self, on):
+        on = bool(on)
+        if on == self.multi:
+            return
+        self.multi = on
+        self.setUsesScrollButtons(not on)
+        self.setMouseTracking(on)
+        self._relayout()
+        log.info("탭 여러 줄 %s", on)
+
+    def _relayout(self):
+        """여러 줄: 탭을 왼쪽부터 놓고 넘치면 다음 줄 (탭 순서 그대로)"""
+        if not self.multi:
+            self._rects = []
+            self._rows = 1
+            self.updateGeometry()
+            self.update()
+            return
+        W = max(60, self.width())
+        x = y = 0
+        rh = 0
+        rects = []
+        for i in range(self.count()):
+            sz = super().tabSizeHint(i)
+            w = min(sz.width(), W)
+            rh = max(rh, sz.height())
+            if x and x + w > W:
+                x = 0
+                y += 1
+            rects.append([x, y, w])
+            x += w
+        rh = rh or 26
+        self._rh = rh
+        self._rects = [QtCore.QRect(x, y * rh, w, rh) for x, y, w in rects]
+        rows = (rects[-1][1] + 1) if rects else 1
+        if rows != self._rows:
+            self._rows = rows
+            self.updateGeometry()
+        self._fix_close_buttons()
+        self.update()
+
+    def tabRect(self, i):
+        if self.multi:
+            return QtCore.QRect(self._rects[i]) if 0 <= i < len(self._rects) else QtCore.QRect()
+        return super().tabRect(i)
+
+    def tabAt(self, pos):
+        if self.multi:
+            for i, r in enumerate(self._rects):
+                if r.contains(pos):
+                    return i
+            return -1
+        return super().tabAt(pos)
+
+    def sizeHint(self):
+        s = super().sizeHint()
+        if self.multi:
+            return QtCore.QSize(min(s.width(), 200), max(1, self._rows) * getattr(self, "_rh", s.height()))
+        return s
+
+    def minimumSizeHint(self):
+        s = super().minimumSizeHint()
+        if self.multi:
+            return QtCore.QSize(60, max(1, self._rows) * getattr(self, "_rh", s.height()))
+        return s
+
+    def mousePressEvent(self, ev):
+        if not self.multi:
+            return super().mousePressEvent(ev)
+        i = self.tabAt(ev.position().toPoint())
+        if ev.button() == Qt.LeftButton:
+            if i >= 0:
+                self._press = (i, ev.position().toPoint())
+                self.setCurrentIndex(i)
+            self.tabBarClicked.emit(i)
+        elif i >= 0 and ev.button() != Qt.RightButton:
+            self.tabBarClicked.emit(i)
+
+    def mouseMoveEvent(self, ev):
+        if not self.multi:
+            return super().mouseMoveEvent(ev)
+        pt = ev.position().toPoint()
+        h = self.tabAt(pt)
+        if h != self._hover:
+            self._hover = h
+            self.update()
+        if self._press and ev.buttons() & Qt.LeftButton and self.isMovable():
+            i, p0 = self._press
+            if (pt - p0).manhattanLength() >= QtWidgets.QApplication.startDragDistance():
+                j = self.tabAt(pt)
+                if j >= 0 and j != i:
+                    self.moveTab(i, j)   # tabMoved 신호 · 현재 탭 번호도 Qt 가 맞춤
+                    self._press = (j, pt)
+                    self._relayout()
+
+    def mouseReleaseEvent(self, ev):
+        if not self.multi:
+            return super().mouseReleaseEvent(ev)
+        self._press = None
+
+    def mouseDoubleClickEvent(self, ev):
+        if not self.multi:
+            return super().mouseDoubleClickEvent(ev)
+        i = self.tabAt(ev.position().toPoint())
+        if i >= 0:
+            self.tabBarDoubleClicked.emit(i)
+
+    def leaveEvent(self, ev):
+        super().leaveEvent(ev)
+        if self.multi and self._hover != -1:
+            self._hover = -1
+            self.update()
+
+    def wheelEvent(self, ev):
+        if not self.multi:
+            return super().wheelEvent(ev)
+        ev.ignore()   # 여러 줄에선 휠로 탭 바꾸지 않음 (줄이 많아 헷갈림)
+
+    def _paint_multi(self):
+        p = QtWidgets.QStylePainter(self)
+        cur = self.currentIndex()
+        for i in list(range(self.count())):
+            if i == cur:
+                continue
+            self._paint_tab(p, i)
+        if 0 <= cur < self.count():
+            self._paint_tab(p, cur)   # 고른 탭은 마지막에 (테두리가 위로)
+        p.end()
+
+    def _paint_tab(self, p, i):
+        opt = QtWidgets.QStyleOptionTab()
+        self.initStyleOption(opt, i)
+        opt.rect = self.tabRect(i)
+        opt.state &= ~QtWidgets.QStyle.State_MouseOver
+        if i == self._hover:
+            opt.state |= QtWidgets.QStyle.State_MouseOver
+        # 모양(배경·테두리)만 스타일로, 글자·아이콘은 직접 — 스타일의 글자 그리기는 Qt 안쪽 한 줄 자리를 써서 잘리고 밀렸음(실제 화면 캡처로 확인)
+        opt.text = ""
+        opt.icon = QtGui.QIcon()
+        p.drawControl(QtWidgets.QStyle.CE_TabBarTabShape, opt)
+        r = opt.rect.adjusted(9, 0, -6, 0)
+        cb = self.tabButton(i, QtWidgets.QTabBar.RightSide)
+        if cb is not None:
+            r.setRight(opt.rect.right() - self.CLOSE_SHIFT - cb.width() - 3)
+        ic = self.tabIcon(i)
+        if not ic.isNull():
+            isz = self.iconSize()
+            ic.paint(p, QtCore.QRect(r.left(), r.top() + (r.height() - isz.height()) // 2, isz.width(), isz.height()))
+            r.setLeft(r.left() + isz.width() + 4)
+        sel = i == self.currentIndex()
+        f = QtGui.QFont(self.font())
+        f.setBold(sel)
+        p.setFont(f)
+        dark = self.palette().color(QtGui.QPalette.Window).lightness() < 128
+        fx = ui_parts.FIXED[dark]
+        p.setPen(QtGui.QColor(fx["tab_sel_text"] if sel else fx["tab_text"]))
+        txt = QtGui.QFontMetrics(f).elidedText(self.tabText(i), self.elideMode() if self.elideMode() != Qt.ElideNone else Qt.ElideRight, max(10, r.width()))
+        p.drawText(r, int(Qt.AlignVCenter | Qt.AlignLeft), txt)
 
     def _fix_later(self, *_):
         QtCore.QTimer.singleShot(0, self._fix_close_buttons)
 
     def tabLayoutChange(self):
         super().tabLayoutChange()
+        if self.multi:
+            self._relayout()
         self._fix_close_buttons()
 
     def tabInserted(self, index):
@@ -5565,12 +5733,17 @@ class PaneTabBar(QtWidgets.QTabBar):
 
     def resizeEvent(self, ev):
         super().resizeEvent(ev)
+        if self.multi:
+            self._relayout()
         self._fix_later()
 
     color_of = staticmethod(lambda i: "")   # Pane 이 바꿔 끼움: 탭 i 의 색 이름 (v0.9.89)
 
     def paintEvent(self, ev):
-        super().paintEvent(ev)
+        if self.multi:
+            self._paint_multi()
+        else:
+            super().paintEvent(ev)
         cols = [(i, self.color_of(i)) for i in range(self.count())]
         cols = [(i, labels.tab_hex(c)) for i, c in cols if labels.tab_hex(c)]   # v0.9.90 직접 고른 색도
         if not cols:
@@ -5590,7 +5763,12 @@ class PaneTabBar(QtWidgets.QTabBar):
             b = self.tabButton(i, QtWidgets.QTabBar.RightSide)
             if b is not None:
                 r = self.tabRect(i)
-                b.move(r.right() - self.CLOSE_SHIFT - b.width(), b.y())
+                if self.multi:   # 여러 줄: 줄 높이 가운데로, Qt 가 화면 밖이라 숨긴 단추도 보이게
+                    b.move(r.right() - self.CLOSE_SHIFT - b.width(), r.top() + (r.height() - b.height()) // 2)
+                    if not b.isVisible() and self.isVisible():
+                        b.show()
+                else:
+                    b.move(r.right() - self.CLOSE_SHIFT - b.width(), b.y())
 
 
 class ChipBar(QtWidgets.QWidget):
@@ -5963,6 +6141,7 @@ class Pane(QtWidgets.QFrame):
         self.bar.setUsesScrollButtons(True)
         self.bar.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         self.bar.color_of = lambda i: getattr(self.pages.get(self.bar.tabData(i)), "tab_color", "")
+        self.bar.set_multi(SETTINGS["tab_multirow"])   # 0.9.123 여러 줄 탭
         tl.addWidget(self.bar)
         tl.addSpacing(36)   # + 버튼 자리(탭이 넘칠 때)
         # + 버튼: 마지막 탭 바로 오른쪽에 붙어 다님 (_place_plus)
@@ -7871,6 +8050,7 @@ class SettingsDialog(QtWidgets.QDialog):
         self._check(lay, "resume_after_reboot", T("재부팅 후 다시 열기 (켜 둔 채 윈도우를 끄면 다음 로그인 때)"),
                     lambda: SETTINGS["resume_after_reboot"], lambda: SETTINGS.__setitem__("resume_after_reboot", not SETTINGS["resume_after_reboot"]))
         self._set(lay, "hide_single_tab", T("탭이 하나면 탭 줄 숨기기 (새 탭: Ctrl+T)"))
+        self._set(lay, "tab_multirow", T("탭이 넘치면 여러 줄로"), T("끄면 한 줄 + 좌우 화살표"))
         self._set(lay, "keep_favbar", T("메뉴줄을 접어도 즐겨찾기 줄은 보이기"))
         self._set(lay, "folder_view_memory", T("폴더마다 보기 기억 — 그 폴더에서 바꾼 보기 방식·정렬을 다음에도 그대로"))
         self._set(lay, "show_favbar", T("즐겨찾기 줄 보이기"), T("끄면 즐겨찾기 줄이 통째로 사라집니다. 다시 켜려면: 보기 → 즐겨찾기 줄 보이기"))
@@ -10026,6 +10206,7 @@ class Main(QtWidgets.QMainWindow):
             lg.addAction(a)
         m.addSeparator()   # 동작
         for key, lbl in (("hide_single_tab", T("탭이 하나면 탭 줄 숨기기 (새 탭: Ctrl+T)")),
+                         ("tab_multirow", T("탭이 넘치면 여러 줄로")),
                          ("empty_click_up", T("빈 곳을 더블클릭하면 상위 폴더로")),
                          ("arc_browse", T("압축 파일(ZIP·7Z·RAR…)을 두 번 누르면 4Dir 안에서 폴더처럼 열기")),
                          ("folder_size", T("폴더 크기 계산 (크기 칸 — 네트워크 드라이브 제외)")),
@@ -11577,6 +11758,10 @@ eports.
         if key == "hide_single_tab":
             for p in self.all_panes():
                 p.update_tabrow()
+        elif key == "tab_multirow":   # 0.9.123
+            for p in self.all_panes():
+                p.bar.set_multi(SETTINGS["tab_multirow"])
+                p._place_plus()
         elif key == "folder_size":   # 바로 다시 읽어 크기 칸 채우기/비우기
             for p in self.all_panes():
                 for v in p.views():

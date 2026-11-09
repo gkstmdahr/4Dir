@@ -17,7 +17,7 @@ from i18n import T
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-PDFPREV_VER = "1.0.1"   # 1.0.1: 주석도 그림(PDF 편집)
+PDFPREV_VER = "1.1.0"   # 1.1.0: 파일을 붙잡지 않음(메모리로 읽음 — 미리보기 중에도 이름 바꾸기·지우기·원본에 저장), [주석][쪽 편집][나누기] 단추, 저장하면 다시 그림 / 1.0.1: 주석도 그림(PDF 편집)
 log = logging.getLogger("QE.pdfprev")
 try:
     from PySide6.QtPdf import QPdfDocument
@@ -42,9 +42,36 @@ def _opts():
 
 
 def _open(path):
+    """파일을 바이트로 읽어 메모리에서 엶 → 파일을 붙잡지 않음 (0.9.123: 미리보기 중 원본에 저장·이름 바꾸기·지우기가 '액세스 거부' 되던 것)"""
     d = QPdfDocument()
-    err = d.load(path)
-    return d, err
+    try:
+        with open(path, "rb") as f:
+            data = f.read()
+    except OSError as ex:
+        log.info("PDF 못 읽음 %s %s", path, ex)
+        data = b""
+    buf = QtCore.QBuffer(d)
+    buf.setData(QtCore.QByteArray(data))
+    buf.open(QtCore.QIODevice.ReadOnly)
+    d._buf = buf
+    d.load(buf)   # 장치로 열면 돌려주는 값이 없음 → 오류는 error() 로
+    return d, d.error()
+
+
+_VIEWS = []   # 열려 있는 미리보기 (편집 창이 저장하면 다시 그림)
+
+
+def reload(path):
+    """path 를 보여 주는 미리보기를 새 내용으로 (PDF 편집 저장 뒤)"""
+    n = 0
+    for v in list(_VIEWS):
+        try:
+            if os.path.normcase(v.path) == os.path.normcase(path):
+                v.reload()
+                n += 1
+        except RuntimeError:
+            _VIEWS.remove(v)
+    log.info("PDF 미리보기 다시 그림 %s (%d개)", path, n)
 
 
 def first_page(path, px):
@@ -108,7 +135,20 @@ class PdfView(QtWidgets.QWidget):
         self.b_next.clicked.connect(lambda: self.go(self.page + 1))
         bar.addWidget(self.b_next)
         bar.addStretch(1)
+        # 0.9.123 사용자: 미리보기에서 바로 PDF 편집 (그 탭 · 지금 쪽으로)
+        self.edit_btns = []
+        for tab, text, tip in (("annot", T("주석"), T("펜·형광펜·글상자 (PDF 편집)")), ("pages", T("쪽 편집"), T("쪽 돌리기·지우기·순서·끼워 넣기 (PDF 편집)")),
+                               ("split", T("나누기"), T("쪽마다·범위·몇 쪽씩 나누기 (PDF 편집)"))):
+            b = QtWidgets.QToolButton()
+            b.setText(text)
+            b.setToolTip(tip)
+            b.setAutoRaise(True)
+            b.setObjectName("pdfEditBtn")
+            b.clicked.connect(lambda *_, t=tab: self.open_edit(t))
+            bar.addWidget(b)
+            self.edit_btns.append(b)
         lay.addLayout(bar)
+        _VIEWS.append(self)
         self.pic.mouseDoubleClickEvent = lambda ev: os.startfile(self.path)
         self.sc.viewport().installEventFilter(self)
         if self.n == 0:
@@ -116,7 +156,7 @@ class PdfView(QtWidgets.QWidget):
             msg = T("암호가 걸린 PDF 라 미리보기를 할 수 없습니다") if err == QPdfDocument.Error.IncorrectPassword else T("PDF 를 읽지 못했습니다")
             self.pic.setText(msg)
             self.pic.setWordWrap(True)
-            for b in (self.b_prev, self.b_next):
+            for b in [self.b_prev, self.b_next] + self.edit_btns:
                 b.setVisible(False)
             log.info("PDF 미리보기 못 함 %s (%s, %s)", path, err, st)
         else:
@@ -164,7 +204,29 @@ class PdfView(QtWidgets.QWidget):
         if self.n and abs(ev.size().width() - ev.oldSize().width()) > 20:
             QtCore.QTimer.singleShot(0, lambda: self.go(self.page))
 
+    def open_edit(self, tab):
+        import pdfedit
+        log.info("미리보기 → PDF 편집 %s 탭=%s 쪽=%d", self.path, tab, self.page + 1)
+        win = self.window()
+        d = pdfedit.open_editor(win, self.path, tab=tab, page=self.page)
+        if d is not None and not d.styleSheet() and win is not None:
+            d.setStyleSheet(win.styleSheet())
+        return d
+
+    def reload(self):
+        page = self.page
+        try:
+            self.doc.close()
+        except Exception:
+            pass
+        self.doc, err = _open(self.path)
+        self.n = self.doc.pageCount() if self.doc.status() == QPdfDocument.Status.Ready else 0
+        if self.n:
+            self.go(min(page, self.n - 1))
+
     def stop(self):
+        if self in _VIEWS:
+            _VIEWS.remove(self)
         try:
             self.doc.close()
         except Exception:

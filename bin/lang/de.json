@@ -2158,5 +2158,17 @@
  "둘 다 (4Dir 위 · Windows 아래)": "Beide (4Dir oben · Windows darunter)",
  "4Dir 즐겨찾기만": "Nur 4Dir-Favoriten",
  "Windows 즐겨찾기만": "Nur Windows-Favoriten",
- "(비어 있음 — 우클릭 > ★ 4Dir 즐겨찾기에 추가)": "(leer — Rechtsklick > ★ Zu 4Dir-Favoriten hinzufügen)"
+ "(비어 있음 — 우클릭 > ★ 4Dir 즐겨찾기에 추가)": "(leer — Rechtsklick > ★ Zu 4Dir-Favoriten hinzufügen)",
+ "탭이 넘치면 여러 줄로": "Tabs bei Platzmangel in mehreren Zeilen",
+ "끄면 한 줄 + 좌우 화살표": "Aus: eine Zeile mit Pfeilen links/rechts",
+ "PDF 편집 (쪽·주석·나누기)…": "PDF bearbeiten (Seiten · Anmerkungen · Teilen)…",
+ "나누기 (Split)": "Teilen (Split)",
+ "지금 편집한 상태(돌림·순서·주석) 그대로 나눕니다. 원본 파일은 바뀌지 않고, 새 파일은 같은 폴더에 만듭니다.": "Teilt die Seiten im aktuellen Bearbeitungsstand (Drehung · Reihenfolge · Anmerkungen). Das Original bleibt unverändert, neue Dateien landen im selben Ordner.",
+ "모두 {0}쪽": "{0} Seiten",
+ "저장 안 한 편집도 반영": "inkl. ungespeicherter Änderungen",
+ "주석": "Anmerken",
+ "펜·형광펜·글상자 (PDF 편집)": "Stift · Textmarker · Textfeld (PDF bearbeiten)",
+ "쪽 편집": "Seiten",
+ "쪽 돌리기·지우기·순서·끼워 넣기 (PDF 편집)": "Seiten drehen · löschen · umsortieren · einfügen (PDF bearbeiten)",
+ "쪽마다·범위·몇 쪽씩 나누기 (PDF 편집)": "Teilen nach Seite · Bereich · alle N Seiten (PDF bearbeiten)"
 }
