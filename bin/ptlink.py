@@ -10,6 +10,9 @@
   3) 이름 있는 이벤트 'PowerToys_KeyboardManager_Event_Settings' 를 울리면 PowerToys 가 다시 읽음 (안 켜져 있으면 다음에 켤 때 읽음)
 - 쓰기 전 원본을 '<이름>.4Dir-backup.json' 으로 한 번 보관. 끊기 = 우리 항목(4Dir 실행 명령)만 지움.
 - 관리자 권한 PowerToys 와는 상관없이 파일만 씀. 4Dir 가 관리자 권한이면 안내만 (DSC 도 비관리자에서만 씀).
+- 1.1.0: PowerToys 0.102 의 새 편집기는 자기 목록 editorSettings.json 을 따로 가짐(엔진 파일을 열 때 가져옴). 엔진 파일만 고치면
+  편집기에 '꺼짐' 항목이 남거나, 편집기에서 저장할 때 엔진 파일이 편집기 목록으로 다시 써질 수 있음(실측: 끊은 뒤 편집기에 IsActive false 로 남음)
+  → 그 파일이 있으면 같은 항목을 같이 넣고(켬)·지움.
 로그: bin\\log\\4Dir.log [QE.ptlink]
 """
 import os
@@ -18,7 +21,7 @@ import shutil
 import ctypes
 import logging
 
-PTLINK_VER = "1.0.0"
+PTLINK_VER = "1.1.0"   # 1.1.0 (빌드 4, 회사 PC PowerToys 0.102 실측): 새 편집기 목록(editorSettings.json)도 같이 맞춤, 윈도우 버전 글자, 키보드 관리자 화면 바로 열기
 log = logging.getLogger("QE.ptlink")
 WIN_E = "260;69"
 EVENT = "PowerToys_KeyboardManager_Event_Settings"
@@ -167,20 +170,31 @@ def link(root, winhook_cmd):
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(d, f, ensure_ascii=False, indent=2)
     os.replace(tmp, cp)
+    try:
+        _editor_sync(prog, args, start, True)
+    except Exception:
+        log.exception("PowerToys 새 편집기 목록 맞추기 실패 (엔진 파일은 씀)")
     sig = signal()
     log.info("PowerToys Win+E → 4Dir 연결: %s %s (파일 %s, 다시 읽기 신호 %s, 키보드 관리자 %s)", prog, args, cp, sig, kbm_enabled())
     return True, "ok"
 
 
 def unlink():
+    try:
+        ed = _editor_sync("", "", "", False)
+    except Exception:
+        log.exception("PowerToys 새 편집기 목록에서 지우기 실패")
+        ed = False
     cp = config_path()
     d = _read(cp, None)
     if not d:
-        return False
+        return ed
     g = (d.get("remapShortcuts") or {}).get("global") or []
     keep = [e for e in g if not _is_ours(e)]
     if len(keep) == len(g):
-        return False
+        if ed:
+            signal()
+        return ed
     d["remapShortcuts"]["global"] = keep
     with open(cp, "w", encoding="utf-8") as f:
         json.dump(d, f, ensure_ascii=False, indent=2)
@@ -199,6 +213,78 @@ def signal():
         return bool(k.SetEvent(ctypes.c_void_p(h)))
     finally:
         k.CloseHandle(ctypes.c_void_p(h))
+
+
+def _editor_path():
+    return os.path.join(kbm_dir(), "editorSettings.json")
+
+
+def _editor_sync(prog, args, start, on):
+    """새 편집기 목록에 Win+E → 4Dir 를 넣거나(on) 지움. 파일이 없으면(옛 편집기·안 열어 봄) 아무것도 안 함"""
+    p = _editor_path()
+    d = _read(p, None)
+    if not isinstance(d, dict) or "ShortcutSettingsDictionary" not in d:
+        return False
+    sd = d.setdefault("ShortcutSettingsDictionary", {})
+    prof = d.get("ActiveProfile") or "default"
+    pd = d.setdefault("ProfileDictionary", {})
+    ops = d.setdefault("ShortcutsByOperationType", {})
+    mine = [k for k, v in sd.items() if (v.get("Shortcut") or {}).get("OriginalKeys") == WIN_E
+            and int((v.get("Shortcut") or {}).get("OperationType") or 0) == 1
+            and (on or "4dir" in (((v.get("Shortcut") or {}).get("ProgramPath") or "") + " " + ((v.get("Shortcut") or {}).get("ProgramArgs") or "")).lower())]   # 끊을 땐 4Dir 것만
+    if not on and not mine:
+        return False   # 지울 것 없음 (파일 그대로)
+    for k in mine:   # 우리 것(또는 Win+E 프로그램 실행 항목)을 지우고 → on 이면 새로 하나
+        sd.pop(k, None)
+        for lst in list(pd.values()) + list(ops.values()):
+            if isinstance(lst, list) and k in lst:
+                lst.remove(k)
+    if on:
+        import uuid
+        k = str(uuid.uuid4())
+        sd[k] = {"Id": k, "Shortcut": {"OriginalKeys": WIN_E, "TargetKeys": "", "TargetApp": "", "OperationType": 1,
+                                       "ExactMatch": False, "TargetText": "", "ProgramPath": prog, "ProgramArgs": args,
+                                       "StartInDirectory": start, "Elevation": 0, "IfRunningAction": 1, "Visibility": 0,
+                                       "UriToOpen": "", "Condition": 0},
+                 "Profiles": [prof], "IsActive": True}
+        pd.setdefault(prof, []).append(k)
+        ops.setdefault("RunProgram", []).append(k)
+    tmp = p + ".4dirtmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(d, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, p)
+    log.info("PowerToys 새 편집기 목록 %s (%s, 지운 옛 항목 %d)", "넣음" if on else "지움", p, len(mine))
+    return True
+
+
+def open_kbm_settings():
+    """PowerToys 설정의 Keyboard Manager 화면 바로 열기 (PowerToys 지원 인수 --open-settings=KBM, 원본 소스·실측 확인)"""
+    exe = exe_path()
+    if not exe:
+        return False
+    import subprocess
+    subprocess.Popen([exe, "--open-settings=KBM"], close_fds=True)
+    log.info("PowerToys 키보드 관리자 설정 열기")
+    return True
+
+
+def windows_info():
+    """(보이는 글자, 빌드 번호) — 예 ('Windows 11 24H2 (빌드 26100.6584)', 26100). 레지스트리 ProductName 은 11 에서도 10 이라 빌드로 판단"""
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion") as key:
+            def g(n, d=""):
+                try:
+                    return winreg.QueryValueEx(key, n)[0]
+                except OSError:
+                    return d
+            build = int(g("CurrentBuild", "0") or 0)
+            ubr = g("UBR", "")
+            disp = g("DisplayVersion", "") or g("ReleaseId", "")
+        name = "Windows 11" if build >= 22000 else "Windows 10"
+        return f"{name} {disp} ({build}{'.' + str(ubr) if ubr != '' else ''})".replace("  ", " "), build
+    except Exception:
+        return "Windows ?", 0
 
 
 def windows_build():

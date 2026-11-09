@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.119"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 3             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.120"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 4             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -7564,7 +7564,28 @@ class SettingsDialog(QtWidgets.QDialog):
         self.cats.currentRowChanged.connect(self.stack.setCurrentIndex)
         self.cats.currentRowChanged.connect(lambda r: self.note.setVisible(self.PAGES[r] not in ("keys", "search")))
         self.cats.setCurrentRow(0)
+        self._make_copyable()
         log.info("설정 창 열기")
+
+    def _make_copyable(self):
+        """설정 창 글자 복사 (0.9.120 빌드 3 사용자 11/10 '글자가 복사가 안 돼서 매번 쳐야 됨'):
+        글자 칸은 마우스로 끌어 고르고 Ctrl+C, 체크·단추는 우클릭 '글자 복사'"""
+        n = 0
+        for lb in self.findChildren(QtWidgets.QLabel):
+            if lb.text() and not lb.pixmap():
+                lb.setTextInteractionFlags(lb.textInteractionFlags() | Qt.TextSelectableByMouse)
+                n += 1
+        for b in self.findChildren(QtWidgets.QAbstractButton):
+            if b.contextMenuPolicy() == Qt.DefaultContextMenu and b.text().strip():
+                b.setContextMenuPolicy(Qt.CustomContextMenu)
+                b.customContextMenuRequested.connect(lambda pos, b=b: self._copy_menu(b, pos))
+        log.debug("설정 창 글자 복사 가능하게 %d칸", n)
+
+    def _copy_menu(self, w, pos):
+        m = QtWidgets.QMenu(self)
+        t = w.text().replace("&&", "&").strip()
+        m.addAction(T("글자 복사"), lambda: QtWidgets.QApplication.clipboard().setText(t))
+        m.exec(w.mapToGlobal(pos))
 
     def show_page(self, key):
         if key in self.PAGES:
@@ -7668,46 +7689,115 @@ class SettingsDialog(QtWidgets.QDialog):
         self._sub(lay, T("도움말"))
         self._set(lay, "tooltips", T("풍선 도움말(툴팁) 보이기 — 단추에 마우스를 올리면 설명"))
         self._sub(lay, T("윈도우"))   # 0.9.109
-        self._check(lay, "win_e", T("Win+E 를 누르면 탐색기 대신 4Dir 열기"), winhook.ours, m.toggle_winE,
-                    T("이 사용자 계정에만 적용 — 끄면 원래 탐색기로 돌아옵니다"))
-        # 0.9.119 빌드 3 (사용자 11/10): 26H2 는 위 방식이 안 먹는 것으로 보임 → PowerToys 로 연결 (자동 + 그림 안내)
-        if ptlink.registry_may_fail():
-            warn = QtWidgets.QLabel("⚠ " + T("이 윈도우(26H2, 빌드 {0})에서는 위 방식이 안 될 수 있습니다 — 아래 PowerToys 연결을 쓰세요").format(ptlink.windows_build()))
-            warn.setWordWrap(True)
-            warn.setStyleSheet("color:#d93025;")
-            lay.addWidget(warn)
-        row = QtWidgets.QHBoxLayout()
-        self.pt_state = QtWidgets.QLabel()
-        self.pt_state.setWordWrap(True)
-        b1 = QtWidgets.QPushButton("⚡ " + T("PowerToys 로 Win+E 연결"))
-        b1.setToolTip(T("PowerToys 키보드 관리자에 'Win+E → 4Dir 새 창'을 자동으로 넣습니다 (원래 설정은 보관). PowerToys 가 없으면 받는 곳을 엽니다"))
-        b1.clicked.connect(lambda *_: (m.pt_link(), self._pt_state()))
-        b2 = QtWidgets.QPushButton("🖼 " + T("그림 안내"))
-        b2.setToolTip(T("PowerToys 설치부터 Win+E 연결까지 그림으로 보기"))
-        b2.clicked.connect(lambda *_: (m.open_pt_guide(self), self._pt_state()))
-        b3 = QtWidgets.QPushButton(T("연결 끊기"))
-        b3.setToolTip(T("PowerToys 에서 4Dir 의 Win+E 항목만 지웁니다"))
-        b3.clicked.connect(lambda *_: (m.pt_unlink(), self._pt_state()))
-        self.pt_unlink_btn = b3
-        for b in (b1, b2, b3):
+        # 0.9.120 빌드 2 (사용자 11/10): 두 방식 칸을 다 보여 주고, 이 윈도우에 안 맞는 칸은 흐리게(눌러 볼 수는 있음 — 시험용).
+        # 맨 위 체크 = 켜면 이 윈도우에 맞는 방식, 끄면 둘 다 끊음
+        self.win_info = QtWidgets.QLabel()
+        self.win_info.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        lay.addWidget(self.win_info)
+        self._check(lay, "win_e", T("Win+E 를 누르면 탐색기 대신 4Dir 열기"), m.winE_on, lambda: (m.toggle_winE(), self._pt_state()),
+                    T("켜면 이 윈도우에 맞는 방식으로 연결, 끄면 두 방식 모두 끊습니다 — 이 사용자 계정에만 적용"))
+
+        def section(title):
+            box = QtWidgets.QFrame()
+            box.setObjectName("winEBox")
+            box.setStyleSheet("#winEBox{border:1px solid rgba(128,128,128,90); border-radius:6px;}")
+            bl = QtWidgets.QVBoxLayout(box)
+            bl.setContentsMargins(10, 8, 10, 8)
+            hr = QtWidgets.QHBoxLayout()
+            t = QtWidgets.QLabel(title)
+            f = t.font()
+            f.setBold(True)
+            t.setFont(f)
+            hr.addWidget(t)
+            tag = QtWidgets.QLabel()
+            hr.addWidget(tag)
+            hr.addStretch(1)
+            bl.addLayout(hr)
+            lay.addWidget(box)
+            return box, bl, tag
+
+        # ---- 기본 방식 (24H2 이하)
+        self.reg_box, rl, self.reg_tag = section(T("기본 방식 — 윈도우 11 24H2 이하"))
+        d = QtWidgets.QLabel(T("윈도우 설정(레지스트리)에 'Win+E = 4Dir' 를 적어 둡니다. 따로 설치할 것이 없습니다."))
+        d.setWordWrap(True)
+        rl.addWidget(d)
+        r = QtWidgets.QHBoxLayout()
+        self.reg_st = QtWidgets.QLabel()
+        r.addWidget(self.reg_st, 1)
+        self.reg_btn = QtWidgets.QPushButton()
+        self.reg_btn.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        self.reg_btn.clicked.connect(lambda *_: (m.reg_toggle(), self._pt_state()))
+        r.addWidget(self.reg_btn)
+        rl.addLayout(r)
+
+        # ---- PowerToys 방식 (26H2 이상)
+        self.pt_box, bl, self.pt_tag = section(T("PowerToys 방식 — 윈도우 11 26H2 이상"))
+        why = QtWidgets.QLabel(T("윈도우 11 26H2 부터는 윈도우가 Win+E 를 다른 프로그램에 넘기는 기본 방식을 막습니다. "
+                                 "그래서 마이크로소프트의 무료 도구 PowerToys 의 '키보드 관리자'가 Win+E 를 받아 4Dir 를 엽니다."))
+        why.setWordWrap(True)
+        bl.addWidget(why)
+        self.pt_rows = {}
+        for key, label in (("inst", T("PowerToys 설치")), ("kbm", T("키보드 관리자(Keyboard Manager) 켜기")), ("link", T("Win+E → 4Dir 연결"))):
+            r = QtWidgets.QHBoxLayout()
+            st = QtWidgets.QLabel()
+            r.addWidget(st, 1)
+            b = QtWidgets.QPushButton()
             b.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-            row.addWidget(b)
-        row.addStretch(1)
-        lay.addLayout(row)
-        lay.addWidget(self.pt_state)
+            r.addWidget(b)
+            bl.addLayout(r)
+            self.pt_rows[key] = (st, b, label)
+        self.pt_rows["inst"][1].setText(T("PowerToys 받기"))
+        self.pt_rows["inst"][1].clicked.connect(lambda *_: QtGui.QDesktopServices.openUrl(QtCore.QUrl(ptlink.STORE_URL)))
+        self.pt_rows["kbm"][1].setText(T("키보드 관리자 켜러 가기"))
+        self.pt_rows["kbm"][1].setToolTip(T("PowerToys 설정의 Keyboard Manager 화면을 엽니다 — 'Keyboard Manager 켜기'를 켜 주세요"))
+        self.pt_rows["kbm"][1].clicked.connect(lambda *_: (ptlink.open_kbm_settings(), QtCore.QTimer.singleShot(4000, self._pt_state)))
+        self.pt_rows["link"][1].setToolTip(T("PowerToys 키보드 관리자에 'Win+E → 4Dir 새 창'을 넣습니다 (원래 설정은 보관). 넣는 값은 이 PC 의 4Dir 위치로 정해집니다"))
+        self.pt_rows["link"][1].clicked.connect(lambda *_: (m.pt_toggle(), self._pt_state()))
+        gb = QtWidgets.QHBoxLayout()
+        g = QtWidgets.QPushButton("🖼 " + T("그림 안내 (손으로 설정하는 법)"))
+        g.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        g.clicked.connect(lambda *_: (m.open_pt_guide(self), self._pt_state()))
+        gb.addWidget(g)
+        rf = QtWidgets.QPushButton(T("상태 다시 보기"))
+        rf.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        rf.clicked.connect(lambda *_: self._pt_state())
+        gb.addWidget(rf)
+        gb.addStretch(1)
+        bl.addLayout(gb)
         self._pt_state()
 
     def _pt_state(self):
+        """윈도우 버전 · 두 방식 칸 상태 — 이 윈도우에 맞는 칸은 진하게(✔ 이 PC), 안 맞는 칸은 흐리게(그래도 눌러 볼 수 있음)"""
+        txt, build = ptlink.windows_info()
+        use_pt = self.main.winE_method() == "pt"
+        self.win_info.setText(T("현재 윈도우: {0}").format(txt))
+        if "win_e" in self.checks:
+            self.checks["win_e"].setChecked(self.main.winE_on())
+        for box, tag, fit in ((self.reg_box, self.reg_tag, not use_pt), (self.pt_box, self.pt_tag, use_pt)):
+            # 빌드 3 사용자: 흐리게·'필요 없음' 빼고, 안 맞는 칸엔 언제 쓰는지만
+            if fit:
+                tag.setText("✔ " + T("이 PC 에 맞는 방식"))
+                tag.setStyleSheet("color:#1e8e3e; font-weight:bold;")
+            else:
+                tag.setText(T("— 기본 방식이 안 되면 이 방법을 쓰세요") if box is self.pt_box else "")   # 기본 칸은 제목에 이미 '24H2 이하
+                tag.setStyleSheet("")
+        on = winhook.ours()
+        self.reg_st.setText(("✅ " + T("연결됨 — Win+E 를 누르면 4Dir 새 창")) if on else ("⬜ " + T("연결 안 됨")))
+        self.reg_btn.setText(T("끊기") if on else T("연결"))
         inst = ptlink.exe_path() is not None
+        kbm = ptlink.kbm_enabled() if inst else None
         lk = inst and ptlink.linked()
-        if not inst:
-            t = "⚪ " + T("PowerToys 가 설치되어 있지 않습니다")
-        elif lk:
-            t = "🟢 " + T("PowerToys 연결됨 — Win+E 를 누르면 4Dir 새 창") + ("" if ptlink.running() else "  ·  ⚠ " + T("PowerToys 를 실행해야 동작합니다"))
-        else:
-            t = "🟡 " + T("PowerToys 설치됨 — 아직 연결 안 됨")
-        self.pt_state.setText(t)
-        self.pt_unlink_btn.setVisible(bool(lk))
+        states = {"inst": inst, "kbm": inst and kbm is not False, "link": lk}
+        for key, (st, b, label) in self.pt_rows.items():
+            ok = states[key]
+            st.setText(("✅ " if ok else "⬜ ") + label)
+            if key == "link":
+                b.setText(T("끊기") if ok else "⚡ " + T("지금 연결"))
+                b.setVisible(inst)
+            else:
+                b.setVisible(not ok and (key == "inst" or inst))
+        if lk and not ptlink.running():
+            self.pt_rows["link"][0].setText(self.pt_rows["link"][0].text() + "  ·  ⚠ " + T("PowerToys 를 실행해야 동작합니다"))
 
     def _p_list(self, lay):
         self._sub(lay, T("표시"))
@@ -7837,6 +7927,9 @@ class SettingsDialog(QtWidgets.QDialog):
         vf.setPointSizeF(vf.pointSizeF() + 2)
         v.setFont(vf)
         lay.addWidget(v)
+        wv = QtWidgets.QLabel(T("윈도우: {0}").format(ptlink.windows_info()[0]))   # 0.9.120 사용자: 윈도우 버전을 4Dir 에서 바로
+        wv.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        lay.addWidget(wv)
         # 후원 버튼은 v0.9.106 부터 왼쪽 카테고리 아래 (모든 페이지에서 보임)
         if SITE_URL:   # 홈페이지 - 4dir.net (링크)
             host = SITE_URL.split("//", 1)[-1].strip("/")
@@ -9314,11 +9407,26 @@ class Main(QtWidgets.QMainWindow):
     def _pt_cmd(self):
         return winhook.launch_command(os.path.dirname(BIN_DIR))
 
+    @staticmethod
+    def winE_method():
+        """Win+E 방식 (0.9.120, 사용자 11/10 '체크 하나로'): 윈도우 11 26H2(빌드 26300) 이상 = PowerToys, 그 밑 = 기본(레지스트리)"""
+        return "pt" if ptlink.registry_may_fail() else "reg"
+
+    @staticmethod
+    def winE_on():
+        """체크 표시 = 어느 방식이든 지금 4Dir 가 Win+E 를 받게 되어 있나"""
+        try:
+            return bool(winhook.ours() or ptlink.linked())
+        except Exception:
+            log.exception("Win+E 상태 읽기 실패")
+            return False
+
     def pt_link(self):
-        """PowerToys 키보드 관리자에 Win+E → 4Dir 새 창 (0.9.119 빌드 3). 없으면 받는 곳 + 그림 안내"""
+        """PowerToys 키보드 관리자에 Win+E → 4Dir 새 창 (0.9.119). 없으면 받는 곳, 키보드 관리자가 꺼져 있으면 그 화면 열기"""
         if datadir.PACKAGED:   # 스토어판은 앱 밖 설정 파일을 못 씀 → 그림 안내로 손으로
             self.show_notice(T("스토어판에서는 자동 연결을 할 수 없습니다 — 그림 안내대로 PowerToys 에서 직접 넣어 주세요  ✕"), ms=9000)
-            return self.open_pt_guide()
+            self.open_pt_guide()
+            return False
         if ptlink.exe_path() is None:
             self.show_notice(T("PowerToys 가 없습니다 — 설치한 뒤 다시 누르세요  ✕"), ms=9000,
                              action=(T("PowerToys 받기"), lambda: QtGui.QDesktopServices.openUrl(QtCore.QUrl(ptlink.STORE_URL))))
@@ -9334,22 +9442,40 @@ class Main(QtWidgets.QMainWindow):
             self.show_notice("⚠ " + msg + "  ✕", ms=10000)
             return False
         if ptlink.kbm_enabled() is False:
-            self.show_notice(T("연결했습니다. PowerToys 설정에서 '키보드 관리자'를 켜야 동작합니다  ✕"), ms=12000)
+            self.show_notice(T("연결했습니다. PowerToys 설정에서 '키보드 관리자'를 켜야 동작합니다  ✕"), ms=15000,
+                             action=(T("키보드 관리자 켜러 가기"), ptlink.open_kbm_settings))
         elif not ptlink.running():
             self.show_notice(T("연결했습니다. PowerToys 를 실행하면 Win+E 가 4Dir 를 엽니다  ✕"), ms=12000)
         else:
             self.show_notice(T("연결했습니다 — 이제 Win+E 를 누르면 4Dir 새 창이 열립니다  ✕"), ms=9000)
         return True
 
-    def pt_unlink(self):
+    def reg_toggle(self):
+        """기본 방식 칸의 [연결]/[끊기] (0.9.120 빌드 2 — 두 칸을 따로 시험할 수 있게)"""
         try:
-            done = ptlink.unlink()
+            if winhook.ours():
+                winhook.disable()
+                self.show_notice(T("기본 방식 Win+E 연결을 끊었습니다  ✕"), ms=6000)
+            elif datadir.PACKAGED:
+                self.show_notice(T("스토어판에서는 아직 Win+E 연결을 쓸 수 없습니다  ✕"), ms=6000)
+            else:
+                winhook.enable(os.path.dirname(BIN_DIR))
+                self.show_notice(T("이제 Win+E 를 누르면 4Dir 가 열립니다  ✕"), ms=6000)
         except Exception as ex:
-            log.exception("PowerToys 연결 끊기 실패")
+            log.exception("기본 방식 Win+E 바꾸기 실패")
             self.show_notice(T("⚠ 바꾸지 못했습니다: {0}  ✕").format(ex), ms=8000)
-            return False
-        self.show_notice((T("PowerToys 에서 Win+E 연결을 지웠습니다  ✕") if done else T("지울 연결이 없습니다  ✕")), ms=6000)
-        return done
+
+    def pt_toggle(self):
+        """PowerToys 칸의 [지금 연결]/[끊기]"""
+        if ptlink.linked():
+            try:
+                ptlink.unlink()
+                self.show_notice(T("PowerToys 에서 Win+E 연결을 지웠습니다  ✕"), ms=6000)
+            except Exception as ex:
+                log.exception("PowerToys 연결 끊기 실패")
+                self.show_notice(T("⚠ 바꾸지 못했습니다: {0}  ✕").format(ex), ms=8000)
+            return
+        self.pt_link()
 
     def open_pt_guide(self, parent=None):
         import ptguide
@@ -9358,17 +9484,25 @@ class Main(QtWidgets.QMainWindow):
         dlg.exec()
 
     def toggle_winE(self):
-        if datadir.PACKAGED:   # 0.9.114 빌드 2: 스토어판은 레지스트리가 앱 안에 갇혀 Win+E 연결이 안 됨 (2단계에서 검토)
-            self.show_notice(T("스토어판에서는 아직 Win+E 연결을 쓸 수 없습니다  ✕"), ms=6000)
-            return
+        """체크 하나 (0.9.120): 켜기 = 윈도우 버전에 맞는 방식 하나, 끄기 = 두 방식 모두 끊음 (사용자 11/10 '체크만 끄면 끊어져야')"""
         root = os.path.dirname(BIN_DIR)
         try:
-            if winhook.ours():
-                winhook.disable()
+            if self.winE_on():
+                a = winhook.disable() if winhook.ours() else False
+                b = ptlink.unlink() if ptlink.exe_path() or ptlink.linked() else False
+                log.info("Win+E 끔 (기본 방식 %s, PowerToys %s)", a, b)
                 self.show_notice(T("Win+E 는 다시 윈도우 탐색기를 엽니다  ✕"), ms=6000)
-            else:
-                winhook.enable(root)
-                self.show_notice(T("이제 Win+E 를 누르면 4Dir 가 열립니다  ✕"), ms=6000)
+                return
+            method = self.winE_method()
+            log.info("Win+E 켬 — 윈도우 %s → 방식 %s", ptlink.windows_info()[0], method)
+            if method == "pt":
+                self.pt_link()
+                return
+            if datadir.PACKAGED:   # 0.9.114 빌드 2: 스토어판은 레지스트리가 앱 안에 갇혀 Win+E 연결이 안 됨
+                self.show_notice(T("스토어판에서는 아직 Win+E 연결을 쓸 수 없습니다  ✕"), ms=6000)
+                return
+            winhook.enable(root)
+            self.show_notice(T("이제 Win+E 를 누르면 4Dir 가 열립니다  ✕"), ms=6000)
         except Exception as ex:
             log.exception("Win+E 설정 실패")
             self.show_notice(T("⚠ 바꾸지 못했습니다: {0}  ✕").format(ex), ms=8000)
