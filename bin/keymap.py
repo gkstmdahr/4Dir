@@ -63,7 +63,8 @@ ACTIONS = [
     ("toggle_memo", T("메모 창 보이기/숨기기"), "Alt+M", "window"),
     ("toggle_calc", T("계산기"), "Alt+C", "window"),   # 0.9.111   # v0.9.108   # v0.9.101 공용이면 공용 탐색 창, 칸마다면 지금 칸 (기본 키 없음)
     ("compare", T("두 칸 비교"), "Shift+F2", "window"),
-    ("same_folder", T("다른 칸 새 탭에 같은 폴더"), "Ctrl+=", "window"),   # 0.9.112 (빌드 5: Alt+= 는 한국어 입력기 전자/반자 전환이라 안 들어옴)
+    ("same_folder", T("다른 칸에 같은 폴더"), "Ctrl+=", "window"),   # 0.9.124 새 탭/지금 탭은 설정 (이름에서 '새 탭' 뺌) · 0.9.112 (빌드 5: Alt+= 는 한국어 입력기 전자/반자 전환이라 안 들어옴)
+    ("fit_columns", T("열 너비 자동 맞춤 (긴 이름도 다 보이게)"), "Ctrl++; Ctrl+Shift++; Ctrl+Shift+=", "window"),   # 0.9.124 받은 의견 (탐색기 Ctrl+숫자패드+ 와 같음)
     ("sync_dirs", T("폴더 맞추기 (두 칸)…"), "", "window"),   # 0.9.109 빌드 3
     ("ftp_connect", T("FTP 연결…"), "", "window"),
     ("user_buttons", T("My메뉴 편집…"), "", "window"),   # v0.9.89 · 0.9.113 이름 '사용자 단추' → My메뉴 (사용자 11/6)
@@ -90,7 +91,7 @@ for _c, _ids in (
         ("nav", "up back fwd refresh focus_addr same_folder pane1 pane2 pane3 pane4 pane5 pane6"),
         ("tab", "new_tab close_tab reopen_tab next_tab prev_tab lock_tab new_window"),
         ("find", "focus_filter global_search global_hotkey select_pattern palette"),
-        ("view", "toggle_hidden toggle_chips quick_preview flat_view"),
+        ("view", "toggle_hidden toggle_chips quick_preview flat_view fit_columns"),
         ("panel", "toggle_preview toggle_nav toggle_chrome toggle_memo"),
         ("tools", "toggle_calc compare find_dupes view_file file_attrs img_batch space_map sync_dirs ftp_connect user_buttons"),
         ("fav", "add_fav ws_latest ws_slot1 ws_slot2"),

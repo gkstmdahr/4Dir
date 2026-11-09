@@ -857,6 +857,8 @@ class ShellMenu:
         self.cm_hi = None   # (ptr, 3|2)  IContextMenu3 또는 2
         self.hmenu = None
         self._pidls = []
+        _t0 = time.perf_counter()   # 0.9.123 우클릭 지연(사용자: 1~2초) 단계별 시간 → 로그 '셸메뉴 시간'
+        self.timing = {}
         psf = ctypes.c_void_p()
         cm = ctypes.c_void_p()
         try:
@@ -893,6 +895,7 @@ class ShellMenu:
             raise
         finally:
             _release(psf.value)
+        self.timing["객체"] = (time.perf_counter() - _t0) * 1000
         self.cm = cm.value
         for iid, lvl in ((IID_IContextMenu3, 3), (IID_IContextMenu2, 2)):
             p = ctypes.c_void_p()
@@ -905,8 +908,10 @@ class ShellMenu:
             flags |= shellcon.CMF_EXTENDEDVERBS
         if id_last is None:
             id_last = ShellMenu.ALT_BASE - 1 if not names else 0x7FFF
+        _tq = time.perf_counter()
         _check(_com(self.cm, 3, [ctypes.c_void_p, ctypes.c_uint, ctypes.c_uint, ctypes.c_uint, ctypes.c_uint],
                     self.hmenu, 0, id_first, id_last, flags), "QueryContextMenu")
+        self.timing["항목채우기(셸 확장)"] = (time.perf_counter() - _tq) * 1000
         # 우리 항목 id 는 펼친 순서대로 EXTRA_BASE+n : extras → tail → newfolder (부르는 쪽 콜백 목록도 같은 순서)
         n = 0
         if extras:
@@ -979,6 +984,8 @@ class ShellMenu:
             log.info("셸메뉴 윈도우 '새 폴더' %s", f"{pos}번째 자리를 바꿈" if pos is not None else "못 찾음 → 끝에 붙임")
         log.info("셸메뉴 구성 folder=%s n=%d 항목=%d 하위메뉴지원=IContextMenu%s", folder, len(names),
                  win32gui.GetMenuItemCount(self.hmenu), self.cm_hi[1] if self.cm_hi else "없음")
+        self.timing["전체"] = (time.perf_counter() - _t0) * 1000
+        log.info("셸메뉴 시간 %s", " · ".join(f"{k} {v:.0f}ms" for k, v in self.timing.items()))
 
     def _own_sub(self, hsub):
         """hsub 가 이 메뉴 맨 위 항목의 하위 메뉴면 그 글자"""

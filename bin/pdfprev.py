@@ -17,7 +17,7 @@ from i18n import T
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-PDFPREV_VER = "1.1.0"   # 1.1.0: 파일을 붙잡지 않음(메모리로 읽음 — 미리보기 중에도 이름 바꾸기·지우기·원본에 저장), [주석][쪽 편집][나누기] 단추, 저장하면 다시 그림 / 1.0.1: 주석도 그림(PDF 편집)
+PDFPREV_VER = "1.2.1"   # 1.2.1: 편집 단추를 그림 미리보기와 같은 모양 /   # 1.2.0: 편집 단추 하나로 · 위쪽 오른쪽 (그림 미리보기 ✎ 편집 처럼, 사용자 11/10) /   # 1.1.0: 파일을 붙잡지 않음(메모리로 읽음 — 미리보기 중에도 이름 바꾸기·지우기·원본에 저장), [주석][쪽 편집][나누기] 단추, 저장하면 다시 그림 / 1.0.1: 주석도 그림(PDF 편집)
 log = logging.getLogger("QE.pdfprev")
 try:
     from PySide6.QtPdf import QPdfDocument
@@ -111,6 +111,23 @@ class PdfView(QtWidgets.QWidget):
         lay = QtWidgets.QVBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(4)
+        # 0.9.124 사용자: [주석][쪽 편집][나누기] 셋 대신 우클릭 메뉴와 같은 단추 하나, 위로 (그림 미리보기 '✎ 편집' 처럼)
+        top = QtWidgets.QHBoxLayout()
+        top.addStretch(1)
+        self.b_edit = QtWidgets.QToolButton()
+        self.b_edit.setText("✎ " + T("편집"))
+        self.b_edit.setToolTip(T("PDF 편집 (쪽·주석·나누기)…"))
+        self.b_edit.setFocusPolicy(Qt.NoFocus)
+        self.b_edit.setObjectName("pdfEditBtn")
+        try:   # 0.9.124 사용자 '안 보인다, png 편집 단추는 큰데' → 그림 미리보기 '✎ 편집' 과 같은 모양
+            import imginspect
+            self.b_edit.setStyleSheet(imginspect.BTN_STYLE.replace("#imgTb", "#pdfEditBtn")
+                                      + "QToolButton#pdfEditBtn{padding:2px 6px;}")
+        except Exception:
+            log.exception("편집 단추 모양")
+        self.b_edit.clicked.connect(lambda *_: self.open_edit("pages"))
+        top.addWidget(self.b_edit)
+        lay.addLayout(top)
         self.sc = QtWidgets.QScrollArea()
         self.sc.setWidgetResizable(True)
         self.sc.setFrameShape(QtWidgets.QFrame.NoFrame)
@@ -135,18 +152,7 @@ class PdfView(QtWidgets.QWidget):
         self.b_next.clicked.connect(lambda: self.go(self.page + 1))
         bar.addWidget(self.b_next)
         bar.addStretch(1)
-        # 0.9.123 사용자: 미리보기에서 바로 PDF 편집 (그 탭 · 지금 쪽으로)
-        self.edit_btns = []
-        for tab, text, tip in (("annot", T("주석"), T("펜·형광펜·글상자 (PDF 편집)")), ("pages", T("쪽 편집"), T("쪽 돌리기·지우기·순서·끼워 넣기 (PDF 편집)")),
-                               ("split", T("나누기"), T("쪽마다·범위·몇 쪽씩 나누기 (PDF 편집)"))):
-            b = QtWidgets.QToolButton()
-            b.setText(text)
-            b.setToolTip(tip)
-            b.setAutoRaise(True)
-            b.setObjectName("pdfEditBtn")
-            b.clicked.connect(lambda *_, t=tab: self.open_edit(t))
-            bar.addWidget(b)
-            self.edit_btns.append(b)
+        self.edit_btns = [self.b_edit]
         lay.addLayout(bar)
         _VIEWS.append(self)
         self.pic.mouseDoubleClickEvent = lambda ev: os.startfile(self.path)
