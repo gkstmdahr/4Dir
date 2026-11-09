@@ -2195,5 +2195,8 @@
  "이동식 디스크": "Removable Disk",
  "네트워크 드라이브": "Network Drive",
  "CD 드라이브": "CD Drive",
- "RAM 디스크": "RAM Disk"
+ "RAM 디스크": "RAM Disk",
+ "Ctrl+= 누르면 옆 칸에도 지금 폴더 열기": "Ctrl+= opens the current folder in the other pane too",
+ "옆 칸에 새 탭을 만들어 열기 (기본)": "Open it in a new tab in the other pane (default)",
+ "옆 칸에서 보고 있던 탭을 이 폴더로 바꾸기": "Switch the tab you were viewing in the other pane to this folder"
 }

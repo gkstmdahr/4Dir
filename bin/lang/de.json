@@ -2195,5 +2195,8 @@
  "이동식 디스크": "Wechseldatenträger",
  "네트워크 드라이브": "Netzlaufwerk",
  "CD 드라이브": "CD-Laufwerk",
- "RAM 디스크": "RAM-Disk"
+ "RAM 디스크": "RAM-Disk",
+ "Ctrl+= 누르면 옆 칸에도 지금 폴더 열기": "Strg+= öffnet den aktuellen Ordner auch im anderen Bereich",
+ "옆 칸에 새 탭을 만들어 열기 (기본)": "In einem neuen Tab im anderen Bereich öffnen (Standard)",
+ "옆 칸에서 보고 있던 탭을 이 폴더로 바꾸기": "Den im anderen Bereich angezeigten Tab auf diesen Ordner umstellen"
 }

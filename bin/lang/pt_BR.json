@@ -2195,5 +2195,8 @@
  "이동식 디스크": "Disco removível",
  "네트워크 드라이브": "Unidade de rede",
  "CD 드라이브": "Unidade de CD",
- "RAM 디스크": "Disco RAM"
+ "RAM 디스크": "Disco RAM",
+ "Ctrl+= 누르면 옆 칸에도 지금 폴더 열기": "Ctrl+= abre a pasta atual também no outro painel",
+ "옆 칸에 새 탭을 만들어 열기 (기본)": "Abrir em uma nova aba no outro painel (padrão)",
+ "옆 칸에서 보고 있던 탭을 이 폴더로 바꾸기": "Trocar a aba que você via no outro painel para esta pasta"
 }

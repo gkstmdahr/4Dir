@@ -2195,5 +2195,8 @@
  "이동식 디스크": "Disque amovible",
  "네트워크 드라이브": "Lecteur réseau",
  "CD 드라이브": "Lecteur CD",
- "RAM 디스크": "Disque RAM"
+ "RAM 디스크": "Disque RAM",
+ "Ctrl+= 누르면 옆 칸에도 지금 폴더 열기": "Ctrl+= ouvre aussi le dossier actuel dans l'autre volet",
+ "옆 칸에 새 탭을 만들어 열기 (기본)": "L'ouvrir dans un nouvel onglet de l'autre volet (par défaut)",
+ "옆 칸에서 보고 있던 탭을 이 폴더로 바꾸기": "Remplacer l'onglet affiché dans l'autre volet par ce dossier"
 }

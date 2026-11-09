@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.124"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 5             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.125"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 1             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -8368,6 +8368,11 @@ class SettingsDialog(QtWidgets.QDialog):
         build()
         return True
 
+    def _set_same_folder(self, cur):
+        if bool(SETTINGS["same_folder_current"]) != cur:
+            SETTINGS["same_folder_current"] = cur
+            log.info("설정 same_folder_current=%s", cur)
+
     def _sub(self, lay, text):
         l = QtWidgets.QLabel(text)
         l.setObjectName("favLabel")
@@ -8399,7 +8404,17 @@ class SettingsDialog(QtWidgets.QDialog):
                     lambda: SETTINGS["resume_after_reboot"], lambda: SETTINGS.__setitem__("resume_after_reboot", not SETTINGS["resume_after_reboot"]))
         self._set(lay, "hide_single_tab", T("탭이 하나면 탭 줄 숨기기 (새 탭: Ctrl+T)"))
         self._set(lay, "tab_multirow", T("탭이 넘치면 여러 줄로"), T("끄면 한 줄 + 좌우 화살표"))
-        self._set(lay, "same_folder_current", T("'다른 칸에 같은 폴더' 를 새 탭 대신 다른 칸 지금 탭에서"), T("끄면 새 탭으로 엶 (기본)"))
+        # 0.9.125 사용자 '이 문장 이해가 안 된다': 체크 한 줄 → 제목 + 둘 중 고르기
+        self._sub(lay, T("Ctrl+= 누르면 옆 칸에도 지금 폴더 열기"))
+        g = QtWidgets.QButtonGroup(self)
+        self.same_folder_radio = {}
+        for cur, lbl in ((False, T("옆 칸에 새 탭을 만들어 열기 (기본)")), (True, T("옆 칸에서 보고 있던 탭을 이 폴더로 바꾸기"))):
+            r = QtWidgets.QRadioButton(lbl)
+            r.setChecked(bool(SETTINGS["same_folder_current"]) == cur)
+            r.toggled.connect(lambda c, cur=cur: c and self._set_same_folder(cur))
+            g.addButton(r)
+            lay.addWidget(r)
+            self.same_folder_radio[cur] = r
         self._set(lay, "keep_favbar", T("메뉴줄을 접어도 즐겨찾기 줄은 보이기"))
         self._set(lay, "folder_view_memory", T("폴더마다 보기 기억 — 그 폴더에서 바꾼 보기 방식·정렬을 다음에도 그대로"))
         self._set(lay, "show_favbar", T("즐겨찾기 줄 보이기"), T("끄면 즐겨찾기 줄이 통째로 사라집니다. 다시 켜려면: 보기 → 즐겨찾기 줄 보이기"))
