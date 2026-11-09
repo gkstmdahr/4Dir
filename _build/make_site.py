@@ -25,7 +25,7 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.11.1"   # 1.11.1: 후원 버튼 새 창(target=_blank) / 1.11.0: 개인정보처리방침 privacy.html (구글 드라이브 백업 — 구글 앱 등록에 필요) / 1.10.0: 1.10.0: 받기를 누르면 다운로드는 바로 시작 + 후원 안내 창(막지 않음, 닫기 가능 — 사용자 11/6 PureRef 처럼) / 1.9.3: 1.9.3: support 메일 링크에 제목 말머리 [4Dir] / 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
+MAKE_SITE_VER = "1.12.0"   # 1.12.0: 사용법 페이지 = 앱 사용법 2.0 과 같은 21개 주제 + 움직이는 장면 영상(img/demo, 보이는 것만 재생) · 문구는 앱 번역(bin/lang) / 1.11.1: 후원 버튼 새 창(target=_blank) / 1.11.0: 개인정보처리방침 privacy.html (구글 드라이브 백업 — 구글 앱 등록에 필요) / 1.10.0: 1.10.0: 받기를 누르면 다운로드는 바로 시작 + 후원 안내 창(막지 않음, 닫기 가능 — 사용자 11/6 PureRef 처럼) / 1.9.3: 1.9.3: support 메일 링크에 제목 말머리 [4Dir] / 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
 SUPPORT = "support@4dir.net"   # 문제 보고 메일 (1.1.1)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -216,8 +216,30 @@ def guide_hero(lang):
     return f'<p><a class="btn line" href="guide.html">📖 {html.escape(g["title"])} →</a></p>' if g else ""   # 1.4.3: 글자 링크 → 테두리 버튼 (작아서 안 보임)
 
 
+def app_tr(lang):
+    """앱 번역(bin/lang/<앱 언어>.json) — 사이트 사용법이 앱 사용법과 같은 문구를 쓰게 (1.12.0)"""
+    code = ST.APP_LANG[lang]
+    if code == "ko":
+        return lambda x: x
+    d = json.load(open(os.path.join(ROOT, "bin", "lang", code + ".json"), encoding="utf-8"))
+    return lambda x: d.get(x, x)
+
+
+def guide_topics(lang):
+    """앱 사용법 2.0 주제 (bin/guide.py topics) 를 그 언어로"""
+    if os.path.join(ROOT, "bin") not in sys.path:
+        sys.path.insert(0, os.path.join(ROOT, "bin"))
+    import guide as GD
+    GD.T = app_tr(lang)
+    return GD.topics()
+
+
+def demo_lang(lang):
+    return "ko" if ST.APP_LANG[lang] == "ko" else "en"
+
+
 def guide_page(lang, cfg, rel):
-    """사용법 (1.4.0): 절마다 실제 화면 그림(빨간 번호) + 번호 설명 + 덧붙임"""
+    """사용법 (1.12.0): 앱 사용법 2.0 과 같은 카테고리·주제 — 주제마다 움직이는 장면 영상 + 설명 + 단축키"""
     g, t = GT.GUIDE[lang], ST.T[lang]
     e = html.escape
     repo_url = f"https://github.com/{cfg['owner'] or 'OWNER'}/{cfg['repo']}"
@@ -228,16 +250,24 @@ def guide_page(lang, cfg, rel):
     alts = "\n".join(f'<link rel="alternate" hreflang="{lg}" href="{url_of(lg)}">' for lg in glangs)
     opts = "".join(f'<option value="{up}{"" if lg == "en" else lg + "/"}guide.html"{" selected" if lg == lang else ""}>{e(ST.NAMES[lg])}</option>'
                    for lg in glangs)
-    img = guide_img_lang(lang)
-    toc = "".join(f'<li><a href="#{s["id"]}">{e(s["h"])}</a></li>' for s in g["sections"]) + f'<li><a href="#etc">{e(g["etc_h"])}</a></li>'
-    secs = []
-    for s in g["sections"]:
-        ps = "".join(f"<p>{x}</p>" for x in s.get("p", []))
-        nums = "".join(f"<li>{x}</li>" for x in s.get("nums", []))   # <b>·<kbd> 허용 (문구는 우리가 씀)
-        after = "".join(f"<p>{x}</p>" for x in s.get("after", []))
-        secs.append(f'<section class="gs" id="{s["id"]}"><h2>{e(s["h"])}</h2>{ps}'
-                    f'<figure class="shot"><img src="{up}img/guide/{img}/p{s["img"]}.png" alt="{e(s["h"])}" loading="lazy"></figure>'
-                    f'<ol class="marks">{nums}</ol>{after}<p class="totop"><a href="#">{e(g["top"])} ↑</a></p></section>')
+    tr = app_tr(lang)
+    dl = demo_lang(lang)
+    intro = tr("기능마다 실제로 움직이는 장면을 보여 줍니다. 단축키는 윈도우 탐색기와 거의 같아서, 탐색기를 쓰던 분이면 반쯤은 이미 아는 내용입니다.")   # 1.12.0 빨간 번호 그림 → 움직이는 장면
+    toc_parts, secs, n = [], [], 0
+    for cat, items in guide_topics(lang):
+        toc_parts.append(f'<li class="tcat">{e(cat)}</li>')
+        secs.append(f'<h2 class="gcat">{e(cat)}</h2>')
+        for tid, title, lines, keys in items:
+            n += 1
+            toc_parts.append(f'<li><a href="#{tid}">{n}. {e(title)}</a></li>')
+            ks = ""
+            if keys:
+                ks = (f'<p class="keys">{e(tr("단축키"))}: ' + " &nbsp;·&nbsp; ".join(" + ".join(f"<kbd>{e(k)}</kbd>" for k in combo) for combo in keys) + "</p>")
+            lis = "".join(f"<li>{e(x)}</li>" for x in lines)
+            secs.append(f'<section class="gs" id="{tid}"><h3><span class="gnum">{n}</span> {e(title)}</h3>'
+                        f'<figure class="shot demo"><video src="{up}img/demo/{dl}/{tid}.mp4" muted loop playsinline preload="metadata" width="960" height="540"></video></figure>'
+                        f'<ul>{lis}</ul>{ks}<p class="totop"><a href="#">{e(g["top"])} ↑</a></p></section>')
+    toc = "".join(toc_parts) + f'<li><a href="#etc">{e(g["etc_h"])}</a></li>'
     etc = "".join(f"<li>{x}</li>" for x in g["etc"])
     return f"""<!doctype html>
 <html lang="{lang}">
@@ -245,7 +275,7 @@ def guide_page(lang, cfg, rel):
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{e(g["title"])} — 4Dir</title>
-<meta name="description" content="{e(g["intro"][:150])}">
+<meta name="description" content="{e(intro[:150])}">
 <link rel="canonical" href="{url_of(lang)}">
 {alts}
 <link rel="icon" href="{up}icon.png">
@@ -261,7 +291,7 @@ def guide_page(lang, cfg, rel):
 <main class="guide">
 <p><a href="./">{e(t["home"])}</a></p>
 <h1>{e(g["title"])}</h1>
-<p class="sub">{e(g["intro"])}</p>
+<p class="sub">{e(intro)}</p>
 <nav class="toc"><b>{e(g["toc"])}</b><ol>{toc}</ol></nav>
 {"".join(secs)}
 <section class="gs" id="etc"><h2>{e(g["etc_h"])}</h2><ul>{etc}</ul></section>
@@ -269,7 +299,9 @@ def guide_page(lang, cfg, rel):
 </div>
 <script>(function(){{try{{var L=document.querySelectorAll('.side a'),m={{}};L.forEach(function(a){{m[a.getAttribute('href').slice(1)]=a}});
 var io=new IntersectionObserver(function(es){{es.forEach(function(x){{if(x.isIntersecting){{L.forEach(function(a){{a.classList.remove('on')}});var a=m[x.target.id];a&&a.classList.add('on')}}}})}},{{rootMargin:'-20% 0px -70% 0px'}});
-document.querySelectorAll('section.gs').forEach(function(s){{io.observe(s)}})}}catch(e){{}}}})();</script>
+document.querySelectorAll('section.gs').forEach(function(s){{io.observe(s)}})}}catch(e){{}}}})();
+(function(){{try{{var vio=new IntersectionObserver(function(es){{es.forEach(function(x){{var v=x.target;if(x.isIntersecting){{v.play().catch(function(){{}})}}else{{v.pause()}}}})}},{{threshold:0.35}});
+document.querySelectorAll('figure.demo video').forEach(function(v){{vio.observe(v)}})}}catch(e){{}}}})();</script>
 <footer><div class="wrap">
 <a href="{repo_url}">{e(t["src"])}</a> · <a href="{repo_url}/issues">{e(t["issues"])}</a> · <a href="mailto:{SUPPORT}?subject=%5B4Dir%5D%20">{SUPPORT}</a> · <a href="{up}code-signing.html">Code signing policy</a>
 <p>{e(t["lic"])}</p>
@@ -517,6 +549,10 @@ footer{border-top:1px solid var(--line);padding:24px 0;color:var(--mut);font-siz
 .side ol{margin:6px 0 0;padding-left:20px}.side li{margin:4px 0}.side a{text-decoration:none;color:var(--fg)}.side a:hover{color:var(--acc)}.side a.on{color:var(--acc);font-weight:700}.guide .toc{display:none}}
 .guide h1{font-size:clamp(26px,4vw,36px);margin:16px 0 8px}.toc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 18px;margin:16px 0 8px}.toc ol{margin:6px 0 0;padding-left:22px;columns:2;column-gap:32px}
 .gs{margin:48px 0}.gs h2{border-bottom:1px solid var(--line);padding-bottom:6px}.gs .shot{margin:16px 0}
+.gcat{margin:56px 0 0;font-size:1.5em;border-bottom:2px solid var(--acc);padding-bottom:6px}.gs h3{font-size:1.25em;margin:0 0 8px}
+.gnum{display:inline-block;min-width:1.6em;text-align:center;background:var(--acc);color:#fff;border-radius:6px;padding:0 6px;margin-right:6px}
+.shot.demo video{width:100%;max-width:960px;height:auto;border-radius:8px;background:#1f2329;box-shadow:0 6px 24px rgba(0,0,0,.18)}
+.gs .keys{margin-top:8px}.side ol{list-style:none;padding-left:4px}.side li.tcat,.toc li.tcat{font-weight:700;margin-top:12px;color:var(--mut);list-style:none}
 ol.marks{list-style:none;counter-reset:m;padding-left:0}ol.marks li{counter-increment:m;position:relative;padding-left:34px;margin:10px 0}
 ol.marks li::before{content:counter(m);position:absolute;left:0;top:1px;width:22px;height:22px;border-radius:50%;background:#e03131;color:#fff;font-size:13px;font-weight:700;text-align:center;line-height:22px}
 kbd{display:inline-block;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;font:13px Consolas,monospace;background:var(--card)}
@@ -562,9 +598,15 @@ def main():
             assert set(g) == set(GT.GUIDE["ko"]), (lang, set(GT.GUIDE["ko"]) ^ set(g))
             with open(os.path.join(d, "guide.html"), "w", encoding="utf-8", newline="\n") as f:
                 f.write(_beacon(guide_page(lang, cfg, rel), cfg))
+            dsrc = os.path.join(ROOT, "bin", "guide", "demo", demo_lang(lang))   # 1.12.0 장면 영상
+            ddst = os.path.join(OUT, "img", "demo", demo_lang(lang))
+            if not os.path.isdir(ddst):
+                if not os.path.isdir(dsrc):
+                    raise SystemExit(f"사용법 장면 영상 없음 {dsrc} — make_demos.py {demo_lang(lang)} 먼저")
+                shutil.copytree(dsrc, ddst)
             src = os.path.join(ROOT, "bin", "guide", guide_img_lang(lang))
             dst = os.path.join(OUT, "img", "guide", guide_img_lang(lang))
-            if not os.path.isdir(dst):
+            if False and not os.path.isdir(dst):   # 1.12.0: 예전 그림(p1..)은 이제 안 씀
                 os.makedirs(dst)
                 for i in sorted({s["img"] for s in GT.GUIDE[lang]["sections"]}):   # 1.4.1: 글에 쓰인 그림만 (p7~ 추가)
                     f = os.path.join(src, f"p{i}.png")

@@ -2258,5 +2258,6 @@
  "보기 방식 범위": "View applies to",
  "폴더마다 기억": "Each folder (remembered)",
  "칸마다 따로": "Each pane",
- "모든 칸·폴더 같게": "All panes and folders"
+ "모든 칸·폴더 같게": "All panes and folders",
+ "기능마다 실제로 움직이는 장면을 보여 줍니다. 단축키는 윈도우 탐색기와 거의 같아서, 탐색기를 쓰던 분이면 반쯤은 이미 아는 내용입니다.": "Each feature is shown with a short moving demo. Shortcuts are mostly the same as in Windows Explorer, so if you have used Explorer you already know half of it."
 }

@@ -2258,5 +2258,6 @@
  "보기 방식 범위": "L'affichage s'applique à",
  "폴더마다 기억": "Chaque dossier (mémorisé)",
  "칸마다 따로": "Chaque volet",
- "모든 칸·폴더 같게": "Tous les volets et dossiers"
+ "모든 칸·폴더 같게": "Tous les volets et dossiers",
+ "기능마다 실제로 움직이는 장면을 보여 줍니다. 단축키는 윈도우 탐색기와 거의 같아서, 탐색기를 쓰던 분이면 반쯤은 이미 아는 내용입니다.": "Chaque fonction est présentée par une courte démonstration animée. Les raccourcis sont presque les mêmes que dans l'Explorateur Windows : si vous l'utilisez, vous en connaissez déjà la moitié."
 }

@@ -2258,5 +2258,6 @@
  "보기 방식 범위": "La vista se aplica a",
  "폴더마다 기억": "Cada carpeta (se recuerda)",
  "칸마다 따로": "Cada panel",
- "모든 칸·폴더 같게": "Todos los paneles y carpetas"
+ "모든 칸·폴더 같게": "Todos los paneles y carpetas",
+ "기능마다 실제로 움직이는 장면을 보여 줍니다. 단축키는 윈도우 탐색기와 거의 같아서, 탐색기를 쓰던 분이면 반쯤은 이미 아는 내용입니다.": "Cada función se muestra con una breve demostración animada. Los atajos son casi los mismos que en el Explorador de Windows: si lo ha usado, ya conoce la mitad."
 }
