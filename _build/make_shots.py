@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-"""4Dir 사이트용 화면 그림 (MAKE_SHOTS_VER 1.1.0)
+"""4Dir 사이트용 화면 그림 (MAKE_SHOTS_VER 1.2.0)
 
 python make_shots.py <언어코드...>   → _site\\img\\<언어>_1.png (4칸·밝게), <언어>_2.png (3칸·어둡게)
 - make_guide.py 와 같은 방식: 예시 폴더(드라이브 맨 위 4Dir_Demo, 일반 이름)만 쓰고 끝나면 지움.
 - 사용자 설정·상태·즐겨찾기·실행 표시 파일은 전부 임시 파일로 돌림(건드리지 않음).
 - 창은 화면 밖(-30000) 좌표에 띄우고 위젯 그리기(grab)로 찍음 → 사용자 화면에 안 보이고 포커스도 안 뺏음.
+- 1.2.0 (0.9.122): 공용 탐색 창이 생겨 이 PC 정보가 찍히던 것 막음 — 탐색 창 즐겨찾기는 4Dir 것만(예시 폴더), '내 PC' 는 접음
 - '종류' 열은 숨김 (윈도우가 OS 언어로 주는 글자라 사이트 언어와 안 맞음).
 로그: _build\\make_shots_log.txt
 """
@@ -99,7 +100,7 @@ session.SESS_DIR = os.path.join(TMP, "sessions")
 session.RUN_FILE = os.path.join(TMP, "4Dir.running")
 M.SETTINGS = ui_parts.Settings(os.path.join(TMP, "settings.json"))
 M.SETTINGS.data.update({"search_roots": [{"path": PROJ, "on": True}], "theme_mode": "light", "sysmon": False,
-                        "breadcrumb": True, "update_check": False})
+                        "breadcrumb": True, "update_check": False, "side_favs": "4dir", "gdrive_auto": False})
 M.FAV.items = [{"name": "Project", "path": PROJ}, {"name": "Characters", "path": os.path.join(PROJ, "Characters")},
                {"name": "Renders", "path": os.path.join(PROJ, "Renders")}, {"name": "Docs", "path": os.path.join(PROJ, "Docs")}]
 app = QtWidgets.QApplication([])
@@ -153,6 +154,10 @@ for lang in LANGS:
         w.panes[1].add_tab(os.path.join(PROJ, "Characters", "Monster"), activate=False)
         wait(900)
         hide_type_col(w)
+        for sb in w.findChildren(M.Sidebar):   # 1.2.0 이 PC 드라이브·윈도우 고정 폴더가 그림에 안 나오게
+            sb.pc_root.setExpanded(False)
+            sb.fav_root.setHidden(True)
+            sb.qe_root.setExpanded(True)
         w.panes[0].view().tree.setFocus()
         wait(300)
         out = os.path.join(OUT, OPT.get("--name", "{lang}_{n}").format(lang=lang, n=n, theme=theme) + ".png")

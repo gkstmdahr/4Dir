@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.121"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 2             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.122"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 3             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -463,6 +463,7 @@ import imginspect  # noqa: E402  0.9.116 그림 자세히 보기·스포이트·
 import sequence  # noqa: E402  0.9.116 연번 그림 묶기·재생·MP4/GIF
 import sheets  # noqa: E402  0.9.116 스프라이트 시트·자르기·밀착 인화
 import pdftools  # noqa: E402  0.9.116 PDF 합치기·나누기·그림→PDF·쪽 수
+import pdfedit  # noqa: E402  0.9.122 PDF 편집 (쪽 돌리기·지우기·순서·끼워 넣기 + 펜·형광펜·글상자 주석)
 import datefolders  # noqa: E402  0.9.116 날짜별 폴더 정리
 import oplog  # noqa: E402  0.9.116 작업 기록 보기
 import gitstat  # noqa: E402  0.9.116 Git 상태 (SVN 과 같은 자리)
@@ -756,6 +757,8 @@ OPTS = {"show_hidden": False, "show_ext": True, "checkboxes": False,
         "date_groups": False,   # v0.9.90 날짜별로 묶기 (오늘·어제·이번 주…, 윈도우 탐색기 '그룹화' 와 같게)
         "type_groups": False,   # 빌드 17 형식별로 묶기 (폴더·JPG·PNG…) — 날짜별 묶기와 둘 중 하나
         "type_chips": True,     # 빌드 17 칸 위 형식 단추 줄 [전체][폴더][JPG][PSD]… 누르면 그 형식만
+        "chips_global": True,   # 0.9.122 사용자 11/10: 형식 단추를 칸마다 말고 맨 위 한 줄로 → 모든 칸에 같이 적용 (끄면 칸마다)
+        "chip_counts": False,   # 0.9.122 사용자 11/10: 단추에 개수 표시 (기본 안 씀)
         "type_badges": True,    # 빌드 17 아이콘 보기 그림 미리보기 왼쪽 위 형식 딱지 (PSD·PNG·GIF…)
         "folder_covers": True,  # 빌드 17 아이콘 보기 폴더에 안에 든 첫 그림을 겹쳐 보여 줌 (네트워크 드라이브 제외)
         "svn_status": True,
@@ -3891,6 +3894,7 @@ class Page(QtWidgets.QWidget):
         if len(pdfs) >= 2 or (pdfs and len(pics) and len(pdfs) + len(pics) == len(files)):
             out.append((ti(T("PDF 합치기…"), "pdf"), lambda: open_tool(pdftools.open_merge, self.window(), pdfs + pics if len(pdfs) + len(pics) == len(files) else pdfs, open_loc=loc)))
         if len(pdfs) == 1 and len(files) == 1:
+            out.append((ti(T("PDF 편집 (쪽·주석)…"), "pdf"), lambda: open_tool(pdfedit.open_editor, self.window(), pdfs[0], open_loc=loc)))
             out.append((ti(T("PDF 쪽 나누기·빼기…"), "pdf"), lambda: open_tool(pdftools.open_split, self.window(), pdfs[0], open_loc=loc)))
         if pics and not pdfs:
             out.append((ti(T("그림을 PDF 한 파일로 묶기…"), "pdf"), lambda: open_tool(pdftools.open_images_to_pdf, self.window(), pics, open_loc=loc)))
@@ -4797,6 +4801,20 @@ PATH_ROLE = Qt.UserRole + 1
 DUMMY = "…"
 
 
+FAV_FILE_ROLE = Qt.UserRole + 41   # 탐색 창 4Dir 즐겨찾기 중 파일 항목 (0.9.122)
+
+
+def set_side_favs(mode):
+    """설정 → 열린 모든 탐색 창에 바로 적용"""
+    SETTINGS["side_favs"] = mode
+    n = 0
+    for w in QtWidgets.QApplication.allWidgets():
+        if isinstance(w, Sidebar):
+            w.apply_side_favs()
+            n += 1
+    log.info("탐색 창 즐겨찾기 = %s (탐색 창 %d개)", mode, n)
+
+
 class Sidebar(DragScrollMixin, QtWidgets.QTreeWidget):
     go = QtCore.Signal(str)
     goNewTab = QtCore.Signal(str)
@@ -4817,9 +4835,10 @@ class Sidebar(DragScrollMixin, QtWidgets.QTreeWidget):
         self._pinned_at = 0.0
         bold = self.font()
         bold.setBold(True)
-        self.fav_root = QtWidgets.QTreeWidgetItem([T("즐겨찾기 (Windows)")])   # 윈도우 탐색기 고정 폴더 (4Dir 즐겨찾기는 상단 바)
+        self.qe_root = QtWidgets.QTreeWidgetItem([T("즐겨찾기 (4Dir)")])   # 0.9.122 받은 의견: 4Dir 즐겨찾기도 탐색 창에 (설정 side_favs)
+        self.fav_root = QtWidgets.QTreeWidgetItem([T("즐겨찾기 (Windows)")])   # 윈도우 탐색기 고정 폴더
         self.pc_root = QtWidgets.QTreeWidgetItem([T(THIS_PC)])
-        for r in (self.fav_root, self.pc_root):
+        for r in (self.qe_root, self.fav_root, self.pc_root):
             r.setFont(0, bold)
             r.setFlags(Qt.ItemIsEnabled)
             self.addTopLevelItem(r)
@@ -4828,7 +4847,12 @@ class Sidebar(DragScrollMixin, QtWidgets.QTreeWidget):
         self.itemExpanded.connect(self._on_expand)
         self.itemClicked.connect(self._on_click)
         self.fav_root.setToolTip(0, T("윈도우 탐색기에 고정한 폴더 (고정·해제는 윈도우 탐색기에서) · 접었다 펼치면 다시 읽음"))
+        self.qe_root.setToolTip(0, T("4Dir 즐겨찾기 (위 즐겨찾기 바와 같은 목록) · 우클릭 > ★ 4Dir 즐겨찾기에 추가 · Ctrl+D"))
         self.refresh_pinned()
+        self.refresh_qe_favs()
+        FAV.listeners.append(self.refresh_qe_favs)
+        self.apply_side_favs()
+        self.qe_root.setExpanded(True)
         self.fav_root.setExpanded(True)
         self.pc_root.setExpanded(True)
         POOL.start(PcInfoJob(self.sig))
@@ -4998,6 +5022,49 @@ class Sidebar(DragScrollMixin, QtWidgets.QTreeWidget):
         it.addChild(QtWidgets.QTreeWidgetItem([DUMMY]))  # 펼칠 수 있게 (펼칠 때 읽음)
         return it
 
+    def apply_side_favs(self):
+        """설정 side_favs: both / 4dir / windows → 보일 즐겨찾기 묶음"""
+        mode = SETTINGS["side_favs"] if SETTINGS["side_favs"] in ("both", "4dir", "windows") else "both"
+        self.qe_root.setHidden(mode == "windows")
+        self.fav_root.setHidden(mode == "4dir")
+
+    def refresh_qe_favs(self):
+        """4Dir 즐겨찾기 → 탐색 창 (낱개 = 폴더처럼 펼침, 묶음 = 묶음 아래에, 파일 = 누르면 연결 프로그램)"""
+        try:
+            root = self.qe_root
+            was = {(root.child(i).text(0), root.child(i).isExpanded()) for i in range(root.childCount())}
+            root.takeChildren()
+        except RuntimeError:   # 탐색 창이 닫혀 지워짐 → 목록에서 빠짐
+            if self.refresh_qe_favs in FAV.listeners:
+                FAV.listeners.remove(self.refresh_qe_favs)
+            return
+        opened = {t for t, e in was if e}
+
+        def entry(d):
+            if d.get("file"):
+                it = QtWidgets.QTreeWidgetItem([d["name"]])
+                it.setData(0, PATH_ROLE, d["path"])
+                it.setData(0, FAV_FILE_ROLE, True)
+                it.setToolTip(0, d["path"])
+                it.setIcon(0, fav_icon(d))
+                return it
+            return self._folder_item(d["name"], d["path"], fav_icon(d))
+        for start, end, group in FAV.entries():
+            if group:
+                g = QtWidgets.QTreeWidgetItem([group])
+                g.setIcon(0, favorg.group_icon(16))
+                g.setFlags(Qt.ItemIsEnabled)
+                for d in FAV.items[start:end]:
+                    g.addChild(entry(d))
+                root.addChild(g)
+                if group in opened:
+                    g.setExpanded(True)
+            else:
+                root.addChild(entry(FAV.items[start]))
+        if not FAV.items:
+            root.addChild(QtWidgets.QTreeWidgetItem([T("(비어 있음 — 우클릭 > ★ 4Dir 즐겨찾기에 추가)")]))
+        log.debug("탐색 창 4Dir 즐겨찾기 %d개", len(FAV.items))
+
     def refresh_pinned(self):
         self._pinned_at = time.time()
         POOL.start(PinnedJob(self.sig))
@@ -5152,6 +5219,9 @@ class Sidebar(DragScrollMixin, QtWidgets.QTreeWidget):
 
     def _on_click(self, it, col):
         p = it.data(0, PATH_ROLE)
+        if p and it.data(0, FAV_FILE_ROLE):   # 4Dir 즐겨찾기 파일 → 연결 프로그램 (즐겨찾기 바와 같게)
+            open_fav_entry(p, self.go.emit)
+            return
         if p:
             if QtWidgets.QApplication.mouseButtons() & Qt.MiddleButton:
                 self.goNewTab.emit(p)
@@ -5577,11 +5647,12 @@ class ChipBar(QtWidgets.QWidget):
         while self.lay.count():
             it = self.lay.takeAt(0)
             if it.widget():
+                it.widget().hide()   # 0.9.122: 지워지기 전까지 새 단추와 겹쳐 그려지지 않게
                 it.widget().deleteLater()
         self.chips, self.more = [], None
 
     def refresh(self, v, force=False):
-        if v is None or not OPTS["type_chips"] or v.path == THIS_PC or devices.is_dev(v.path):
+        if v is None or not OPTS["type_chips"] or OPTS["chips_global"] or v.path == THIS_PC or devices.is_dev(v.path):
             self.setVisible(False)
             self.sig = None
             return
@@ -5622,12 +5693,15 @@ class ChipBar(QtWidgets.QWidget):
     def _chip(self, v, label, k, n, on):
         b = QtWidgets.QToolButton()
         b.setObjectName("chip")
-        b.setText(f"{label} {n:,}")
+        b.setText(f"{label} {n:,}" if OPTS["chip_counts"] else label)   # 0.9.122: 개수는 옵션 (기본 안 씀)
+        if not OPTS["chip_counts"]:
+            b.setToolTip(f"{label}  ({n:,})")
         b.setCheckable(True)
         b.setChecked(on)
-        b.setToolTip(T("전체 보기") if k is None else T("{0} 만 보기 — Ctrl+누르기 = 여러 형식").format(label))
+        b.setToolTip((b.toolTip() + "\n" if b.toolTip() else "") + (T("전체 보기") if k is None else T("{0} 만 보기 — Ctrl+누르기 = 여러 형식").format(label)))
         b.setFocusPolicy(Qt.NoFocus)
         self._style(b, k, on)
+        b.setMinimumSize(b.sizeHint())   # 0.9.122: 아주 좁아도 1px 도 눌리지 않게 (넘치면 잘림, 글자 '…' 없음)
         b.clicked.connect(lambda *_: self._pick(v, k, bool(QtWidgets.QApplication.keyboardModifiers() & Qt.ControlModifier)))
         self.lay.addWidget(b)
         self.chips.append((k, b, on))
@@ -5683,6 +5757,92 @@ class ChipBar(QtWidgets.QWidget):
             new = set() if cur == {k} else {k}   # 고른 것을 다시 누르면 전체로
         v.set_ext_filter(new)
         self.refresh(v, force=True)
+
+
+class GlobalChipBar(ChipBar):
+    """형식 단추 맨 위 한 줄 (0.9.122, 사용자 11/10 '칸마다 말고 상단으로 뽑아 전체 적용'): 보이는 모든 칸의 지금 폴더 형식을 합쳐 보여 주고,
+    누르면 모든 칸에 같은 형식 거르기. 고른 형식은 폴더를 옮겨도 유지('전체'를 누를 때까지) — main.chip_sel"""
+
+    def __init__(self, main):
+        super().__init__(None)
+        self.main = main
+        self.lay.setContentsMargins(6, 2, 6, 2)
+
+    def views(self):
+        out = []
+        for p in getattr(self.main, "panes", []):
+            if not p.isHidden() and p.view() is not None and p.view().path and p.view().path != THIS_PC and not devices.is_dev(p.view().path):
+                out.append(p.view())
+        return out
+
+    def refresh_all(self, force=False):
+        if not OPTS["type_chips"] or not OPTS["chips_global"]:
+            self.setVisible(False)
+            self.sig = None
+            return
+        vs = self.views()
+        counts = {}
+        for v in vs:
+            for e in v.model_.all:
+                k = kind_of(e)
+                counts[k] = counts.get(k, 0) + 1
+        sel = set(self.main.chip_sel)
+        for k in sel:
+            counts.setdefault(k, 0)
+        sig = (tuple(id(v) for v in vs), tuple(v.path for v in vs), tuple(sorted(counts.items())), tuple(sorted(sel)), OPTS["chip_counts"])
+        if sig == self.sig and not force:
+            return
+        self.sig = sig
+        self._clear()
+        if len(counts) < 2 and not sel:
+            self.setVisible(False)
+            return
+        self.v, self.counts = None, counts
+        order = (["/"] if "/" in counts else []) + sorted((k for k in counts if k != "/"), key=lambda k: (-counts[k], k))
+        self._chip(None, T("전체"), None, sum(counts.values()), not sel)
+        for k in order:
+            self._chip(None, kind_label(k), k, counts[k], k in sel)
+        b = QtWidgets.QToolButton()
+        b.setObjectName("chipMore")
+        b.setToolTip(T("나머지 형식"))
+        b.setPopupMode(QtWidgets.QToolButton.InstantPopup)
+        b.setFocusPolicy(Qt.NoFocus)
+        self._style(b, None, False)
+        mm = QtWidgets.QMenu(b)
+        mm.aboutToShow.connect(lambda mm=mm: self._fill_more(mm))
+        b.setMenu(mm)
+        self.lay.addWidget(b)
+        self.more = b
+        self.lay.addStretch(1)
+        self.setVisible(True)
+        self._fit()
+
+    def _fill_more(self, mm):
+        mm.clear()
+        for k in getattr(self, "_hidden", []):
+            a = mm.addAction(color_dot(self.color_of(k)), f"{kind_label(k)}  ({self.counts.get(k, 0):,})", lambda k=k: self._pick(None, k, False))
+            a.setCheckable(True)
+            a.setChecked(k in self.main.chip_sel)
+
+    def _pick(self, v, k, add):
+        cur = set(self.main.chip_sel)
+        if k is None:
+            new = set()
+        elif add:
+            new = cur ^ {k}
+        else:
+            new = set() if cur == {k} else {k}
+        self.main.chip_sel = new
+        for vv in self.views():
+            vv.set_ext_filter(new)
+        log.info("형식 단추(맨 위) %s → 칸 %d개", sorted(new) or "전체", len(self.views()))
+        self.refresh_all(force=True)
+
+    def apply_to(self, v):
+        """폴더를 새로 읽은 칸에도 맨 위에서 고른 형식을 그대로"""
+        if OPTS["type_chips"] and OPTS["chips_global"] and self.main.chip_sel and v.path != THIS_PC:
+            if set(getattr(v.model_, "ext_filter", set()) or ()) != set(self.main.chip_sel):
+                v.set_ext_filter(set(self.main.chip_sel))
 
 
 class Pane(QtWidgets.QFrame):
@@ -5860,6 +6020,15 @@ class Pane(QtWidgets.QFrame):
         if self.breadcrumb:
             self.addr_stack.setCurrentWidget(self.crumbs)
 
+    def refresh_chips(self, v):
+        """형식 단추: 칸마다 줄 또는 맨 위 한 줄 (0.9.122)"""
+        self.chips.refresh(v)
+        mw = main_of(self)
+        g = getattr(mw, "global_chips", None) if mw is not None else None
+        if g is not None:
+            g.apply_to(v)
+            QtCore.QTimer.singleShot(0, g.refresh_all)
+
     # ---------------------------------------------------------- 빠른 필터
     def _on_filter(self, text):
         v = self.view()
@@ -5988,7 +6157,7 @@ class Pane(QtWidgets.QFrame):
         key = id(v)
         self.pages[key] = v
         v.pathChanged.connect(lambda p, v=v: self._on_path(v, p))
-        v.typesChanged.connect(lambda v=v: v is self.view() and self.chips.refresh(v))
+        v.typesChanged.connect(lambda v=v: v is self.view() and self.refresh_chips(v))
         v.status.connect(lambda s, v=v: v is self.view() and (self.stat.setText(T("🔒 잠긴 탭이라 새 탭으로 열었습니다") + "  ·  " + s if v.from_locked else s),
                                                              self.stat.setToolTip(getattr(v, "status_tip", ""))))
         v.status.connect(lambda s, v=v: v is self.view() and self._poke_preview())   # 선택·폴더가 바뀌면 상태 글자가 바뀜 (v0.9.58)
@@ -6243,7 +6412,7 @@ class Pane(QtWidgets.QFrame):
                 pass
         self.stack.setCurrentWidget(v)
         self._prev = v
-        self.chips.refresh(v)
+        self.refresh_chips(v)
         self.addr.setText(disp_path(v.path))
         self.crumbs.set_path(v.path)
         self.sync_sidebar()
@@ -7835,6 +8004,8 @@ class SettingsDialog(QtWidgets.QDialog):
         self._opt(lay, "type_groups", T("형식별로 묶기 (폴더·JPG·PNG…)"), T("날짜별 묶기와 둘 중 하나만 — 자세히 보기에서"))
         self._sub(lay, T("형식·그림"))
         self._opt(lay, "type_chips", T("형식 단추 줄 ([전체][JPG][PSD]…)"), T("목록 위 단추를 누르면 그 형식만 보임 (Ctrl+누르기 = 여러 개)"))
+        self._opt(lay, "chips_global", T("  형식 단추를 맨 위 한 줄로 — 모든 칸에 같이 적용"), T("끄면 칸마다 따로 단추 줄"))
+        self._opt(lay, "chip_counts", T("  형식 단추에 개수 표시"))
         self._opt(lay, "type_badges", T("그림 미리보기에 형식 딱지 (PSD·PNG·GIF…)"), T("보통 아이콘 이상에서"))
         self._opt(lay, "folder_covers", T("폴더 표지 — 폴더 안 첫 그림을 겹쳐 보기"), T("아이콘 보기에서, 네트워크 드라이브 제외"))
         self._sub(lay, T("동작"))
@@ -7856,6 +8027,18 @@ class SettingsDialog(QtWidgets.QDialog):
         self.nav_vis = self._check(lay, "side_shared_visible", T("공용 탐색 창 보이기"),
                                    lambda: SETTINGS["side_shared"] and not SETTINGS["side_shared_hidden"], m.toggle_shared_visible)
         self._nav_sync()
+        # 0.9.122 받은 의견: 탐색 창 즐겨찾기 — 4Dir / Windows / 둘 다
+        row = QtWidgets.QHBoxLayout()
+        row.addWidget(QtWidgets.QLabel(T("탐색 창 즐겨찾기")))
+        cb = QtWidgets.QComboBox()
+        self.side_favs = cb
+        for key, lbl in (("both", T("둘 다 (4Dir 위 · Windows 아래)")), ("4dir", T("4Dir 즐겨찾기만")), ("windows", T("Windows 즐겨찾기만"))):
+            cb.addItem(lbl, key)
+        cb.setCurrentIndex(max(0, cb.findData(SETTINGS["side_favs"])))
+        cb.currentIndexChanged.connect(lambda *_: set_side_favs(cb.currentData()))
+        row.addWidget(cb)
+        row.addStretch(1)
+        lay.addLayout(row)
 
     def _nav_sync(self):
         self.nav_vis.setEnabled(bool(SETTINGS["side_shared"]))
@@ -8843,6 +9026,9 @@ class Main(QtWidgets.QMainWindow):
         nrow.addWidget(self.notice_close)
         cl.addLayout(nrow)
         cl.addWidget(self.favbar)
+        self.chip_sel = set()   # 맨 위 형식 단추에서 고른 형식 (0.9.122)
+        self.global_chips = GlobalChipBar(self)
+        cl.addWidget(self.global_chips)
         body = QtWidgets.QWidget()
         bl = QtWidgets.QVBoxLayout(body)
         bl.setContentsMargins(4, 4, 4, 4)
@@ -11376,6 +11562,11 @@ eports.
         if not self.active_pane.isVisible():
             self.active_pane = self.panes[0]
         self._paint_active()
+        if getattr(self, "global_chips", None) is not None:   # 새로 보이는 칸에도 맨 위에서 고른 형식 (0.9.122)
+            for p in self.panes:
+                if not p.isHidden() and p.view() is not None:
+                    self.global_chips.apply_to(p.view())
+            QtCore.QTimer.singleShot(0, self.global_chips.refresh_all)
         log.info("레이아웃 %s", key)
         self.save_timer.start()
 
@@ -11406,6 +11597,11 @@ eports.
             for w in list(WINDOWS) + ([self] if self not in WINDOWS else []):
                 if getattr(w, "btn_chips", None) is not None:
                     w.btn_chips.setChecked(bool(OPTS["type_chips"]))
+        if key in ("type_chips", "chips_global", "chip_counts"):   # 맨 위 형식 단추 줄 (0.9.122)
+            for w in WINDOWS:
+                if key != "chip_counts":
+                    w.chip_sel = set()
+                QtCore.QTimer.singleShot(0, lambda w=w: w.global_chips.refresh_all(force=True))
         if key == "svn_status":   # 즐겨찾기 바 SVN 표시도 같이 켜고 끔
             for w in WINDOWS:
                 w.favbar._svn_timer.start()
@@ -11419,9 +11615,9 @@ eports.
                         v.model_.path = ""  # 다시 보일 때 새로 읽음
                 elif key in ("date_folders_first", "date_groups", "type_groups"):
                     v.model_.sort(v.model_.sort_col, v.model_.sort_order)   # 다시 정렬 (묶기도 여기서)
-                elif key == "type_chips":
-                    if not OPTS["type_chips"] and getattr(v.model_, "ext_filter", None):
-                        v.set_ext_filter(set())
+                elif key in ("type_chips", "chips_global", "chip_counts"):
+                    if key != "chip_counts" and getattr(v.model_, "ext_filter", None):
+                        v.set_ext_filter(set())   # 방식이 바뀌면 거르기는 풂
                     if v is p.view():
                         p.chips.refresh(v, force=True)
                 elif key in ("type_badges", "folder_covers"):
@@ -11551,8 +11747,9 @@ eports.
         OPTS["date_folders_first"] = bool(o.get("date_folders_first", False))
         OPTS["date_groups"] = bool(o.get("date_groups", False))
         OPTS["type_groups"] = bool(o.get("type_groups", False)) and not OPTS["date_groups"]
-        for k in ("type_chips", "type_badges", "folder_covers"):
+        for k in ("type_chips", "type_badges", "folder_covers", "chips_global"):
             OPTS[k] = bool(o.get(k, True))
+        OPTS["chip_counts"] = bool(o.get("chip_counts", False))
         thumbs.BADGES, thumbs.COVERS = OPTS["type_badges"], OPTS["folder_covers"]
         if getattr(self, "btn_chips", None) is not None:   # 빌드 27 저장된 켬/끔을 위쪽 단추에도
             self.btn_chips.setChecked(OPTS["type_chips"])

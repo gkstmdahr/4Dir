@@ -17,7 +17,7 @@ from i18n import T
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-PDFPREV_VER = "1.0.0"
+PDFPREV_VER = "1.0.1"   # 1.0.1: 주석도 그림(PDF 편집)
 log = logging.getLogger("QE.pdfprev")
 try:
     from PySide6.QtPdf import QPdfDocument
@@ -31,6 +31,14 @@ def available():
 
 def can_handle(path):
     return available() and path.lower().endswith(".pdf") and os.path.isfile(path)
+
+
+def _opts():
+    """주석(펜·형광펜·글상자 등)도 같이 그림 — 0.9.122 PDF 편집"""
+    from PySide6.QtPdf import QPdfDocumentRenderOptions
+    o = QPdfDocumentRenderOptions()
+    o.setRenderFlags(QPdfDocumentRenderOptions.RenderFlag.Annotations)
+    return o
 
 
 def _open(path):
@@ -50,7 +58,7 @@ def first_page(path, px):
             return None
         sz = d.pagePointSize(0)
         k = min(px / max(1.0, sz.width()), px / max(1.0, sz.height()))
-        im = d.render(0, QtCore.QSize(max(1, int(sz.width() * k)), max(1, int(sz.height() * k))))
+        im = d.render(0, QtCore.QSize(max(1, int(sz.width() * k)), max(1, int(sz.height() * k))), _opts())
         d.close()
         if im.isNull():
             return None
@@ -124,7 +132,7 @@ class PdfView(QtWidgets.QWidget):
         dpr = self.devicePixelRatioF() or 1.0
         h = int(w * sz.height() / max(1.0, sz.width()))
         t0 = time.time()
-        im = self.doc.render(self.page, QtCore.QSize(int(w * dpr), int(h * dpr)))
+        im = self.doc.render(self.page, QtCore.QSize(int(w * dpr), int(h * dpr)), _opts())
         out = QtGui.QImage(im.size(), QtGui.QImage.Format_RGB32)
         out.fill(QtGui.QColor("#ffffff"))
         p = QtGui.QPainter(out)
