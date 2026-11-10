@@ -2291,5 +2291,20 @@
  "고른 것만 보기": "Afficher seulement la sélection",
  "고른 {0:,}개만 보기 — 다시 누르면 모두 보기": "Seulement {0:,} éléments sélectionnés — appuyez à nouveau pour tout afficher",
  "⚠ 같이 이동: 다른 칸은 더 올라갈 폴더가 없습니다  ✕": "⚠ Synchro : l'autre volet n'a pas de dossier parent  ✕",
- "⚠ 같이 이동: 다른 칸에 같은 폴더가 없습니다 — {0}  ✕": "⚠ Synchro : pas de dossier correspondant dans l'autre volet — {0}  ✕"
+ "⚠ 같이 이동: 다른 칸에 같은 폴더가 없습니다 — {0}  ✕": "⚠ Synchro : pas de dossier correspondant dans l'autre volet — {0}  ✕",
+ "상단 도구줄": "Barre d'outils supérieure",
+ "보일 항목만 체크 (보기·도구 메뉴와 설정 톱니는 항상 보임). 상단 줄 빈 곳 우클릭으로도 바꿀 수 있음": "Cochez les éléments à afficher (les menus Affichage et Outils et l'engrenage des paramètres restent toujours visibles). Vous pouvez aussi faire un clic droit sur un espace vide de la barre supérieure.",
+ "상단 도구줄에 보일 항목": "Éléments affichés dans la barre supérieure",
+ "모두 보이기": "Tout afficher",
+ "윈도우 탐색기에서 열기": "Ouvrir dans l'Explorateur Windows",
+ "미리보기 창 버튼": "Bouton du volet d'aperçu",
+ "메모 창 버튼": "Bouton du volet de notes",
+ "계산기 버튼": "Bouton de la calculatrice",
+ "형식 단추 줄 버튼": "Bouton de la rangée des types",
+ "My메뉴 단추": "Boutons de Mon menu",
+ "레이아웃 버튼": "Bouton de disposition",
+ "전체 검색칸": "Zone de recherche globale",
+ "검색 색인 상태": "État de l'index de recherche",
+ "CPU·GPU 사용량": "Utilisation CPU·GPU",
+ "선택": "Sélection"
 }

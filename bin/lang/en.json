@@ -2291,5 +2291,20 @@
  "고른 것만 보기": "Show selected only",
  "고른 {0:,}개만 보기 — 다시 누르면 모두 보기": "Showing {0:,} selected only — press again to show all",
  "⚠ 같이 이동: 다른 칸은 더 올라갈 폴더가 없습니다  ✕": "⚠ Sync: the other pane has no parent folder to go up to  ✕",
- "⚠ 같이 이동: 다른 칸에 같은 폴더가 없습니다 — {0}  ✕": "⚠ Sync: no matching folder in the other pane — {0}  ✕"
+ "⚠ 같이 이동: 다른 칸에 같은 폴더가 없습니다 — {0}  ✕": "⚠ Sync: no matching folder in the other pane — {0}  ✕",
+ "상단 도구줄": "Top toolbar",
+ "보일 항목만 체크 (보기·도구 메뉴와 설정 톱니는 항상 보임). 상단 줄 빈 곳 우클릭으로도 바꿀 수 있음": "Check the items to show (the View and Tools menus and the settings gear are always shown). You can also right-click an empty spot on the top bar.",
+ "상단 도구줄에 보일 항목": "Items shown on the top toolbar",
+ "모두 보이기": "Show all",
+ "윈도우 탐색기에서 열기": "Open in Windows File Explorer",
+ "미리보기 창 버튼": "Preview pane button",
+ "메모 창 버튼": "Memo pane button",
+ "계산기 버튼": "Calculator button",
+ "형식 단추 줄 버튼": "Type buttons button",
+ "My메뉴 단추": "My Menu buttons",
+ "레이아웃 버튼": "Layout button",
+ "전체 검색칸": "Global search box",
+ "검색 색인 상태": "Search index status",
+ "CPU·GPU 사용량": "CPU·GPU usage",
+ "선택": "Selected"
 }

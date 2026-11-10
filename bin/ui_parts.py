@@ -56,6 +56,7 @@ class Settings:
                      "fav_expanded": True, "on_top": False,
                      "allow_multi": False,   # False = 창 하나만 (다시 실행하면 기존 창을 앞으로)
                      "sysmon": True,         # 상단에 CPU·GPU 사용량 표시
+                     "top_hidden": [],       # 0.9.128 상단 도구줄에서 숨긴 항목 키 (Main.top_items)
                      "preview_pane": False,  # 오른쪽 미리보기 창 (v0.9.58, 보기 > 미리보기 창 / Alt+P)
                      "preview_w": 300,       # 미리보기 창 너비 (빌드 18 부터 따로 창 — 처음 크기로만 씀)
                      "preview_geo": "",      # 빌드 18 미리보기 따로 창 위치·크기
@@ -113,7 +114,7 @@ class Settings:
                     self.data[tk].update({k: v for k, v in d.get(tk, {}).items() if k in THEME_KEYS})
                 if "theme_mode" not in d and d.get("dark"):   # 0.6.2 이전: 다크 모드 켜둔 사람은 '어둡게' 유지
                     self.data["theme_mode"] = "dark"
-                for k in ("theme_mode", "dark", "fav_expanded", "on_top", "allow_multi", "sysmon", "breadcrumb", "keys", "search_roots", "lang", "chrome_collapsed", "batch_rename", "guide_shown", "update_check", "update_last", "update_skip", "resume_after_reboot", "keep_favbar", "show_favbar", "preview_detail", "folder_view_memory", "hide_single_tab", "empty_click_up", "columns", "mouse", "folder_size", "select_pattern", "status_col", "ws_slots", "side_shared", "side_shared_w", "side_shared_hidden", "memo_on", "memo_side", "memo_w", "memo_geo", "memo_top", "preview_pane", "preview_w", "preview_geo", "preview_top", "tooltips", "arc_browse", "video_sound", "preview_autoplay", "user_buttons", "ftp_sites", "calc_geo", "calc_top", "calc_hist", "calc_tab", "calc_deg", "calc_mode", "calc_mem", "calc_fx", "calc_conv", "calc_graph", "gdrive_auto", "gdrive_last", "gdrive_last_name", "gdrive_asked", "private_mode", "rename_hide_ext", "side_favs", "tab_multirow", "tab_max_rows", "color_rules", "same_folder_current", "side_click_expand", "side_pin", "view_all"):   # 0.9.122: rename_hide_ext 가 빠져 다시 켜면 늘 켜짐이던 것 고침
+                for k in ("theme_mode", "dark", "fav_expanded", "on_top", "allow_multi", "sysmon", "breadcrumb", "keys", "search_roots", "lang", "chrome_collapsed", "batch_rename", "guide_shown", "update_check", "update_last", "update_skip", "resume_after_reboot", "keep_favbar", "show_favbar", "preview_detail", "folder_view_memory", "hide_single_tab", "empty_click_up", "columns", "mouse", "folder_size", "select_pattern", "status_col", "ws_slots", "side_shared", "side_shared_w", "side_shared_hidden", "memo_on", "memo_side", "memo_w", "memo_geo", "memo_top", "preview_pane", "preview_w", "preview_geo", "preview_top", "tooltips", "arc_browse", "video_sound", "preview_autoplay", "user_buttons", "ftp_sites", "calc_geo", "calc_top", "calc_hist", "calc_tab", "calc_deg", "calc_mode", "calc_mem", "calc_fx", "calc_conv", "calc_graph", "gdrive_auto", "gdrive_last", "gdrive_last_name", "gdrive_asked", "private_mode", "rename_hide_ext", "side_favs", "tab_multirow", "tab_max_rows", "color_rules", "same_folder_current", "side_click_expand", "side_pin", "view_all", "top_hidden"):   # 0.9.122: rename_hide_ext 가 빠져 다시 켜면 늘 켜짐이던 것 고침
                     if k in d:
                         self.data[k] = d[k]
             except Exception:

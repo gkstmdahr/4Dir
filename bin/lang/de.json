@@ -2291,5 +2291,20 @@
  "고른 것만 보기": "Nur Auswahl anzeigen",
  "고른 {0:,}개만 보기 — 다시 누르면 모두 보기": "Nur {0:,} ausgewählte angezeigt – erneut drücken zeigt alle",
  "⚠ 같이 이동: 다른 칸은 더 올라갈 폴더가 없습니다  ✕": "⚠ Synchron: Der andere Bereich hat keinen übergeordneten Ordner  ✕",
- "⚠ 같이 이동: 다른 칸에 같은 폴더가 없습니다 — {0}  ✕": "⚠ Synchron: Kein gleicher Ordner im anderen Bereich – {0}  ✕"
+ "⚠ 같이 이동: 다른 칸에 같은 폴더가 없습니다 — {0}  ✕": "⚠ Synchron: Kein gleicher Ordner im anderen Bereich – {0}  ✕",
+ "상단 도구줄": "Obere Symbolleiste",
+ "보일 항목만 체크 (보기·도구 메뉴와 설정 톱니는 항상 보임). 상단 줄 빈 곳 우클릭으로도 바꿀 수 있음": "Anzuzeigende Elemente ankreuzen (Menüs Ansicht und Werkzeuge sowie das Einstellungs-Zahnrad sind immer sichtbar). Auch per Rechtsklick auf eine leere Stelle der oberen Leiste änderbar.",
+ "상단 도구줄에 보일 항목": "Elemente in der oberen Symbolleiste",
+ "모두 보이기": "Alle anzeigen",
+ "윈도우 탐색기에서 열기": "Im Windows-Explorer öffnen",
+ "미리보기 창 버튼": "Schaltfläche Vorschaufenster",
+ "메모 창 버튼": "Schaltfläche Notizbereich",
+ "계산기 버튼": "Schaltfläche Rechner",
+ "형식 단추 줄 버튼": "Schaltfläche Typ-Leiste",
+ "My메뉴 단추": "Mein-Menü-Schaltflächen",
+ "레이아웃 버튼": "Schaltfläche Layout",
+ "전체 검색칸": "Globales Suchfeld",
+ "검색 색인 상태": "Status des Suchindex",
+ "CPU·GPU 사용량": "CPU-/GPU-Auslastung",
+ "선택": "Auswahl"
 }

@@ -2291,5 +2291,20 @@
  "고른 것만 보기": "Mostrar solo la selección",
  "고른 {0:,}개만 보기 — 다시 누르면 모두 보기": "Mostrando solo {0:,} seleccionados: pulse de nuevo para ver todo",
  "⚠ 같이 이동: 다른 칸은 더 올라갈 폴더가 없습니다  ✕": "⚠ Sincronización: el otro panel no tiene carpeta superior  ✕",
- "⚠ 같이 이동: 다른 칸에 같은 폴더가 없습니다 — {0}  ✕": "⚠ Sincronización: no existe la misma carpeta en el otro panel: {0}  ✕"
+ "⚠ 같이 이동: 다른 칸에 같은 폴더가 없습니다 — {0}  ✕": "⚠ Sincronización: no existe la misma carpeta en el otro panel: {0}  ✕",
+ "상단 도구줄": "Barra de herramientas superior",
+ "보일 항목만 체크 (보기·도구 메뉴와 설정 톱니는 항상 보임). 상단 줄 빈 곳 우클릭으로도 바꿀 수 있음": "Marque los elementos que se mostrarán (los menús Ver y Herramientas y el engranaje de configuración siempre se muestran). También puede hacer clic derecho en un espacio vacío de la barra superior.",
+ "상단 도구줄에 보일 항목": "Elementos visibles en la barra superior",
+ "모두 보이기": "Mostrar todo",
+ "윈도우 탐색기에서 열기": "Abrir en el Explorador de Windows",
+ "미리보기 창 버튼": "Botón del panel de vista previa",
+ "메모 창 버튼": "Botón del panel de notas",
+ "계산기 버튼": "Botón de calculadora",
+ "형식 단추 줄 버튼": "Botón de la fila de tipos",
+ "My메뉴 단추": "Botones de Mi menú",
+ "레이아웃 버튼": "Botón de diseño",
+ "전체 검색칸": "Cuadro de búsqueda global",
+ "검색 색인 상태": "Estado del índice de búsqueda",
+ "CPU·GPU 사용량": "Uso de CPU·GPU",
+ "선택": "Selección"
 }

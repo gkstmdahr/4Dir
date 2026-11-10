@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.127"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 6             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.128"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 5             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -4806,6 +4806,8 @@ class Page(QtWidgets.QWidget):
                 extras.append((T("🗜 압축 파일 안 보기 (4Dir)"), lambda p=paths[0]: self.navigate(archives.make(p))))
             if len(paths) == 1 and dirs:
                 extras.append((T("터미널에서 열기"), lambda: shellops.open_terminal(dirs[0])))
+            if len(paths) == 1 and not (devices.is_dev(paths[0]) or archives.is_arc(paths[0])) and os.path.exists(paths[0]):   # 0.9.128
+                extras.append((T("윈도우 탐색기에서 열기"), lambda p=paths[0]: reveal_in_explorer(p)))
         favs =[((f"{d['group']} ▸ {d['name']}" if d.get("group") else d["name"]), (lambda p=d["path"]: open_fav_entry(p, self.navigate))) for d in FAV.items]
         if not paths and self.path != THIS_PC:
             favs += [("-", None), (mlabel(T("이 폴더를 ★4Dir 즐겨찾기에 추가"), "add_fav"), lambda: FAV.add(self.path))]
@@ -4814,7 +4816,7 @@ class Page(QtWidgets.QWidget):
         if paths:
             # 0.9.109 빌드 6 (사용자 11/6): ★ 즐겨찾기 둘은 맨 위로 모으고, 나머지는 많이 쓰는 순
             order = [T("대상 위치 열기"), T("새 탭에서 열기"), T("다른 칸으로 복사"), T("다른 칸으로 이동"), T("경로로 복사"), T("경로 복사 형식"),
-                     T("압축"), T("WebP 변환"), T("터미널에서 열기"), T("🗜 압축 파일 안 보기 (4Dir)"), T("색 라벨"), T("별점"), T("태그"),
+                     T("압축"), T("WebP 변환"), T("터미널에서 열기"), T("윈도우 탐색기에서 열기"), T("🗜 압축 파일 안 보기 (4Dir)"), T("색 라벨"), T("별점"), T("태그"),
                      T("가상 그룹에 넣기"), T("4Dir 도구"), T("윈도우 즐겨찾기에 고정"), T("시작 화면에 고정")]
 
             def rank(e):
@@ -5826,6 +5828,17 @@ def open_in_explorer(path):
         log.exception("탐색기 열기 실패 %s", target)
 
 
+def reveal_in_explorer(path):
+    """0.9.128 (사용자 11/10): 파일·폴더 우클릭 '윈도우 탐색기에서 열기' — 폴더는 그 폴더를, 파일은 그 파일을 고른 채로 탐색기 새 창"""
+    if os.path.isdir(path):
+        return open_in_explorer(path)
+    log.info("윈도우 탐색기에서 고른 채로 열기 %s", path)
+    try:
+        subprocess.Popen(["explorer.exe", "/select,", os.path.normpath(path)])
+    except OSError:
+        log.exception("탐색기 열기 실패 %s", path)
+
+
 def view_scope():
     """보기 방식 범위: folder(폴더마다 기억) / pane(칸마다) / all(모든 칸·폴더 같게)"""
     return "all" if SETTINGS["view_all"] else ("folder" if SETTINGS["folder_view_memory"] else "pane")
@@ -5852,7 +5865,44 @@ def open_file(path):
         log.info("스크립트 파일은 탐색기에게 넘겨 엶 %s", path)
         subprocess.Popen(["explorer.exe", path])
         return
+    if default_is_store_app(path) and open_via_handoff(path):   # 0.9.128 빌드 5 사진 앱 아래 목록에 폴더 전부
+        return
     os.startfile(path)
+
+
+def open_via_handoff(path):
+    """탐색기 → bin\\4Dir_open.vbs 가 대신 열고 바로 끝남 (사진 앱이 폴더를 직접 읽게). 못 하면 False → 보통 열기.
+    rundll32 를 바로 띄우는 길은 회사 보안이 붙잡음(모듈 0개, 실측) → 작업표시줄 고정과 같은 '탐색기 넘김'만 씀"""
+    vbs = os.path.join(BIN_DIR, "4Dir_open.vbs")
+    if datadir.PACKAGED or not os.path.isfile(vbs):
+        return False
+    req = os.path.join(BIN_DIR, "4Dir_open.tmp")   # .tmp = 배포판에 안 들어감
+    try:
+        new = not os.path.exists(req)
+        with open(req, "a", encoding="utf-16-le", newline="") as f:
+            f.write(("\ufeff" if new else "") + os.path.normpath(path) + "\r\n")
+        subprocess.Popen([os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "explorer.exe"), vbs])
+    except OSError:
+        log.exception("넘김 열기 실패 → 보통 열기 %s", path)
+        return False
+    log.info("스토어 앱 기본 → 탐색기·4Dir_open.vbs 넘겨 엶 (사진 앱이 폴더 전체를 목록에) %s", path)
+    return True
+
+
+def default_is_store_app(path):
+    """그 확장자의 기본 앱이 스토어(AppX) 앱인지 — 사진·미디어 플레이어 등. 0.9.128 빌드 4 (사용자 11/10 문의):
+    4Dir 처럼 계속 켜져 있는 프로그램이 직접 열면 사진 앱은 연 프로그램에게 '같은 폴더 파일 목록'을 받으려다 못 받아 1장만 보여 줌.
+    여는 프로그램이 바로 끝나면 사진 앱이 폴더를 직접 읽어 전부 보여 줌 (실측: 바로 끝남 10장 / 1초 살아 있음 1장 / explorer 넘김 1장 / rundll32 10장이지만 보안에 붙잡힘 / 탐색기→vbs 10장)"""
+    ext = os.path.splitext(path)[1].lower()
+    if not ext:
+        return False
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts" + "\\" + ext + r"\UserChoice") as k:
+            prog = winreg.QueryValueEx(k, "ProgId")[0]
+    except OSError:
+        return False
+    return str(prog).startswith("AppX")
 
 
 def same_folder_label():
@@ -6865,7 +6915,7 @@ class Pane(QtWidgets.QFrame):
             m.addSeparator()
             tp = self.pages[self.bar.tabData(i)].path
             m.addAction(T("새 창으로 열기"), lambda: main.open_window(tp))
-            a = m.addAction(T("새 창으로 열기 (윈도우 탐색기)"), lambda: open_in_explorer(tp))
+            a = m.addAction(T("윈도우 탐색기에서 열기"), lambda: open_in_explorer(tp))   # 0.9.128 이름 맞춤
             a.setEnabled(not is_search(tp))   # 검색 결과는 탐색기로 못 엶
         if main is not None:
             m.addSeparator()
@@ -8711,6 +8761,12 @@ class SettingsDialog(QtWidgets.QDialog):
         self._check(c, "private_mode", T("기록 안 남기기 — 열었던 폴더·탭을 저장하지 않고, 켤 때마다 처음 폴더로"),
                     lambda: SETTINGS["private_mode"], m.toggle_private,
                     T("켜면 지금까지 저장된 창 상태와 자동 기록도 지웁니다. 즐겨찾기·메모·설정은 그대로입니다"))
+        c = self._card(lay, T("상단 도구줄"))   # 0.9.128 (사용자 11/10) — 상단 줄 빈 곳 우클릭과 같음
+        d = QtWidgets.QLabel(T("보일 항목만 체크 (보기·도구 메뉴와 설정 톱니는 항상 보임). 상단 줄 빈 곳 우클릭으로도 바꿀 수 있음"))
+        d.setWordWrap(True)
+        c.addWidget(d)
+        for k, name in m.top_items():
+            self._check(c, "top_" + k, name, lambda k=k: m.top_item_shown(k), lambda k=k: m.toggle_top_item(k))
         c = self._card(lay, T("탭"))
         self._set(c, "hide_single_tab", T("탭이 하나면 탭 줄 숨기기 (새 탭: Ctrl+T)"))
         self._set(c, "tab_multirow", T("탭이 넘치면 여러 줄로"), T("끄면 한 줄 + 좌우 화살표"))
@@ -9120,6 +9176,23 @@ class PreviewPane(QtWidgets.QFrame):
         self._rows = []
         self.info.setTextInteractionFlags(Qt.TextSelectableByMouse)
         lay.addWidget(self.pic, 1)
+        # 0.9.128 (사용자 11/10): 그림을 여러 개 고르면 아래에 고른 그림 썸네일 줄 — 누르거나 ←→ 로 위 큰 그림이 바뀜
+        self.film = QtWidgets.QListWidget()
+        self.film.setObjectName("previewFilm")
+        self.film.setViewMode(QtWidgets.QListView.IconMode)
+        self.film.setFlow(QtWidgets.QListView.LeftToRight)
+        self.film.setWrapping(False)
+        self.film.setMovement(QtWidgets.QListView.Static)
+        self.film.setIconSize(QtCore.QSize(self.FILM_PX, self.FILM_PX))
+        self.film.setGridSize(QtCore.QSize(self.FILM_PX + 10, self.FILM_PX + 10))
+        self.film.setFixedHeight(self.FILM_PX + 30)   # 아래 가로 스크롤 막대 자리 포함
+        self.film.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.film.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.film.setVisible(False)
+        self.film.currentRowChanged.connect(self._film_pick)
+        self.film_items = []   # [(경로, mtime, 이름)] 지금 썸네일 줄
+        self.film_k = 0
+        lay.addWidget(self.film)
         self.gifbar = self._build_gifbar()   # 빌드 17: GIF 장면 조작 (galleryV8 참고)
         lay.addWidget(self.gifbar)
         self.extra = None   # 0.9.116 형식별 미리보기 (코드·글꼴·소리·PSD 레이어·엑셀) — 고를 때마다 새로 만들고 버림
@@ -9721,7 +9794,83 @@ class PreviewPane(QtWidgets.QFrame):
         log.info("미리보기 GIF 재생 %s (장면 %d, %s, 장면 이동 %s)", path, m.frameCount(), size_short(size), self.gif_seekable)
         return True
 
+    FILM_PX = 64   # 0.9.128 썸네일 줄 그림 크기
+
+    def _film_show(self, rows, v):
+        """여러 개 고름 → 그 안의 그림을 썸네일 줄로. 그림이 하나도 없으면 False (예전처럼 개수·크기만)"""
+        es = [v.model_.rows[r] for r in rows]
+        items = [(v.model_.full(e), e[3], e[7] or e[0]) for e in es if not e[1] and thumbs.is_image(e[0])]
+        if not items or not OPTS["thumbnails"]:
+            return False
+        keys = [(os.path.normcase(a), b) for a, b, _n in items]
+        if keys != [(os.path.normcase(a), b) for a, b, _n in self.film_items]:   # 고른 것이 바뀜 → 줄 새로
+            cur = v.view().currentIndex()   # 마지막으로 누른 파일이 그림이면 그걸 크게
+            ck = None
+            if cur.isValid() and 0 <= cur.row() < len(v.model_.rows):
+                ck = os.path.normcase(v.model_.full(v.model_.rows[cur.row()]))
+            self.film_items = items
+            self.film_k = next((i for i, (a, _b) in enumerate(keys) if a == ck), 0)
+            self.film.blockSignals(True)
+            self.film.clear()
+            svc = thumbs_service()
+            for a, b, n in items:
+                it = QtWidgets.QListWidgetItem(n)
+                it.setToolTip(n)
+                pm = svc.get(a, b, self.FILM_PX)   # 없으면 요청 → _on_ready 가 아이콘 채움
+                it.setIcon(QtGui.QIcon(pm) if pm is not None else shellops.icon_for(n, False, 48))
+                it.setText("")
+                self.film.addItem(it)
+            self.film.setCurrentRow(self.film_k)
+            self.film.blockSignals(False)
+            log.info("미리보기 썸네일 줄 %d장 (고른 것 %d개), 크게 %d번", len(items), len(rows), self.film_k + 1)
+        self.film.setVisible(True)
+        self._film_big(rows, es)
+        return True
+
+    def _film_big(self, rows=None, es=None):
+        """썸네일 줄에서 고른 한 장을 위에 크게 + 이름·순번"""
+        if not self.film_items:
+            return
+        k = min(max(self.film_k, 0), len(self.film_items) - 1)
+        path, mtime, name = self.film_items[k]
+        self.cur = (path, mtime)
+        pm = thumbs_service().get(path, mtime, self.PX)
+        if pm is None:
+            pm = shellops.icon_for(name, False, 256).pixmap(128, 128)
+        self._set_pic(pm)
+        self.name.setText(name)
+        if es is not None:
+            fs = [e[2] for e in es if not e[1] and e[2] >= 0]
+            nd = sum(1 for e in es if e[1])
+            self._film_rows = [(T("선택"), T('    {0:,}개 항목 선택함').format(len(es)).strip()),
+                               (T("폴더"), f"{nd:,}" if nd else ""), (T("크기"), size_short(sum(fs)) if fs else "")]
+        self._set_rows([(T("그림"), f"{k + 1} / {len(self.film_items)}")] + getattr(self, "_film_rows", []))
+        self.btn_inspect.setVisible(imginspect.can_open(path))
+
+    def _film_pick(self, k):
+        if 0 <= k < len(self.film_items) and k != self.film_k:
+            self.film_k = k
+            log.info("미리보기 썸네일 줄 %d번 → 크게 %s", k + 1, self.film_items[k][0])
+            self._film_big()
+
+    def _film_hide(self):
+        if self.film.isVisible() or self.film_items:
+            self.film.setVisible(False)
+            self.film.clear()
+            self.film_items = []
+
     def _on_ready(self, path, px):
+        if px == self.FILM_PX and self.film_items and self.isVisible():   # 0.9.128 썸네일 줄 그림 도착
+            nc = os.path.normcase(path)
+            for i, (a, b, _n) in enumerate(self.film_items):
+                if os.path.normcase(a) == nc:
+                    pm = thumbs_service().get(a, b, self.FILM_PX)
+                    if pm is not None and self.film.item(i) is not None:
+                        self.film.item(i).setIcon(QtGui.QIcon(pm))
+            return
+        if self.cur and self.film_items and px == self.PX and os.path.normcase(path) == os.path.normcase(self.cur[0]) and self.isVisible():
+            self._film_big()   # 썸네일 줄 보는 중 큰 그림 도착 — 줄은 그대로
+            return
         if self.cur and px == self.PX and os.path.normcase(path) == os.path.normcase(self.cur[0]) and self.isVisible():
             self.refresh()
 
@@ -9763,6 +9912,9 @@ class PreviewPane(QtWidgets.QFrame):
         self._extra_key = ekey   # _drop_extra 가 지우므로 그 뒤에
         self.btn_inspect.setVisible(False)
         self.btn_seq.setVisible(False)
+        if len(rows) > 1 and self._film_show(rows, v):   # 0.9.128 그림 여러 개 → 썸네일 줄
+            return
+        self._film_hide()
         if len(rows) != 1:
             self.cur = None
             self._set_pic(None)
@@ -10106,6 +10258,9 @@ class Main(QtWidgets.QMainWindow):
     def focus_global_search(self):
         if not self.searchbar.isVisible():   # 메뉴줄을 접어 둔 상태면 펼쳐야 검색칸에 커서가 들어감
             self.set_chrome_collapsed(False)
+        if not self.act_gsearch.isVisible():   # 0.9.128 숨겨 둔 검색칸 → 잠깐 꺼냄 (다 쓰면 _gsearch_done 이 다시 숨김)
+            self.act_gsearch.setVisible(True)
+            self._tidy_top_seps()
         self.gsearch.setFocus()
         self.gsearch.selectAll()
 
@@ -10231,13 +10386,13 @@ class Main(QtWidgets.QMainWindow):
         self.btn_memo.setAutoRaise(True)
         self.btn_memo.setToolTip(T("메모 창") + "  (Alt+M)")
         self.btn_memo.clicked.connect(lambda: self.toggle_memo())
-        tb.addWidget(self.btn_memo)
+        self.act_memo = tb.addWidget(self.btn_memo)
         self.btn_calc = QtWidgets.QToolButton()   # 0.9.111 빌드 4 (사용자 '계산기도 아이콘')
         self.btn_calc.setIcon(toolicons.icon("calc", 20))
         self.btn_calc.setAutoRaise(True)
         self.btn_calc.setToolTip(T("계산기") + "  (Alt+C)")
         self.btn_calc.clicked.connect(lambda: self.toggle_calc())
-        tb.addWidget(self.btn_calc)
+        self.act_calc = tb.addWidget(self.btn_calc)
         # 빌드 27 (사용자 11/6): 형식 단추 줄(데이터 종류 칩) 켜기/끄기 — 모든 창·칸에 적용
         self.btn_chips = QtWidgets.QToolButton()
         self.btn_chips.setIcon(chips_icon())
@@ -10246,7 +10401,7 @@ class Main(QtWidgets.QMainWindow):
         self.btn_chips.setAutoRaise(True)
         self.btn_chips.setToolTip(T("형식 단추 줄 보이기/숨기기 ([전체][JPG][PSD]…) — 모든 칸"))
         self.btn_chips.clicked.connect(lambda: self.toggle_opt("type_chips"))
-        tb.addWidget(self.btn_chips)
+        self.act_chips = tb.addWidget(self.btn_chips)
         # 0.9.109 빌드 3 사용자 단추 (도구 ▸ 사용자 단추 편집…) — 없으면 안 보임
         self.ubar = QtWidgets.QWidget()
         self.ubar_lay = QtWidgets.QHBoxLayout(self.ubar)
@@ -10288,7 +10443,7 @@ class Main(QtWidgets.QMainWindow):
         self.layout_btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.layout_btn.setText(T("레이아웃") + " ▾")
         self.layout_btn.clicked.connect(self.show_layout_popup)
-        tb.addWidget(self.layout_btn)
+        self.act_layout = tb.addWidget(self.layout_btn)
         tb.addSeparator()
         self.act_top = tb.addAction(T("📌 항상 위"), self.toggle_on_top)
         self.act_top.setCheckable(True)
@@ -10348,20 +10503,20 @@ class Main(QtWidgets.QMainWindow):
         self.gs_timer.timeout.connect(lambda: self.do_global_search(self.gsearch.text()))
         self.gsearch.textChanged.connect(lambda _t: self.gs_timer.start())
         self.gsearch.returnPressed.connect(lambda: (self.gs_timer.stop(), self.do_global_search(self.gsearch.text())))
-        tb.addWidget(self.gsearch)
+        self.act_gsearch = tb.addWidget(self.gsearch)
         self.idx_btn = QtWidgets.QToolButton()
         self.idx_btn.setObjectName("idxStatus")
         self.idx_btn.setAutoRaise(True)
         self.idx_btn.setText(T("색인 준비 중"))
         self.idx_btn.setToolTip(T("검색 색인 상태 — 눌러서 검색 범위 설정"))
         self.idx_btn.clicked.connect(self.open_search_roots)
-        tb.addWidget(self.idx_btn)
+        self.act_idx = tb.addWidget(self.idx_btn)
         # v0.9.93 사용자 11/4: 탐색기 점검 ↔ 전체 검색칸 자리 바꿈 → 검색칸·색인 오른쪽으로
         tb.addSeparator()
         self.act_check = tb.addAction(T("Explorer Check (탐색기 점검)"), self.open_check)
         sp = QtWidgets.QWidget()
         sp.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
-        tb.addWidget(sp)
+        self._top_sp = tb.addWidget(sp)   # 0.9.128 구분선 정리 때 '항목' 으로 안 셈
         # CPU·GPU 사용량 (1.5초마다, 창 최소화·표시 끔이면 멈춤)
         self.mon_label = QtWidgets.QLabel()
         self.mon_label.setObjectName("sysmon")
@@ -10373,6 +10528,97 @@ class Main(QtWidgets.QMainWindow):
         self.mon_timer.timeout.connect(self._update_mon)
         # 0.9.109 빌드 2 (사용자 11/6): 메뉴 막대 끝 버전 글자 뺌 — 제목 표시줄에 이미 있음
         self.set_sysmon(SETTINGS["sysmon"], save=False)
+        # 0.9.128 (사용자 11/10): 상단 줄 빈 곳 우클릭 = 보일 항목 고르기 (보기·도구·설정 톱니는 고정)
+        for bar in (self.topbar, self.searchbar):
+            bar.setContextMenuPolicy(Qt.CustomContextMenu)
+            bar.customContextMenuRequested.connect(lambda pos, bar=bar: self._top_items_menu(bar.mapToGlobal(pos)))
+        self.gsearch.editingFinished.connect(self._gsearch_done)
+        self.apply_top_hidden()
+
+    # ---------------------------------------------------------- 상단 도구줄 항목 보이기/숨기기 (0.9.128)
+    def top_items(self):
+        """(키, 이름) — 숨길 수 있는 상단 항목. 보기·도구 메뉴와 설정 톱니는 숨기지 못함(설정으로 돌아갈 길)"""
+        return [("preview", T("미리보기 창 버튼")), ("memo", T("메모 창 버튼")), ("calc", T("계산기 버튼")),
+                ("chips", T("형식 단추 줄 버튼")), ("ubar", T("My메뉴 단추")), ("layout", T("레이아웃 버튼")),
+                ("on_top", T("📌 항상 위")), ("search", T("전체 검색칸")), ("idx", T("검색 색인 상태")),
+                ("check", T("Explorer Check (탐색기 점검)")), ("sysmon", T("CPU·GPU 사용량"))]
+
+    def _top_act(self, key):
+        return {"preview": self.act_preview, "memo": self.act_memo, "calc": self.act_calc, "chips": self.act_chips,
+                "ubar": self.act_ubar, "layout": self.act_layout, "on_top": self.act_top, "search": self.act_gsearch,
+                "idx": self.act_idx, "check": self.act_check, "sysmon": self.mon_act}.get(key)
+
+    def top_item_shown(self, key):
+        if key == "sysmon":
+            return bool(SETTINGS["sysmon"])
+        return key not in (SETTINGS["top_hidden"] or [])
+
+    def toggle_top_item(self, key):
+        if key == "sysmon":   # CPU·GPU 는 원래 있던 설정(sysmon) 그대로 — 꺼지면 측정도 멈춤
+            self.set_sysmon(not SETTINGS["sysmon"])
+        else:
+            hid = [k for k in (SETTINGS["top_hidden"] or []) if k != key]
+            if self.top_item_shown(key):
+                hid.append(key)
+            SETTINGS["top_hidden"] = hid
+        log.info("상단 도구줄 %s → %s (숨김 %s)", key, "보임" if self.top_item_shown(key) else "숨김", SETTINGS["top_hidden"])
+        for w in (WINDOWS or [self]):
+            w.apply_top_hidden()
+
+    def show_all_top_items(self):
+        SETTINGS["top_hidden"] = []
+        if not SETTINGS["sysmon"]:
+            self.set_sysmon(True)
+        log.info("상단 도구줄 모두 보이기")
+        for w in (WINDOWS or [self]):
+            w.apply_top_hidden()
+
+    def apply_top_hidden(self):
+        hid = set(SETTINGS["top_hidden"] or [])
+        for k, _n in self.top_items():
+            if k in ("ubar", "sysmon"):   # My메뉴 = 단추가 있을 때만, CPU = set_sysmon 이 정함
+                continue
+            a = self._top_act(k)
+            if a is not None:
+                a.setVisible(k not in hid)
+        self.build_user_buttons()
+        self._tidy_top_seps()
+
+    def _tidy_top_seps(self):
+        """숨긴 항목 때문에 구분선이 겹치거나 맨 앞·뒤에 홀로 남지 않게"""
+        for bar in (self.topbar, self.searchbar):
+            seen, last = False, None
+            for a in bar.actions():
+                if a.isSeparator():
+                    a.setVisible(seen)
+                    if seen:
+                        last = a
+                    seen = False
+                elif a.isVisible() and a is not getattr(self, "_top_sp", None):
+                    seen = True
+            if last is not None and not seen:   # 마지막 구분선 뒤에 보이는 게 없음
+                last.setVisible(False)
+
+    def fill_top_items_menu(self, m):
+        h = m.addAction(T("상단 도구줄에 보일 항목"))
+        h.setEnabled(False)
+        for k, name in self.top_items():
+            a = m.addAction(name, lambda k=k: self.toggle_top_item(k))
+            a.setCheckable(True)
+            a.setChecked(self.top_item_shown(k))
+        m.addSeparator()
+        m.addAction(T("모두 보이기"), self.show_all_top_items)
+
+    def _top_items_menu(self, gpos):
+        m = QtWidgets.QMenu(self)
+        self.fill_top_items_menu(m)
+        m.exec(gpos)
+
+    def _gsearch_done(self):
+        """검색칸을 숨겨 둔 채 Ctrl+Shift+F 로 잠깐 꺼냈으면, 다 쓰고 나서 다시 숨김"""
+        if not self.top_item_shown("search") and self.act_gsearch.isVisible() and not self.gsearch.hasFocus():
+            self.act_gsearch.setVisible(False)
+            self._tidy_top_seps()
 
     def set_preview(self, on):
         """미리보기 창 켜기/끄기 — 빌드 18 (사용자 11/5): 메모 창처럼 4Dir 창 밖 따로 창, 켜도 칸 크기 그대로. 위치·크기 기억"""
@@ -10498,7 +10744,7 @@ class Main(QtWidgets.QMainWindow):
             b.customContextMenuRequested.connect(lambda _p: self.edit_user_buttons())
             b.clicked.connect(lambda _c=False, item=item: self.run_user_button(item))
             self.ubar_lay.addWidget(b)
-        self.act_ubar.setVisible(bool(items))
+        self.act_ubar.setVisible(bool(items) and "ubar" not in (SETTINGS["top_hidden"] or []))   # 0.9.128 숨기기
 
     def run_user_button(self, item):
         if item.get("action"):   # 0.9.113 My메뉴의 4Dir 기능
