@@ -113,6 +113,20 @@ class Favorites:
         self.items[i]["name"] = name
         self.save()
 
+    DECO_KEYS = ("color", "emoji", "bold", "emoji_tail")   # emoji_tail = 이모지를 이름 뒤에 (0.9.130 빌드 3)   # 0.9.130 꾸미기 (받은 의견 11/10 '즐겨찾기 폴더를 색·이모지로 강조')
+
+    def set_deco(self, i, **kw):
+        """꾸미기: color = 색 이름(labels.TAB_COLORS) 또는 '#rrggbb', emoji = 글자, bold = True. 값이 없으면(None·''·False) 뺌"""
+        d = self.items[i]
+        for k, v in kw.items():
+            if k in self.DECO_KEYS:
+                if v:
+                    d[k] = v
+                else:
+                    d.pop(k, None)
+        log.info("즐겨찾기 꾸미기 %s → %s", d["path"], {k: d[k] for k in self.DECO_KEYS if k in d})
+        self.save()
+
     def move(self, i, j):
         d = self.items.pop(i)
         self.items.insert(j, d)

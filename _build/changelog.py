@@ -1,11 +1,53 @@
 # -*- coding: utf-8 -*-
-"""4Dir 버전별 바뀐 점 (CHANGELOG_VER 1.0.59 — 0.9.129 공개 11/10 미리보기 통일(모든 파일 ◀ ▶·< >·GIF·PDF 확대)·여러 그림 원본 해상도 · 1.0.58 — 0.9.128 공개 11/10 사진 앱 폴더 전체·상단 도구줄 숨기기·여러 그림 미리보기·탐색기에서 열기 · 1.0.57 — 0.9.127 공개 11/10 작업표시줄 고정·두 칸 같이 이동·고른 것만·파일 색 규칙·탭 최대 줄·32비트 안내 · 1.0.56 — 0.9.126 공개 11/10 사용법 2.0·보기 범위·설정 창·.vbs 열기 · 1.0.55 — 0.9.125 공개 11/10 Ctrl+= 설정 문구 · 1.0.54 — 0.9.124 공개 11/10 내 PC 탐색기처럼·폴더 고정·글자로 찾기·탐색 창 끌어 놓기 고침 · 1.0.53 — 0.9.123 공개 11/10 여러 줄 탭·PDF 편집 한곳·미리보기 PDF 안 붙잡음 · 1.0.52 — 0.9.122 공개 11/10 PDF 편집·탐색 창 4Dir 즐겨찾기·형식 단추 맨 위 한 줄 · 1.0.51 — 0.9.121 공개 11/10 PDF 직접 미리보기·이름 바꾸기 확장명 숨김 · 0.9.120 공개 11/10 Win+E 체크 하나·윈도우 버전·그림 안내 언어별·설정 글자 복사 · 0.9.119 공개 11/10 Win+E PowerToys 연결·구글 로그인 페이지 · 0.9.118 공개 11/9 그림 편집·미리보기 정리·기록 안 남기기 고침 · 0.9.117 공개 11/8 폴더 미리보기·정보 표 · 0.9.116 공개 11/8 새 기능 33개·폴더 표지 탐색기처럼·이슈 #9 · 0.9.115 공개 11/7 구글 백업·기록 안 남기기 · 0.9.114 공개 11/7 파일 즐겨찾기 · 0.9.113 공개 11/6 이름 변경·My메뉴·단축키 카테고리 · 0.9.112 공개 11/6 같은 폴더·exe 아이콘 · 0.9.111 공개 11/6 편집·계산기 · 0.9.110 공개 11/6 점검 고침 · 0.9.109 바뀐 점 짧게(사용자 11/6 '간단 명료하게') · 0.9.109 공개 11/6 새 도구·태그·FTP·Win+E·메뉴 정리·이슈 #4~#7 · 0.9.108 공개 11/6 동영상·휴대폰 항목 · 0.9.108 빌드 20 압축 폴더·복사 대기열·펼쳐 보기·중복 찾기·스페이스 · 0.9.108 빌드 18 미리보기 따로 창·GIF 단추·형식 단추 색·메모 그림 크기 · 0.9.108 11/5 메모 창(따로 창·링크·폴더 메모·알림·휴지통 등) + 풍선 도움말 · 0.9.107 11/5 내용까지 비교 · 설정 창(톱니 아이콘, 카테고리 9개, 단축키·색상·검색 범위 안에)·창 저장/불러오기 도구로·즐겨찾기 메뉴 → 바 글자 (0.9.102~0.9.106 공개 전이라 합침) · 0.9.101 11/5 공용 탐색 창(이슈 #3, 0.9.100 공개 전이라 합침, +숨기기) · 0.9.99 11/5 (0.9.98 공개 전이라 합침, +단축키 칸 한글 입력기 끔·단축키만 내보내기/가져오기) 창 구성 단축키·지정·이름 변경(이슈 #1) · 0.9.97 11/5 (0.9.96 공개 안 해서 합침) 아이콘 이름 잘림·뺀 드라이브 탭·느린 드라이브·안전 제거·알림 ✕ · 0.9.95 11/5 탭 잠금·드라이브 꽂기 반영 · 0.9.94 11/4 상태 열·Ctrl+Enter 위치·설정 내보내기/가져오기·큰 폴더 빨라짐 · 0.9.93 11/4 (0.9.88~0.9.92 공개 전이라 합침, +레이아웃 16종·고르기 창·글자 메뉴 뺌·검색칸 자리, 새 도구 7개+빈 띠+색 13색·직접 고르기+날짜별 묶기+3칸 왼쪽 1+오른쪽 2+비교 깜빡임) · 0.9.88 11/4 닫을 때 바로 끝남 · 0.9.87 11/4 설정 이어받기·링크 실행 · 0.9.86 짧게 고침 11/3 (사용자 '간단명료하게') · 0.9.86 11/3 (0.9.85 공개 전이라 합침, 겹치면 옮김+되돌리기) · 0.9.85 11/3 (0.9.84 공개 전이라 합침, 겹침 알림 기능 칸) · 0.9.84 11/3 (0.9.83 공개 전이라 합침, 마우스 탭 키보드처럼) · 0.9.83 11/3 (0.9.82 공개 전이라 합침, 마우스 버튼 항목 추가) · 0.9.82 11/3 (0.9.81 공개 전이라 합침) · 0.9.81 11/3 (0.9.80 공개 전이라 합침) · 0.9.80 11/2 (0.9.79 공개 전이라 합침) · 0.9.79 11/2 (0.9.78 공개 전이라 합침) · 0.9.78 11/2 (0.9.77 공개 전이라 합침) · 0.9.77 11/2 (0.9.76 공개 전이라 합침) · 0.9.76 11/2 (0.9.75 는 공개 안 해서 합침) · 0.9.73 4Dir.exe 10/30 · 0.9.71 항목 10/29 (0.9.68~0.9.70 은 공개 안 해서 0.9.71 에 합침)) — make_site.py 가 읽어 메인 '새로 바뀐 점' + 지난 버전 페이지를 만듦.
+"""4Dir 버전별 바뀐 점 (CHANGELOG_VER 1.0.60 — 0.9.130 공개 11/11 새로 만들기 단축키·My메뉴 단축키·끌어서 고르기·즐겨찾기 꾸미기 · 1.0.59 — 0.9.129 공개 11/10 미리보기 통일(모든 파일 ◀ ▶·< >·GIF·PDF 확대)·여러 그림 원본 해상도 · 1.0.58 — 0.9.128 공개 11/10 사진 앱 폴더 전체·상단 도구줄 숨기기·여러 그림 미리보기·탐색기에서 열기 · 1.0.57 — 0.9.127 공개 11/10 작업표시줄 고정·두 칸 같이 이동·고른 것만·파일 색 규칙·탭 최대 줄·32비트 안내 · 1.0.56 — 0.9.126 공개 11/10 사용법 2.0·보기 범위·설정 창·.vbs 열기 · 1.0.55 — 0.9.125 공개 11/10 Ctrl+= 설정 문구 · 1.0.54 — 0.9.124 공개 11/10 내 PC 탐색기처럼·폴더 고정·글자로 찾기·탐색 창 끌어 놓기 고침 · 1.0.53 — 0.9.123 공개 11/10 여러 줄 탭·PDF 편집 한곳·미리보기 PDF 안 붙잡음 · 1.0.52 — 0.9.122 공개 11/10 PDF 편집·탐색 창 4Dir 즐겨찾기·형식 단추 맨 위 한 줄 · 1.0.51 — 0.9.121 공개 11/10 PDF 직접 미리보기·이름 바꾸기 확장명 숨김 · 0.9.120 공개 11/10 Win+E 체크 하나·윈도우 버전·그림 안내 언어별·설정 글자 복사 · 0.9.119 공개 11/10 Win+E PowerToys 연결·구글 로그인 페이지 · 0.9.118 공개 11/9 그림 편집·미리보기 정리·기록 안 남기기 고침 · 0.9.117 공개 11/8 폴더 미리보기·정보 표 · 0.9.116 공개 11/8 새 기능 33개·폴더 표지 탐색기처럼·이슈 #9 · 0.9.115 공개 11/7 구글 백업·기록 안 남기기 · 0.9.114 공개 11/7 파일 즐겨찾기 · 0.9.113 공개 11/6 이름 변경·My메뉴·단축키 카테고리 · 0.9.112 공개 11/6 같은 폴더·exe 아이콘 · 0.9.111 공개 11/6 편집·계산기 · 0.9.110 공개 11/6 점검 고침 · 0.9.109 바뀐 점 짧게(사용자 11/6 '간단 명료하게') · 0.9.109 공개 11/6 새 도구·태그·FTP·Win+E·메뉴 정리·이슈 #4~#7 · 0.9.108 공개 11/6 동영상·휴대폰 항목 · 0.9.108 빌드 20 압축 폴더·복사 대기열·펼쳐 보기·중복 찾기·스페이스 · 0.9.108 빌드 18 미리보기 따로 창·GIF 단추·형식 단추 색·메모 그림 크기 · 0.9.108 11/5 메모 창(따로 창·링크·폴더 메모·알림·휴지통 등) + 풍선 도움말 · 0.9.107 11/5 내용까지 비교 · 설정 창(톱니 아이콘, 카테고리 9개, 단축키·색상·검색 범위 안에)·창 저장/불러오기 도구로·즐겨찾기 메뉴 → 바 글자 (0.9.102~0.9.106 공개 전이라 합침) · 0.9.101 11/5 공용 탐색 창(이슈 #3, 0.9.100 공개 전이라 합침, +숨기기) · 0.9.99 11/5 (0.9.98 공개 전이라 합침, +단축키 칸 한글 입력기 끔·단축키만 내보내기/가져오기) 창 구성 단축키·지정·이름 변경(이슈 #1) · 0.9.97 11/5 (0.9.96 공개 안 해서 합침) 아이콘 이름 잘림·뺀 드라이브 탭·느린 드라이브·안전 제거·알림 ✕ · 0.9.95 11/5 탭 잠금·드라이브 꽂기 반영 · 0.9.94 11/4 상태 열·Ctrl+Enter 위치·설정 내보내기/가져오기·큰 폴더 빨라짐 · 0.9.93 11/4 (0.9.88~0.9.92 공개 전이라 합침, +레이아웃 16종·고르기 창·글자 메뉴 뺌·검색칸 자리, 새 도구 7개+빈 띠+색 13색·직접 고르기+날짜별 묶기+3칸 왼쪽 1+오른쪽 2+비교 깜빡임) · 0.9.88 11/4 닫을 때 바로 끝남 · 0.9.87 11/4 설정 이어받기·링크 실행 · 0.9.86 짧게 고침 11/3 (사용자 '간단명료하게') · 0.9.86 11/3 (0.9.85 공개 전이라 합침, 겹치면 옮김+되돌리기) · 0.9.85 11/3 (0.9.84 공개 전이라 합침, 겹침 알림 기능 칸) · 0.9.84 11/3 (0.9.83 공개 전이라 합침, 마우스 탭 키보드처럼) · 0.9.83 11/3 (0.9.82 공개 전이라 합침, 마우스 버튼 항목 추가) · 0.9.82 11/3 (0.9.81 공개 전이라 합침) · 0.9.81 11/3 (0.9.80 공개 전이라 합침) · 0.9.80 11/2 (0.9.79 공개 전이라 합침) · 0.9.79 11/2 (0.9.78 공개 전이라 합침) · 0.9.78 11/2 (0.9.77 공개 전이라 합침) · 0.9.77 11/2 (0.9.76 공개 전이라 합침) · 0.9.76 11/2 (0.9.75 는 공개 안 해서 합침) · 0.9.73 4Dir.exe 10/30 · 0.9.71 항목 10/29 (0.9.68~0.9.70 은 공개 안 해서 0.9.71 에 합침)) — make_site.py 가 읽어 메인 '새로 바뀐 점' + 지난 버전 페이지를 만듦.
 새 버전을 낼 때마다 맨 위에 한 줄 추가 (최신이 맨 위). 날짜는 한국 시간 기준 릴리스 날짜.
 항목 하나 = 10개 언어 글자 묶음 (순서: en ko zh-CN zh-TW ja es de fr pt-BR ru). <b> 만 허용."""
 
 ORDER = ["en", "ko", "zh-CN", "zh-TW", "ja", "es", "de", "fr", "pt-BR", "ru"]
 
 CHANGES = [
+("0.9.130", "2026-11-11", [
+    ("<b>Shortcut for a new file</b>: the Windows <b>New</b> types (Text Document, Word, Excel…) can now get a shortcut key and go into My Menu.",
+     "<b>단축키로 새 파일</b>: 윈도우 <b>새로 만들기</b> 형식(텍스트 문서·워드·엑셀…)에 단축키를 정하고 My메뉴에 넣을 수 있음.",
+     "<b>用快捷键新建文件</b>：Windows <b>新建</b>类型（文本文档、Word、Excel…）可设置快捷键并放入 My 菜单。",
+     "<b>用快速鍵新增檔案</b>：Windows <b>新增</b>類型（文字文件、Word、Excel…）可設定快速鍵並放入 My 選單。",
+     "<b>ショートカットで新規ファイル</b>：Windows の<b>新規作成</b>の種類（テキスト文書・Word・Excel…）にキーを割り当て、Myメニューにも入れられます。",
+     "<b>Atajo para archivo nuevo</b>: los tipos de <b>Nuevo</b> de Windows (Documento de texto, Word, Excel…) pueden tener atajo y entrar en Mi menú.",
+     "<b>Tastenkürzel für neue Datei</b>: die Windows-<b>Neu</b>-Typen (Textdokument, Word, Excel…) können ein Tastenkürzel bekommen und ins Mein Menü.",
+     "<b>Raccourci pour nouveau fichier</b> : les types <b>Nouveau</b> de Windows (Document texte, Word, Excel…) peuvent avoir un raccourci et aller dans Mon menu.",
+     "<b>Atalho para novo arquivo</b>: os tipos de <b>Novo</b> do Windows (Documento de texto, Word, Excel…) podem ter atalho e entrar no Meu menu.",
+     "<b>Сочетание для нового файла</b>: типам Windows <b>Создать</b> (текстовый документ, Word, Excel…) можно назначить клавиши и добавить их в «Моё меню»."),
+    ("<b>My Menu items can have their own shortcut</b>; a key already in use is shown in red on both sides, and nothing changes until [Save].",
+     "<b>My메뉴 항목마다 단축키</b> — 이미 쓰는 키면 양쪽 창에 빨갛게 알림, [저장]을 눌러야 적용.",
+     "<b>My 菜单每项可设快捷键</b>——已占用的键在两边都以红字提示，按 [保存] 才生效。",
+     "<b>My 選單每項可設快速鍵</b>——已占用的鍵在兩邊都以紅字提示，按 [儲存] 才生效。",
+     "<b>Myメニューの項目ごとにショートカット</b> — 使用中のキーは両方の画面で赤く表示、[保存] で反映。",
+     "<b>Cada elemento de Mi menú puede tener su atajo</b>; una tecla ya usada se marca en rojo en ambos lados y nada cambia hasta [Guardar].",
+     "<b>Mein-Menü-Einträge mit eigenem Tastenkürzel</b>; belegte Tasten werden auf beiden Seiten rot angezeigt, erst [Speichern] übernimmt.",
+     "<b>Raccourci propre à chaque élément de Mon menu</b> ; une touche déjà utilisée est signalée en rouge des deux côtés, rien ne change avant [Enregistrer].",
+     "<b>Cada item do Meu menu pode ter seu atalho</b>; tecla já usada aparece em vermelho nos dois lados e nada muda até [Salvar].",
+     "<b>Свои сочетания для пунктов «Моего меню»</b>; занятая клавиша подсвечивается красным с обеих сторон, применяется только после [Сохранить]."),
+    ("<b>Drag to select several files</b> in Details view from any empty spot, another column or the side margins (drag on a name still moves files).",
+     "<b>끌어서 여러 개 고르기</b>: 자세히 보기에서 빈 곳·다른 열·양옆 여백 어디서든 (이름 위에서 끌면 그대로 옮기기).",
+     "<b>拖动框选多个文件</b>：详细信息视图中从空白处、其他列或两侧边距拖动（在名称上拖动仍为移动文件）。",
+     "<b>拖曳框選多個檔案</b>：詳細資料檢視中從空白處、其他欄或兩側邊距拖曳（在名稱上拖曳仍為移動檔案）。",
+     "<b>ドラッグで複数選択</b>：詳細表示で空白・ほかの列・左右の余白から（名前の上でドラッグすると従来どおり移動）。",
+     "<b>Arrastrar para seleccionar varios</b> en Detalles desde cualquier hueco, otra columna o los márgenes (arrastrar el nombre sigue moviendo).",
+     "<b>Mehrere Dateien per Ziehen auswählen</b> in der Detailansicht – von leeren Stellen, anderen Spalten oder den Rändern (auf dem Namen ziehen verschiebt weiterhin).",
+     "<b>Glisser pour sélectionner plusieurs fichiers</b> en vue Détails depuis un vide, une autre colonne ou les marges (glisser sur un nom déplace toujours).",
+     "<b>Arrastar para selecionar vários</b> em Detalhes a partir de espaço vazio, outra coluna ou margens (arrastar no nome continua movendo).",
+     "<b>Выделение рамкой</b> в режиме «Таблица» с пустого места, другого столбца или полей по бокам (перетаскивание за имя по-прежнему перемещает)."),
+    ("<b>Decorate favorites</b>: color, emoji (before or after the name) and bold — right-click a favorite › Decorate.",
+     "<b>즐겨찾기 꾸미기</b>: 색·이모지(이름 앞/뒤)·굵게 — 즐겨찾기 우클릭 › 꾸미기.",
+     "<b>装饰收藏</b>：颜色、表情符号（名称前/后）、粗体——右键收藏 › 装饰。",
+     "<b>裝飾我的最愛</b>：顏色、表情符號（名稱前/後）、粗體——右鍵我的最愛 › 裝飾。",
+     "<b>お気に入りの飾り</b>：色・絵文字（名前の前/後）・太字 — お気に入りを右クリック › 飾り。",
+     "<b>Decorar favoritos</b>: color, emoji (antes o después del nombre) y negrita — clic derecho en un favorito › Decorar.",
+     "<b>Favoriten gestalten</b>: Farbe, Emoji (vor oder nach dem Namen) und fett – Rechtsklick auf Favorit › Gestalten.",
+     "<b>Décorer les favoris</b> : couleur, emoji (avant ou après le nom) et gras — clic droit sur un favori › Décorer.",
+     "<b>Decorar favoritos</b>: cor, emoji (antes ou depois do nome) e negrito — clique direito no favorito › Decorar.",
+     "<b>Оформление избранного</b>: цвет, эмодзи (до или после имени) и жирный — правый щелчок по избранному › Оформление."),
+]),
 ("0.9.129", "2026-11-10", [
     ("<b>Preview works the same for every file type</b>: ◀ ▶ (always in the same place) and the <b>&lt; &gt;</b> keys go through every file in the folder in list order, like File Explorer — pictures, GIFs, videos, PDFs, text and more.",
      "<b>미리보기가 형식 상관없이 같게</b>: ◀ ▶(항상 같은 자리)와 <b>&lt; &gt;</b> 키로 폴더의 모든 파일을 목록 순서대로 넘김 — 그림·GIF·동영상·PDF·글 등 탐색기처럼.",

@@ -268,8 +268,9 @@ def _numlock_on():
 
 
 class KeyDialog(QtWidgets.QDialog):
-    def __init__(self, custom, parent=None, mouse=None):
+    def __init__(self, custom, parent=None, mouse=None, umenu=None):
         super().__init__(parent)
+        self.umenu = dict(umenu or {})   # 0.9.130 빌드 2 {키: My메뉴 항목 이름} — 겹치면 기능 칸에 빨갛게 (사용자 11/11 '반대 방향도')
         self.setWindowTitle(T("단축키 설정 (Shortcuts)"))
         self.resize(820, 680)
         self.result_keys = None
@@ -662,6 +663,11 @@ class KeyDialog(QtWidgets.QDialog):
         for k, acts in conflicts(km):
             for a in acts:
                 notes.setdefault(a, []).append(T("{0}: '{1}'와 겹침").format(k, ", ".join(LABEL[o] for o in acts if o != a)))
+        for a, ks in km.items():   # 0.9.130 빌드 2: My메뉴 항목이 이미 쓰는 키 (저장은 사용자가 정함 — My메뉴가 먼저 실행됨)
+            for k in ks:
+                if QtGui.QKeySequence(k).toString() in self.umenu:
+                    notes.setdefault(a, []).append(T("{0}: 이미 My메뉴 '{1}'에서 씀").format(
+                        k, self.umenu[QtGui.QKeySequence(k).toString()]))
         for a, r in self.row_of.items():
             _mark(self.tbl.item(r, 0), self.kbase[a], list(dict.fromkeys(notes.get(a, []))))
             for e in self.edits[a]:   # Qt 기본 'Press shortcut' 대신 — 키를 바꾸거나 지울 때마다 Qt 가 영어로 되돌려서 매번 (실측)

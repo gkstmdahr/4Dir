@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.129"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 5             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.130"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 3             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -590,6 +590,7 @@ import spacemap  # noqa: E402  디스크 사용량 트리맵
 import tags  # noqa: E402  태그·가상 그룹
 import fileattrs  # noqa: E402  날짜·속성 일괄
 import userbtns  # noqa: E402  사용자 단추
+import shellnew  # noqa: E402  0.9.130 윈도우 '새로 만들기' 형식을 기능으로 (단축키·My메뉴·기능 검색)
 import ftpfs  # noqa: E402  FTP (archives 를 거쳐 폴더처럼)
 import calc  # noqa: E402  0.9.111 계산기 (일반·회계·공학·단위)
 import mediaedit  # noqa: E402  0.9.111 동영상·GIF 편집 (ffmpeg)
@@ -652,6 +653,8 @@ def action_icon(a):
             return chips_icon()
         if a == "rename":
             return toolicons.icon("rename", 16)
+        if a.startswith("newf."):   # 0.9.130 새로 만들기 = 그 형식 아이콘
+            return shellops.icon_for("x" + a[4:], False, 16)
         n = toolicons.action_name(a)   # 0.9.116 빌드 2 (게시판: My메뉴 4Dir 기능 단추에 아이콘 없음)
         if n:
             return toolicons.icon(n, 16)
@@ -2909,7 +2912,15 @@ class DetailView(ViewMixin, QtWidgets.QTreeView):
                 return True
             if ev.button() == Qt.LeftButton and not (ev.modifiers() & (Qt.ControlModifier | Qt.ShiftModifier)):
                 self.selectionModel().clearSelection()   # 탐색기: 빈 곳 클릭 = 선택 해제
+            if ev.button() == Qt.LeftButton:   # 0.9.130 양옆 빈 띠에서 끌어도 여러 개 고르기
+                self._band_arm(self.viewport().mapFrom(self, ev.position().toPoint()), ev.modifiers(), "빈 띠")
             self.setFocus()
+            return True
+        if t == QtCore.QEvent.MouseMove and self._band is not None:   # 빈 띠에서 시작한 끌기 (마우스는 이 위젯이 잡음)
+            self._band_move(self.viewport().mapFrom(self, ev.position().toPoint()))
+            return True
+        if t == QtCore.QEvent.MouseButtonRelease and self._band is not None and ev.button() == Qt.LeftButton:
+            self._band_end()
             return True
         if t == QtCore.QEvent.MouseButtonDblClick and self._in_gutter(ev.position().toPoint()):
             # v0.9.89: 왼쪽·오른쪽 빈 띠도 빈 곳 — 더블클릭하면 상위 폴더 (목록 안 빈 곳과 같은 조건)
@@ -2920,6 +2931,134 @@ class DetailView(ViewMixin, QtWidgets.QTreeView):
                 QtCore.QTimer.singleShot(0, self.page.go_up)
             return True
         return super().event(ev)
+
+    # ------------------------------------------------ 0.9.130 끌어서 여러 개 고르기 (받은 의견 11/10, 탐색기와 같게)
+    # 이름 글자·아이콘 위에서 끌면 파일 옮기기(그대로), 그 밖(이름 옆 빈 곳·다른 열·아래 빈 곳·양옆 빈 띠)에서 끌면 파란 사각형으로 고르기.
+    # Ctrl/Shift 를 누른 채 끌면 원래 고른 것에 더함. 끌지 않고 떼면 원래 클릭 그대로(그 줄 고르기·빈 곳 = 해제)
+    _band = None
+
+    def name_hit(self, pos):
+        """pos(viewport 좌표)가 이름 칸의 아이콘·글자 위인지 (확인란 포함) — 여기서 끌면 파일 옮기기"""
+        idx = self.indexAt(pos)
+        if not idx.isValid():
+            return False
+        i0 = idx.sibling(idx.row(), 0)
+        r = self.visualRect(i0)
+        if not r.contains(QtCore.QPoint(pos.x(), r.center().y())):
+            return False
+        txt = str(self.model().data(i0, Qt.DisplayRole) or "")
+        w = self.iconSize().width() + 10 + self.fontMetrics().horizontalAdvance(txt) + 8
+        if OPTS["checkboxes"]:
+            w += 22
+        return pos.x() <= r.left() + w
+
+    def _band_arm(self, vpos, mods, why):
+        """누른 자리 기억 — 실제로 끌기 시작하면(_band_move) 사각형"""
+        sm = self.selectionModel()
+        self._band = {"o": QtCore.QPoint(vpos.x() + self.horizontalOffset(), vpos.y() + self.verticalOffset()),
+                      "vp": QtCore.QPoint(vpos), "add": bool(mods & (Qt.ControlModifier | Qt.ShiftModifier)),
+                      "base": QtCore.QItemSelection(sm.selection()) if sm else None, "on": False, "why": why, "rb": None, "last": None}
+
+    def _band_rows(self, y1, y2):
+        m = self.model()
+        n = m.rowCount() if m else 0
+        if not n:
+            return None
+        rh = max(1, self.rowHeight(m.index(0, 0)) or self.sizeHintForRow(0))
+        a, b = max(0, y1 // rh), min(n - 1, y2 // rh)
+        return (a, b) if a <= b and y2 >= 0 and y1 < n * rh else None
+
+    def _band_move(self, vpos):
+        b = self._band
+        if b is None:
+            return
+        if not b["on"]:
+            if (vpos - b["vp"]).manhattanLength() < QtWidgets.QApplication.startDragDistance():
+                return
+            b["on"] = True
+            b["rb"] = QtWidgets.QRubberBand(QtWidgets.QRubberBand.Rectangle, self.viewport())
+            if not b["add"]:
+                self.selectionModel().clearSelection()
+            log.info("끌어서 고르기 시작 (%s, 더하기=%s)", b["why"], b["add"])
+        b["cur"] = QtCore.QPoint(vpos)
+        cur = QtCore.QPoint(vpos.x() + self.horizontalOffset(), vpos.y() + self.verticalOffset())
+        rc = QtCore.QRect(b["o"], cur).normalized()
+        b["rb"].setGeometry(rc.translated(-self.horizontalOffset(), -self.verticalOffset()).intersected(self.viewport().rect().adjusted(-1, -1, 1, 1)))
+        b["rb"].show()
+        rows = self._band_rows(rc.top(), rc.bottom())
+        if rows != b["last"]:
+            b["last"] = rows
+            sel = QtCore.QItemSelection(b["base"]) if b["add"] and b["base"] is not None else QtCore.QItemSelection()
+            m = self.model()
+            if rows:
+                sel.merge(QtCore.QItemSelection(m.index(rows[0], 0), m.index(rows[1], max(0, m.columnCount() - 1))), QtCore.QItemSelectionModel.Select)
+            self.selectionModel().select(sel, QtCore.QItemSelectionModel.ClearAndSelect)
+            if rows:
+                self.selectionModel().setCurrentIndex(m.index(rows[1] if cur.y() >= b["o"].y() else rows[0], 0), QtCore.QItemSelectionModel.NoUpdate)
+        # 위·아래 끝 밖으로 나가면 굴림 (타이머가 계속)
+        h = self.viewport().height()
+        if vpos.y() < 0 or vpos.y() > h:
+            if b.get("t") is None:
+                b["t"] = QtCore.QTimer(self)
+                b["t"].timeout.connect(self._band_tick)
+                b["t"].start(40)
+        elif b.get("t") is not None:
+            b["t"].stop()
+            b["t"] = None
+
+    def _band_tick(self):
+        b = self._band
+        if b is None or "cur" not in b:
+            return
+        y, h = b["cur"].y(), self.viewport().height()
+        d = (y - h) if y > h else y
+        sb = self.verticalScrollBar()
+        step = 1 if self.verticalScrollMode() == QtWidgets.QAbstractItemView.ScrollPerItem else max(8, min(80, abs(d)))
+        sb.setValue(sb.value() + (step if d > 0 else -step))
+        self._band_move(b["cur"])
+
+    def _band_end(self):
+        b, self._band = self._band, None
+        if b is None:
+            return False
+        if b.get("t") is not None:
+            b["t"].stop()
+        if b["rb"] is not None:
+            b["rb"].hide()
+            b["rb"].deleteLater()
+        if b["on"]:
+            n = len(self.selectionModel().selectedRows())
+            log.info("끌어서 고르기 끝 → %d개 (%s)", n, b["why"])
+            self.page._emit_status()
+        return b["on"]
+
+    def mousePressEvent(self, ev):
+        pos = ev.position().toPoint()
+        arm = (ev.button() == Qt.LeftButton and self.state() != QtWidgets.QAbstractItemView.EditingState
+               and keymap.mouse_action(SETTINGS["mouse"], keymap.mouse_combo(ev.button(), ev.modifiers())) == keymap.BUILTIN
+               and not self.name_hit(pos))
+        super().mousePressEvent(ev)
+        self._band = None
+        if arm and getattr(self, "_eat_release", None) is None:
+            self._band_arm(pos, ev.modifiers(), "목록 안" if self.indexAt(pos).isValid() else "빈 곳")
+
+    def mouseMoveEvent(self, ev):
+        if self._band is not None and ev.buttons() & Qt.LeftButton:
+            self._band_move(ev.position().toPoint())   # Qt 기본(파일 끌기·자체 고르기) 대신
+            return
+        super().mouseMoveEvent(ev)
+
+    def mouseReleaseEvent(self, ev):
+        if self._band is not None and ev.button() == Qt.LeftButton:
+            if self._band_end():   # 끌어서 고른 것 — Qt 기본 뗌이 누른 줄 하나로 바꾸지 않게
+                sm = self.selectionModel()
+                keep = QtCore.QItemSelection(sm.selection())
+                cur = self.currentIndex()
+                super().mouseReleaseEvent(ev)
+                sm.select(keep, QtCore.QItemSelectionModel.ClearAndSelect)
+                sm.setCurrentIndex(cur, QtCore.QItemSelectionModel.NoUpdate)
+                return
+        super().mouseReleaseEvent(ev)
 
     def drawRow(self, painter, option, index):
         if index.row() == self._drop_row:
@@ -4081,6 +4220,32 @@ class Page(QtWidgets.QWidget):
         self.pending_edit = name
         self.reload(reason="newfolder")
 
+    def do_new_file(self, ext):
+        """0.9.130 윈도우 '새로 만들기' 형식(ext='.txt' 등)으로 새 파일 → 이름 편집 (탐색기와 같게 '새 텍스트 문서.txt')"""
+        why = None
+        if archives.is_ftp(self.path) or devices.is_dev(self.path):
+            why = T("⚠ 여기에는 새 파일을 만들 수 없습니다")
+        elif archives.is_arc(self.path):
+            why = T("⚠ 압축 파일 안은 읽기 전용입니다 (넣기·지우기·이름 바꾸기 안 됨)")
+        elif self.path == THIS_PC or is_search(self.path) or not os.path.isdir(self.path):
+            why = T("⚠ 여기에는 새 파일을 만들 수 없습니다")
+        t = shellnew.find(ext)
+        if why is None and t is None:
+            why = T("⚠ 이 PC 에 없는 새로 만들기 형식입니다: {0}").format(ext)
+        if why:
+            log.info("새 파일 %s 안 만듦: %s (%s)", ext, why, self.path)
+            self.status.emit(why)
+            return
+        try:
+            p = shellnew.create(self.path, ext, T("새 {0}").format(t[1]))
+        except OSError as ex:
+            log.exception("새 파일 만들기 실패 %s %s", ext, self.path)
+            self.status.emit(f"⚠ {ex}")
+            return
+        push_undo("newfile", (p, os.path.getsize(p)), T("새 파일 ({0})").format(os.path.basename(p)))
+        self.pending_edit = os.path.basename(p)
+        self.reload(reason="newfile")
+
     # ---------------------------------------------------------- 키보드·마우스
     def handle_key(self, view, ev):
         """파일 목록 단축키 — 키 → 기능은 keymap(보기 > 단축키 설정에서 변경)"""
@@ -4202,6 +4367,8 @@ class Page(QtWidgets.QWidget):
         elif act == "space_map":
             ds = [p for p in self.selected_paths() if os.path.isdir(p)]
             self.space_map(ds[0] if ds else self.path)
+        elif act.startswith("newf."):   # 0.9.130 윈도우 '새로 만들기' 형식
+            self.do_new_file(act[4:])
         else:
             return False
         return True
@@ -5056,7 +5223,11 @@ def fill_fav_menu(menu, go, new_tab):
         if g:
             target.setToolTipsVisible(True)
         for d in FAV.items[start:end]:
-            a = target.addAction(fav_icon(d), d["name"])
+            a = target.addAction(fav_deco_icon(d, fav_icon(d)), fav_text(d))   # 0.9.130 꾸미기
+            if d.get("bold"):
+                f = a.font()
+                f.setBold(True)
+                a.setFont(f)
             a.setToolTip(d["path"])
             a.triggered.connect(lambda _=False, p=d["path"]: open_fav_entry(p, go))
     return menu
@@ -5071,6 +5242,98 @@ FAV_OWN_ICON = fileicons.OWN_EXT | {".lnk"}   # 파일마다 아이콘이 다른
 def fav_item(path):
     n = os.path.normcase(os.path.normpath(path))
     return next((d for d in FAV.items if os.path.normcase(d["path"]) == n), None)
+
+
+FAV_EMOJIS = ["⭐", "📌", "🔥", "❗", "✅", "💡", "💼", "🏠", "📁", "🗂", "📝", "🎨", "🎬", "🎵", "📷", "🎮", "🧪", "🚀", "💖", "🔒"]
+
+
+def fav_text(d):
+    """0.9.130 꾸미기: 이모지가 있으면 이름 앞에 (빌드 3 사용자 11/11: 항목마다 이름 뒤도 고를 수 있게 — emoji_tail)"""
+    if not d.get("emoji"):
+        return d["name"]
+    return f"{d['name']} {d['emoji']}" if d.get("emoji_tail") else f"{d['emoji']} {d['name']}"
+
+
+def fav_colors(d):
+    """0.9.130 꾸미기 색 → (진한 색, 바탕색) — 없으면 (None, None)"""
+    h = labels.tab_hex(d.get("color"))
+    if not h:
+        return None, None
+    dark = bool(SETTINGS["dark"])
+    fg = labels._mix(h, "#ffffff", 0.35) if dark else labels._mix(h, "#000000", 0.25)
+    return fg, labels.bg(d["color"], dark)
+
+
+def fav_deco_icon(d, base):
+    """메뉴용: 꾸민 색이면 아이콘 오른쪽 아래에 색 점"""
+    fg, _bg = fav_colors(d)
+    if not fg:
+        return base
+    pm = QtGui.QPixmap(16, 16)
+    pm.fill(Qt.transparent)
+    p = QtGui.QPainter(pm)
+    p.setRenderHint(QtGui.QPainter.Antialiasing, True)
+    base.paint(p, QtCore.QRect(0, 0, 16, 16))
+    p.setPen(QtGui.QPen(QtGui.QColor("#ffffff"), 1))
+    p.setBrush(QtGui.QColor(labels.tab_hex(d["color"])))
+    p.drawEllipse(8, 8, 7, 7)
+    p.end()
+    return QtGui.QIcon(pm)
+
+
+def fav_deco_menu(menu, i, parent):
+    """즐겨찾기 우클릭 '꾸미기 ▸' — 색·이모지·굵게·없애기 (i = FAV.items 번호)"""
+    d = FAV.items[i]
+    dm = menu.addMenu(T("꾸미기"))
+    cm = dm.addMenu(T("색"))
+    a = cm.addAction(T("없음"), lambda: FAV.set_deco(i, color=None))
+    a.setCheckable(True)
+    a.setChecked(not d.get("color"))
+    for k, lbl, hx in labels.TAB_COLORS:
+        a = cm.addAction(color_dot(hx), lbl, lambda k=k: FAV.set_deco(i, color=k))
+        a.setCheckable(True)
+        a.setChecked(d.get("color") == k)
+    em = dm.addMenu(T("이모지"))
+    grid = QtWidgets.QWidget()   # 이모지는 한 줄씩 말고 격자로 (누르면 바로)
+    gl = QtWidgets.QGridLayout(grid)
+    gl.setContentsMargins(6, 4, 6, 4)
+    gl.setSpacing(2)
+    for n, e in enumerate(FAV_EMOJIS):
+        b = QtWidgets.QToolButton()
+        b.setText(e)
+        b.setAutoRaise(True)
+        f = b.font()
+        f.setPointSizeF(f.pointSizeF() * 1.3)
+        b.setFont(f)
+        b.setFixedSize(30, 28)
+        b.setCheckable(True)
+        b.setChecked(d.get("emoji") == e)
+        b.clicked.connect(lambda _=False, e=e: (FAV.set_deco(i, emoji=e), menu.close()))
+        gl.addWidget(b, n // 5, n % 5)
+    wa = QtWidgets.QWidgetAction(em)
+    wa.setDefaultWidget(grid)
+    em.addAction(wa)
+    em.addSeparator()
+
+    def typed():
+        t, ok = QtWidgets.QInputDialog.getText(parent, T("이모지"), T("이름 앞에 붙일 글자 (윈도우 키 + . 으로 이모지 고르기)"), text=d.get("emoji", ""))
+        if ok:
+            FAV.set_deco(i, emoji=t.strip()[:8])
+    em.addAction(T("직접 넣기…"), typed)
+    em.addSeparator()   # 빌드 3: 이모지 자리 (이름 앞 / 이름 뒤)
+    for tail, lbl in ((False, T("이름 앞에")), (True, T("이름 뒤에"))):
+        a = em.addAction(lbl, lambda tail=tail: FAV.set_deco(i, emoji_tail=tail))
+        a.setCheckable(True)
+        a.setChecked(bool(d.get("emoji_tail")) == tail)
+    em.addSeparator()
+    em.addAction(T("없애기"), lambda: FAV.set_deco(i, emoji=None, emoji_tail=None)).setEnabled(bool(d.get("emoji")))
+    a = dm.addAction(T("굵게"), lambda: FAV.set_deco(i, bold=not d.get("bold")))
+    a.setCheckable(True)
+    a.setChecked(bool(d.get("bold")))
+    dm.addSeparator()
+    dm.addAction(T("꾸미기 모두 없애기"), lambda: FAV.set_deco(i, color=None, emoji=None, bold=None, emoji_tail=None)).setEnabled(
+        any(d.get(k) for k in FAV.DECO_KEYS))
+    return dm
 
 
 def fav_icon(d, size=16):
@@ -5467,15 +5730,26 @@ class Sidebar(DragScrollMixin, QtWidgets.QTreeWidget):
             return
         opened = {t for t, e in was if e}
 
+        def deco(it, d):   # 0.9.130 꾸미기 (글자색·바탕·굵게·이모지)
+            fg, bg = fav_colors(d)
+            if fg:
+                it.setForeground(0, QtGui.QColor(fg))
+                it.setBackground(0, QtGui.QColor(bg))
+            if d.get("bold"):
+                f = it.font(0)
+                f.setBold(True)
+                it.setFont(0, f)
+            return it
+
         def entry(d):
             if d.get("file"):
-                it = QtWidgets.QTreeWidgetItem([d["name"]])
+                it = QtWidgets.QTreeWidgetItem([fav_text(d)])
                 it.setData(0, PATH_ROLE, d["path"])
                 it.setData(0, FAV_FILE_ROLE, True)
                 it.setToolTip(0, d["path"])
                 it.setIcon(0, fav_icon(d))
-                return it
-            return self._folder_item(d["name"], d["path"], fav_icon(d))
+                return deco(it, d)
+            return deco(self._folder_item(fav_text(d), d["path"], fav_icon(d)), d)
         for start, end, group in FAV.entries():
             if group:
                 g = QtWidgets.QTreeWidgetItem([group])
@@ -5695,6 +5969,13 @@ class Sidebar(DragScrollMixin, QtWidgets.QTreeWidget):
         m.addAction(T("새 탭에서 열기"), lambda: self.goNewTab.emit(p))
         if p != THIS_PC:
             m.addAction(QE_FAV_ADD, lambda: FAV.add(p))
+        par = it.parent()   # 0.9.130 탐색 창 '즐겨찾기 (4Dir)' 항목이면 꾸미기도 (바와 같은 메뉴)
+        if par is not None and (par is self.qe_root or par.parent() is self.qe_root):
+            n = os.path.normcase(os.path.normpath(p))
+            i = next((k for k, d in enumerate(FAV.items) if os.path.normcase(d["path"]) == n), None)
+            if i is not None:
+                m.addSeparator()
+                fav_deco_menu(m, i, self)
         m.exec(ev.globalPos())
 
 
@@ -7625,8 +7906,19 @@ class FavPanel(QtWidgets.QFrame):
             else:
                 d = FAV.items[start]
                 b.setIcon(self._fav_icon(fav_icon(d), self.svn.get(d["path"])))
-                b.setText(d["name"])
+                b.setText(fav_text(d))   # 0.9.130 꾸미기
                 b.setProperty("favIndex", start)
+                fg, bg = fav_colors(d)
+                if fg or d.get("bold"):
+                    css = "QToolButton { border-radius:4px; padding:1px 5px; border:1px solid transparent;"
+                    if fg:
+                        css += f" color:{fg}; background:{bg};"
+                    if d.get("bold"):
+                        css += " font-weight:bold;"
+                    css += " }"
+                    if fg:
+                        css += f" QToolButton:hover {{ border:1px solid {labels.tab_hex(d['color'])}; }}"
+                    b.setStyleSheet(css)
                 if d.get("file"):   # 0.9.114 이슈 #8
                     b.setToolTip(T('{0}\n클릭: 연결 프로그램으로 열기 · 끌어서 순서 변경 · 우클릭: 이름/삭제').format(d['path']))
                 else:
@@ -7807,6 +8099,7 @@ class FavPanel(QtWidgets.QFrame):
             if ok and t.strip():
                 FAV.rename(i, t.strip())
         m.addAction(T("이름 바꾸기"), rename)
+        fav_deco_menu(m, i, self)   # 0.9.130 꾸미기
         m.addAction(T("삭제"), lambda: FAV.remove(i))
         m.addSeparator()
         m.addAction(T("즐겨찾기 정리…"), lambda: self.main.open_fav_organizer())
@@ -8008,6 +8301,11 @@ def _extra_actions():
 
 
 keymap.register(_extra_actions())
+# 0.9.130 빌드 1 (받은 의견 11/10 '단축키로 빈 txt'): 윈도우 '새로 만들기' 형식마다 기능 'newf.txt' 등 — 기본 키 없음, 단축키 설정·My메뉴에서
+try:
+    keymap.register([(f"newf{e}", T("새로 만들기: {0}").format(n), "", "view", "file") for e, n, _h in shellnew.types()])
+except Exception:
+    log.exception("새로 만들기 기능 등록 실패")
 
 # 레이아웃 고르기 창의 줄 (v0.9.92 사용자 11/4 '맥스처럼 전부 + 버튼 하나 눌러 팝업') — 맥스 순서 7개씩, 마지막 줄 + 직접 지정
 LAYOUT_POPUP_ROWS = [["1", "2h", "2v", "2t", "2b", "3r", "3l"], ["3", "3b", "4l", "4r", "4t", "4b", "4"], ["3h", "6"]]
@@ -10858,13 +11156,17 @@ class Main(QtWidgets.QMainWindow):
 
     def edit_user_buttons(self):
         groups = [(cname, [(a, lbl) for a, lbl, _k, _s in rows]) for _c, cname, rows in keymap.grouped(("view", "window"))]   # 0.9.113 4Dir 기능도
-        dlg = userbtns.EditDialog(SETTINGS["user_buttons"], self, groups=groups)
+        km = keymap.current(SETTINGS["keys"])   # 0.9.130 My메뉴 단축키가 겹치는지 보여 줄 표 {키 글자: 기능 이름}
+        taken = {QtGui.QKeySequence(k).toString(): keymap.LABEL.get(a, a) for a, ks in km.items() for k in ks}
+        dlg = userbtns.EditDialog(SETTINGS["user_buttons"], self, groups=groups, taken=taken)
         dlg.setStyleSheet(self.styleSheet())
         if dlg.exec():
             SETTINGS["user_buttons"] = dlg.result_items()
-            log.info("My메뉴 %d개 저장 (4Dir 기능 %d개)", len(SETTINGS["user_buttons"]), sum(1 for x in SETTINGS["user_buttons"] if x.get("action")))
+            log.info("My메뉴 %d개 저장 (4Dir 기능 %d개, 단축키 %s)", len(SETTINGS["user_buttons"]), sum(1 for x in SETTINGS["user_buttons"] if x.get("action")),
+                     {x.get("name"): x.get("key") for x in SETTINGS["user_buttons"] if x.get("key")})
             for w in WINDOWS:
                 w.build_user_buttons()
+                w.apply_keys()
 
     def build_user_buttons(self):
         """위쪽 도구줄의 사용자 단추 다시 만들기"""
@@ -10884,7 +11186,9 @@ class Main(QtWidgets.QMainWindow):
             b.setText(item.get("name") or "?")
             b.setToolButtonStyle(Qt.ToolButtonTextBesideIcon if not ic.isNull() else Qt.ToolButtonTextOnly)
             tip = keymap.LABEL.get(item["action"], item["action"]) if item.get("action") else f"{item.get('cmd', '')} {item.get('args', '')}".strip()
-            if item.get("action") and key_text(item["action"]):
+            if item.get("key"):   # 0.9.130 My메뉴 자기 단축키
+                tip += f"  ({item['key']})"
+            elif item.get("action") and key_text(item["action"]):
                 tip += f"  ({key_text(item['action'])})"
             b.setToolTip(tip + "\n" + T("우클릭 = My메뉴 편집"))
             b.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -11484,21 +11788,36 @@ class Main(QtWidgets.QMainWindow):
             s.deleteLater()
         self.shortcuts = []
         VIEW_KEYS.clear()
+        ukeys = {}   # 0.9.130 My메뉴 항목 단축키 (같은 키면 My메뉴가 먼저 — 편집 창에서 빨갛게 알림)
+        for item in SETTINGS["user_buttons"] or []:
+            for k in keymap.split(item.get("key", "")):
+                ukeys.setdefault(QtGui.QKeySequence(k).toString(), item)
         for a, keys in km.items():
             for k in keys:
+                if QtGui.QKeySequence(k).toString() in ukeys:
+                    log.info("단축키 %s 는 My메뉴 '%s' 가 씀 → 기능 %s 에는 안 붙임", k, ukeys[QtGui.QKeySequence(k).toString()].get("name"), a)
+                    continue
                 if keymap.SCOPE[a] == "view":
                     VIEW_KEYS[k] = a
                 elif a in self.win_actions:
                     s = QtGui.QShortcut(QtGui.QKeySequence(k), self, self.win_actions[a])
                     self.shortcuts.append(s)
-        log.info("단축키 적용: 창 %d개, 목록 %d개, 바꾼 것 %s", len(self.shortcuts), len(VIEW_KEYS), SETTINGS["keys"])
+        for k, item in ukeys.items():
+            s = QtGui.QShortcut(QtGui.QKeySequence(k), self, lambda item=item: self.run_user_button(item))
+            self.shortcuts.append(s)
+        log.info("단축키 적용: 창 %d개, 목록 %d개, My메뉴 %d개 %s, 바꾼 것 %s", len(self.shortcuts), len(VIEW_KEYS), len(ukeys),
+                 {k: v.get("name") for k, v in ukeys.items()}, SETTINGS["keys"])
 
     def open_keys(self):
         return self.open_settings("keys")   # v0.9.105 사용자 11/5: 따로 띄우지 않고 설정 창 안에서
 
     def keys_panel(self):
         """설정 창 '단축키·마우스' 안에 넣는 단축키 창 (v0.9.105) → (창, 끝났을 때)"""
-        dlg = keymap.KeyDialog(SETTINGS["keys"], self, mouse=SETTINGS["mouse"])
+        umenu = {}   # 0.9.130 빌드 2: My메뉴 항목 키 → 단축키 창에서 겹침 알림
+        for item in SETTINGS["user_buttons"] or []:
+            for k in keymap.split(item.get("key", "")):
+                umenu.setdefault(QtGui.QKeySequence(k).toString(), item.get("name") or "?")
+        dlg = keymap.KeyDialog(SETTINGS["keys"], self, mouse=SETTINGS["mouse"], umenu=umenu)
 
         def done(r):
             if r and dlg.result_keys is not None:
@@ -11720,6 +12039,12 @@ class Main(QtWidgets.QMainWindow):
                     shellops.delete(hwnd, [data], silent=True)
                 else:
                     raise OSError(T("폴더가 비어 있지 않아 되돌리지 않습니다"))
+            elif kind == "newfile":   # 0.9.130 새로 만들기 파일 — 내용이 그대로일 때만 휴지통으로
+                fp, size = data
+                if os.path.isfile(fp) and os.path.getsize(fp) == size:
+                    shellops.delete(hwnd, [fp], silent=True)
+                else:
+                    raise OSError(T("파일이 바뀌어 되돌릴 수 없습니다"))
             elif kind == "move":
                 by_dir = {}
                 for cur, orig in data:

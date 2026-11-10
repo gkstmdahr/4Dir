@@ -21,6 +21,7 @@ ITEM_ICON = None   # main 이 넣음: 즐겨찾기 dict → QIcon
 PATH_ROLE = Qt.UserRole + 1     # 즐겨찾기 경로 (묶음은 None)
 KIND_ROLE = Qt.UserRole + 2     # "fav" / "group"
 FILE_ROLE = Qt.UserRole + 3     # 0.9.114 파일 즐겨찾기 표시 (정리 뒤에도 유지)
+DECO_ROLE = Qt.UserRole + 4     # 0.9.130 꾸미기(색·이모지·굵게) — 정리 뒤에도 유지
 
 
 class _Sig(QtCore.QObject):
@@ -130,6 +131,7 @@ class FavOrganizer(QtWidgets.QWidget):
         it.setData(0, PATH_ROLE, d["path"])
         it.setData(0, KIND_ROLE, "fav")
         it.setData(0, FILE_ROLE, bool(d.get("file")))
+        it.setData(0, DECO_ROLE, {k: d[k] for k in ("color", "emoji", "bold", "emoji_tail") if d.get(k)})
         it.setToolTip(1, d["path"])
         FavTree._fix_flags(it)
         return it
@@ -329,6 +331,7 @@ class FavOrganizer(QtWidgets.QWidget):
             d["group"] = g
         if it.data(0, FILE_ROLE):
             d["file"] = True
+        d.update(it.data(0, DECO_ROLE) or {})
         return d
 
     def apply(self):

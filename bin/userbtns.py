@@ -17,7 +17,7 @@ from i18n import T
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-USERBTNS_VER = "1.2.0"   # 1.2.0 (0.9.113): 이름 My메뉴, 4Dir 기능도 넣기 {name, action} / 1.1.0: 따옴표·끝 \ 처리, 한 번에 바꿈
+USERBTNS_VER = "1.3.1"   # 1.3.1 (0.9.130 빌드 2): 겹침 문구 = 이미 쓰는 곳만 알림, [저장] 눌러야 적용 / 1.3.0 (0.9.130): 항목마다 단축키 {key} (같은 키면 My메뉴가 먼저, 빨갛게 알림) / 1.2.0 (0.9.113): 이름 My메뉴, 4Dir 기능도 넣기 {name, action} / 1.1.0: 따옴표·끝 \ 처리, 한 번에 바꿈
 ACTION_ICON = None   # main 이 넣음: 기능 id → QIcon (없으면 빈 아이콘)
 log = logging.getLogger("QE.userbtn")
 
@@ -151,8 +151,9 @@ class FuncPicker(QtWidgets.QDialog):
 class EditDialog(QtWidgets.QDialog):
     """My메뉴 목록 편집 (예전 이름 '사용자 단추')"""
 
-    def __init__(self, items, parent=None, groups=None):
+    def __init__(self, items, parent=None, groups=None, taken=None):
         super().__init__(parent)
+        self.taken = taken or {}   # 0.9.130 {키 글자: 그 키를 쓰는 기능 이름} — 겹침 알림용
         self.groups = groups or []   # 0.9.113 4Dir 기능 [(분류 이름, [(id, 이름)…])]
         self.labels = {a: lbl for _c, rows in self.groups for a, lbl in rows}
         self.setWindowTitle(T("My메뉴 편집"))
@@ -196,10 +197,26 @@ class EditDialog(QtWidgets.QDialog):
         self.e_args.setPlaceholderText("{files}")
         self.l_func = QtWidgets.QLabel()   # 0.9.113 4Dir 기능 항목이면 그 기능 이름
         self.l_func.setWordWrap(True)
+        self.e_key = QtWidgets.QKeySequenceEdit()   # 0.9.130 항목 단축키 (받은 의견 11/10)
+        self.e_key.setMaximumSequenceLength(1)
+        self.e_key.setToolTip(T("칸을 누르고 원하는 키를 누르세요"))
+        kx = QtWidgets.QPushButton("✕")
+        kx.setFixedWidth(30)
+        kx.setToolTip(T("단축키 지우기"))
+        kx.clicked.connect(lambda: (self.e_key.clear(), self._store()))
+        kr = QtWidgets.QHBoxLayout()
+        kr.addWidget(self.e_key, 1)
+        kr.addWidget(kx)
+        self.key_x = kx
+        self.l_key = QtWidgets.QLabel()   # 겹침 알림 (빨강)
+        self.l_key.setWordWrap(True)
+        self.l_key.setStyleSheet("color:#d93025")
         f.addRow(T("이름"), self.e_name)
         f.addRow(T("4Dir 기능"), self.l_func)
         f.addRow(T("실행할 것"), cr)
         f.addRow(T("넘길 값"), self.e_args)
+        f.addRow(T("단축키"), kr)
+        f.addRow("", self.l_key)
         self.form, self.cmd_row, self.pick_btn = f, cr, pick
         right.addLayout(f)
         help_ = self.help_ = QtWidgets.QLabel(T("넘길 값에 쓸 수 있는 자리 글자:\n{file} 고른 첫 파일\n{files} 고른 것 전부\n{name} 고른 첫 파일 이름(확장자 빼고)\n{folder} 지금 폴더\n{other} 다른 칸 폴더\n\n예) 포토샵 + {files} = 고른 그림을 포토샵으로 엶"))
@@ -207,7 +224,7 @@ class EditDialog(QtWidgets.QDialog):
         right.addWidget(help_)
         right.addStretch(1)
         bb = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
-        bb.button(QtWidgets.QDialogButtonBox.Ok).setText(T("확인"))   # 0.9.113 영어 OK/Cancel 대신
+        bb.button(QtWidgets.QDialogButtonBox.Ok).setText(T("저장"))   # 0.9.130 빌드 2 (사용자 11/11: 저장을 눌러야 적용) · 0.9.113 영어 OK/Cancel 대신
         bb.button(QtWidgets.QDialogButtonBox.Cancel).setText(T("취소"))
         bb.accepted.connect(self.accept)
         bb.rejected.connect(self.reject)
@@ -216,18 +233,24 @@ class EditDialog(QtWidgets.QDialog):
         self.lst.currentRowChanged.connect(self._show)
         for e in (self.e_name, self.e_cmd, self.e_args):
             e.textEdited.connect(self._store)
+        self.e_key.keySequenceChanged.connect(self._store)
         self._fill()
 
     def _fill(self, sel=0):
         self.lst.blockSignals(True)
         self.lst.clear()
         for it in self.items:
-            li = QtWidgets.QListWidgetItem(icon_for(it), it.get("name") or T("(이름 없음)"))
+            li = QtWidgets.QListWidgetItem(icon_for(it), self._row_text(it))
             self.lst.addItem(li)
         self.lst.blockSignals(False)
         if self.items:
             self.lst.setCurrentRow(max(0, min(sel, len(self.items) - 1)))
         self._show(self.lst.currentRow())
+
+    @staticmethod
+    def _row_text(it):
+        n = it.get("name") or T("(이름 없음)")
+        return f"{n}    [{it['key']}]" if it.get("key") else n
 
     def _show(self, r):
         on = 0 <= r < len(self.items)
@@ -250,6 +273,29 @@ class EditDialog(QtWidgets.QDialog):
         self.e_name.setText(it.get("name", ""))
         self.e_cmd.setText(it.get("cmd", ""))
         self.e_args.setText(it.get("args", ""))
+        self.e_key.blockSignals(True)
+        self.e_key.setKeySequence(QtGui.QKeySequence(it.get("key", "")))
+        self.e_key.blockSignals(False)
+        self.e_key.setEnabled(on)
+        self.key_x.setEnabled(on)
+        self._key_note()
+
+    def key_text(self):
+        return self.e_key.keySequence().toString()
+
+    def _key_note(self):
+        """겹치는 키 알림: 4Dir 기능·다른 My메뉴 항목"""
+        k = self.key_text()
+        r = self.lst.currentRow()
+        msg = ""
+        if k:
+            others = [x.get("name") or "?" for i, x in enumerate(self.items) if i != r and x.get("key") == k]
+            if others:
+                msg = T("⚠ {0} 는 이미 My메뉴 '{1}'에서 쓰고 있습니다. 다른 키로 바꾸거나, 그래도 쓰려면 [저장] (위에 있는 항목이 실행됨)").format(k, ", ".join(others))
+            elif k in self.taken:
+                msg = T("⚠ {0} 는 이미 '{1}'에서 쓰고 있습니다. 다른 키로 바꾸거나, 그래도 쓰려면 [저장] (이 항목이 먼저 실행됨)").format(k, self.taken[k])
+        self.l_key.setText(msg)
+        self.l_key.setVisible(bool(msg))
 
     def _store(self, *_):
         r = self.lst.currentRow()
@@ -258,7 +304,10 @@ class EditDialog(QtWidgets.QDialog):
                 self.items[r] = {"name": self.e_name.text().strip(), "action": self.items[r]["action"]}
             else:
                 self.items[r] = {"name": self.e_name.text().strip(), "cmd": self.e_cmd.text().strip(), "args": self.e_args.text()}
-            self.lst.item(r).setText(self.items[r]["name"] or T("(이름 없음)"))
+            if self.key_text():
+                self.items[r]["key"] = self.key_text()
+            self.lst.item(r).setText(self._row_text(self.items[r]))
+            self._key_note()
 
     def add_func(self):
         """0.9.113 4Dir 기능 넣기 (기능 검색·단축키 표와 같은 기능 목록)"""
