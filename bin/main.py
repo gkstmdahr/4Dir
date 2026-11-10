@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.126"   # ★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 5             # ★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.127"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 6             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -441,8 +441,67 @@ def _app_ico():
     return p
 
 
+PIN_STUB = '''' 4Dir taskbar pin launcher (made by 4Dir {ver}) - do not edit, 4Dir rewrites it
+' Runs the 4Dir that was started last (path in install.txt), so a taskbar pin survives new version folders.
+Option Explicit
+Dim fso, sh, d, t, f
+Set fso = CreateObject("Scripting.FileSystemObject")
+Set sh = CreateObject("WScript.Shell")
+d = fso.GetParentFolderName(WScript.ScriptFullName)
+t = ""
+If fso.FileExists(d & "\\install.txt") Then
+  Set f = fso.OpenTextFile(d & "\\install.txt", 1, False, -1)
+  If Not f.AtEndOfStream Then t = Trim(f.ReadLine)
+  f.Close
+End If
+If t <> "" And fso.FileExists(t) Then
+  ' hand off to explorer: wscript started directly by this wscript is held by some security products (11/10 measured: never starts)
+  sh.Run """" & sh.ExpandEnvironmentStrings("%SystemRoot%") & "\\explorer.exe"" """ & t & """", 1, False
+ElseIf GetLocale() = 1042 Then
+  MsgBox "4Dir 폴더를 찾을 수 없습니다 (옮겼거나 지움)." & vbCrLf & "새 4Dir 폴더의 4Dir.vbs 를 한 번 실행해 주세요.", vbExclamation, "4Dir"
+Else
+  MsgBox "4Dir folder was not found (moved or deleted)." & vbCrLf & "Please run 4Dir.vbs in the new 4Dir folder once.", vbExclamation, "4Dir"
+End If
+'''
+
+
+def _pin_home(vbs, ico):
+    """0.9.127: 작업표시줄 고정이 새 버전 폴더·폴더 이동에도 안 깨지게 — 버전과 상관없는 고정 위치(%LOCALAPPDATA%\\4Dir\\pin)에
+    실행기·아이콘을 두고, 켤 때마다 '지금 4Dir.vbs 위치'만 갱신. 실패하면 (None, None) → 예전처럼 폴더 안 것을 씀.
+    (문의: 고정 아이콘이 흰 문서로 바뀜 = 고정한 폴더의 아이콘 파일이 사라진 것, 11/9 재현)"""
+    try:
+        # 빌드 3 (11/10 실측): %LOCALAPPDATA%\4Dir\pin 은 회사 보안 규칙에 걸림 — 탐색기·작업 표시줄이 띄운 wscript 가
+        # 'AppData\Local\<폴더>' 스크립트를 '찾을 수 없음'으로 막음. 사용자별 프로그램 표준 위치 Programs 아래는 됨
+        home = pinfix.pin_dir()
+        os.makedirs(home, exist_ok=True)
+
+        def put_file(name, data):   # 내용이 같으면 다시 쓰지 않음 (파일을 매번 새로 만들지 않게)
+            p = os.path.join(home, name)
+            try:
+                with open(p, "rb") as f:
+                    if f.read() == data:
+                        return p
+            except OSError:
+                pass
+            with open(p, "wb") as f:
+                f.write(data)
+            log.info("작업표시줄 고정용 파일 갱신 %s", p)
+            return p
+        stub = put_file("4Dir_pin.vbs", PIN_STUB.format(ver=QE_VERSION).replace("\n", "\r\n").encode("utf-16"))
+        put_file("install.txt", (vbs + "\r\n").encode("utf-16"))
+        pico = None
+        if ico:
+            with open(ico, "rb") as f:
+                pico = put_file("4Dir.ico", f.read())
+        return stub, pico
+    except Exception:
+        log.exception("작업표시줄 고정용 고정 위치 준비 실패 — 폴더 안 실행기 사용")
+        return None, None
+
+
 def set_taskbar_relaunch(w):
-    """창에 '다시 실행할 명령'을 달아 둠 → 작업표시줄에 고정하면 4Dir.vbs + 4Dir 아이콘으로 고정됨 (윈도우 표준 방식)"""
+    """창에 '다시 실행할 명령'을 달아 둠 → 작업표시줄에 고정하면 4Dir.vbs + 4Dir 아이콘으로 고정됨 (윈도우 표준 방식)
+    0.9.127: 고정 대상 = %LOCALAPPDATA%\\4Dir\\pin 의 실행기·아이콘 (_pin_home)"""
     if datadir.PACKAGED:   # 0.9.114 빌드 2: 스토어판은 윈도우가 앱 정보로 고정 (vbs 없음)
         return
     try:
@@ -459,6 +518,10 @@ def set_taskbar_relaunch(w):
         except Exception:
             log.exception("아이콘 파일 만들기 실패")
             ico = None
+        stub, pico = _pin_home(vbs, ico)
+        if stub:
+            cmd = f'"{wscript}" "{stub}"'
+            ico = pico or ico
         store = propsys.SHGetPropertyStoreForWindow(int(w.winId()), propsys.IID_IPropertyStore)
 
         def put(key, val):
@@ -909,6 +972,9 @@ VIEWMEM = frecent.ViewMem(os.path.join(DATA_DIR, "4Dir_viewmem.json"))   # 0.9.1
 FRECENT = frecent.Store(os.path.join(DATA_DIR, "4Dir_frecent.json"))   # 0.9.116 자주 간 폴더 (주소줄 후보)
 RATINGS = labels.Ratings(os.path.join(DATA_DIR, "4Dir_ratings.json"))   # 0.9.116 별점 1~5
 LABELS = labels.Store(os.path.join(DATA_DIR, "4Dir_labels.json"))   # 색 라벨 (v0.9.89) — 4Dir 안에만 저장
+import colorrules  # noqa: E402  0.9.127 빌드 5 파일 색 규칙
+COLOR_RULES = colorrules.Rules()
+COLOR_RULES.load(SETTINGS["color_rules"])
 
 
 def thumbs_service():
@@ -1447,6 +1513,7 @@ class DirModel(QtCore.QAbstractTableModel):
         self.covers_ok = False   # 빌드 17 폴더 표지 가능한 폴더 (네트워크·휴대폰·내 PC 아님)
         self.thumb_px = 16       # 실제 화면 픽셀 크기 (배율 반영)
         self.ovl_on = False      # SVN 아닌 폴더 + 설정 켬 → 윈도우 겹침 아이콘(Git·Perforce 등) (overlays.py)
+        self.only = None         # 0.9.127 빌드 5 고른 것만 보기: 보일 이름들 (None = 모두)
         MODELS.append(self)
         self.destroyed.connect(lambda *_a, m=self: MODELS.remove(m) if m in MODELS else None)   # 탭 닫으면 빠짐
 
@@ -1625,6 +1692,9 @@ class DirModel(QtCore.QAbstractTableModel):
             return QtGui.QColor("#d99a00")
         elif role == Qt.ForegroundRole and c == 11 and TAGS.files and TAGS.tags_of(self.full(e)):   # 태그 = 첫 태그 색
             return QtGui.QColor(TAGS.color(TAGS.tags_of(self.full(e))[0]))
+        elif (role == Qt.ForegroundRole and COLOR_RULES.rules and not e[7] and self.path != THIS_PC
+              and (rc := COLOR_RULES.color(e[0], e[1], e[3])) is not None):   # 0.9.127 빌드 5 파일 색 규칙
+            return rc
         elif role == Qt.ForegroundRole and (e[4] & HIDDEN_MASK):
             return QtGui.QColor(140, 140, 140)
         elif role == Qt.ForegroundRole:
@@ -1802,6 +1872,8 @@ class DirModel(QtCore.QAbstractTableModel):
         kinds = getattr(self, "ext_filter", None)
         if kinds:
             rows = [e for e in rows if kind_of(e) in kinds]
+        if self.only is not None:   # 0.9.127 빌드 5 고른 것만 보기
+            rows = [e for e in rows if e[0] in self.only]
         f = self.filter.strip().lower()
         if not f:
             return list(rows)
@@ -3286,6 +3358,7 @@ class Page(QtWidgets.QWidget):
                 self.from_locked = False
             self.model_.filter = ""   # 다른 폴더로 가면 빠른 필터 해제
             self.model_.ext_filter = set()   # 형식 단추도 (빌드 17)
+            self.model_.only = None   # 고른 것만 보기도 (0.9.127 빌드 5)
             if THUMBS is not None and old:
                 THUMBS.drop_pending(old)   # 떠난 폴더의 아직 안 만든 미리보기 요청은 버림
         if self.active:
@@ -3297,6 +3370,10 @@ class Page(QtWidgets.QWidget):
             self.apply_view_memory(path)   # 0.9.116 폴더마다 보기 기억
             self.git_branch = None   # 새 폴더의 Git 상태가 올 때까지 가지 이름 지움
         self.pathChanged.emit(path)
+        if old and old != path:   # 0.9.127 빌드 5 두 칸 같이 이동
+            mw = main_of(self)
+            if mw is not None and getattr(mw, "sync_pair", None):
+                mw.sync_follow(self, old, path)
         self.reload(reason="nav")
         return True
 
@@ -4106,6 +4183,8 @@ class Page(QtWidgets.QWidget):
                 m.set_preview(not (SETTINGS["preview_pane"] and PREVIEW_WIN is not None and PREVIEW_WIN.isVisible()))
         elif act == "flat_view":
             self.flat_view()
+        elif act == "show_selected":
+            self.show_selected_only()
         elif act == "find_dupes":
             m = main_of(self)
             if m is not None:
@@ -4405,6 +4484,25 @@ class Page(QtWidgets.QWidget):
             pane.add_tab(search_path(FLAT_Q, folder), activate=True)
         else:
             self.openInNewTab.emit(search_path(FLAT_Q, folder))
+
+    def show_selected_only(self):
+        """고른 것만 보기 (0.9.127 빌드 5, 토탈 커맨더 참고): 고른 것만 남기고 나머지 숨김 — 다시 누르거나 다른 폴더로 가면 모두"""
+        m = self.model_
+        if m.only is not None:
+            m.only = None
+            m.set_filter(m.filter)
+            log.info("고른 것만 보기 끔 %s", self.path)
+            self.status.emit(T("모두 보기"))
+            return
+        names = set(self.selected_names())
+        if not names:
+            self.status.emit(T("⚠ 고른 것이 없습니다 — 먼저 파일을 고르세요"))
+            return
+        m.only = names
+        m.set_filter(m.filter)
+        self.view().selectAll()   # 남은 것 = 고른 것 → 다시 골라 둠 (F6 등 바로 이어서)
+        log.info("고른 것만 보기 %d개 %s", len(names), self.path)
+        self.status.emit(T("고른 {0:,}개만 보기 — 다시 누르면 모두 보기").format(len(names)))
 
     def select_pattern(self):
         """패턴으로 고르기 (v0.9.89): 맞는 것만 골라 둠 — 필터와 달리 다른 항목도 그대로 보임"""
@@ -5936,6 +6034,49 @@ class PaneTabBar(QtWidgets.QTabBar):
         self._rows = 1
         self._hover = -1
         self._press = None    # (누른 탭 번호, 누른 자리) — 여러 줄에서 끌어 순서 바꾸기
+        # 0.9.127 빌드 2 (사용자 11/9 '기본은 계속 늘어나고, 최대 줄 수는 옵션'): 최대 줄 수(0 = 자동, 계속 늘어남).
+        # 넘치면 그 줄 수만 보이고 오른쪽 ▲▼ 로 한 줄씩 넘김(휠도), 고른 탭이 바뀌면 그 탭 줄이 보이게
+        self._max = 0
+        self._top = 0          # 보이는 첫 줄
+        self._all_rows = 1
+        self._follow = True    # 다음 배치 때 고른 탭 줄로 따라감
+        self._ub = self._db = None
+        self.currentChanged.connect(self._on_cur)
+
+    def _on_cur(self, *_):
+        if self.multi:
+            self._follow = True
+            self._relayout()
+
+    def set_max_rows(self, n):
+        n = max(0, int(n or 0))
+        if n == self._max:
+            return
+        self._max = n
+        self._follow = True
+        log.info("탭 최대 줄 수 %s", n or "자동")
+        self._relayout()
+
+    def _scroll_btns(self):
+        if self._ub is None:
+            self._ub, self._db = QtWidgets.QToolButton(self), QtWidgets.QToolButton(self)
+            for b, way, tip, d in ((self._ub, "up", T("위 줄 탭 보기"), -1), (self._db, "down", T("아래 줄 탭 보기"), 1)):
+                b.setArrowType(Qt.UpArrow if way == "up" else Qt.DownArrow)
+                b.setToolTip(tip)
+                b.setAutoRaise(True)
+                b.setFocusPolicy(Qt.NoFocus)
+                b.clicked.connect(lambda _=False, d=d: self.scroll_rows(d))
+        return self._ub, self._db
+
+    def scroll_rows(self, d):
+        """보이는 줄을 d 줄 옮김 (넘칠 때만)"""
+        vis = self._rows
+        new = min(max(0, self._top + d), max(0, self._all_rows - vis))
+        if new != self._top:
+            self._top = new
+            self._follow = False
+            self._relayout()
+            log.debug("탭 줄 넘김 → 첫 줄 %d / 전체 %d", new, self._all_rows)
 
     def set_multi(self, on):
         on = bool(on)
@@ -5955,26 +6096,57 @@ class PaneTabBar(QtWidgets.QTabBar):
             self.updateGeometry()
             self.update()
             return
+        BW = 18   # 넘칠 때 오른쪽 ▲▼ 자리
+
+        def place(W):
+            x = y = 0
+            rh = 0
+            rects = []
+            for i in range(self.count()):
+                sz = QtWidgets.QTabBar.tabSizeHint(self, i)
+                w = min(sz.width(), W)
+                rh = max(rh, sz.height())
+                if x and x + w > W:
+                    x = 0
+                    y += 1
+                rects.append([x, y, w])
+                x += w
+            return rects, rh, (rects[-1][1] + 1) if rects else 1
+
         W = max(60, self.width())
-        x = y = 0
-        rh = 0
-        rects = []
-        for i in range(self.count()):
-            sz = super().tabSizeHint(i)
-            w = min(sz.width(), W)
-            rh = max(rh, sz.height())
-            if x and x + w > W:
-                x = 0
-                y += 1
-            rects.append([x, y, w])
-            x += w
+        rects, rh, total = place(W)
+        over = bool(self._max) and total > self._max
+        if over:   # ▲▼ 자리만큼 좁혀 다시 놓음
+            rects, rh, total = place(max(40, W - BW))
+            over = total > self._max
         rh = rh or 26
         self._rh = rh
-        self._rects = [QtCore.QRect(x, y * rh, w, rh) for x, y, w in rects]
-        rows = (rects[-1][1] + 1) if rects else 1
-        if rows != self._rows:
-            self._rows = rows
+        vis = min(total, self._max) if self._max else total
+        self._all_rows = total
+        if self._follow and 0 <= self.currentIndex() < len(rects):   # 고른 탭 줄이 보이게
+            r = rects[self.currentIndex()][1]
+            if r < self._top:
+                self._top = r
+            elif r >= self._top + vis:
+                self._top = r - vis + 1
+        self._follow = False
+        self._top = min(max(0, self._top), max(0, total - vis))
+        top = self._top
+        self._rects = [QtCore.QRect(x, (y - top) * rh, w, rh) if top <= y < top + vis else QtCore.QRect() for x, y, w in rects]
+        if vis != self._rows:
+            self._rows = vis
             self.updateGeometry()
+        if over or self._ub is not None:
+            ub, db = self._scroll_btns()
+            for b in (ub, db):
+                b.setVisible(over)
+            if over:
+                hh = max(10, vis * rh // 2)
+                ub.setGeometry(W - BW, 0, BW, hh)
+                db.setGeometry(W - BW, hh, BW, max(10, vis * rh - hh))
+                ub.setEnabled(top > 0)
+                db.setEnabled(top + vis < total)
+                ub.raise_(); db.raise_()
         self._fix_close_buttons()
         self.update()
 
@@ -6053,16 +6225,22 @@ class PaneTabBar(QtWidgets.QTabBar):
     def wheelEvent(self, ev):
         if not self.multi:
             return super().wheelEvent(ev)
+        if self._all_rows > self._rows:   # 최대 줄 수를 넘었으면 휠 = 줄 넘김
+            d = ev.angleDelta().y()
+            if d:
+                self.scroll_rows(-1 if d > 0 else 1)
+            ev.accept()
+            return
         ev.ignore()   # 여러 줄에선 휠로 탭 바꾸지 않음 (줄이 많아 헷갈림)
 
     def _paint_multi(self):
         p = QtWidgets.QStylePainter(self)
         cur = self.currentIndex()
         for i in list(range(self.count())):
-            if i == cur:
+            if i == cur or self.tabRect(i).isNull():   # 넘겨서 안 보이는 줄의 탭은 안 그림
                 continue
             self._paint_tab(p, i)
-        if 0 <= cur < self.count():
+        if 0 <= cur < self.count() and not self.tabRect(cur).isNull():
             self._paint_tab(p, cur)   # 고른 탭은 마지막에 (테두리가 위로)
         p.end()
 
@@ -6134,6 +6312,8 @@ class PaneTabBar(QtWidgets.QTabBar):
             return
         p = QtGui.QPainter(self)
         for i, c in cols:
+            if self.tabRect(i).isNull():
+                continue
             r = self.tabRect(i).adjusted(1, 0, -3, 0)   # 탭 사이 간격(오른쪽 2px) 빼고
             col = QtGui.QColor(c)
             tint = QtGui.QColor(col)
@@ -6148,6 +6328,9 @@ class PaneTabBar(QtWidgets.QTabBar):
             if b is not None:
                 r = self.tabRect(i)
                 if self.multi:   # 여러 줄: 줄 높이 가운데로, Qt 가 화면 밖이라 숨긴 단추도 보이게
+                    if r.isNull():   # 넘겨서 안 보이는 줄
+                        b.hide()
+                        continue
                     b.move(r.right() - self.CLOSE_SHIFT - b.width(), r.top() + (r.height() - b.height()) // 2)
                     if not b.isVisible() and self.isVisible():
                         b.show()
@@ -6525,6 +6708,7 @@ class Pane(QtWidgets.QFrame):
         self.bar.setUsesScrollButtons(True)
         self.bar.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         self.bar.color_of = lambda i: getattr(self.pages.get(self.bar.tabData(i)), "tab_color", "")
+        self.bar.set_max_rows(SETTINGS["tab_max_rows"])   # 0.9.127 최대 줄 수 (0 = 자동)
         self.bar.set_multi(SETTINGS["tab_multirow"])   # 0.9.123 여러 줄 탭
         tl.addWidget(self.bar)
         tl.addSpacing(36)   # + 버튼 자리(탭이 넘칠 때)
@@ -7069,6 +7253,9 @@ class Pane(QtWidgets.QFrame):
         if not n:
             return
         r = self.bar.tabRect(n - 1)
+        if r.isNull():   # 0.9.127: 마지막 탭이 넘겨서 안 보이는 줄이면 + 는 보이는 맨 아래 줄 오른쪽 끝에
+            rh = getattr(self.bar, "_rh", 26)
+            r = QtCore.QRect(self.bar.width(), max(0, self.bar.height() - rh), 0, rh)
         x = self.bar.mapTo(self.tabrow, r.topRight()).x() + 3
         x = min(x, self.tabrow.width() - self.plus.width() - 2)
         y = self.bar.mapTo(self.tabrow, r.topLeft()).y() + (r.height() - self.plus.height()) // 2
@@ -8527,6 +8714,19 @@ class SettingsDialog(QtWidgets.QDialog):
         c = self._card(lay, T("탭"))
         self._set(c, "hide_single_tab", T("탭이 하나면 탭 줄 숨기기 (새 탭: Ctrl+T)"))
         self._set(c, "tab_multirow", T("탭이 넘치면 여러 줄로"), T("끄면 한 줄 + 좌우 화살표"))
+        row = QtWidgets.QHBoxLayout()   # 0.9.127 최대 줄 수
+        row.setContentsMargins(22, 0, 0, 0)
+        row.addWidget(QtWidgets.QLabel(T("최대 줄 수")))
+        cb = QtWidgets.QComboBox()
+        for n in (0, 2, 3, 4, 5, 6, 8):
+            cb.addItem(T("자동 (계속 늘어남)") if n == 0 else T("탭 {0}줄").format(n), n)
+        cb.setCurrentIndex(max(0, cb.findData(int(SETTINGS["tab_max_rows"] or 0))))
+        cb.setToolTip(T("정한 줄 수를 넘으면 그 줄 수만 보이고 오른쪽 ▲▼(또는 휠)로 넘깁니다"))
+        cb.currentIndexChanged.connect(lambda _i, cb=cb: self.main.set_tab_max_rows(cb.currentData()))
+        row.addWidget(cb)
+        row.addStretch(1)
+        c.addLayout(row)
+        self.tab_max_cb = cb
         # 0.9.125 사용자 '이 문장 이해가 안 된다': 체크 한 줄 → 제목 + 둘 중 고르기 · 0.9.126 상자로 따로
         c = self._card(lay, T("Ctrl+= 누르면 옆 칸에도 지금 폴더 열기"))
         g = QtWidgets.QButtonGroup(self)
@@ -9793,6 +9993,8 @@ class Main(QtWidgets.QMainWindow):
             "close_tab": lambda: self.pane().close_tab(self.pane().bar.currentIndex()),
             "lock_tab": lambda: self.pane().toggle_lock(),
             "toggle_chips": lambda: self.toggle_opt("type_chips"),   # 빌드 27
+            "sync_browse": lambda: self.toggle_sync_browse(),   # 0.9.127 빌드 5
+            "color_rules": lambda: self.edit_color_rules(),
             "reopen_tab": lambda: self.reopen_tab(),
             "focus_filter": lambda: self.pane().focus_filter(),
             "global_search": lambda: self.focus_global_search(),
@@ -11471,6 +11673,100 @@ class Main(QtWidgets.QMainWindow):
                 tree.resizeColumnToContents(c)
         log.info("열 너비 맞춤 %s: 이름 %dpx (가장 긴 글자 %dpx, %d개) %.0fms", v.path, w0, widest, m.rowCount(), (time.perf_counter() - t0) * 1000)
 
+    # ---------------------------------------------------------- 0.9.127 빌드 5 두 칸 같이 이동 (토탈 커맨더 참고)
+    sync_pair = None
+    _sync_busy = False
+
+    def toggle_sync_browse(self):
+        """켜면 지금 칸과 다른 칸이 짝 — 한쪽에서 폴더를 들어가거나 나오면 다른 쪽도 같은 이름의 폴더로"""
+        if self.sync_pair:
+            self.sync_pair = None
+            log.info("두 칸 같이 이동 끔")
+            self.show_notice(T("두 칸 같이 이동 끔  ✕"), ms=4000)
+            return
+        a = self.pane()
+        b = self.other_pane(a) if a else None
+        if a is None or b is None or a.view() is None or b.view() is None:
+            self.show_notice(T("⚠ 같이 이동할 다른 칸이 없습니다 — 두 칸에 폴더를 열어 두세요  ✕"), ms=6000)
+            return
+        self.sync_pair = (a, b)
+        self.sync_roots = [a.view().path, b.view().path]   # 기준점: 켤 때 두 칸 폴더
+        log.info("두 칸 같이 이동 켬 %s <-> %s", a.view().path, b.view().path)
+        self.show_notice(T("🔗 두 칸 같이 이동 켬 — 한쪽에서 폴더를 들어가거나 나오면 다른 칸도 따라갑니다 (도구 메뉴에서 끔)  ✕"), ms=8000)
+
+    def sync_follow(self, page, old, new):
+        """page 가 new 로 이동함 → 짝 칸은 '기준점(켤 때 두 폴더)에서 같은 상대 위치'로 (없으면 알림만, 짝은 그대로)
+        기준점 기준이라 한쪽에만 있는 폴더에 들어갔다 나와도 어긋나지 않음. 기준점보다 위로 가면 기준점도 같이 올림"""
+        if self._sync_busy or not self.sync_pair:
+            return
+        a, b = self.sync_pair
+        try:
+            alive = a.isVisible() and b.isVisible()
+        except RuntimeError:
+            alive = False
+        if not alive:
+            self.sync_pair = None
+            log.info("두 칸 같이 이동 끔 (칸이 안 보임)")
+            return
+        me = 0 if a.view() is page else 1 if b.view() is page else None
+        if me is None:
+            return
+        ov = (b, a)[me].view()
+        if ov is None:
+            return
+        ra, rb = self.sync_roots[me], self.sync_roots[1 - me]
+
+        def real(p):
+            return bool(p) and p != THIS_PC and not is_search(p) and not archives.is_arc(p) and not devices.is_dev(p) and not ftpfs.is_ftp(p)
+        if not (real(new) and real(ra) and real(rb)):
+            return
+        try:
+            common = os.path.commonpath([ra, new])
+        except ValueError:   # 다른 드라이브
+            log.info("같이 이동: 기준점과 다른 드라이브라 따라가지 않음 %s (기준 %s)", new, ra)
+            return
+        up_rel = os.path.relpath(ra, common)
+        up = 0 if up_rel == "." else len(up_rel.split(os.sep))
+        nb = rb
+        for _ in range(up):   # 기준점보다 위로 감 → 짝 기준점도 같은 만큼 위로
+            t2 = os.path.dirname(nb.rstrip("\\")) if len(nb.rstrip("\\")) > 2 else nb
+            if os.path.normcase(t2) == os.path.normcase(nb):
+                self.show_notice(T("⚠ 같이 이동: 다른 칸은 더 올라갈 폴더가 없습니다  ✕"), ms=5000)
+                return
+            nb = t2
+        down = os.path.relpath(new, common)
+        t = nb if down == "." else os.path.join(nb, down)
+        if up:
+            self.sync_roots[me], self.sync_roots[1 - me] = common, nb
+        if os.path.normcase(norm(t)) == os.path.normcase(norm(ov.path)):
+            return
+        if not os.path.isdir(t):
+            log.info("같이 이동: 다른 칸에 없음 %s", t)
+            self.show_notice(T("⚠ 같이 이동: 다른 칸에 같은 폴더가 없습니다 — {0}  ✕").format(t), ms=6000)
+            return
+        if getattr(ov, "locked", False):
+            self.show_notice(T("⚠ 같이 이동: 다른 칸 탭이 잠겨 있어 따라가지 않았습니다  ✕"), ms=5000)
+            return
+        log.info("같이 이동 %s -> %s (짝 %s -> %s, 기준 %s)", old, new, ov.path, t, self.sync_roots)
+        self._sync_busy = True
+        try:
+            sel = os.path.basename(ov.path.rstrip("\\")) if os.path.normcase(os.path.dirname(ov.path.rstrip("\\"))) == os.path.normcase(t.rstrip("\\")) else None
+            ov.navigate(t, select=sel)
+        finally:
+            self._sync_busy = False
+
+    def edit_color_rules(self):
+        """파일 색 규칙 편집 (0.9.127 빌드 5) → 저장하고 열린 목록 모두 다시 그림"""
+        d = colorrules.RulesDialog(self, SETTINGS["color_rules"])
+        if d.exec() != QtWidgets.QDialog.Accepted:
+            return
+        SETTINGS["color_rules"] = d.result_rules()
+        COLOR_RULES.load(SETTINGS["color_rules"])
+        for md in list(MODELS):
+            n = md.rowCount()
+            if n:
+                md.dataChanged.emit(md.index(0, 0), md.index(n - 1, md.columnCount() - 1), [Qt.ForegroundRole])
+
     def other_pane(self, cur):
         """다른 칸으로 보낼 대상: 직전에 쓰던 칸(보이면), 아니면 보이는 다른 칸 중 첫 번째"""
         if self.prev_pane is not None and self.prev_pane is not cur and self.prev_pane.isVisible():
@@ -11899,7 +12195,12 @@ class Main(QtWidgets.QMainWindow):
         m.addAction(T("이름 일괄 변경…"), lambda: self.open_batch_rename(self.pane().view().selected_paths() if self.pane().view() else []))
         m.addAction(mlabel(T("두 칸 비교"), "compare"), self.compare_panes)
         m.addAction(mlabel(same_folder_label(), "same_folder"), self.same_folder_other)   # 0.9.112
+        sb = m.addAction(mlabel(T("두 칸 같이 이동"), "sync_browse"), self.toggle_sync_browse)   # 0.9.127 빌드 5
+        sb.setCheckable(True)
+        sb.setChecked(bool(self.sync_pair))
         m.addAction(mlabel(T("패턴으로 고르기…"), "select_pattern"), lambda: self.pane().view() and self.pane().view().select_pattern())
+        m.addAction(mlabel(T("고른 것만 보기"), "show_selected"), lambda: self.pane().view() and self.pane().view().show_selected_only())   # 0.9.127 빌드 5
+        m.addAction(mlabel(T("파일 색 규칙…"), "color_rules"), self.edit_color_rules)   # 0.9.127 빌드 5
         m.addAction(mlabel(T("하위 폴더 펼쳐 보기"), "flat_view"), lambda: self.pane().view() and self.pane().view().flat_view())   # 빌드 20
         m.addAction(mlabel(T("중복 파일 찾기…"), "find_dupes"), lambda: self.find_dupes(self.pane().view()))   # 빌드 20
         m.addSeparator()   # 0.9.109 빌드 3
@@ -12309,6 +12610,15 @@ eports.
             QtCore.QTimer.singleShot(0, self.global_chips.refresh_all)
         log.info("레이아웃 %s", key)
         self.save_timer.start()
+
+    def set_tab_max_rows(self, n):
+        """탭 최대 줄 수 (0 = 자동) — 열린 모든 창·칸에 바로"""
+        SETTINGS["tab_max_rows"] = int(n or 0)
+        log.info("설정 tab_max_rows=%s", SETTINGS["tab_max_rows"])
+        for w in WINDOWS:
+            for p in w.all_panes():
+                p.bar.set_max_rows(SETTINGS["tab_max_rows"])
+                p._place_plus()
 
     def toggle_setting(self, key):
         """켜고 끄는 전역 설정 (v0.9.75 사용자 의견: 탭 하나면 탭줄 숨김 · 빈 곳 클릭 상위 폴더 · 메뉴줄 접어도 즐겨찾기 남김)"""

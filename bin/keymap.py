@@ -39,6 +39,7 @@ ACTIONS = [
     ("sha256", T("확인값(SHA256) 보기"), "", "view"),   # v0.9.89
     ("quick_preview", T("미리보기 창 바로 보기/닫기"), "Space", "view"),   # 빌드 20 (다른 파일 관리자처럼 스페이스)
     ("flat_view", T("하위 폴더 펼쳐 보기 (모든 파일 한 목록)"), "", "view"),   # 빌드 20
+    ("show_selected", T("고른 것만 보기 (다시 누르면 모두)"), "", "view"),   # 0.9.127 빌드 5 (토탈 커맨더 참고)
     ("find_dupes", T("중복 파일 찾기…"), "", "view"),   # 빌드 20
     ("view_file", T("글자·16진수로 보기"), "F3", "view"),   # 0.9.109 빌드 3
     ("file_attrs", T("날짜·속성 바꾸기…"), "", "view"),
@@ -66,6 +67,8 @@ ACTIONS = [
     ("same_folder", T("다른 칸에 같은 폴더"), "Ctrl+=", "window"),   # 0.9.124 새 탭/지금 탭은 설정 (이름에서 '새 탭' 뺌) · 0.9.112 (빌드 5: Alt+= 는 한국어 입력기 전자/반자 전환이라 안 들어옴)
     ("fit_columns", T("열 너비 자동 맞춤 (긴 이름도 다 보이게)"), "Ctrl++; Ctrl+Shift++; Ctrl+Shift+=", "window"),   # 0.9.124 받은 의견 (탐색기 Ctrl+숫자패드+ 와 같음)
     ("sync_dirs", T("폴더 맞추기 (두 칸)…"), "", "window"),   # 0.9.109 빌드 3
+    ("sync_browse", T("두 칸 같이 이동 켜기/끄기"), "", "window"),   # 0.9.127 빌드 5 (토탈 커맨더 참고)
+    ("color_rules", T("파일 색 규칙…"), "", "window"),   # 0.9.127 빌드 5
     ("ftp_connect", T("FTP 연결…"), "", "window"),
     ("user_buttons", T("My메뉴 편집…"), "", "window"),   # v0.9.89 · 0.9.113 이름 '사용자 단추' → My메뉴 (사용자 11/6)
     ("palette", T("기능 검색…"), "Ctrl+Shift+P", "window"),   # 0.9.113 이름 '명령 찾기' → 기능 검색
@@ -88,10 +91,10 @@ CATS = [("file", T("파일 작업")), ("nav", T("이동")), ("tab", T("탭·창"
 CAT = {}
 for _c, _ids in (
         ("file", "open open_new_tab rename delete delete_perm new_folder copy cut paste send_copy send_move undo copy_path properties sha256"),
-        ("nav", "up back fwd refresh focus_addr same_folder pane1 pane2 pane3 pane4 pane5 pane6"),
+        ("nav", "up back fwd refresh focus_addr same_folder sync_browse pane1 pane2 pane3 pane4 pane5 pane6"),
         ("tab", "new_tab close_tab reopen_tab next_tab prev_tab lock_tab new_window"),
-        ("find", "focus_filter global_search global_hotkey select_pattern palette"),
-        ("view", "toggle_hidden toggle_chips quick_preview flat_view fit_columns"),
+        ("find", "focus_filter global_search global_hotkey select_pattern show_selected palette"),
+        ("view", "toggle_hidden toggle_chips quick_preview flat_view fit_columns color_rules"),
         ("panel", "toggle_preview toggle_nav toggle_chrome toggle_memo"),
         ("tools", "toggle_calc compare find_dupes view_file file_attrs img_batch space_map sync_dirs ftp_connect user_buttons"),
         ("fav", "add_fav ws_latest ws_slot1 ws_slot2"),

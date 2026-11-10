@@ -1,4 +1,5 @@
-' 4Dir launcher v1.1.0 (4Dir v0.9.52)
+' 4Dir launcher v1.2.0 (4Dir v0.9.127)
+' - 1.2.0: 32-bit Windows -> message (bundled Python / Qt6 are 64-bit only)
 ' - 1) bundled runtime\pythonw.exe (release build)
 '   2) otherwise pythonw.exe on PATH, only if it can run 4Dir (Python 3.12+ with PySide6)
 '   3) otherwise show a message (Korean / English) and offer the download page - never fail silently
@@ -76,6 +77,21 @@ Function FindPy()
     End If
   Next
 End Function
+
+Dim arch, arch2
+arch = LCase(sh.Environment("Process")("PROCESSOR_ARCHITECTURE"))
+arch2 = sh.Environment("Process")("PROCESSOR_ARCHITEW6432")
+If arch = "x86" And arch2 = "" Then
+  L "FAIL 32bit windows (PROCESSOR_ARCHITECTURE=" & arch & ")"
+  If ko Then
+    MsgBox "4Dir 은 64비트 윈도우 전용입니다." & vbCrLf & vbCrLf & _
+           "이 PC 는 32비트 윈도우라 실행할 수 없습니다. (윈도우 11 은 모두 64비트)", vbExclamation, "4Dir"
+  Else
+    MsgBox "4Dir requires 64-bit Windows." & vbCrLf & vbCrLf & _
+           "This PC runs 32-bit Windows, so 4Dir cannot run here. (All Windows 11 PCs are 64-bit)", vbExclamation, "4Dir"
+  End If
+  WScript.Quit 1
+End If
 
 app = d & "\bin\main.py"
 If Not fso.FileExists(app) Then app = d & "\bin\main.pyc"
