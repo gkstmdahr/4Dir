@@ -17,7 +17,7 @@ from i18n import T
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-PDFPREV_VER = "1.2.1"   # 1.2.1: 편집 단추를 그림 미리보기와 같은 모양 /   # 1.2.0: 편집 단추 하나로 · 위쪽 오른쪽 (그림 미리보기 ✎ 편집 처럼, 사용자 11/10) /   # 1.1.0: 파일을 붙잡지 않음(메모리로 읽음 — 미리보기 중에도 이름 바꾸기·지우기·원본에 저장), [주석][쪽 편집][나누기] 단추, 저장하면 다시 그림 / 1.0.1: 주석도 그림(PDF 편집)
+PDFPREV_VER = "1.3.0"   # 1.3.0 (0.9.129 사용자 11/10): [맞춤][−][배율][+] 확대·축소 — 휠은 그대로 쪽 넘김 /   # 1.2.1: 편집 단추를 그림 미리보기와 같은 모양 /   # 1.2.0: 편집 단추 하나로 · 위쪽 오른쪽 (그림 미리보기 ✎ 편집 처럼, 사용자 11/10) /   # 1.1.0: 파일을 붙잡지 않음(메모리로 읽음 — 미리보기 중에도 이름 바꾸기·지우기·원본에 저장), [주석][쪽 편집][나누기] 단추, 저장하면 다시 그림 / 1.0.1: 주석도 그림(PDF 편집)
 log = logging.getLogger("QE.pdfprev")
 try:
     from PySide6.QtPdf import QPdfDocument
@@ -105,6 +105,7 @@ class PdfView(QtWidgets.QWidget):
         super().__init__(parent)
         self.path = path
         self.page = 0
+        self.zoom = 1.0   # 1.3.0 쪽 폭 맞춤 기준 배율
         t0 = time.time()
         self.doc, err = _open(path)
         self.n = self.doc.pageCount() if self.doc.status() == QPdfDocument.Status.Ready else 0
@@ -138,6 +139,25 @@ class PdfView(QtWidgets.QWidget):
         self.sc.setWidget(self.pic)
         lay.addWidget(self.sc, 1)
         bar = QtWidgets.QHBoxLayout()
+        # 1.3.0 확대·축소 단추 (그림 미리보기와 같은 순서·글자)
+        self.b_fit = QtWidgets.QToolButton(); self.b_fit.setText(T("맞춤")); self.b_fit.setToolTip(T("쪽 폭을 창에 맞춤"))
+        self.b_zout = QtWidgets.QToolButton(); self.b_zout.setText("−"); self.b_zout.setToolTip(T("축소"))
+        self.lb_zoom = QtWidgets.QLabel("100%"); self.lb_zoom.setMinimumWidth(42); self.lb_zoom.setAlignment(Qt.AlignCenter)
+        self.b_zin = QtWidgets.QToolButton(); self.b_zin.setText("+"); self.b_zin.setToolTip(T("확대"))
+        self.b_fit.clicked.connect(lambda: self.set_zoom(1.0))
+        self.b_zout.clicked.connect(lambda: self.step_zoom(False))
+        self.b_zin.clicked.connect(lambda: self.step_zoom(True))
+        self.zoom_btns = [self.b_fit, self.b_zout, self.lb_zoom, self.b_zin]
+        for w in self.zoom_btns:
+            if isinstance(w, QtWidgets.QToolButton):
+                w.setFocusPolicy(Qt.NoFocus)
+                try:   # 그림 미리보기 [맞춤][−][+] 와 같은 모양
+                    import imginspect
+                    w.setObjectName("imgTb")
+                    w.setStyleSheet(imginspect.PREVIEW_STYLE)
+                except Exception:
+                    log.exception("확대 단추 모양")
+            bar.addWidget(w)
         bar.addStretch(1)
         self.b_prev = QtWidgets.QToolButton()
         self.b_prev.setText("◀")
@@ -162,18 +182,35 @@ class PdfView(QtWidgets.QWidget):
             msg = T("암호가 걸린 PDF 라 미리보기를 할 수 없습니다") if err == QPdfDocument.Error.IncorrectPassword else T("PDF 를 읽지 못했습니다")
             self.pic.setText(msg)
             self.pic.setWordWrap(True)
-            for b in [self.b_prev, self.b_next] + self.edit_btns:
+            for b in [self.b_prev, self.b_next] + self.edit_btns + self.zoom_btns:
                 b.setVisible(False)
             log.info("PDF 미리보기 못 함 %s (%s, %s)", path, err, st)
         else:
             log.info("PDF 미리보기 %s (%d쪽, 열기 %.0fms)", path, self.n, (time.time() - t0) * 1000)
             QtCore.QTimer.singleShot(0, lambda: self.go(0))
 
-    def go(self, i):
+    ZOOMS = (0.25, 0.33, 0.5, 0.67, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0)
+
+    def step_zoom(self, up):
+        z = self.zoom
+        nxt = next((x for x in self.ZOOMS if x > z * 1.001), self.ZOOMS[-1]) if up else next((x for x in reversed(self.ZOOMS) if x < z / 1.001), self.ZOOMS[0])
+        self.set_zoom(nxt)
+
+    def set_zoom(self, z):
+        """쪽 폭 맞춤 = 100%. 보던 위치(세로 비율) 유지"""
+        if not self.n:
+            return
+        sb = self.sc.verticalScrollBar()
+        frac = sb.value() / sb.maximum() if sb.maximum() > 0 else 0.0
+        self.zoom = max(self.ZOOMS[0], min(self.ZOOMS[-1], z))
+        log.info("PDF 배율 %.0f%% %s", self.zoom * 100, os.path.basename(self.path))
+        self.go(self.page, keep=frac)
+
+    def go(self, i, keep=None):
         if not self.n:
             return
         self.page = max(0, min(self.n - 1, i))
-        w = max(120, self.sc.viewport().width() - 8)
+        w = int(max(120, self.sc.viewport().width() - 8) * self.zoom)
         sz = self.doc.pagePointSize(self.page)
         dpr = self.devicePixelRatioF() or 1.0
         h = int(w * sz.height() / max(1.0, sz.width()))
@@ -189,7 +226,13 @@ class PdfView(QtWidgets.QWidget):
         self.lbl.setText(f" {self.page + 1} / {self.n} ")
         self.b_prev.setEnabled(self.page > 0)
         self.b_next.setEnabled(self.page < self.n - 1)
-        self.sc.verticalScrollBar().setValue(0)
+        self.lb_zoom.setText(f"{round(self.zoom * 100)}%")
+        self.b_zout.setEnabled(self.zoom > self.ZOOMS[0] + 1e-6)
+        self.b_zin.setEnabled(self.zoom < self.ZOOMS[-1] - 1e-6)
+        if keep is None:
+            self.sc.verticalScrollBar().setValue(0)
+        else:   # 배율 바꿈: 크기가 바뀐 뒤 같은 비율 위치로
+            QtCore.QTimer.singleShot(0, lambda k=keep: self.sc.verticalScrollBar().setValue(int(k * self.sc.verticalScrollBar().maximum())))
         log.debug("PDF 쪽 %d/%d 그림 %.0fms", self.page + 1, self.n, (time.time() - t0) * 1000)
 
     def eventFilter(self, obj, ev):

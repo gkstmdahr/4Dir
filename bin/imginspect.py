@@ -38,7 +38,7 @@ from i18n import T
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-IMGINSPECT_VER = "1.4.0"
+IMGINSPECT_VER = "1.5.1"   # 1.5.1: own_nav=False 면 자기 ◀ ▶ 숨김(미리보기 창 양끝 공용 단추 하나로) / 1.5.0 (0.9.129 사용자 11/10 미리보기 통일): − / + 단추, Canvas.set_pixmap(GIF·동영상 장면), zoom_buttons 공용 줄, ◀ ▶ = 폴더의 모든 파일
 log = logging.getLogger("QE.imginspect")
 P = QtCore.QPointF
 R = QtCore.QRectF
@@ -500,6 +500,19 @@ class Canvas(QtWidgets.QWidget):
             self.iw, self.ih = img.width(), img.height()
         self.update()
 
+    def set_pixmap(self, pm):
+        """GIF·동영상 장면을 그대로 (1.5.0) — 크기가 같으면 확대·위치 유지, 처음·크기 바뀜 + 자동 맞춤이면 맞춤"""
+        if pm is None or pm.isNull():
+            self.pm = None
+            self.update()
+            return
+        new = self.pm is None or (pm.width(), pm.height()) != (self.iw, self.ih)
+        self.pm = pm
+        self.iw, self.ih = pm.width(), pm.height()
+        if new and self.view.auto_fit and self.width() > 4:
+            self.view.fit(self.iw, self.ih, self.width(), self.height())
+        self.update()
+
     def set_image_b(self, img):
         self.pm_b = QtGui.QPixmap.fromImage(img) if img is not None else None
         self.update()
@@ -700,6 +713,32 @@ def _zoom_text(s):
     return f"{pc:.0f}%" if pc >= 10 else (f"{pc:.2f}".rstrip("0").rstrip(".") + "%")
 
 
+def zoom_buttons(view, canvas):
+    """[맞춤][1:1][−][배율 ▾][+] — 미리보기 GIF·동영상 공용 (1.5.0, 그림 미리보기와 같은 모양·동작). 단추 목록을 돌려줌"""
+    def fit():
+        view.fit(canvas.iw, canvas.ih, canvas.width(), canvas.height())
+
+    def one():
+        view.actual(canvas.iw, canvas.ih, canvas.width(), canvas.height())
+        canvas.clamp()
+
+    def step(up):
+        view.step(up, canvas.width() / 2, canvas.height() / 2)
+        canvas.clamp()
+
+    def setz(z):
+        view.zoom_at(z, canvas.width() / 2, canvas.height() / 2)
+        canvas.clamp()
+    b_fit = _tb(T("맞춤"), T("창에 맞춤 (F)")); b_fit.clicked.connect(fit)
+    b_one = _tb("1:1", T("실제 크기 (1)")); b_one.clicked.connect(one)
+    b_out = _tb("−", T("축소")); b_out.clicked.connect(lambda: step(False))
+    b_zoom = _ZoomButton(setz); b_zoom.setMinimumWidth(58)
+    b_in = _tb("+", T("확대")); b_in.clicked.connect(lambda: step(True))
+    view.changed.connect(lambda: b_zoom.setText(_zoom_text(view.s)))
+    b_zoom.setText(_zoom_text(view.s))
+    return [b_fit, b_one, b_out, b_zoom, b_in]
+
+
 class _ZoomButton(QtWidgets.QToolButton):
     """확대 배율 표시 + 누르면 배율 고르기"""
 
@@ -749,10 +788,12 @@ class ImageViewer(QtWidgets.QWidget):
         self.b_fit = _tb(T("창에 맞춤")); self.b_fit.clicked.connect(self.fit)
         self.b_one = _tb(T("1:1 실제 크기")); self.b_one.clicked.connect(self.actual)
         self.b_zoom = _ZoomButton(self.set_zoom)
+        self.b_zout = _tb("−", T("축소")); self.b_zout.clicked.connect(lambda: self._step(False))   # 1.5.0
+        self.b_zin = _tb("+", T("확대")); self.b_zin.clicked.connect(lambda: self._step(True))
         for w in (self.b_prev, self.b_next, self.lb_pos):
             top.addWidget(w)
         top.addSpacing(10)
-        for w in (self.b_fit, self.b_one, self.b_zoom):
+        for w in (self.b_fit, self.b_one, self.b_zout, self.b_zoom, self.b_zin):
             top.addWidget(w)
         top.addSpacing(10)
         self.ch_btns = {}
@@ -915,6 +956,10 @@ class ImageViewer(QtWidgets.QWidget):
 
     def _on_view(self):
         self.b_zoom.setText(_zoom_text(self.view.s))
+
+    def _step(self, up):   # 1.5.0 − / +
+        self.view.step(up, self.canvas.width() / 2, self.canvas.height() / 2)
+        self.canvas.clamp()
 
     def _on_checker(self, on):
         self.canvas.set_checker(on)
@@ -1392,8 +1437,14 @@ def can_handle(path):
     return sz.isValid() and 0 < sz.width() * sz.height() <= PREVIEW_MAX_PX
 
 
-def make_widget(path, parent=None, nav=None, edit=None, seq=None):
-    return PreviewWidget(path, parent, nav, edit, seq)
+def make_widget(path, parent=None, nav=None, edit=None, seq=None, own_nav=True):
+    w = PreviewWidget(path, parent, nav, edit, seq)
+    w.own_nav = own_nav
+    if not own_nav:   # 1.5.1 미리보기 창 양끝 공용 ◀ ▶ 를 씀 — 자기 단추는 자리도 안 차지
+        for b in (w.b_prev, w.b_next):
+            sp = b.sizePolicy(); sp.setRetainSizeWhenHidden(False); b.setSizePolicy(sp)
+            b.setVisible(False)
+    return w
 
 
 # 다음 그림으로 넘어가도 이어지는 것 (미리보기 위젯은 파일마다 새로 만듦)
@@ -1503,7 +1554,7 @@ class PreviewWidget(QtWidgets.QWidget):
         self.canvas.installEventFilter(self)
         self.b_prev = QtWidgets.QToolButton(); self.b_prev.setObjectName("navBtn"); self.b_prev.setText("◀")
         self.b_next = QtWidgets.QToolButton(); self.b_next.setObjectName("navBtn"); self.b_next.setText("▶")
-        for b, tip, d in ((self.b_prev, T("이전 그림 (←)"), -1), (self.b_next, T("다음 그림 (→)"), 1)):   # 1.4.0: 그림 밖 양옆 (그림을 가리지 않음)
+        for b, tip, d in ((self.b_prev, T("이전 파일 (←)"), -1), (self.b_next, T("다음 파일 (→)"), 1)):   # 1.5.0 폴더의 모든 파일   # 1.4.0: 그림 밖 양옆 (그림을 가리지 않음)
             b.setToolTip(tip); b.setFixedSize(22, 64); b.setFocusPolicy(Qt.NoFocus); b.setCursor(Qt.PointingHandCursor)
             b.clicked.connect(lambda _=False, d=d: self.go(d))
             sp = b.sizePolicy(); sp.setRetainSizeWhenHidden(True); b.setSizePolicy(sp)   # 끝 그림에서 숨어도 자리는 그대로 (그림이 들썩이지 않게)
@@ -1519,6 +1570,8 @@ class PreviewWidget(QtWidgets.QWidget):
         self.b_fit = _tb(T("맞춤"), T("창에 맞춤 (F)")); self.b_fit.clicked.connect(self.fit)
         self.b_one = _tb("1:1", T("실제 크기 (1)")); self.b_one.clicked.connect(self.actual)
         self.b_zoom = _ZoomButton(self.set_zoom); self.b_zoom.setMinimumWidth(58)
+        self.b_zout = _tb("−", T("축소")); self.b_zout.clicked.connect(lambda: self._step(False))   # 1.5.0 (사용자 '확대 축소 단추가 없다')
+        self.b_zin = _tb("+", T("확대")); self.b_zin.clicked.connect(lambda: self._step(True))
         self.b_rl = _tb("", T("왼쪽으로 돌리기 (바로 저장)")); self.b_rl.clicked.connect(lambda: self.rotate(False))
         self.b_rr = _tb("", T("오른쪽으로 돌리기 (바로 저장)")); self.b_rr.clicked.connect(lambda: self.rotate(True))
         fg = self.palette().color(QtGui.QPalette.ButtonText).name()
@@ -1530,7 +1583,7 @@ class PreviewWidget(QtWidgets.QWidget):
         self.b_checker.setIcon(checker_icon(fg)); self.b_grid.setIcon(grid_icon(fg))   # 좁은 창에서 글자 단추가 잘려 그림 단추로
         for b_ in (self.b_checker, self.b_grid):
             b_.setIconSize(QtCore.QSize(18, 18))
-        for w in (self.b_fit, self.b_one, self.b_zoom):
+        for w in (self.b_fit, self.b_one, self.b_zout, self.b_zoom, self.b_zin):
             bot.addWidget(w)
         bot.addSpacing(6); bot.addWidget(self.b_rl); bot.addWidget(self.b_rr)
 
@@ -1601,7 +1654,8 @@ class PreviewWidget(QtWidgets.QWidget):
             return
         i, n = info
         self.pos_text = f"{i + 1} / {n}"
-        self.b_prev.setVisible(i > 0); self.b_next.setVisible(i < n - 1)
+        own = getattr(self, "own_nav", True)
+        self.b_prev.setVisible(own and i > 0); self.b_next.setVisible(own and i < n - 1)
 
     def _on_detail(self, on):
         """상세보기 열고 닫기 — 상태 기억"""
@@ -1682,6 +1736,10 @@ class PreviewWidget(QtWidgets.QWidget):
 
     def set_zoom(self, z):
         self.view.zoom_at(z, self.canvas.width() / 2, self.canvas.height() / 2)
+        self.canvas.clamp()
+
+    def _step(self, up):   # 1.5.0 − / +
+        self.view.step(up, self.canvas.width() / 2, self.canvas.height() / 2)
         self.canvas.clamp()
 
     def _on_view(self):

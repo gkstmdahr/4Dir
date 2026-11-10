@@ -2306,5 +2306,15 @@
  "전체 검색칸": "Cuadro de búsqueda global",
  "검색 색인 상태": "Estado del índice de búsqueda",
  "CPU·GPU 사용량": "Uso de CPU·GPU",
- "선택": "Selección"
+ "선택": "Selección",
+ "축소": "Alejar",
+ "확대": "Acercar",
+ "이전 파일 (←)": "Archivo anterior (←)",
+ "다음 파일 (→)": "Archivo siguiente (→)",
+ "휠 = 확대·축소, 끌기 = 이동": "Rueda = zoom, arrastrar = mover",
+ "쪽 폭을 창에 맞춤": "Ajustar el ancho de página a la ventana",
+ "이전 파일 (← 또는 <)": "Archivo anterior (← o <)",
+ "다음 파일 (→ 또는 >)": "Archivo siguiente (→ o >)",
+ "이전 파일 (<)": "Archivo anterior (<)",
+ "다음 파일 (>)": "Archivo siguiente (>)"
 }

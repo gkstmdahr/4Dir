@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.128"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_VERSION = "0.9.129"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
 QE_BUILD = 5             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
@@ -9175,7 +9175,58 @@ class PreviewPane(QtWidgets.QFrame):
         self.info.setAlignment(Qt.AlignLeft | Qt.AlignTop)
         self._rows = []
         self.info.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        lay.addWidget(self.pic, 1)
+        # 0.9.129 (사용자 11/10 '형식마다 따로 말고 같게'): 가운데 칸 + 양옆 공용 ◀ ▶ (폴더의 모든 파일)
+        self.center = QtWidgets.QVBoxLayout()
+        self.center.setContentsMargins(0, 0, 0, 0)
+        self.center.setSpacing(6)
+        self.center.addWidget(self.pic, 1)
+        self.zview = imginspect.View()   # GIF·동영상 장면 = 그림 미리보기와 같은 캔버스 (휠 확대·끌기)
+        self.zcanvas = imginspect.Canvas(self.zview)
+        self.zcanvas.setCursor(Qt.OpenHandCursor)
+        self.zcanvas.setToolTip(T("휠 = 확대·축소, 끌기 = 이동"))
+        self.zcanvas.setVisible(False)
+        self.center.addWidget(self.zcanvas, 1)
+        self.zbar = QtWidgets.QWidget()
+        zl = QtWidgets.QHBoxLayout(self.zbar)
+        zl.setContentsMargins(0, 0, 0, 0)
+        zl.setSpacing(3)
+        for b in imginspect.zoom_buttons(self.zview, self.zcanvas):
+            zl.addWidget(b)
+        zl.addStretch(1)
+        self.zbar.setStyleSheet(imginspect.PREVIEW_STYLE)
+        self.zbar.setVisible(False)
+        mid = QtWidgets.QHBoxLayout()
+        mid.setContentsMargins(0, 0, 0, 0)
+        mid.setSpacing(3)
+        self.f_prev = QtWidgets.QToolButton()
+        self.f_next = QtWidgets.QToolButton()
+        for b, txt, tip, d in ((self.f_prev, "◀", T("이전 파일 (<)"), -1), (self.f_next, "▶", T("다음 파일 (>)"), 1)):
+            b.setObjectName("navBtn")
+            b.setText(txt)
+            b.setToolTip(tip)
+            b.setFixedSize(22, 64)
+            b.setFocusPolicy(Qt.NoFocus)
+            b.setCursor(Qt.PointingHandCursor)
+            b.setStyleSheet(imginspect.PREVIEW_STYLE)
+            b.clicked.connect(lambda _=False, d=d: self._go(d))
+            sp = b.sizePolicy()
+            sp.setRetainSizeWhenHidden(True)   # 한쪽이 숨어도 내용 폭·위치 그대로
+            b.setSizePolicy(sp)
+            b.setVisible(False)
+        # 0.9.129 빌드 4 (사용자 'gif 와 png 에서 위치가 다르다 — 항상 고정'): 단추는 창 위에 띄워 높이 40% 자리 고정(_place_nav),
+        # 자리는 그림 칸 옆만 비움 — 칸으로 넣으면 아래 재생 조작줄까지 좁아져 좁은 창에서 장면 막대가 짓눌림(qe182 실측 38px)
+        mid.addSpacing(self.NAV_W)
+        mid.addLayout(self.center, 1)
+        mid.addSpacing(self.NAV_W)
+        for b in (self.f_prev, self.f_next):
+            b.setParent(self)
+        # 단축키 < > (미리보기 창이 앞에 있을 때) — 빌드 5 사용자 '← → . 는 안 됨, < > 만'
+        for k, d in ((Qt.Key_Less, -1), (Qt.Key_Greater, 1)):
+            sc = QtGui.QShortcut(QtGui.QKeySequence(k), self)
+            sc.setContext(Qt.WindowShortcut)
+            sc.activated.connect(lambda d=d: self._go(d))
+        lay.addLayout(mid, 1)
+        lay.addWidget(self.zbar)   # 확대 줄·재생 조작줄은 ◀ ▶ 아래 창 전체 폭 (좁은 창에서 장면 막대가 짓눌리지 않게)
         # 0.9.128 (사용자 11/10): 그림을 여러 개 고르면 아래에 고른 그림 썸네일 줄 — 누르거나 ←→ 로 위 큰 그림이 바뀜
         self.film = QtWidgets.QListWidget()
         self.film.setObjectName("previewFilm")
@@ -9192,13 +9243,13 @@ class PreviewPane(QtWidgets.QFrame):
         self.film.currentRowChanged.connect(self._film_pick)
         self.film_items = []   # [(경로, mtime, 이름)] 지금 썸네일 줄
         self.film_k = 0
-        lay.addWidget(self.film)
         self.gifbar = self._build_gifbar()   # 빌드 17: GIF 장면 조작 (galleryV8 참고)
-        lay.addWidget(self.gifbar)
+        lay.insertWidget(lay.indexOf(self.zbar) + 1, self.gifbar)
         self.extra = None   # 0.9.116 형식별 미리보기 (코드·글꼴·소리·PSD 레이어·엑셀) — 고를 때마다 새로 만들고 버림
         self.extra_lay = QtWidgets.QVBoxLayout()
         self.extra_lay.setContentsMargins(0, 0, 0, 0)
-        lay.addLayout(self.extra_lay, 0)
+        self.center.addLayout(self.extra_lay, 0)
+        lay.addWidget(self.film)   # 0.9.129 그림 화면 아래
         lay.addWidget(self.sep)
         lay.addWidget(self.name)
         lay.addWidget(self.info)
@@ -9239,6 +9290,8 @@ class PreviewPane(QtWidgets.QFrame):
     def resizeEvent(self, ev):
         super().resizeEvent(ev)
         self._fit()
+        if hasattr(self, "f_prev"):
+            self._place_nav()
 
     def hideEvent(self, ev):
         super().hideEvent(ev)
@@ -9258,7 +9311,7 @@ class PreviewPane(QtWidgets.QFrame):
             self.extra_lay.removeWidget(w)
             w.hide()
             w.deleteLater()
-        lay = self.layout()
+        lay = self.center
         lay.setStretchFactor(self.pic, 1)
         lay.setStretchFactor(self.extra_lay, 0)
         self.pic.setVisible(True)
@@ -9281,7 +9334,7 @@ class PreviewPane(QtWidgets.QFrame):
                     pv = self.main.pane().view() if self.main.pane() else None
                     sq = (lambda p=path: open_tool(sequence.open_player, self.window(), os.path.dirname(p), p)) \
                         if pv is not None and seq_in_view(pv, path) is not None else None
-                    w = mod.make_widget(path, self, nav=self._nav_image, seq=sq,
+                    w = mod.make_widget(path, self, nav=self._nav_any, own_nav=False, seq=sq,
                                         edit=(lambda p: open_img_edit(p, self.window())) if imgedit.can_edit(path) else None)
                     self.btn_seq.setVisible(False)   # 0.9.118 빌드 2: 연번 재생은 색상 도구 칸 안으로
                 elif name == "folderprev":
@@ -9299,7 +9352,7 @@ class PreviewPane(QtWidgets.QFrame):
             self.extra_lay.addWidget(w)
             keep = name in self.KEEP_PIC
             self.pic.setVisible(keep)
-            lay = self.layout()
+            lay = self.center
             lay.setStretchFactor(self.pic, 1 if keep else 0)
             lay.setStretchFactor(self.extra_lay, 2 if keep else 1)
             return keep or True
@@ -9343,6 +9396,57 @@ class PreviewPane(QtWidgets.QFrame):
             open_file(p)
         except OSError as ex:
             log.warning("폴더 미리보기 파일 열기 실패 %s: %s", p, ex)
+
+    def _nav_any(self, d):
+        """◀ ▶ · ←→ 공용 (0.9.129): 썸네일 줄 모드면 고른 그림 안, 아니면 폴더의 모든 파일 (탐색기처럼, 형식 상관없이)"""
+        if self.film_items and self.film.isVisible():
+            return self._film_nav(d)
+        return self._nav_file(d)
+
+    def _go(self, d):
+        r = self._nav_any(d)
+        log.info("미리보기 %s 파일 → %s", "다음" if d > 0 else "이전", r)
+
+    NAV_W = 24   # ◀ ▶ 단추 자리 (그림 칸 양옆)
+
+    def _upd_nav(self):
+        """창 양끝 ◀ ▶ (모든 형식 같은 자리, 0.9.129 빌드 4). 맨 앞·맨 뒤면 그쪽 단추 숨김"""
+        r = self._nav_any(0)
+        self.f_prev.setVisible(bool(r) and r[0] > 0)
+        self.f_next.setVisible(bool(r) and r[0] < r[1] - 1)
+        self._place_nav()
+
+    def _place_nav(self):
+        """창 높이 40% · 양끝 (내용과 상관없이 같은 자리)"""
+        m = self.layout().contentsMargins()
+        y = max(m.top(), int(self.height() * 0.4) - self.f_prev.height() // 2)
+        self.f_prev.move(m.left(), y)
+        self.f_next.move(self.width() - m.right() - self.f_next.width(), y)
+        self.f_prev.raise_()
+        self.f_next.raise_()
+
+    def _nav_file(self, d):
+        """0.9.129: 지금 칸 목록 순서대로 폴더가 아닌 모든 파일 d 칸 옮겨 선택 → (순번, 전체). d=0 이면 옮기지 않음"""
+        pane = self.main.pane()
+        v = pane.view() if pane else None
+        if v is None:
+            return None
+        sel = v.selected_rows()
+        if len(sel) != 1:
+            return None
+        rows = v.model_.rows
+        files = [i for i, e in enumerate(rows) if not e[1] and not is_group(e)]
+        if sel[0] not in files:
+            return None
+        k = files.index(sel[0])
+        if d:
+            j = min(max(k + d, 0), len(files) - 1)
+            if j != k:
+                idx = v.model_.index(files[j], 0)
+                v.sel.setCurrentIndex(idx, QtCore.QItemSelectionModel.ClearAndSelect | QtCore.QItemSelectionModel.Rows)
+                v.view().scrollTo(idx)
+                k = j
+        return k, len(files)
 
     def _nav_image(self, d):
         """미리보기 그림 이전/다음 (빌드 5): 지금 칸 목록에서 그림 파일끼리 d 칸 옮겨 선택. 반환 (순번, 전체) — d=0 이면 옮기지 않음"""
@@ -9694,6 +9798,13 @@ class PreviewPane(QtWidgets.QFrame):
         self.gif_strip.setEnabled(True)   # 0.9.118: 큰 GIF 도 장면 띠로 이동 (느린 이동, 사용자 '하단 슬라이드 선택이 안 됨')
 
     def _stop_movie(self):
+        if hasattr(self, "zcanvas"):   # 0.9.129 확대 캔버스 정리 (다음 GIF 는 다시 맞춤부터)
+            if self.zcanvas.isVisible():
+                self.zcanvas.setVisible(False)
+                self.zbar.setVisible(False)
+                self.pic.setVisible(True)
+            self.zcanvas.pm = None
+            self.zview.auto_fit = True
         if hasattr(self, "gif_warn"):
             self.gif_warn.setVisible(False)
         if self.movie is not None:
@@ -9834,10 +9945,17 @@ class PreviewPane(QtWidgets.QFrame):
         k = min(max(self.film_k, 0), len(self.film_items) - 1)
         path, mtime, name = self.film_items[k]
         self.cur = (path, mtime)
-        pm = thumbs_service().get(path, mtime, self.PX)
-        if pm is None:
-            pm = shellops.icon_for(name, False, 256).pixmap(128, 128)
-        self._set_pic(pm)
+        if not (self.extra is not None and getattr(self, "_film_shown", None) == (path, mtime)):
+            self._drop_extra()
+            self._film_shown = None
+            # 0.9.129 (사용자 11/10 '여러 개 고르면 해상도가 떨어짐'): 한 장 고를 때와 같은 원본 그림 화면 (휠 확대·◀ ▶)
+            if imginspect.can_handle(path) and self._try_extra(path) and self.extra is not None:
+                self._film_shown = (path, mtime)
+            else:
+                pm = thumbs_service().get(path, mtime, self.PX)
+                if pm is None:
+                    pm = shellops.icon_for(name, False, 256).pixmap(128, 128)
+                self._set_pic(pm)
         self.name.setText(name)
         if es is not None:
             fs = [e[2] for e in es if not e[1] and e[2] >= 0]
@@ -9846,6 +9964,19 @@ class PreviewPane(QtWidgets.QFrame):
                                (T("폴더"), f"{nd:,}" if nd else ""), (T("크기"), size_short(sum(fs)) if fs else "")]
         self._set_rows([(T("그림"), f"{k + 1} / {len(self.film_items)}")] + getattr(self, "_film_rows", []))
         self.btn_inspect.setVisible(imginspect.can_open(path))
+        self._upd_nav()   # 0.9.129
+
+    def _film_nav(self, d):
+        """그림 화면 ◀ ▶ · ←→ (썸네일 줄 모드): 고른 그림 안에서 d 칸 → (순번, 전체)"""
+        n = len(self.film_items)
+        if not n:
+            return None
+        if d:
+            j = min(max(self.film_k + d, 0), n - 1)
+            if j != self.film_k:
+                QtCore.QTimer.singleShot(0, lambda j=j: self.film.setCurrentRow(j))   # 그림 화면이 자기 단추 처리 중에 지워지지 않게 다음 차례에
+                return j, n
+        return self.film_k, n
 
     def _film_pick(self, k):
         if 0 <= k < len(self.film_items) and k != self.film_k:
@@ -9854,6 +9985,7 @@ class PreviewPane(QtWidgets.QFrame):
             self._film_big()
 
     def _film_hide(self):
+        self._film_shown = None
         if self.film.isVisible() or self.film_items:
             self.film.setVisible(False)
             self.film.clear()
@@ -9869,13 +10001,21 @@ class PreviewPane(QtWidgets.QFrame):
                         self.film.item(i).setIcon(QtGui.QIcon(pm))
             return
         if self.cur and self.film_items and px == self.PX and os.path.normcase(path) == os.path.normcase(self.cur[0]) and self.isVisible():
-            self._film_big()   # 썸네일 줄 보는 중 큰 그림 도착 — 줄은 그대로
+            if getattr(self, "_film_shown", None) is None:   # 원본 그림 화면이면 이미 다 그림
+                self._film_big()   # 썸네일 줄 보는 중 큰 그림 도착 — 줄은 그대로
             return
         if self.cur and px == self.PX and os.path.normcase(path) == os.path.normcase(self.cur[0]) and self.isVisible():
             self.refresh()
 
     def _set_pic(self, pm):
         self.src = pm
+        if self.movie is not None and pm is not None and not pm.isNull():   # 0.9.129 GIF·동영상 = 확대 캔버스
+            if not self.zcanvas.isVisible():
+                self.pic.setVisible(False)
+                self.zcanvas.setVisible(True)
+                self.zbar.setVisible(True)
+            self.zcanvas.set_pixmap(pm)
+            return
         self._fit()
 
     def _fit(self):
@@ -9888,6 +10028,13 @@ class PreviewPane(QtWidgets.QFrame):
         self.pic.setPixmap(self.src.scaled(max(1, int(sw * k)), max(1, int(sh * k)), Qt.KeepAspectRatio, Qt.SmoothTransformation))
 
     def refresh(self):
+        try:
+            self._refresh()
+        finally:
+            if self.isVisible():
+                self._upd_nav()
+
+    def _refresh(self):
         if not self.isVisible() or self.window().isMinimized():
             return
         pane = self.main.pane()

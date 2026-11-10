@@ -2306,5 +2306,15 @@
  "전체 검색칸": "Global search box",
  "검색 색인 상태": "Search index status",
  "CPU·GPU 사용량": "CPU·GPU usage",
- "선택": "Selected"
+ "선택": "Selected",
+ "축소": "Zoom out",
+ "확대": "Zoom in",
+ "이전 파일 (←)": "Previous file (←)",
+ "다음 파일 (→)": "Next file (→)",
+ "휠 = 확대·축소, 끌기 = 이동": "Wheel = zoom, drag = move",
+ "쪽 폭을 창에 맞춤": "Fit page width to the window",
+ "이전 파일 (← 또는 <)": "Previous file (← or <)",
+ "다음 파일 (→ 또는 >)": "Next file (→ or >)",
+ "이전 파일 (<)": "Previous file (<)",
+ "다음 파일 (>)": "Next file (>)"
 }
