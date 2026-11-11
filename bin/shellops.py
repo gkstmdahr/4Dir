@@ -987,6 +987,22 @@ class ShellMenu:
         self.timing["전체"] = (time.perf_counter() - _t0) * 1000
         log.info("셸메뉴 시간 %s", " · ".join(f"{k} {v:.0f}ms" for k, v in self.timing.items()))
 
+    def openwith_text(self, cmd):
+        """cmd 가 윈도우 '연결 프로그램' 하위 메뉴(그 안에 'openas' = 다른 앱 선택 이 있는 하위 메뉴)의 항목이면 그 글자, 아니면 None.
+        글자로 메뉴 이름을 찾지 않음 — 윈도우 언어와 상관없이"""
+        u32 = ctypes.windll.user32
+        for i in range(win32gui.GetMenuItemCount(self.hmenu)):
+            sub = u32.GetSubMenu(self.hmenu, i)
+            if not sub:
+                continue
+            ids = [u32.GetMenuItemID(sub, k) for k in range(win32gui.GetMenuItemCount(sub))]
+            if cmd not in ids:
+                continue
+            if not any(0 < c < ShellMenu.EXTRA_BASE and self.verb(c - 1).lower() == "openas" for c in ids):
+                return None
+            return _menu_text(sub, ids.index(cmd)) or None
+        return None
+
     def _own_sub(self, hsub):
         """hsub 가 이 메뉴 맨 위 항목의 하위 메뉴면 그 글자"""
         for i in range(win32gui.GetMenuItemCount(self.hmenu)):
@@ -1111,8 +1127,9 @@ class ShellMenu:
 
     # ------------------------------------------------------------ 메인창에서 부르는 진입점
     @staticmethod
-    def show(hwnd, folder, names, x, y, extras=(), extended=False, tail=(), newfolder=None):
-        """반환: ('extra', 번호) | ('rename', None) | ('invoked', verb) | None(취소)"""
+    def show(hwnd, folder, names, x, y, extras=(), extended=False, tail=(), newfolder=None, openwith=None):
+        """반환: ('extra', 번호) | ('rename', None) | ('invoked', verb) | None(취소)
+        openwith(앱 글자) → True 면 '연결 프로그램 ▸ 앱' 을 부른 쪽이 대신 엶 (0.9.131 사진 앱 폴더 전체)"""
         log.info("셸메뉴 folder=%s names=%s", folder, names[:5])
         m = ShellMenu(hwnd, folder, names, extras, extended, tail, newfolder)
         ShellMenu.current = m
@@ -1135,6 +1152,14 @@ class ShellMenu:
             log.info("셸메뉴 선택 id=%d verb=%s", cmd - 1, verb)
             if verb.lower() == "rename":
                 return ("rename", None)
+            app = m.openwith_text(cmd) if openwith is not None and not verb else None
+            if app:
+                log.info("셸메뉴 '연결 프로그램 ▸ %s' 고름", app)
+                try:
+                    if openwith(app):
+                        return ("invoked", "openwith")
+                except Exception:
+                    log.exception("연결 프로그램 넘김 실패 → 윈도우로 실행")
             m.invoke(hwnd, cmd - 1, folder, x, y)
             return ("invoked", verb)
         finally:

@@ -21,7 +21,7 @@ import shutil
 import ctypes
 import logging
 
-PTLINK_VER = "1.1.0"   # 1.1.0 (빌드 4, 회사 PC PowerToys 0.102 실측): 새 편집기 목록(editorSettings.json)도 같이 맞춤, 윈도우 버전 글자, 키보드 관리자 화면 바로 열기
+PTLINK_VER = "1.2.0"   # 1.2.0 (0.9.131 사용자 11/11 '정보에 비트수'): 윈도우 글자 끝에 64-bit / 64-bit ARM / 32-bit / 1.1.0 (빌드 4, 회사 PC PowerToys 0.102 실측): 새 편집기 목록(editorSettings.json)도 같이 맞춤, 윈도우 버전 글자, 키보드 관리자 화면 바로 열기
 log = logging.getLogger("QE.ptlink")
 WIN_E = "260;69"
 EVENT = "PowerToys_KeyboardManager_Event_Settings"
@@ -282,9 +282,24 @@ def windows_info():
             ubr = g("UBR", "")
             disp = g("DisplayVersion", "") or g("ReleaseId", "")
         name = "Windows 11" if build >= 22000 else "Windows 10"
-        return f"{name} {disp} ({build}{'.' + str(ubr) if ubr != '' else ''})".replace("  ", " "), build
+        return f"{name} {disp} ({build}{'.' + str(ubr) if ubr != '' else ''}) · {windows_arch()}".replace("  ", " "), build
     except Exception:
         return "Windows ?", 0
+
+
+def windows_arch():
+    """윈도우 자체의 비트수 (4Dir 프로그램이 아니라 PC) — IsWow64Process2 의 '원래 기계'. 없으면(옛 윈도우 10) 환경 변수"""
+    names = {0x8664: "64-bit", 0xAA64: "64-bit ARM", 0x014C: "32-bit", 0x01C4: "32-bit ARM"}
+    try:
+        import ctypes
+        k = ctypes.windll.kernel32
+        pm, nm = ctypes.c_ushort(0), ctypes.c_ushort(0)
+        if k.IsWow64Process2(k.GetCurrentProcess(), ctypes.byref(pm), ctypes.byref(nm)):
+            return names.get(nm.value, f"0x{nm.value:04X}")
+    except Exception:
+        pass
+    a = (os.environ.get("PROCESSOR_ARCHITEW6432") or os.environ.get("PROCESSOR_ARCHITECTURE") or "").upper()
+    return {"AMD64": "64-bit", "ARM64": "64-bit ARM", "X86": "32-bit"}.get(a, a or "?")
 
 
 def windows_build():

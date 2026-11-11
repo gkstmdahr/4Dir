@@ -25,7 +25,7 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.12.0"   # 1.12.0: 사용법 페이지 = 앱 사용법 2.0 과 같은 21개 주제 + 움직이는 장면 영상(img/demo, 보이는 것만 재생) · 문구는 앱 번역(bin/lang) / 1.11.1: 후원 버튼 새 창(target=_blank) / 1.11.0: 개인정보처리방침 privacy.html (구글 드라이브 백업 — 구글 앱 등록에 필요) / 1.10.0: 1.10.0: 받기를 누르면 다운로드는 바로 시작 + 후원 안내 창(막지 않음, 닫기 가능 — 사용자 11/6 PureRef 처럼) / 1.9.3: 1.9.3: support 메일 링크에 제목 말머리 [4Dir] / 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
+MAKE_SITE_VER = "1.12.1"   # 1.12.1: 위쪽 just downloader 버튼 = PC판 페이지로 바로 (💻, 사용자 11/11 'PC판이 먼저 보이면') / 1.12.0: 사용법 페이지 = 앱 사용법 2.0 과 같은 21개 주제 + 움직이는 장면 영상(img/demo, 보이는 것만 재생) · 문구는 앱 번역(bin/lang) / 1.11.1: 후원 버튼 새 창(target=_blank) / 1.11.0: 개인정보처리방침 privacy.html (구글 드라이브 백업 — 구글 앱 등록에 필요) / 1.10.0: 1.10.0: 받기를 누르면 다운로드는 바로 시작 + 후원 안내 창(막지 않음, 닫기 가능 — 사용자 11/6 PureRef 처럼) / 1.9.3: 1.9.3: support 메일 링크에 제목 말머리 [4Dir] / 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
 SUPPORT = "support@4dir.net"   # 문제 보고 메일 (1.1.1)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -207,8 +207,8 @@ def board_nav(lang):
 
 def app_nav(lang, up, first=False):
     """1.5.3: 다른 앱 just downloader 버튼 — 같은 언어 페이지로. 1.5.5: 로고 옆 왼쪽(margin-right:auto 로 나머지를 오른쪽으로 밂), first 는 안 씀"""
-    href = f"{up}just-downloader/" + ("" if lang == "en" else lang + "/")
-    return f'<a class="nav app{" first" if first else ""}" href="{href}">📱 just downloader</a>'
+    href = f"{up}just-downloader/" + ("" if lang == "en" else lang + "/") + "windows/"   # 1.12.1 PC판 먼저 (안드로이드는 그 페이지의 '📱 안드로이드 앱 보기')
+    return f'<a class="nav app{" first" if first else ""}" href="{href}">💻 just downloader</a>'
 
 
 def guide_hero(lang):

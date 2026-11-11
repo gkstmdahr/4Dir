@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.130"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_VERSION = "0.9.131"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
 QE_BUILD = 3             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
@@ -5046,7 +5046,8 @@ class Page(QtWidgets.QWidget):
         try:
             r = shellops.ShellMenu.show(self.hwnd(), folder, items, x, y, extras=spec,
                                         newfolder=newfolder[:2] if newfolder else None,
-                                        extended=bool(QtWidgets.QApplication.keyboardModifiers() & Qt.ShiftModifier))
+                                        extended=bool(QtWidgets.QApplication.keyboardModifiers() & Qt.ShiftModifier),
+                                        openwith=(lambda app, ps=list(paths): open_with_handoff(ps, app)) if paths else None)
         except Exception:
             log.exception("셸메뉴 실패 → 기본 메뉴")
             r = self._fallback_menu(gp, names)
@@ -6154,6 +6155,14 @@ def open_file(path):
 def open_via_handoff(path):
     """탐색기 → bin\\4Dir_open.vbs 가 대신 열고 바로 끝남 (사진 앱이 폴더를 직접 읽게). 못 하면 False → 보통 열기.
     rundll32 를 바로 띄우는 길은 회사 보안이 붙잡음(모듈 0개, 실측) → 작업표시줄 고정과 같은 '탐색기 넘김'만 씀"""
+    if not _handoff_line(os.path.normpath(path)):
+        return False
+    log.info("스토어 앱 기본 → 탐색기·4Dir_open.vbs 넘겨 엶 (사진 앱이 폴더 전체를 목록에) %s", path)
+    return True
+
+
+def _handoff_line(line):
+    """bin\\4Dir_open.tmp 에 한 줄 적고 탐색기로 4Dir_open.vbs 실행 → True. 스토어판·vbs 없음·쓰기 실패면 False"""
     vbs = os.path.join(BIN_DIR, "4Dir_open.vbs")
     if datadir.PACKAGED or not os.path.isfile(vbs):
         return False
@@ -6161,13 +6170,39 @@ def open_via_handoff(path):
     try:
         new = not os.path.exists(req)
         with open(req, "a", encoding="utf-16-le", newline="") as f:
-            f.write(("\ufeff" if new else "") + os.path.normpath(path) + "\r\n")
+            f.write(("\ufeff" if new else "") + line + "\r\n")
         subprocess.Popen([os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "explorer.exe"), vbs])
     except OSError:
-        log.exception("넘김 열기 실패 → 보통 열기 %s", path)
+        log.exception("넘김 실패 %s", line[:200])
         return False
-    log.info("스토어 앱 기본 → 탐색기·4Dir_open.vbs 넘겨 엶 (사진 앱이 폴더 전체를 목록에) %s", path)
     return True
+
+
+def open_with_handoff(paths, app_text):
+    """0.9.131 빌드 2 (사용자 11/11 문의 '연결 프로그램 ▸ 사진으로 열면 1장만'): 우클릭 '연결 프로그램 ▸ 앱' 을
+    4Dir 안에서 실행하지 않고 탐색기 → 4Dir_open.vbs → 도우미(openwith.py, 열고 바로 끝남)로. 스토어 앱(사진 등)만 — 보통 프로그램은 False(윈도우가 그대로)"""
+    import openwith
+    files = [p for p in paths if os.path.isfile(p)]
+    if not files or len(files) != len(paths) or len({os.path.normcase(os.path.dirname(p)) for p in files}) != 1:
+        return False
+    name = openwith.find(os.path.splitext(files[0])[1], app_text)
+    if not name or openwith.is_path_app(name):
+        log.info("연결 프로그램 '%s' → %s (윈도우가 그대로 엶)", app_text, "앱 못 찾음" if not name else "보통 프로그램")
+        return False
+    pyw = os.path.join(os.path.dirname(sys.executable), "pythonw.exe")
+    if not os.path.isfile(pyw):
+        pyw = sys.executable
+    helper = os.path.abspath(openwith.__file__)
+    pid = openwith.progid_for(os.path.splitext(files[0])[1], app_text) if len(files) == 1 else None
+    if not pid:   # 빌드 3: 파일 하나 + 앱 ProgId 일 때만 (데이터 객체로 넘기면 도우미가 끝난 뒤 사진 창이 25초 늦게 뜸 — 실측).
+        log.info("연결 프로그램 '%s' 파일 %d개 → 윈도우가 그대로 엶 (여러 개면 고른 것들을 사진 앱이 묶어 보여 줌)", app_text, len(files))
+        return False
+    name = "class:" + pid
+    if any("\t" in s for s in [pyw, helper, name] + files):
+        return False
+    ok = _handoff_line("\t".join(["openwith", pyw, helper, name] + [os.path.normpath(p) for p in files]))
+    log.info("연결 프로그램 '%s'(%s) %d개 → 넘김 %s", app_text, name, len(files), "됨" if ok else "실패")
+    return ok
 
 
 def default_is_store_app(path):
