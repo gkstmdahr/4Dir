@@ -2336,5 +2336,18 @@
  "⚠ {0} 는 이미 My메뉴 '{1}'에서 쓰고 있습니다. 다른 키로 바꾸거나, 그래도 쓰려면 [저장] (위에 있는 항목이 실행됨)": "⚠ {0} ist bereits von Mein Menü „{1}“ belegt. Andere Taste wählen oder trotzdem [Speichern] (der obere Eintrag wird ausgeführt)",
  "⚠ {0} 는 이미 '{1}'에서 쓰고 있습니다. 다른 키로 바꾸거나, 그래도 쓰려면 [저장] (이 항목이 먼저 실행됨)": "⚠ {0} ist bereits von „{1}“ belegt. Andere Taste wählen oder trotzdem [Speichern] (dieser Eintrag hat Vorrang)",
  "이름 앞에": "Vor dem Namen",
- "이름 뒤에": "Nach dem Namen"
+ "이름 뒤에": "Nach dem Namen",
+ "하위 폴더까지": "Unterordner einbeziehen",
+ "가로 개수:": "Pro Zeile:",
+ "칸": " ",
+ "폴더 목록으로": "Zurück zur Ordnerliste",
+ "한 줄에 그림 몇 장씩 놓을지": "Wie viele Bilder pro Zeile",
+ "하위 폴더까지 찾는 중…": "Unterordner werden durchsucht…",
+ "그림 {0}장 찾는 중…": "{0} Bilder gefunden…",
+ "그림 {0}장 · 폴더 {1}곳": "{0} Bilder · {1} Ordner",
+ "(최대 {0}장까지만 표시)": "(nur die ersten {0} angezeigt)",
+ "(너무 많아 여기까지만)": "(zu viele — hier angehalten)",
+ "하위 폴더까지 그림 없음": "Keine Bilder in diesem Ordner oder seinen Unterordnern",
+ "폴더 미리보기 목록으로 돌아가기 (Esc)": "Zurück zur Ordnervorschau-Liste (Esc)",
+ "켜면 하위 폴더 안 그림·동영상까지 폴더별로 아래로 계속 보여 줍니다 (최대 {0}장)": "Wenn aktiviert, werden auch Bilder und Videos aus Unterordnern ordnerweise in einer langen Liste angezeigt (bis {0})"
 }

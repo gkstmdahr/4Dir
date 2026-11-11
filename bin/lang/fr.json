@@ -2336,5 +2336,18 @@
  "⚠ {0} 는 이미 My메뉴 '{1}'에서 쓰고 있습니다. 다른 키로 바꾸거나, 그래도 쓰려면 [저장] (위에 있는 항목이 실행됨)": "⚠ {0} est déjà utilisé par Mon menu « {1} ». Choisissez une autre touche ou [Enregistrer] quand même (celui du haut s'exécute)",
  "⚠ {0} 는 이미 '{1}'에서 쓰고 있습니다. 다른 키로 바꾸거나, 그래도 쓰려면 [저장] (이 항목이 먼저 실행됨)": "⚠ {0} est déjà utilisé par « {1} ». Choisissez une autre touche ou [Enregistrer] quand même (cet élément passe en premier)",
  "이름 앞에": "Avant le nom",
- "이름 뒤에": "Après le nom"
+ "이름 뒤에": "Après le nom",
+ "하위 폴더까지": "Inclure les sous-dossiers",
+ "가로 개수:": "Par ligne :",
+ "칸": " ",
+ "폴더 목록으로": "Retour à la liste",
+ "한 줄에 그림 몇 장씩 놓을지": "Nombre d'images par ligne",
+ "하위 폴더까지 찾는 중…": "Recherche dans les sous-dossiers…",
+ "그림 {0}장 찾는 중…": "{0} images trouvées…",
+ "그림 {0}장 · 폴더 {1}곳": "{0} images · {1} dossiers",
+ "(최대 {0}장까지만 표시)": "(seules les {0} premières sont affichées)",
+ "(너무 많아 여기까지만)": "(trop nombreux — arrêt ici)",
+ "하위 폴더까지 그림 없음": "Aucune image dans ce dossier ni ses sous-dossiers",
+ "폴더 미리보기 목록으로 돌아가기 (Esc)": "Retour à la liste de l'aperçu du dossier (Échap)",
+ "켜면 하위 폴더 안 그림·동영상까지 폴더별로 아래로 계속 보여 줍니다 (최대 {0}장)": "Si activé, les images et vidéos des sous-dossiers sont aussi affichées, dossier par dossier, dans une longue liste (jusqu'à {0})"
 }

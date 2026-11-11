@@ -2336,5 +2336,18 @@
  "⚠ {0} 는 이미 My메뉴 '{1}'에서 쓰고 있습니다. 다른 키로 바꾸거나, 그래도 쓰려면 [저장] (위에 있는 항목이 실행됨)": "⚠ {0} is already used by My Menu '{1}'. Pick another key, or press [Save] to use it anyway (the upper item runs)",
  "⚠ {0} 는 이미 '{1}'에서 쓰고 있습니다. 다른 키로 바꾸거나, 그래도 쓰려면 [저장] (이 항목이 먼저 실행됨)": "⚠ {0} is already used by '{1}'. Pick another key, or press [Save] to use it anyway (this item runs first)",
  "이름 앞에": "Before the name",
- "이름 뒤에": "After the name"
+ "이름 뒤에": "After the name",
+ "하위 폴더까지": "Include subfolders",
+ "가로 개수:": "Per row:",
+ "칸": " ",
+ "폴더 목록으로": "Back to folder list",
+ "한 줄에 그림 몇 장씩 놓을지": "How many pictures per row",
+ "하위 폴더까지 찾는 중…": "Searching subfolders…",
+ "그림 {0}장 찾는 중…": "{0} pictures found so far…",
+ "그림 {0}장 · 폴더 {1}곳": "{0} pictures · {1} folders",
+ "(최대 {0}장까지만 표시)": "(showing the first {0} only)",
+ "(너무 많아 여기까지만)": "(too many — stopped here)",
+ "하위 폴더까지 그림 없음": "No pictures in this folder or its subfolders",
+ "폴더 미리보기 목록으로 돌아가기 (Esc)": "Back to the folder preview list (Esc)",
+ "켜면 하위 폴더 안 그림·동영상까지 폴더별로 아래로 계속 보여 줍니다 (최대 {0}장)": "When on, pictures and videos in subfolders are also shown, folder by folder, in one long list (up to {0})"
 }

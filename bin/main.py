@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.131"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 3             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.132"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 6             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -9558,6 +9558,19 @@ class PreviewPane(QtWidgets.QFrame):
             sc = QtGui.QShortcut(QtGui.QKeySequence(k), self)
             sc.setContext(Qt.WindowShortcut)
             sc.activated.connect(lambda d=d: self._go(d))
+        # 0.9.132 빌드 5: 폴더 미리보기에서 고른 파일을 보는 중 → 맨 위 '◀ 폴더 목록으로' (스크롤 위치 그대로 돌아감)
+        self._fold = None        # {"w": 숨겨 둔 폴더 미리보기, "key": 폴더 키, "paths": 순서, "k": 지금}
+        self._fold_reuse = None  # 돌아갈 때 다시 붙일 폴더 미리보기
+        self.btn_fold = QtWidgets.QPushButton()
+        self.btn_fold.setObjectName("foldBack")
+        self.btn_fold.setCursor(Qt.PointingHandCursor)
+        self.btn_fold.setToolTip(T("폴더 미리보기 목록으로 돌아가기 (Esc)"))
+        self.btn_fold.clicked.connect(self._fold_back)
+        self.btn_fold.setVisible(False)
+        lay.addWidget(self.btn_fold, 0, Qt.AlignLeft)
+        sc = QtGui.QShortcut(QtGui.QKeySequence(Qt.Key_Escape), self)
+        sc.setContext(Qt.WidgetWithChildrenShortcut)
+        sc.activated.connect(lambda: self._fold is not None and self._fold_back())
         lay.addLayout(mid, 1)
         lay.addWidget(self.zbar)   # 확대 줄·재생 조작줄은 ◀ ▶ 아래 창 전체 폭 (좁은 창에서 장면 막대가 짓눌리지 않게)
         # 0.9.128 (사용자 11/10): 그림을 여러 개 고르면 아래에 고른 그림 썸네일 줄 — 누르거나 ←→ 로 위 큰 그림이 바뀜
@@ -9671,8 +9684,19 @@ class PreviewPane(QtWidgets.QFrame):
                                         edit=(lambda p: open_img_edit(p, self.window())) if imgedit.can_edit(path) else None)
                     self.btn_seq.setVisible(False)   # 0.9.118 빌드 2: 연번 재생은 색상 도구 칸 안으로
                 elif name == "folderprev":
-                    w = mod.make_widget(path, self, thumb=thumbs_service() if OPTS["thumbnails"] else None, open_cb=self._open_from_folder,
-                                        icon_for=lambda n, d: shellops.icon_for(n, d, 16), info_cb=self._folder_count)
+                    rw, self._fold_reuse = self._fold_reuse, None
+                    if rw is not None and os.path.normcase(rw.path) == os.path.normcase(path):   # 빌드 5: 파일 보다가 돌아옴 → 숨겨 둔 것 그대로
+                        w = rw
+                        w.resume()
+                        w.setVisible(True)
+                    else:
+                        if rw is not None:
+                            rw.stop()
+                            rw.deleteLater()
+                        w = mod.make_widget(path, self, thumb=thumbs_service() if OPTS["thumbnails"] else None, open_cb=self._open_from_folder,
+                                            icon_for=lambda n, d: shellops.icon_for(n, d, 16), info_cb=self._folder_count,
+                                            opts=SETTINGS["folder_prev"], save_cb=SETTINGS.save,   # 0.9.132 빌드 2 하위 폴더까지·칸 수
+                                            pick_cb=self._fold_open)   # 빌드 5 누르면 원래 파일 화면
                 else:
                     w = mod.make_widget(path, self)
             except Exception:
@@ -9732,6 +9756,8 @@ class PreviewPane(QtWidgets.QFrame):
 
     def _nav_any(self, d):
         """◀ ▶ · ←→ 공용 (0.9.129): 썸네일 줄 모드면 고른 그림 안, 아니면 폴더의 모든 파일 (탐색기처럼, 형식 상관없이)"""
+        if self._fold is not None:   # 0.9.132 빌드 5 폴더 미리보기 목록 순서
+            return self._fold_nav(d)
         if self.film_items and self.film.isVisible():
             return self._film_nav(d)
         return self._nav_file(d)
@@ -10364,8 +10390,77 @@ class PreviewPane(QtWidgets.QFrame):
         try:
             self._refresh()
         finally:
+            if self._fold_reuse is not None:   # 돌아갈 폴더가 아닌 것을 고름 → 버림
+                w, self._fold_reuse = self._fold_reuse, None
+                w.stop()
+                w.deleteLater()
             if self.isVisible():
                 self._upd_nav()
+
+    # ---- 0.9.132 빌드 5: 폴더 미리보기에서 누른 파일 = 원래 파일 화면 ----
+    def _fold_open(self, path, paths):
+        w = self.extra
+        if w is None or not hasattr(w, "park"):
+            return
+        key = getattr(self, "_extra_key", None)
+        w.park()
+        self.extra_lay.removeWidget(w)
+        w.hide()
+        self.extra = None
+        self._extra_key = None
+        k = next((i for i, p in enumerate(paths) if os.path.normcase(p) == os.path.normcase(path)), 0)
+        self._fold = {"w": w, "key": key, "paths": list(paths), "k": k}
+        self.btn_fold.setText("◀ " + T("폴더 목록으로") + "  (" + os.path.basename(w.path.rstrip("\\/")) + ")")
+        log.info("폴더 미리보기 → 파일 화면 %s (%d/%d)", path, k + 1, len(paths))
+        self._fold_show(k)
+
+    def _fold_show(self, k):
+        f = self._fold
+        p = f["paths"][k]
+        f["k"] = k
+        self._stop_movie()
+        self._drop_extra()
+        self.btn_inspect.setVisible(False)
+        self.btn_seq.setVisible(False)
+        self._film_hide()
+        try:
+            st = os.stat(p)
+            e = [os.path.basename(p), False, st.st_size, st.st_mtime, getattr(st, "st_file_attributes", 0), p, None, None]
+        except OSError as ex:
+            log.info("폴더 미리보기 파일 못 읽음 %s: %s", p, ex)
+            e = [os.path.basename(p), False, -1, 0, 0, p, None, None]
+        self._extra_key = (os.path.normcase(p), e[3])
+        self.btn_fold.setVisible(True)
+        self._show_one(e, p, None)   # 칸 목록과 무관한 파일 (연번 재생 단추 안 씀)
+        self._upd_nav()
+
+    def _fold_nav(self, d):
+        f = self._fold
+        k, n = f["k"], len(f["paths"])
+        if d:
+            j = min(max(k + d, 0), n - 1)
+            if j != k:
+                self._fold_show(j)
+                k = j
+        return k, n
+
+    def _fold_back(self):
+        f, self._fold = self._fold, None
+        self.btn_fold.setVisible(False)
+        if f is None:
+            return
+        log.info("파일 화면 → 폴더 미리보기 목록")
+        self._fold_reuse = f["w"]
+        f["w"].focus_path = f["paths"][f["k"]] if f["paths"] else None
+        self._extra_key = None
+        self.refresh()
+
+    def _fold_discard(self):
+        f, self._fold = self._fold, None
+        self.btn_fold.setVisible(False)
+        if f is not None:
+            f["w"].stop()
+            f["w"].deleteLater()
 
     def _refresh(self):
         if not self.isVisible() or self.window().isMinimized():
@@ -10386,6 +10481,11 @@ class PreviewPane(QtWidgets.QFrame):
                 log.warning("미리보기 다시 그리기가 몰림 (1.5초에 5번) %s — 부른 곳: %s", key[0], " | ".join(getattr(self, "_last_callers", [])))
             if self.extra is not None and getattr(self, "_extra_key", None) == key and self.extra.isVisible():
                 return
+        if self._fold is not None:   # 0.9.132 빌드 5
+            if len(rows) == 1 and key == self._fold["key"]:
+                return   # 같은 폴더 그대로 — 폴더 미리보기에서 고른 파일 화면 유지
+            log.info("폴더 미리보기 파일 보기 끝 (다른 것 고름)")
+            self._fold_discard()
         ekey = key if len(rows) == 1 else None
         self._stop_movie()
         self._drop_extra()
@@ -10412,6 +10512,10 @@ class PreviewPane(QtWidgets.QFrame):
             return
         e = v.model_.rows[rows[0]]
         path = v.model_.full(e)
+        self._show_one(e, path, v)
+
+    def _show_one(self, e, path, v):
+        """파일·폴더 하나 화면 (형식별 미리보기·정보 표) — 칸에서 고른 것 / 폴더 미리보기에서 누른 것(0.9.132 빌드 5) 공용"""
         self.name.setText(e[7] or e[0])
         rows = [(T("종류"), shellops.type_for(e[0], e[1]))]
         if e[1] and os.path.isdir(path) and not (devices.is_dev(path) or archives.is_arc(path)):
@@ -10432,7 +10536,7 @@ class PreviewPane(QtWidgets.QFrame):
         if not e[1] and e[0].lower().endswith(".gif") and OPTS["thumbnails"] and self._play_gif(path, e[2]):
             self.cur = None
             return
-        self.btn_seq.setVisible(not e[1] and thumbs.is_image(e[0]) and seq_in_view(v, path) is not None)
+        self.btn_seq.setVisible(not e[1] and thumbs.is_image(e[0]) and v is not None and seq_in_view(v, path) is not None)
         if (not e[1] or os.path.isdir(path)) and self._try_extra(path):   # 0.9.116 + 0.9.117 폴더 코드·글꼴·소리·PSD 레이어·엑셀·그림(확대·스포이트)
             if not self.pic.isVisible():
                 self.cur = None
@@ -10997,14 +11101,14 @@ class Main(QtWidgets.QMainWindow):
         sp = QtWidgets.QWidget()
         sp.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
         self._top_sp = tb.addWidget(sp)   # 0.9.128 구분선 정리 때 '항목' 으로 안 셈
-        # CPU·GPU 사용량 (1.5초마다, 창 최소화·표시 끔이면 멈춤)
+        # CPU·GPU 사용량 (1초마다, 창 최소화·표시 끔이면 멈춤)
         self.mon_label = QtWidgets.QLabel()
         self.mon_label.setObjectName("sysmon")
         self.mon_label.setTextFormat(Qt.RichText)
         self.mon_act = tb.addWidget(self.mon_label)
         self.mon = None
         self.mon_timer = QtCore.QTimer(self)
-        self.mon_timer.setInterval(1500)
+        self.mon_timer.setInterval(1000)   # 0.9.132 작업 관리자처럼 1초 (전엔 1.5초 — 사용자 '반응이 느림')
         self.mon_timer.timeout.connect(self._update_mon)
         # 0.9.109 빌드 2 (사용자 11/6): 메뉴 막대 끝 버전 글자 뺌 — 제목 표시줄에 이미 있음
         self.set_sysmon(SETTINGS["sysmon"], save=False)
