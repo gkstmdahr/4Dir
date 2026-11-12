@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.135"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 3             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.136"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 2            #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -499,6 +499,15 @@ def _pin_home(vbs, ico):
         return None, None
 
 
+# 0.9.136 빌드 2 (받은 문의 11/13 'vbs 실행기 고정이 안 켜져 4Dir.exe 로 바꿔도 다시 vbs 로'): 4Dir.exe 실행기(1.2.0~)로 켰는지
+#   실행기가 QE_LAUNCHED_BY=exe:<4Dir.exe 경로> 를 넘김 → 고정·고정 고치기를 exe 로. 자식 프로그램에 안 넘기게 지움
+LAUNCH_EXE = ""
+_lb = os.environ.pop("QE_LAUNCHED_BY", "")
+if _lb.lower().startswith("exe:") and os.path.isfile(_lb[4:]):
+    LAUNCH_EXE = _lb[4:]
+log.info("시작 방법: %s", ("4Dir.exe " + LAUNCH_EXE) if LAUNCH_EXE else "vbs 또는 직접")
+
+
 def set_taskbar_relaunch(w):
     """창에 '다시 실행할 명령'을 달아 둠 → 작업표시줄에 고정하면 4Dir.vbs + 4Dir 아이콘으로 고정됨 (윈도우 표준 방식)
     0.9.127: 고정 대상 = %LOCALAPPDATA%\\4Dir\\pin 의 실행기·아이콘 (_pin_home)"""
@@ -522,6 +531,8 @@ def set_taskbar_relaunch(w):
         if stub:
             cmd = f'"{wscript}" "{stub}"'
             ico = pico or ico
+        if LAUNCH_EXE:   # 0.9.136 빌드 2: 4Dir.exe 로 켰으면 고정도 4Dir.exe (vbs 실행기가 안 켜지는 PC)
+            cmd = f'"{LAUNCH_EXE}"'
         store = propsys.SHGetPropertyStoreForWindow(int(w.winId()), propsys.IID_IPropertyStore)
 
         def put(key, val):
@@ -1582,6 +1593,7 @@ def date_bucket(ts, now=None):
 
 class DirModel(QtCore.QAbstractTableModel):
     renamed = QtCore.Signal(str, str)
+    rename_failed = QtCore.Signal(str)   # 0.9.136 이름 바꾸기 실패한 그 파일(전체 경로) → 목록이 다시 고름
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -1847,6 +1859,7 @@ class DirModel(QtCore.QAbstractTableModel):
         except OSError as ex:
             log.warning("이름변경 실패 %s -> %s : %s", src, dst, ex)
             QtWidgets.QMessageBox.warning(None, T("이름 바꾸기"), T('이름을 바꿀 수 없습니다.\n{0}').format(ex))
+            self.rename_failed.emit(src)   # 0.9.136 사용자 11/12: 다른 파일 눌러 끝냈어도 실패하면 그 파일로 돌아감
             return False
         log.info("이름변경 %s -> %s", src, new)
         push_undo("rename", (dst, src), T('이름 바꾸기 ({0} → {1})').format(os.path.basename(src), new))
@@ -3362,6 +3375,7 @@ class Page(QtWidgets.QWidget):
         self.stack.addWidget(self.icons)
 
         self.model_.renamed.connect(lambda a, b: self.reload(reason="rename"))
+        self.model_.rename_failed.connect(lambda p: QtCore.QTimer.singleShot(0, lambda: self._focus_failed(p)))   # 누른 다른 파일 선택이 끝난 뒤
         self.sel.selectionChanged.connect(lambda *_: self._emit_status())
         self.set_mode(mode)
         self.navigate(path, record=False)
@@ -3992,6 +4006,23 @@ class Page(QtWidgets.QWidget):
             self.watch_timer.start()
 
     # ---------------------------------------------------------- 선택
+    def _focus_failed(self, path):
+        """0.9.136 이름 바꾸기 실패(이름 겹침 등) → 이름을 바꾸려던 그 파일만 골라 보여 줌"""
+        try:
+            k = os.path.normcase(path)
+            m = self.model_
+            r = next((i for i, e in enumerate(m.rows) if not is_group(e) and os.path.normcase(m.full(e)) == k), None)
+            if r is None:
+                log.info("이름 바꾸기 실패 → 그 파일이 목록에 없음 %s", path)
+                return
+            idx = m.index(r, 0)
+            self.sel.setCurrentIndex(idx, QtCore.QItemSelectionModel.ClearAndSelect | QtCore.QItemSelectionModel.Rows)
+            self.view().scrollTo(idx)
+            self.view().setFocus()
+            log.info("이름 바꾸기 실패 → 그 파일 다시 고름 %s (줄 %d)", os.path.basename(path), r)
+        except RuntimeError:
+            pass
+
     def selected_rows(self):
         return sorted({i.row() for i in self.sel.selectedIndexes() if i.row() < len(self.model_.rows)})
 
@@ -14614,7 +14645,7 @@ def main():
         import pythoncom
         pythoncom.CoInitialize()
         try:
-            pinfix.fix(os.path.dirname(BIN_DIR), QE_VERSION)
+            pinfix.fix(os.path.dirname(BIN_DIR), QE_VERSION, prefer_exe=bool(LAUNCH_EXE))   # 0.9.136 빌드 2
         except Exception:
             log.exception("고정 바로가기 고치기 실패")
         finally:

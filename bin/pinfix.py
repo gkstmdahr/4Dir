@@ -16,7 +16,10 @@ import glob
 import logging
 
 log = logging.getLogger("QE.pinfix")
-PINFIX_VER = "1.1.1"
+PINFIX_VER = "1.2.0"
+# 1.2.0 (0.9.136 빌드 2, 받은 문의 11/13): 사용자가 고정을 4Dir.exe 로 바꿔도 켤 때마다 vbs 실행기로 되돌리던 것 →
+#   4Dir.exe 고정은 vbs 로 안 바꿈(옛·없어진 폴더면 지금 폴더 4Dir.exe 로만). exe 로 켰으면(prefer_exe) vbs 실행기 고정도 4Dir.exe 로
+#   (그 PC 는 vbs 실행기가 안 켜짐 — VBScript 꺼짐·보안 등 추정)
 # 1.1.1 (11/10): 고정 위치 = %LOCALAPPDATA%\Programs\4Dir\pin (AppData\Local\4Dir 은 보안 규칙에 막힘). 옛 위치 실행기 가리키면 새 위치로
 # 1.1.0 (0.9.127 빌드 3, 11/9 실측): 윈도우는 같은 앱(AppID)의 옛 고정 바로가기(User Pinned\ImplicitAppShortcuts)를
 # 다시 써서, 고정을 풀었다 다시 해도 창의 새 고정 정보(pin\4Dir_pin.vbs)를 안 씀 → 작업 표시줄 고정 바로가기를
@@ -79,7 +82,7 @@ def _is_stub(args):
     return "4dir_pin.vbs" in (args or "").lower()
 
 
-def fix(root, ver, dirs=None, shell=None, stub=None, stub_ico=None):
+def fix(root, ver, dirs=None, shell=None, stub=None, stub_ico=None, prefer_exe=False):
     """root = 지금 4Dir 폴더, ver = 지금 버전 문자열. 고친 바로가기 경로 목록
     stub/stub_ico = 고정 위치 실행기·아이콘 (None 이면 pin_home() 으로 찾음, '' 이면 안 씀 → 1.0.0 동작)"""
     if stub is None:
@@ -106,6 +109,23 @@ def fix(root, ver, dirs=None, shell=None, stub=None, stub_ico=None):
             except Exception:
                 log.exception("pinfix 바로가기 읽기 실패 %s", p)
                 continue
+            is_exe = os.path.basename((lk.TargetPath or "").strip('"')).lower() == "4dir.exe"
+            if prefer_exe and os.path.exists(exe) and _is_pinned(p) and not is_exe and (_is_stub(lk.Arguments) or old):
+                # 1.2.0: 4Dir.exe 로 켰음 → vbs(실행기·폴더 4Dir.vbs) 고정을 지금 폴더 4Dir.exe 로 (더 새 버전 폴더를 가리키면 그대로)
+                ov = folder_version(old) if old else None
+                if not (old and os.path.isdir(old) and ov is not None and cur is not None and ov > cur):
+                    try:
+                        was = (lk.TargetPath, lk.Arguments, lk.IconLocation)
+                        lk.TargetPath = exe
+                        lk.Arguments = ""
+                        lk.WorkingDirectory = root
+                        lk.IconLocation = (stub_ico or exe) + ",0"
+                        lk.Save()
+                        fixed.append(p)
+                        log.info("pinfix 4Dir.exe 로 켜서 고정도 exe 로 %s : %s → %s", p, was, exe)
+                    except Exception:
+                        log.exception("pinfix exe 로 바꾸기 실패 %s", p)
+                    continue
             if stub and _is_pinned(p) and _is_stub(lk.Arguments):   # 이미 고정 위치 실행기 — 위치·아이콘만 맞춤
                 want_a = f'"{stub}"'
                 bad_a = os.path.normcase(lk.Arguments or "") != os.path.normcase(want_a)
@@ -124,7 +144,7 @@ def fix(root, ver, dirs=None, shell=None, stub=None, stub_ico=None):
                     except Exception:
                         log.exception("pinfix 아이콘 고치기 실패 %s", p)
                 continue
-            if stub and old and _is_pinned(p):   # 작업 표시줄·시작 고정 → 고정 위치 실행기로 (지금 폴더·없어짐·옛 버전일 때)
+            if stub and old and _is_pinned(p) and not is_exe:   # 작업 표시줄·시작 고정(vbs) → 고정 위치 실행기로 (지금 폴더·없어짐·옛 버전일 때). 1.2.0: exe 고정은 아래에서 exe 그대로
                 same = os.path.normcase(os.path.normpath(old)) == os.path.normcase(os.path.normpath(root))
                 ov = folder_version(old)
                 gone = not os.path.isdir(old)

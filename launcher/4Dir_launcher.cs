@@ -1,4 +1,5 @@
-// 4Dir launcher (exe) v1.1.0 — 4Dir.vbs 와 같은 일을 하는 작은 실행 파일 (코드 서명용)
+// 4Dir launcher (exe) v1.2.0 — 4Dir.vbs 와 같은 일을 하는 작은 실행 파일 (코드 서명용)
+// - 1.2.0 (0.9.136): 4Dir 에 QE_LAUNCHED_BY=exe:<이 exe 경로> 를 넘김 → 작업 표시줄 고정도 4Dir.exe 로 (vbs 가 막힌 PC)
 // - 1.1.0: 다른 폴더의 바로가기 링크(심볼릭 링크 — winget 휴대용 설치 방식)로 실행돼도 진짜 4Dir 폴더를 찾음
 //   (전엔 링크가 있는 폴더에서 bin 을 찾아 '프로그램 파일을 찾을 수 없음' 안내 창, 11/3 재현)
 // - 1) 함께 들어 있는 runtime\pythonw.exe (배포판)
@@ -28,7 +29,7 @@ using System.Windows.Forms;
 
 static class Launcher
 {
-    const string LAUNCHER_VER = "1.1.0";
+    const string LAUNCHER_VER = "1.2.0";
     const string DL_URL = "https://github.com/gkstmdahr/4Dir/releases/latest";
     static string dir;
     static bool ko;
@@ -154,6 +155,7 @@ static class Launcher
             var si = new ProcessStartInfo(py, "\"" + app + "\"");
             si.UseShellExecute = false;
             si.WorkingDirectory = dir;
+            si.EnvironmentVariables["QE_LAUNCHED_BY"] = "exe:" + self;   // 1.2.0 (링크로 켰으면 링크 경로 — 고정은 사용자가 누른 그 exe 로)
             Process.Start(si);
         }
         catch (Exception e) { L("start error " + e.Message); return Fail("noruntime", "start failed: " + e.Message); }
