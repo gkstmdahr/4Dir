@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.133"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 2             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.134"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 8             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -1119,10 +1119,81 @@ def is_search(p):
 
 
 FLAT_Q = "⤵*"   # 빌드 20: 하위 폴더 펼쳐 보기 = 그 폴더 아래 모든 파일 (폴더 아래 찾기와 같은 길, 파일만)
+HOME_Q = "⌂home"   # 0.9.134 홈 = 윈도우 탐색기 홈(즐겨찾기 + 최근 항목). 태그 보기처럼 검색 결과 길(전체 경로·위치 열)을 씀
+WIN_HOME = "shell:::{f874310e-b6b7-47dc-bc84-b9e6b38f5903}"   # 윈도우 11 탐색기 '홈' (고정·자주 쓰는 폴더 + 최근 파일, 탐색기와 같은 순서)
+HOME_INDENT = 16   # 빌드 8 홈 묶음 안 항목 들여쓰기 (px)
+HOME_WAIT = 2.0   # 끊긴 네트워크 폴더가 고정돼 있으면 셸이 멈춤 → 이 초 넘으면 포기 (화면은 안 멈춤: 읽기는 작업 스레드)
+HOME_FAV = set()   # 홈 목록 중 즐겨찾기(탐색기 '즐겨찾기' = 고정·자주 쓰는 폴더) 경로 (normcase). 나머지 = 최근 항목 (최근 항목에 폴더도 있음 — 실측 'test')
+
+
+def is_home(p):
+    return bool(p) and p.startswith(SEARCH_PREFIX) and p[len(SEARCH_PREFIX):] == HOME_Q
+
+
+def home_entries(timeout=HOME_WAIT):
+    """윈도우 탐색기 홈 목록 → entry 목록 (즐겨찾기 먼저, 그다음 최근 항목 — HOME_FAV 로 가름). timeout 초 안에 답이 없으면 None.
+    0.9.134 실측(회사 PC): 42개(폴더 22 · 파일 20) 0.35초, 탐색기 홈 '42개 항목' 과 같음"""
+    box = {}
+
+    def read():
+        out = []
+        try:
+            import pythoncom
+            import win32com.client
+            pythoncom.CoInitialize()
+            sh = win32com.client.Dispatch("Shell.Application")
+            qa = sh.NameSpace(favorites.QUICK_ACCESS)   # 즐겨찾기 묶음 = 이 목록에 있는 것 (홈은 최근 항목이 먼저, 폴더·파일로는 못 가름)
+            box["fav"] = {os.path.normcase(x.Path) for x in (qa.Items() if qa else []) if x.Path}
+            ns = sh.NameSpace(WIN_HOME)
+            for it in (ns.Items() if ns else []):
+                try:
+                    pth = it.Path or ""
+                    if not pth or pth.startswith("::") or pth.lower().startswith("shell:"):
+                        continue
+                    isd = bool(it.IsFolder)
+                    when = 0.0
+                    if not isd:
+                        try:
+                            d = it.ExtendedProperty("System.DateAccessed")
+                            when = d.timestamp() if d else 0.0
+                        except Exception:
+                            when = 0.0
+                    name = it.Name if isd else (os.path.basename(pth) or it.Name)
+                    idx = None
+                    if isd and not pth.startswith("\\\\"):   # 빌드 6: 문서·다운로드 등 특수 폴더 아이콘 (네트워크 폴더는 끊겼으면 멈출 수 있어 기본 그림)
+                        idx = fileicons.sys_index(pth)
+                        idx = idx if idx is not None and idx >= 0 else None
+                    out.append([name, isd, -1 if isd else int(getattr(it, "Size", 0) or 0), when, 0, pth, idx, None])
+                except Exception:
+                    log.debug("홈 항목 하나 못 읽음", exc_info=True)
+            del ns
+        except Exception:
+            log.exception("홈 목록 읽기 실패")
+        box["r"] = out
+    t0 = time.time()
+    th = threading.Thread(target=read, daemon=True, name="win-home")
+    th.start()
+    th.join(timeout)
+    if "r" not in box:
+        log.warning("홈 목록 %.1f초 안에 응답 없음 → 포기 (끊긴 네트워크 고정 폴더 의심)", timeout)
+        return None
+    fav = box.get("fav", set())
+    HOME_FAV.clear()
+    HOME_FAV.update(fav)
+    r = [e for e in box["r"] if os.path.normcase(e[5]) in fav] + [e for e in box["r"] if os.path.normcase(e[5]) not in fav]   # 즐겨찾기 먼저
+    log.info("홈 목록 %d개 (즐겨찾기 %d · 최근 항목 %d) %.0fms", len(r), sum(1 for e in r if is_home_fav(e)), sum(1 for e in r if not is_home_fav(e)), (time.time() - t0) * 1000)
+    return r
+
+
+def is_home_fav(e):
+    return os.path.normcase(e[5] or "") in HOME_FAV
 
 
 def search_path(q, folder=None):
     return SEARCH_PREFIX + q.strip() + (f" @ {folder}" if folder else "")
+
+
+HOME = search_path(HOME_Q)   # 0.9.134
 
 
 def parse_search(p):
@@ -1145,12 +1216,16 @@ def disp_path(p):
         return devices.friendly(p)
     if archives.is_arc(p):   # 빌드 20 압축 안: F:\a.zip\그림
         return archives.friendly(p)
+    if is_home(p):
+        return T("홈")
     return T(THIS_PC) if p == THIS_PC else p
 
 
 def tab_title(p):
     if p == THIS_PC:
         return T(THIS_PC)
+    if is_home(p):
+        return "⌂ " + T("홈")
     if devices.is_dev(p):
         return devices.name_of(p)
     if archives.is_ftp(p):   # 0.9.109
@@ -1285,7 +1360,15 @@ class ScanJob(QtCore.QRunnable):
 
                 def rows(lst):
                     return [[n, d, s, m, 0, pth, None, None] for pth, n, d, s, m in lst]
-                if tags.is_view(q):   # 0.9.109 태그·그룹 보기 (4Dir 안에 저장한 목록)
+                if q == HOME_Q:   # 0.9.134 홈
+                    r = home_entries()
+                    if r is None:
+                        err = T("홈 목록이 응답하지 않습니다 (끊긴 네트워크 폴더?) — 새로 고침(F5)으로 다시 읽기")
+                        self.sig.info.emit(self.gen, err)
+                    else:
+                        entries = r
+                        self.sig.info.emit(self.gen, T("즐겨찾기 {0}개 · 최근 항목 {1}개").format(sum(1 for e in r if is_home_fav(e)), sum(1 for e in r if not is_home_fav(e))))
+                elif tags.is_view(q):   # 0.9.109 태그·그룹 보기 (4Dir 안에 저장한 목록)
                     entries = rows(TAGS.rows(q))
                     self.sig.info.emit(self.gen, T('{0:,}개').format(len(entries)))   # 0.9.110: '찾는 중…' 에 멈춰 있던 것
                 elif folder:   # 색인 없이 그 폴더 아래를 바로 훑기 (중간 결과를 계속 보냄)
@@ -1512,6 +1595,8 @@ class DirModel(QtCore.QAbstractTableModel):
         self.cloud = None       # 동기화 폴더(원드라이브 등) 안이면 그 등록 이름 (v0.9.94 상태 열)
         self.group_on = False   # 자세히 보기일 때만 날짜 묶음 (v0.9.90, Page.set_mode) — 아이콘 보기는 묶지 않음
         self.n_groups = 0       # rows 안 묶음 제목 줄 수 (항목 수 셀 때 뺌)
+        self.folded = set()     # 0.9.134 빌드 7 홈: 접은 묶음 (GROUP_MARK+제목)
+        self.n_folded = 0       # 접혀 안 보이는 항목 수 (항목 수에는 셈)
         self.thumbs_on = False   # 아이콘 보기 + 미리보기 켬 → 그림 파일은 미리보기 (thumbs.py)
         self.covers_ok = False   # 빌드 17 폴더 표지 가능한 폴더 (네트워크·휴대폰·내 PC 아님)
         self.thumb_px = 16       # 실제 화면 픽셀 크기 (배율 반영)
@@ -1556,8 +1641,8 @@ class DirModel(QtCore.QAbstractTableModel):
         if path != self.path:
             self.svn = {}   # 같은 폴더 다시 읽기면 새 상태가 올 때까지 이전 표시 유지(깜빡임 방지)
         # 버전 관리 표시(윈도우): SVN 작업 폴더는 4Dir 배지를 쓰므로 제외. 다시 읽을 때마다 그 폴더 결과는 새로 물어봄(커밋 등)
-        self.ovl_on = bool(OPTS["vcs_overlay"] and path and path != THIS_PC and not is_search(path)
-                           and svnstat.wc_root(path) is None)
+        self.ovl_on = bool(OPTS["vcs_overlay"] and path and ((path != THIS_PC and not is_search(path) and svnstat.wc_root(path) is None)
+                                                         or is_home(path)))   # 0.9.134 빌드 6 홈: 탐색기 홈처럼 SVN 표시(셸 겹침 아이콘, 항목마다 실제 경로)
         if self.ovl_on and OVL is not None:
             OVL.forget(path)
         pc_changed = (self.path == THIS_PC) != (path == THIS_PC)
@@ -1805,6 +1890,20 @@ class DirModel(QtCore.QAbstractTableModel):
                 out.extend(buckets[k])
             self.n_groups = len(buckets)
             return out
+        if is_home(self.path) and rows:   # 0.9.134 홈: 즐겨찾기(폴더) · 최근 항목(파일) — 보기 방식과 상관없이
+            out = []
+            hidden = 0
+            for title, part in ((T("즐겨찾기"), [e for e in rows if is_home_fav(e)]), (T("최근 항목"), [e for e in rows if not is_home_fav(e)])):
+                if part:
+                    shut = (GROUP_MARK + title) in self.folded   # 빌드 7: 제목 누르면 접기·펴기 (▾ 펼침 / ▸ 접힘)
+                    out.append([GROUP_MARK + title, False, -1, 0, 0, "", 0, ("▸ " if shut else "▾ ") + f"{title}  ({len(part):,})"])
+                    if shut:
+                        hidden += len(part)
+                    else:
+                        out.extend(part)
+                    self.n_groups += 1
+            self.n_folded = hidden
+            return out
         by_type = OPTS["type_groups"]
         if not ((OPTS["date_groups"] or by_type) and self.group_on and rows and self.path and self.path != THIS_PC
                 and not is_search(self.path)):
@@ -1823,8 +1922,19 @@ class DirModel(QtCore.QAbstractTableModel):
         return out
 
     def count(self):
-        """실제 항목 수 (묶음 제목 줄 뺌)"""
-        return len(self.rows) - self.n_groups
+        """실제 항목 수 (묶음 제목 줄 뺌, 접은 묶음 안 것은 셈)"""
+        return len(self.rows) - self.n_groups + (self.n_folded if is_home(self.path) else 0)
+
+    def toggle_fold(self, key):
+        """0.9.134 빌드 7 홈 묶음 접기·펴기 (탭마다, 다시 읽어도 유지)"""
+        if key in self.folded:
+            self.folded.discard(key)
+        else:
+            self.folded.add(key)
+        log.info("홈 묶음 %s %s", key[1:], "접음" if key in self.folded else "펼침")
+        self.beginResetModel()
+        self.rows = self._grouped(self._filtered(self.all))
+        self.endResetModel()
 
     propsLoaded = QtCore.Signal(str, int)
 
@@ -1902,7 +2012,7 @@ class DirModel(QtCore.QAbstractTableModel):
         self.endResetModel()
 
     def _sorted(self, rows):
-        if self.path == THIS_PC:
+        if self.path == THIS_PC or is_home(self.path):   # 홈: 탐색기와 같은 순서 그대로
             return list(rows)
         c, rev = self.sort_col, self.sort_order == Qt.DescendingOrder
         if c in PROP_SORTS:   # v0.9.75: 날짜·길이·미디어 작성 날짜·사진 크기 — 읽어 둔 값으로 정렬, 없는 건 뒤에서 읽고 다시 정렬
@@ -2227,6 +2337,14 @@ class CheckDelegate(QtWidgets.QStyledItemDelegate):
             self._paint_group(p, opt, rows[idx.row()][7])
             return
         m0 = idx.model()
+        if idx.column() == 0 and is_home(getattr(m0, "path", "")) and isinstance(opt.widget, QtWidgets.QTreeView):
+            # 0.9.134 빌드 8 (사용자 11/12): 홈 묶음 안 항목 들여쓰기 — 바탕(선택·마우스 올림)은 칸 전체, 아이콘·글자만 오른쪽으로
+            bg = QtWidgets.QStyleOptionViewItem(opt)
+            self.initStyleOption(bg, idx)
+            bg.text, bg.icon = "", QtGui.QIcon()
+            opt.widget.style().drawPrimitive(QtWidgets.QStyle.PE_PanelItemViewItem, bg, p, opt.widget)
+            opt = QtWidgets.QStyleOptionViewItem(opt)
+            opt.rect = opt.rect.adjusted(HOME_INDENT, 0, 0, 0)
         if rows and idx.row() < len(rows) and getattr(m0, "path", None) == THIS_PC and isinstance(opt.widget, QtWidgets.QListView) and idx.column() == 0:
             self._paint_pc(p, opt, idx, rows[idx.row()])   # 0.9.124 내 PC 타일·내용 (탐색기처럼)
             return
@@ -2553,6 +2671,10 @@ class ViewMixin(DragScrollMixin):
         if ev.button() == Qt.LeftButton:
             pos = ev.position().toPoint()
             idx = self.indexAt(pos)
+            m0 = self.model()
+            if idx.isValid() and is_home(getattr(m0, "path", "")) and idx.row() < len(m0.rows) and is_group(m0.rows[idx.row()]):
+                m0.toggle_fold(m0.rows[idx.row()][0])   # 0.9.134 빌드 7 홈 묶음 제목 누르면 접기·펴기 (탐색기처럼)
+                return
             sm = self.selectionModel()
             self._drag_started = False
             self._press_pos = pos   # 끌기 그림을 잡은 자리 기준으로 (v0.9.67, 탐색기와 같게)
@@ -3543,7 +3665,7 @@ class Page(QtWidgets.QWidget):
             self.navigate(self.fwd.pop(), record=False)
 
     def go_up(self):
-        if self.path == THIS_PC:
+        if self.path == THIS_PC or is_home(self.path):
             return
         if devices.is_dev(self.path):   # 휴대폰: 셸 부모 (맨 위면 내 PC)
             self.navigate(devices.parent_of(self.path) or THIS_PC, select=devices.name_of(self.path))
@@ -3580,7 +3702,7 @@ class Page(QtWidgets.QWidget):
         srch = is_search(self.path)
         self.tree.setColumnHidden(4, not srch)   # '위치' 열은 검색 결과에서만
         if srch:
-            self.search_info = T("찾는 중…")
+            self.search_info = T("읽는 중…") if is_home(self.path) else T("찾는 중…")
             if parse_search(self.path)[1]:      # 폴더 아래 찾기: 중간 결과를 바로 채우므로 먼저 비움
                 self.keep_sel = None
                 self.model_.set_entries(self.path, [])
@@ -3636,7 +3758,7 @@ class Page(QtWidgets.QWidget):
         else:
             self.model_.set_entries(path, entries)
             self.apply_columns()   # 상태 열: 동기화 폴더에서만 (v0.9.94)
-            if is_search(path) and not entries and not err and not tags.is_view(parse_search(path)[0]):   # 0.9.110: 빈 태그·그룹엔 검색 범위 안내 안 함
+            if is_search(path) and not entries and not err and not tags.is_view(parse_search(path)[0]) and not is_home(path):   # 0.9.110: 빈 태그·그룹엔 검색 범위 안내 안 함
                 # 빠른 검색 0개: 네트워크·구글드라이브 등은 처음엔 검색 범위 밖이라 '고장'처럼 보임 → 이유와 범위 설정 안내 (v0.9.68, 10/29)
                 main = main_of(self)
                 log.info("전체 검색 0개 '%s' → 범위 안내", parse_search(path)[0])
@@ -3787,7 +3909,9 @@ class Page(QtWidgets.QWidget):
         sr = self.selected_rows()
         s = len(sr)
         txt = T('{0:,}개 항목').format(n)   # 탐색기 상태줄과 같은 말 (읽기 ms 는 상태줄 풍선 도움말로)
-        if is_search(self.path):
+        if is_home(self.path):   # 0.9.134
+            txt = "⌂ " + T("홈") + f": {self.search_info}"
+        elif is_search(self.path):
             q, f = parse_search(self.path)
             txt = f"🔎 '{q}'" + (T(' ({0} 아래)').format(f) if f else T(" (전체)")) + f": {self.search_info}"
         elif self.model_.filter:
@@ -5526,6 +5650,11 @@ class Sidebar(DragScrollMixin, QtWidgets.QTreeWidget):
         self.qe_root = QtWidgets.QTreeWidgetItem([T("즐겨찾기 (4Dir)")])   # 0.9.122 받은 의견: 4Dir 즐겨찾기도 탐색 창에 (설정 side_favs)
         self.fav_root = QtWidgets.QTreeWidgetItem([T("즐겨찾기 (Windows)")])   # 윈도우 탐색기 고정 폴더
         self.pc_root = QtWidgets.QTreeWidgetItem([T(THIS_PC)])
+        self.home_root = QtWidgets.QTreeWidgetItem([T("홈")])   # 0.9.134 윈도우 탐색기처럼 맨 위
+        self.home_root.setData(0, PATH_ROLE, HOME)
+        self.home_root.setToolTip(0, T("윈도우 탐색기 홈과 같은 목록 — 즐겨찾기 폴더와 최근에 연 파일"))
+        self.home_root.setFont(0, bold)
+        self.addTopLevelItem(self.home_root)
         for r in (self.qe_root, self.fav_root, self.pc_root):
             r.setFont(0, bold)
             r.setFlags(Qt.ItemIsEnabled)
@@ -5830,6 +5959,8 @@ class Sidebar(DragScrollMixin, QtWidgets.QTreeWidget):
         if not path or path == THIS_PC or is_search(path):
             if path == THIS_PC:
                 self._select(self.pc_root)
+            elif is_home(path):
+                self._select(self.home_root)
             self._reveal_path = None
             return
         tgt = self._nc(path)
@@ -6003,6 +6134,8 @@ class Crumbs(QtWidgets.QFrame):
     def segments(p):
         if not p or p == THIS_PC:
             return [(T(THIS_PC), THIS_PC)]
+        if is_home(p):   # 0.9.134 홈 = 맨 위 (탐색기처럼 '홈' 하나)
+            return [(T("홈"), p)]
         if is_search(p):   # 검색 탭: 드라이브 조각 없이 검색어 하나
             return [(T(THIS_PC), THIS_PC), (tab_title(p), p)]
         if devices.is_dev(p):   # 휴대폰: 기기 › 내장 저장공간 › …
@@ -6136,14 +6269,30 @@ def set_view_scope(key, main=None):
         p.set_mode(p.mode)
 
 
-SCRIPT_EXTS = {".vbs", ".vbe", ".js", ".jse", ".wsf", ".wsh"}
+SCRIPT_EXTS = {".vbs", ".vbe", ".js", ".jse", ".wsf", ".wsh", ".bat", ".cmd"}   # 0.9.134 .bat·.cmd (사용자 11/12 빌드_배포.bat: 4Dir 에서 열면 cmd 가 4분 넘게 붙잡힘, 탐색기로는 5초 — 실측)
+
+
+def norm_exts(text):
+    """'ps1, *.EXE;py' → ['.ps1', '.exe', '.py'] (순서 그대로, 겹침 없이)"""
+    out = []
+    for t in str(text or "").replace(",", " ").replace(";", " ").split():
+        t = t.strip().lower().lstrip("*")
+        t = t if t.startswith(".") else "." + t
+        if len(t) > 1 and t not in out:
+            out.append(t)
+    return out
+
+
+def explorer_exts():
+    """탐색기에게 넘겨 열 확장자 = 기본(SCRIPT_EXTS) + 설정 > 파일 목록 에서 더한 것 (0.9.134 사용자 '늘 때마다 빌드하지 않게')"""
+    return SCRIPT_EXTS | set(norm_exts(SETTINGS["explorer_exts"]))
 
 
 def open_file(path):
     """파일 열기 (연결 프로그램). 0.9.126 사용자 'VideoTag.vbs 가 4Dir 에서 안 열림':
     4Dir 를 4Dir.vbs 로 띄운 줄기(탐색기 → wscript → pythonw)에서 os.startfile 로 스크립트(.vbs 등)를 열면 새 wscript 가
     실행 시작 전에 붙잡혀 멈춤(모듈 0개, 보안 프로그램 추정 — 재현 확인). 탐색기에게 넘기면 정상 → 스크립트만 탐색기로"""
-    if os.path.splitext(path)[1].lower() in SCRIPT_EXTS:
+    if os.path.splitext(path)[1].lower() in explorer_exts():
         log.info("스크립트 파일은 탐색기에게 넘겨 엶 %s", path)
         subprocess.Popen(["explorer.exe", path])
         return
@@ -7600,6 +7749,8 @@ class Pane(QtWidgets.QFrame):
             return
         if not t or t in (THIS_PC, T(THIS_PC)):
             v.navigate(THIS_PC)
+        elif t.lower() in ("홈", "home", T("홈").lower()):   # 0.9.134
+            v.navigate(HOME)
         elif os.path.isfile(t):
             v.navigate(os.path.dirname(t), select=os.path.basename(t))
         else:
@@ -9066,6 +9217,52 @@ class SettingsDialog(QtWidgets.QDialog):
             SETTINGS["same_folder_current"] = cur
             log.info("설정 same_folder_current=%s", cur)
 
+    # ---- 탐색기에게 넘겨 열 확장자 (0.9.134)
+    def _exp_fill(self, select=None):
+        lw = self.exp_list
+        lw.clear()
+        rh = lw.fontMetrics().height() + 6   # 빌드 3 사용자 '줄 간격 좁게' (전 약 30px)
+        user = norm_exts(SETTINGS["explorer_exts"])
+        for e in user:   # 사용자가 등록한 것 먼저 (지울 수 있음)
+            it = QtWidgets.QListWidgetItem(e)
+            it.setData(Qt.UserRole, e)
+            it.setSizeHint(QtCore.QSize(0, rh))
+            lw.addItem(it)
+            if e == select:
+                lw.setCurrentItem(it)
+        for e in sorted(SCRIPT_EXTS - set(user)):   # 기본 = 흐리게, 고를 수 없음
+            it = QtWidgets.QListWidgetItem(f"{e}   ({T('기본')})")
+            it.setFlags(Qt.ItemIsEnabled)
+            it.setForeground(QtGui.QBrush(QtGui.QColor(128, 128, 128)))
+            it.setToolTip(T("기본으로 들어 있는 확장자 (지울 수 없음)"))
+            it.setSizeHint(QtCore.QSize(0, rh))
+            lw.addItem(it)
+        h = rh
+        lw.setFixedHeight(min(16, max(lw.count(), 4)) * h + 2 * lw.frameWidth() + 4)
+        self._exp_sync_btn()
+
+    def _exp_sync_btn(self):
+        self.exp_del.setEnabled(bool(self.exp_list.selectedItems()))
+
+    def _exp_add(self):
+        new = norm_exts(self.exp_in.text())
+        if not new:
+            return
+        user = norm_exts(SETTINGS["explorer_exts"])
+        added = [e for e in new if e not in user and e not in SCRIPT_EXTS]
+        SETTINGS["explorer_exts"] = " ".join(user + added)
+        log.info("탐색기 넘김 확장자 등록 %s (이미 있음 %s) → %s", added, [e for e in new if e not in added], SETTINGS["explorer_exts"])
+        self.exp_in.clear()
+        self._exp_fill(select=(added or new)[-1])
+
+    def _exp_del(self):
+        gone = [it.data(Qt.UserRole) for it in self.exp_list.selectedItems() if it.data(Qt.UserRole)]
+        if not gone:
+            return
+        SETTINGS["explorer_exts"] = " ".join(e for e in norm_exts(SETTINGS["explorer_exts"]) if e not in gone)
+        log.info("탐색기 넘김 확장자 삭제 %s → %r", gone, SETTINGS["explorer_exts"])
+        self._exp_fill()
+
     def _font_pt(self):
         return float(SETTINGS["ui_font_pt"] or i18n.base_pt())
 
@@ -9366,6 +9563,36 @@ class SettingsDialog(QtWidgets.QDialog):
         self._set(lay, "folder_size", T("폴더 크기 계산 (크기 칸 — 네트워크 드라이브 제외)"))
         self._set(lay, "empty_click_up", T("빈 곳을 더블클릭하면 상위 폴더로"))
         self._set(lay, "arc_browse", T("압축 파일(ZIP·7Z·RAR…)을 두 번 누르면 4Dir 안에서 폴더처럼 열기"))   # 빌드 20
+        # 0.9.134 (사용자 11/12): 4Dir 에서 열면 실행이 붙잡히는 파일 → 탐색기에게 넘겨 열 확장자 더하기 (빌드 없이)
+        # 빌드 2 (사용자 '한 줄에 하나씩 목록, 입력칸 + 등록, 목록에서 골라 삭제')
+        d = QtWidgets.QLabel("※ " + T("4Dir 에서 두 번 눌러도 안 열리거나 한참 뒤에 열리는 파일은 탐색기에게 넘겨서 엽니다. 확장자를 등록하세요."))
+        d.setWordWrap(True)
+        d.setObjectName("expNote")
+        d.setStyleSheet("#expNote{color:#e5484d; font-weight:bold;}")   # 빌드 3 사용자 '앞에 ※ + 빨강·연두처럼 강조' (밝게·어둡게 둘 다 읽히는 빨강)
+        lay.addWidget(d)
+        row = QtWidgets.QHBoxLayout()
+        self.exp_in = QtWidgets.QLineEdit()
+        self.exp_in.setPlaceholderText(T("예: .ps1"))
+        self.exp_in.setFixedWidth(200)
+        self.exp_add = QtWidgets.QPushButton(T("등록"))
+        self.exp_del = QtWidgets.QPushButton(T("삭제"))
+        row.addWidget(self.exp_in)
+        row.addWidget(self.exp_add)
+        row.addWidget(self.exp_del)
+        row.addStretch(1)
+        lay.addLayout(row)
+        self.exp_list = QtWidgets.QListWidget()
+        self.exp_list.setFixedWidth(300)
+        self.exp_list.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        lay.addWidget(self.exp_list)
+        self.exp_in.returnPressed.connect(self._exp_add)
+        self.exp_add.clicked.connect(lambda *_: self._exp_add())
+        self.exp_del.clicked.connect(lambda *_: self._exp_del())
+        sc = QtGui.QShortcut(QtGui.QKeySequence.Delete, self.exp_list)
+        sc.setContext(Qt.WidgetShortcut)
+        sc.activated.connect(self._exp_del)
+        self.exp_list.itemSelectionChanged.connect(self._exp_sync_btn)
+        self._exp_fill()
 
     def _p_nav(self, lay):
         m = self.main
@@ -10912,7 +11139,7 @@ class Main(QtWidgets.QMainWindow):
             # 이미 열린 전체 검색 탭은 새 색인으로 다시 검색
             for p in self.panes:
                 for v in p.views():
-                    if is_search(v.path) and not parse_search(v.path)[1] and v.active:
+                    if is_search(v.path) and not parse_search(v.path)[1] and v.active and not is_home(v.path):   # 빌드 6: 홈은 색인과 상관없음 (셸 다시 읽기 낭비)
                         v.reload("index-ready")
 
     def do_global_search(self, text):
@@ -13767,7 +13994,7 @@ eports.
             tabs = ps.get("tabs") or [THIS_PC]
             vstates = ps.get("views") or []
             for k, t in enumerate(tabs):
-                if t != THIS_PC and not os.path.isdir(t):
+                if t != THIS_PC and not is_home(t) and not os.path.isdir(t):   # 0.9.134 빌드 5: 홈도 그대로 (빌드 4 Win+E 새 창이 여기서 내 PC 로 바뀜 — 로그 실측)
                     log.info("저장된 탭 경로 없음 → 내 PC: %s", t)
                     t = THIS_PC
                 pg = p.add_tab(t, activate=False)
@@ -14098,7 +14325,7 @@ def _on_second_launch():
     c.disconnectFromServer()
     log.info("다시 실행 감지 → 마지막에 쓴 창 앞으로 %s (창 %d개)", msg, len(WINDOWS))
     if WINDOWS and msg.get("new_window"):   # 0.9.109 빌드 5 Win+E: 빈 새 창 (칸 1개 · 내 PC) — 사용자 11/6 '새로운 빈 창'
-        w = WINDOWS[-1].open_window(THIS_PC)
+        w = WINDOWS[-1].open_window(HOME)   # 0.9.134 사용자 11/12 '탐색기처럼 즐겨찾기·최근 항목' (전엔 내 PC)
         w.bring_front()
         return
     if WINDOWS:

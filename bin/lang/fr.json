@@ -2356,5 +2356,18 @@
  "언어별 기본 글꼴로 (한국어 = 맑은 고딕, 윈도우 탐색기와 같은 글꼴)": "Revenir à la police par défaut de la langue (la même que l'Explorateur de fichiers Windows)",
  "화면 글꼴 — 이름을 쳐서 찾을 수 있음": "Police de l'interface — tapez un nom pour la trouver",
  "글자 크기 (pt) — 숫자를 치고 Enter": "Taille de police (pt) — tapez un nombre puis Entrée",
- "언어별 기본 글꼴·윈도우 기본 크기로 (한국어 = 맑은 고딕 9, 윈도우 탐색기와 같음)": "Revenir à la police et à la taille par défaut de la langue (comme l'Explorateur de fichiers Windows)"
+ "언어별 기본 글꼴·윈도우 기본 크기로 (한국어 = 맑은 고딕 9, 윈도우 탐색기와 같음)": "Revenir à la police et à la taille par défaut de la langue (comme l'Explorateur de fichiers Windows)",
+ "4Dir 에서 두 번 눌러도 안 열리거나 한참 뒤에 열리는 파일은 탐색기에게 넘겨서 엽니다.": "Les fichiers qui ne s'ouvrent pas (ou bien plus tard) par double-clic dans 4Dir sont confiés à l'Explorateur de fichiers.",
+ "기본: {0}": "Par défaut : {0}",
+ "더 넣을 확장자 (띄어 쓰기로 여러 개):": "Autres extensions (séparées par des espaces) :",
+ "예: .ps1 .exe": "ex. : .ps1 .exe",
+ "4Dir 에서 두 번 눌러도 안 열리거나 한참 뒤에 열리는 파일은 탐색기에게 넘겨서 엽니다. 확장자를 등록하세요.": "Les fichiers qui ne s'ouvrent pas (ou bien plus tard) par double-clic dans 4Dir sont confiés à l'Explorateur de fichiers. Enregistrez les extensions ici.",
+ "예: .ps1": "ex. : .ps1",
+ "등록": "Ajouter",
+ "기본으로 들어 있는 확장자 (지울 수 없음)": "Extension intégrée (ne peut pas être supprimée)",
+ "홈": "Accueil",
+ "최근 항목": "Récents",
+ "즐겨찾기 {0}개 · 최근 항목 {1}개": "{0} en Accès rapide · {1} récents",
+ "홈 목록이 응답하지 않습니다 (끊긴 네트워크 폴더?) — 새로 고침(F5)으로 다시 읽기": "Accueil ne répond pas (dossier réseau déconnecté ?) — appuyez sur Actualiser (F5) pour réessayer",
+ "윈도우 탐색기 홈과 같은 목록 — 즐겨찾기 폴더와 최근에 연 파일": "Même liste qu'Accueil dans l'Explorateur — dossiers d'Accès rapide et fichiers ouverts récemment"
 }

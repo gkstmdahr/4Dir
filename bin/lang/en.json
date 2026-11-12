@@ -2356,5 +2356,18 @@
  "언어별 기본 글꼴로 (한국어 = 맑은 고딕, 윈도우 탐색기와 같은 글꼴)": "Back to the default font for the language (the same font as Windows File Explorer)",
  "화면 글꼴 — 이름을 쳐서 찾을 수 있음": "Screen font — type a name to find it",
  "글자 크기 (pt) — 숫자를 치고 Enter": "Font size (pt) — type a number and press Enter",
- "언어별 기본 글꼴·윈도우 기본 크기로 (한국어 = 맑은 고딕 9, 윈도우 탐색기와 같음)": "Back to the default font and size for the language (same as Windows File Explorer)"
+ "언어별 기본 글꼴·윈도우 기본 크기로 (한국어 = 맑은 고딕 9, 윈도우 탐색기와 같음)": "Back to the default font and size for the language (same as Windows File Explorer)",
+ "4Dir 에서 두 번 눌러도 안 열리거나 한참 뒤에 열리는 파일은 탐색기에게 넘겨서 엽니다.": "Files that don't open (or open only much later) when double-clicked in 4Dir are handed to File Explorer to open.",
+ "기본: {0}": "Default: {0}",
+ "더 넣을 확장자 (띄어 쓰기로 여러 개):": "More extensions (separate with spaces):",
+ "예: .ps1 .exe": "e.g. .ps1 .exe",
+ "4Dir 에서 두 번 눌러도 안 열리거나 한참 뒤에 열리는 파일은 탐색기에게 넘겨서 엽니다. 확장자를 등록하세요.": "Files that don't open (or open only much later) when double-clicked in 4Dir are handed to File Explorer to open. Register the extensions here.",
+ "예: .ps1": "e.g. .ps1",
+ "등록": "Add",
+ "기본으로 들어 있는 확장자 (지울 수 없음)": "Built-in extension (can't be removed)",
+ "홈": "Home",
+ "최근 항목": "Recent",
+ "즐겨찾기 {0}개 · 최근 항목 {1}개": "{0} in Quick access · {1} recent",
+ "홈 목록이 응답하지 않습니다 (끊긴 네트워크 폴더?) — 새로 고침(F5)으로 다시 읽기": "Home isn't responding (a disconnected network folder?) — press Refresh (F5) to try again",
+ "윈도우 탐색기 홈과 같은 목록 — 즐겨찾기 폴더와 최근에 연 파일": "Same list as Home in File Explorer — Quick access folders and recently opened files"
 }

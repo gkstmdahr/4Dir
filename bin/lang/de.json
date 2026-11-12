@@ -2356,5 +2356,18 @@
  "언어별 기본 글꼴로 (한국어 = 맑은 고딕, 윈도우 탐색기와 같은 글꼴)": "Zurück zur Standardschrift der Sprache (dieselbe wie im Windows-Explorer)",
  "화면 글꼴 — 이름을 쳐서 찾을 수 있음": "Bildschirmschrift — Namen eintippen zum Suchen",
  "글자 크기 (pt) — 숫자를 치고 Enter": "Schriftgröße (pt) — Zahl eingeben und Eingabe drücken",
- "언어별 기본 글꼴·윈도우 기본 크기로 (한국어 = 맑은 고딕 9, 윈도우 탐색기와 같음)": "Zurück zu Standardschrift und -größe der Sprache (wie im Windows-Explorer)"
+ "언어별 기본 글꼴·윈도우 기본 크기로 (한국어 = 맑은 고딕 9, 윈도우 탐색기와 같음)": "Zurück zu Standardschrift und -größe der Sprache (wie im Windows-Explorer)",
+ "4Dir 에서 두 번 눌러도 안 열리거나 한참 뒤에 열리는 파일은 탐색기에게 넘겨서 엽니다.": "Dateien, die sich in 4Dir per Doppelklick nicht (oder erst viel später) öffnen, werden an den Explorer übergeben.",
+ "기본: {0}": "Standard: {0}",
+ "더 넣을 확장자 (띄어 쓰기로 여러 개):": "Weitere Erweiterungen (durch Leerzeichen getrennt):",
+ "예: .ps1 .exe": "z. B. .ps1 .exe",
+ "4Dir 에서 두 번 눌러도 안 열리거나 한참 뒤에 열리는 파일은 탐색기에게 넘겨서 엽니다. 확장자를 등록하세요.": "Dateien, die sich in 4Dir per Doppelklick nicht (oder erst viel später) öffnen, werden an den Explorer übergeben. Erweiterungen hier eintragen.",
+ "예: .ps1": "z. B. .ps1",
+ "등록": "Hinzufügen",
+ "기본으로 들어 있는 확장자 (지울 수 없음)": "Integrierte Erweiterung (nicht entfernbar)",
+ "홈": "Start",
+ "최근 항목": "Zuletzt verwendet",
+ "즐겨찾기 {0}개 · 최근 항목 {1}개": "{0} im Schnellzugriff · {1} zuletzt verwendet",
+ "홈 목록이 응답하지 않습니다 (끊긴 네트워크 폴더?) — 새로 고침(F5)으로 다시 읽기": "Start reagiert nicht (getrennter Netzwerkordner?) — mit Aktualisieren (F5) erneut versuchen",
+ "윈도우 탐색기 홈과 같은 목록 — 즐겨찾기 폴더와 최근에 연 파일": "Dieselbe Liste wie „Start“ im Explorer — Schnellzugriff-Ordner und zuletzt geöffnete Dateien"
 }
