@@ -2349,5 +2349,12 @@
  "(너무 많아 여기까지만)": "(too many — stopped here)",
  "하위 폴더까지 그림 없음": "No pictures in this folder or its subfolders",
  "폴더 미리보기 목록으로 돌아가기 (Esc)": "Back to the folder preview list (Esc)",
- "켜면 하위 폴더 안 그림·동영상까지 폴더별로 아래로 계속 보여 줍니다 (최대 {0}장)": "When on, pictures and videos in subfolders are also shown, folder by folder, in one long list (up to {0})"
+ "켜면 하위 폴더 안 그림·동영상까지 폴더별로 아래로 계속 보여 줍니다 (최대 {0}장)": "When on, pictures and videos in subfolders are also shown, folder by folder, in one long list (up to {0})",
+ "기본으로": "Default",
+ "기본 (언어별)": "Default (by language)",
+ "기본": "default",
+ "언어별 기본 글꼴로 (한국어 = 맑은 고딕, 윈도우 탐색기와 같은 글꼴)": "Back to the default font for the language (the same font as Windows File Explorer)",
+ "화면 글꼴 — 이름을 쳐서 찾을 수 있음": "Screen font — type a name to find it",
+ "글자 크기 (pt) — 숫자를 치고 Enter": "Font size (pt) — type a number and press Enter",
+ "언어별 기본 글꼴·윈도우 기본 크기로 (한국어 = 맑은 고딕 9, 윈도우 탐색기와 같음)": "Back to the default font and size for the language (same as Windows File Explorer)"
 }

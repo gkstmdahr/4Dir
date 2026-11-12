@@ -2349,5 +2349,12 @@
  "(너무 많아 여기까지만)": "(muitas — parou aqui)",
  "하위 폴더까지 그림 없음": "Nenhuma imagem nesta pasta ou subpastas",
  "폴더 미리보기 목록으로 돌아가기 (Esc)": "Voltar à lista da visualização da pasta (Esc)",
- "켜면 하위 폴더 안 그림·동영상까지 폴더별로 아래로 계속 보여 줍니다 (최대 {0}장)": "Quando ativado, imagens e vídeos das subpastas também aparecem, pasta por pasta, numa longa lista (até {0})"
+ "켜면 하위 폴더 안 그림·동영상까지 폴더별로 아래로 계속 보여 줍니다 (최대 {0}장)": "Quando ativado, imagens e vídeos das subpastas também aparecem, pasta por pasta, numa longa lista (até {0})",
+ "기본으로": "Padrão",
+ "기본 (언어별)": "Padrão (por idioma)",
+ "기본": "padrão",
+ "언어별 기본 글꼴로 (한국어 = 맑은 고딕, 윈도우 탐색기와 같은 글꼴)": "Voltar à fonte padrão do idioma (a mesma do Explorador de Arquivos do Windows)",
+ "화면 글꼴 — 이름을 쳐서 찾을 수 있음": "Fonte da interface — digite um nome para encontrar",
+ "글자 크기 (pt) — 숫자를 치고 Enter": "Tamanho da fonte (pt) — digite um número e pressione Enter",
+ "언어별 기본 글꼴·윈도우 기본 크기로 (한국어 = 맑은 고딕 9, 윈도우 탐색기와 같음)": "Voltar à fonte e ao tamanho padrão do idioma (como o Explorador de Arquivos do Windows)"
 }

@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.132"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 6             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.133"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 2             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -8837,6 +8837,11 @@ def gear_icon(sz=18, color="#76838f"):   # 밝게·어둡게 둘 다 보이는 �
     return QtGui.QIcon(pm)
 
 
+def apply_ui_font(app):
+    """0.9.133 (사용자 11/12): 설정 > 일반 의 글꼴·글자 크기를 프로그램 전체에"""
+    i18n.apply_font(app, SETTINGS["ui_font"] or None, SETTINGS["ui_font_pt"] or 0)
+
+
 class SettingsDialog(QtWidgets.QDialog):
     """설정 창 (v0.9.104 사용자 11/5: 설정은 팝업 창에 카테고리로) — 왼쪽 카테고리 · 오른쪽 내용. 바꾸면 바로 적용(메뉴와 같은 함수 호출)"""
 
@@ -9061,6 +9066,46 @@ class SettingsDialog(QtWidgets.QDialog):
             SETTINGS["same_folder_current"] = cur
             log.info("설정 same_folder_current=%s", cur)
 
+    def _font_pt(self):
+        return float(SETTINGS["ui_font_pt"] or i18n.base_pt())
+
+    def _font_sync(self):
+        cur = SETTINGS["ui_font"] or i18n.font_family()
+        self.font_cb.blockSignals(True)
+        self.font_cb.setCurrentFont(QtGui.QFont(cur))
+        self.font_cb.blockSignals(False)
+        self.font_pt.setText(memo.size_text(self._font_pt()))
+
+    def _set_font(self, fam):
+        if fam and fam == (SETTINGS["ui_font"] or ""):
+            return
+        if fam == i18n.font_family():
+            fam = ""   # 기본 글꼴을 고르면 '기본' 으로 (언어 바꾸면 따라가게)
+        SETTINGS["ui_font"] = fam
+        log.info("설정 글꼴 = %r", fam or "(기본)")
+        self._apply_font()
+        self._font_sync()
+
+    def _set_font_pt(self, pt):
+        pt = 0 if not pt else round(max(5.0, min(36.0, float(pt))), 1)
+        if pt and abs(pt - i18n.base_pt()) < 0.05:
+            pt = 0   # 윈도우 기본과 같으면 '기본' 으로 저장
+        if pt != (SETTINGS["ui_font_pt"] or 0):
+            SETTINGS["ui_font_pt"] = pt
+            log.info("설정 글자 크기 = %s (0 = 기본 %.1fpt)", pt, i18n.base_pt())
+            self._apply_font()
+        self._font_sync()
+
+    def _apply_font(self):
+        app = QtWidgets.QApplication.instance()
+        apply_ui_font(app)
+        self.main.setStyleSheet(self.main.styleSheet())   # 스타일 다시 계산 → 크기 바뀐 글자로 줄 높이 다시
+        self.setStyleSheet(self.main.styleSheet())
+        for w in app.topLevelWidgets():
+            if w.isVisible():
+                w.updateGeometry()
+                w.update()
+
     def _sub(self, lay, text):
         l = QtWidgets.QLabel(text)
         l.setObjectName("favLabel")
@@ -9084,6 +9129,49 @@ class SettingsDialog(QtWidgets.QDialog):
         self.theme.setCurrentIndex(max(0, self.theme.findData(SETTINGS["theme_mode"])))
         self.theme.currentIndexChanged.connect(lambda i: (m.set_theme_mode(self.theme.itemData(i)), self.setStyleSheet(m.styleSheet())))
         form.addRow(T("화면 테마"), self.theme)
+        # 0.9.133 (사용자 11/12 '전체 폰트 크기 조절 + 폰트 설정'): 바꾸면 바로 적용, 일부(설정 창 왼쪽 목록 등)는 창을 다시 열면
+        # 빌드 2 (사용자 '한 줄에, 리스트 클 필요 없음, % 말고 폰트 사이즈로 — 메모 창 − 10 + 처럼'): 글꼴 [목록] 크기 − [9] + [기본으로]
+        fr = QtWidgets.QHBoxLayout()
+        fr.setSpacing(4)
+        self.font_cb = QtWidgets.QFontComboBox()
+        self.font_cb.setEditable(True)   # 이름을 쳐서 찾기
+        self.font_cb.setMaxVisibleItems(20)
+        self.font_cb.setFixedWidth(200)
+        self.font_cb.setToolTip(T("화면 글꼴 — 이름을 쳐서 찾을 수 있음"))
+        fr.addWidget(self.font_cb)
+        fr.addSpacing(14)
+        fr.addWidget(QtWidgets.QLabel(T("글자 크기")))
+        fg = "#d6dbe1" if SETTINGS["dark"] else "#3a4652"
+
+        def step_btn(kind, tip, d):   # 메모 창 글자 크기와 같은 모양 (memo.fmt_icon)
+            x = QtWidgets.QToolButton()
+            x.setIcon(memo.fmt_icon(kind, fg, sz=memo.ICON))
+            x.setIconSize(QtCore.QSize(memo.ICON, memo.ICON))
+            x.setAutoRaise(True)
+            x.setFocusPolicy(Qt.NoFocus)
+            x.setFixedSize(24, memo.BTN)
+            x.setToolTip(tip)
+            x.clicked.connect(lambda *_: self._set_font_pt(self._font_pt() + d))
+            return x
+        fr.addWidget(step_btn("minus", T("글자 작게"), -1))
+        self.font_pt = QtWidgets.QLineEdit()
+        self.font_pt.setToolTip(T("글자 크기 (pt) — 숫자를 치고 Enter"))
+        self.font_pt.setAlignment(Qt.AlignCenter)
+        self.font_pt.setFixedSize(36, memo.BTN - 6)
+        self.font_pt.setStyleSheet("QLineEdit{border:1px solid #9aa0a6; border-radius:4px; background:transparent;}")
+        self.font_pt.setValidator(QtGui.QDoubleValidator(5, 36, 1))
+        self.font_pt.returnPressed.connect(lambda: self._set_font_pt(float(self.font_pt.text() or i18n.base_pt())))
+        fr.addWidget(self.font_pt)
+        fr.addWidget(step_btn("plus_small", T("글자 크게"), +1))
+        fr.addSpacing(10)
+        fdef = QtWidgets.QPushButton(T("기본으로"))
+        fdef.setToolTip(T("언어별 기본 글꼴·윈도우 기본 크기로 (한국어 = 맑은 고딕 9, 윈도우 탐색기와 같음)"))
+        fr.addWidget(fdef)
+        fr.addStretch(1)
+        self._font_sync()
+        self.font_cb.currentFontChanged.connect(lambda f: self._set_font(f.family()))
+        fdef.clicked.connect(lambda *_: (self._set_font(""), self._set_font_pt(0)))
+        form.addRow(T("글꼴"), fr)
         lay.addLayout(form)
         # 0.9.126 사용자 '정리해 달라 — Ctrl+= 밑 두 개만 해당되는데 다음 줄과 안 나뉘어 헷갈림': 주제별 상자로 묶음
         c = self._card(lay, T("창"))
@@ -12682,7 +12770,7 @@ class Main(QtWidgets.QMainWindow):
                                  Qt.ColorScheme.Dark if dark else Qt.ColorScheme.Light)
         if app_wide:
             ui_parts.apply_palette(app, dark)
-            i18n.apply_font(app)   # 스타일을 바꾸면 메뉴 글꼴이 윈도우 기본으로 돌아감(실측)
+            apply_ui_font(app)   # 스타일을 바꾸면 메뉴 글꼴이 윈도우 기본으로 돌아감(실측)
         self.setStyleSheet(ui_parts.build_style(SETTINGS[SETTINGS.theme_key()], dark))
         if getattr(self, "mon", None):
             self._update_mon()
@@ -14117,7 +14205,7 @@ def main():
     start_hang_watch(app)
     app.setApplicationName("4Dir")
     app.setWindowIcon(ui_parts.app_icon())
-    i18n.apply_font(app)   # 언어별 글꼴 (목록·메뉴 등 종류별 글꼴까지)
+    apply_ui_font(app)   # 언어별 글꼴 (목록·메뉴 등 종류별 글꼴까지) + 0.9.133 사용자 글꼴·크기
     FAV.load()
     w = Main(crashed=crashed)
     w.show()

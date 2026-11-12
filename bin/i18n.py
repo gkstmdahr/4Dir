@@ -96,15 +96,37 @@ FONT_CLASSES = ("QAbstractItemView", "QTreeView", "QListView", "QHeaderView", "Q
                 "QTabBar", "QToolButton", "QPushButton", "QLineEdit", "QComboBox", "QLabel", "QMessageBox")
 
 
-def apply_font(app):
+_BASE_PT = {}   # 0.9.133: 종류별 윈도우 기본 글자 크기 (처음 한 번 기억 — 크기 % 를 여러 번 바꿔도 누적 안 되게)
+
+
+def base_pt():
+    """윈도우 기본 글자 크기(pt) — 설정 '글자 크기' 의 기본값 (한국어 윈도우 9)"""
+    if None not in _BASE_PT:
+        from PySide6.QtWidgets import QApplication
+        f = QApplication.font()
+        _BASE_PT[None] = f.pointSizeF() if f.pointSizeF() > 0 else 9.0
+    return _BASE_PT[None]
+
+
+def apply_font(app, family=None, pt=0):
+    """family = 사용자가 고른 글꼴(빈칸 = 언어별 기본), pt = 글자 크기(0 = 윈도우 기본) (0.9.133 설정 > 일반).
+    목록·메뉴 등 종류별 크기는 기본 크기와 같은 비율로"""
     from PySide6.QtWidgets import QApplication
+    fams = [family] if family else font_families()
+    b = base_pt()   # 처음 한 번 윈도우 기본 크기 기억 (빌드 2: pt=0 일 때 안 불려 KeyError — qe269 로 잡음)
+    k = max(5.0, min(36.0, float(pt))) / b if pt else 1.0
     f = QApplication.font()
-    f.setFamilies(font_families())
+    f.setFamilies(fams)
+    f.setPointSizeF(_BASE_PT[None] * k)
     QApplication.setFont(f)
     for c in FONT_CLASSES:
         cf = QApplication.font(c)
-        cf.setFamilies(font_families())
+        if c not in _BASE_PT:
+            _BASE_PT[c] = cf.pointSizeF() if cf.pointSizeF() > 0 else _BASE_PT[None]
+        cf.setFamilies(fams)
+        cf.setPointSizeF(_BASE_PT[c] * k)
         QApplication.setFont(cf, c)
+    log.info("글꼴 적용 %s · 크기 %.1fpt (기본 %.1fpt)", fams, _BASE_PT[None] * k, _BASE_PT[None])
 
 
 init()
