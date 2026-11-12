@@ -50,7 +50,7 @@ ACTIONS = [
     ("close_tab", T("탭 닫기"), "Ctrl+W", "window"),
     ("lock_tab", T("탭 잠금/잠금 해제"), "", "window"),
     ("toggle_chips", T("형식 단추 줄 보이기/숨기기"), "", "window"),   # 빌드 27 위쪽 단추와 같음   # v0.9.95 (기본 키 없음 — 단축키 설정에서)
-    ("reopen_tab", T("닫은 탭 다시 열기"), "Ctrl+Shift+T", "window"),
+    ("reopen_tab", T("닫은 탭·창 다시 열기 (가장 나중에 닫은 것부터)"), "Ctrl+Shift+T", "window"),   # 0.9.135 창도
     ("next_tab", T("다음 탭"), "Ctrl+Tab", "window"),
     ("prev_tab", T("이전 탭"), "Ctrl+Shift+Tab", "window"),
     ("focus_addr", T("주소창으로"), "Ctrl+L; Alt+D; F4", "window"),

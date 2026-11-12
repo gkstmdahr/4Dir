@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.134"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 8             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.135"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 3             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -963,7 +963,8 @@ def refresh_titles():
             pass
     log.info("제목 표시줄: %s", t)
 SSIG = None            # 검색 색인 알림 (모든 창이 받음)
-CLOSED = []            # 다른 창이 남은 채 닫힌 창들 [(시각, 연 순서, 상태)] — 한꺼번에 닫힐 때 원래 메인 고르기
+CLOSED = []            # 다른 창이 남은 채 닫힌 창들 [(시각, 연 순서, 상태)] — 한꺼번에 닫힐 때 원래 메인 고르기 · 0.9.135 Ctrl+Shift+T 로 창 다시 열기
+TAB_CLOSED_AT = [0.0]  # 0.9.135 마지막으로 탭을 닫은 시각 (Ctrl+Shift+T: 창·탭 중 더 나중에 닫은 것부터)
 _ORDER = [0]           # 창을 연 순서 번호
 UNDO = []              # 되돌리기(Ctrl+Z) 기록 [(종류, 자료, 설명)] — 이름 바꾸기·새 폴더·이동·복사 (삭제는 휴지통에서)
 SERVER = None          # 하나만 실행용 통신 (창이 아니라 프로그램 소유 → 첫 창을 닫아도 유지)
@@ -1633,7 +1634,8 @@ class DirModel(QtCore.QAbstractTableModel):
     def svn_status(self, row):
         if not self.svn or row >= len(self.rows):
             return None
-        return self.svn.get(self.rows[row][0])
+        e = self.rows[row]
+        return self.svn.get(e[5] if is_home(self.path) and e[5] else e[0])   # 0.9.135 빌드 3 홈: 전체 경로로 (즐겨찾기 바·탐색 창과 같은 4Dir SVN 표시)
 
     def set_entries(self, path, entries):
         self.beginResetModel()
@@ -1743,7 +1745,7 @@ class DirModel(QtCore.QAbstractTableModel):
                 if pm is not None:
                     pm.setDevicePixelRatio(self.thumb_px / max(1, self.icon_px))
                     return pm
-            if self.ovl_on and not (e[5] and e[0].endswith(":\\")):
+            if self.ovl_on and not (e[5] and e[0].endswith(":\\")) and not (e[1] and is_home(self.path)):   # 빌드 3: 홈 폴더 = 4Dir SVN 표시
                 pm = overlay_service().get(self.full(e), e[3], self.thumb_px)
                 if pm:
                     pm.setDevicePixelRatio(max(1.0, pm.width() / max(1, self.icon_px)))
@@ -3291,6 +3293,9 @@ class Page(QtWidgets.QWidget):
         self.scan_count = 0
         self.sig = ScanSignals()
         self.sig.done.connect(self._on_scanned)
+        self._home_svn = FavSvnSig(self)   # 0.9.135 빌드 3 홈 폴더 SVN 표시 (즐겨찾기 바·탐색 창과 같은 FavSvnJob)
+        self._home_svn.done.connect(self._home_svn_apply)
+        SVN_SIG.changed.connect(self._home_svn_changed)
         self.sig.partial.connect(self._on_partial)
         self.sig.info.connect(self._on_info)
         self.sig.svn.connect(self._on_svn)
@@ -3709,6 +3714,25 @@ class Page(QtWidgets.QWidget):
             self._emit_status()
         POOL.start(ScanJob(self.gen, self.path, self.sig, cancel=lambda: tok[0]))
 
+    def _home_svn_start(self):
+        paths = [e[5] for e in self.model_.all if e[1] and e[5]]
+        if OPTS["svn_status"] and paths:
+            POOL.start(FavSvnJob(paths, self._home_svn.done))
+
+    def _home_svn_apply(self, st):
+        if not is_home(self.path):
+            return
+        self.model_.svn = st
+        log.info("홈 SVN 표시 %d개", len(st))
+        if self.model_.rows:
+            self.model_.dataChanged.emit(self.model_.index(0, 0), self.model_.index(len(self.model_.rows) - 1, 0), [Qt.DecorationRole])
+
+    def _home_svn_changed(self, root):
+        if is_home(self.path):
+            rc = os.path.normcase(root)
+            if any(os.path.normcase(e[5] or "").startswith(rc) for e in self.model_.all if e[1]):
+                self._home_svn_start()
+
     def _sel_snapshot(self):
         cur = self.view().currentIndex()
         return (self.selected_names(), self.view().verticalScrollBar().value(),
@@ -3757,6 +3781,8 @@ class Page(QtWidgets.QWidget):
             self.model_.sort(self.model_.sort_col, self.model_.sort_order)   # 폴더 아래 찾기: 다 모은 뒤 정렬
         else:
             self.model_.set_entries(path, entries)
+            if is_home(path):
+                self._home_svn_start()
             self.apply_columns()   # 상태 열: 동기화 폴더에서만 (v0.9.94)
             if is_search(path) and not entries and not err and not tags.is_view(parse_search(path)[0]) and not is_home(path):   # 0.9.110: 빈 태그·그룹엔 검색 범위 안내 안 함
                 # 빠른 검색 0개: 네트워크·구글드라이브 등은 처음엔 검색 범위 밖이라 '고장'처럼 보임 → 이유와 범위 설정 안내 (v0.9.68, 10/29)
@@ -5461,9 +5487,92 @@ def fav_deco_menu(menu, i, parent):
     return dm
 
 
+FOLDER_IDX = {}        # 0.9.135 빌드 2: 폴더 경로(normcase) → 시스템 아이콘 번호 (-1 = 못 얻음). 문서·다운로드 등 특수 폴더 아이콘
+_FOLDER_WANT = []
+_FOLDER_BUSY = [False]
+_FOLDER_LOCK = threading.Lock()   # 다 읽고 끝나는 순간 들어온 요청을 놓치지 않게 (qe273 에서 잡음)
+_FOLDER_SIG = []
+
+
+class _FolderIdxSig(QtCore.QObject):
+    done = QtCore.Signal()
+
+
+def folder_idx_sig():
+    """폴더 아이콘 번호를 다 받으면 알림 (즐겨찾기 바·탐색 창이 다시 그림). 처음 부르는 곳 = 화면 스레드"""
+    if not _FOLDER_SIG:
+        _FOLDER_SIG.append(_FolderIdxSig())
+    return _FOLDER_SIG[0]
+
+
+def folder_sysidx(path):
+    """폴더의 시스템 아이콘 번호 (모르면 None — 뒤에서 받아 두고 folder_idx_sig 로 알림).
+    디스크를 읽으므로(desktop.ini) 화면 스레드에서 안 함 — 끊긴 네트워크 폴더가 화면을 멈추지 않게"""
+    k = os.path.normcase(path or "")
+    if not k:
+        return None
+    if k in FOLDER_IDX:
+        v = FOLDER_IDX[k]
+        return v if v >= 0 else None
+    folder_idx_sig()
+    with _FOLDER_LOCK:
+        if path not in _FOLDER_WANT:
+            _FOLDER_WANT.append(path)
+        start = not _FOLDER_BUSY[0]
+        _FOLDER_BUSY[0] = True
+    if start:
+        threading.Thread(target=_folder_idx_run, daemon=True, name="fav-icons").start()
+    return None
+
+
+def _folder_idx_run():
+    try:
+        import pythoncom
+        pythoncom.CoInitialize()
+    except Exception:
+        pass
+    t0, n = time.time(), 0
+    while True:
+        with _FOLDER_LOCK:
+            if not _FOLDER_WANT:
+                _FOLDER_BUSY[0] = False
+                break
+            _FOLDER_WANT.sort(key=lambda x: x.startswith("\\\\"))   # 네트워크 폴더는 맨 뒤 (느려도 로컬부터)
+            pth = _FOLDER_WANT.pop(0)
+        v = -1
+        for _try in range(2):   # 새 스레드 첫 호출이 가끔 실패(-1) — 실측 E:\Domcuments(문서) → 한 번 더
+            try:
+                v = fileicons.sys_index(pth)
+            except Exception:
+                v = -1
+            if v is not None and v >= 0:
+                break
+        FOLDER_IDX[os.path.normcase(pth)] = v if v is not None else -1
+        n += 1
+    log.info("즐겨찾기 폴더 아이콘 %d개 받음 %.0fms", n, (time.time() - t0) * 1000)
+    try:
+        folder_idx_sig().done.emit()
+    except RuntimeError:
+        pass
+
+
+def svn_badged(base, st, dpr=1.0):
+    """아이콘에 SVN 배지(목록·즐겨찾기 바와 같은 그림). st = 'modified'/'normal'/None"""
+    if not st or not OPTS["svn_status"]:
+        return base
+    pm = QtGui.QPixmap(int(16 * dpr), int(16 * dpr))
+    pm.setDevicePixelRatio(dpr)
+    pm.fill(Qt.transparent)
+    p = QtGui.QPainter(pm)
+    base.paint(p, QtCore.QRect(0, 0, 16, 16))
+    paint_svn_badge(p, QtCore.QRect(0, 0, 16, 16), QtCore.QRect(0, 0, 16, 16), st)
+    p.end()
+    return QtGui.QIcon(pm)
+
+
 def fav_icon(d, size=16):
     if not d.get("file"):
-        return shellops.icon_for("", True, size)
+        return shellops.icon_for("", True, size, folder_sysidx(d.get("path")))   # 0.9.135 빌드 2 특수 폴더 아이콘
     p = d["path"]
     if os.path.splitext(p)[1].lower() in FAV_OWN_ICON:
         idx = ficon_service().get(p, 0)   # 없으면 요청만 → 받으면 즐겨찾기 바가 다시 그림(FavPanel._ficon)
@@ -5895,6 +6004,52 @@ class Sidebar(DragScrollMixin, QtWidgets.QTreeWidget):
         if not FAV.items:
             root.addChild(QtWidgets.QTreeWidgetItem([T("(비어 있음 — 우클릭 > ★ 4Dir 즐겨찾기에 추가)")]))
         log.debug("탐색 창 4Dir 즐겨찾기 %d개", len(FAV.items))
+        self._side_svn_start()   # 0.9.135 빌드 2
+
+    # ---- 0.9.135 빌드 2: 탐색 창 즐겨찾기 = 즐겨찾기 바와 같게 (특수 폴더 아이콘 + SVN 표시)
+    def _side_fav_items(self):
+        out = []
+        for root in (self.qe_root, self.fav_root):
+            stack = [root.child(i) for i in range(root.childCount())]
+            while stack:
+                it = stack.pop(0)
+                p = it.data(0, PATH_ROLE)
+                if p and not it.data(0, FAV_FILE_ROLE):
+                    out.append((it, p))
+                elif not p:   # 4Dir 즐겨찾기 묶음 → 그 아래
+                    stack.extend(it.child(i) for i in range(it.childCount()))
+        return out
+
+    def _side_svn_start(self):
+        if not hasattr(self, "_side_sig"):
+            self._side_st = {}
+            self._side_sig = FavSvnSig(self)
+            self._side_sig.done.connect(self._side_svn_apply)
+            folder_idx_sig().done.connect(self._side_icons)
+            SVN_SIG.changed.connect(self._side_svn_changed)
+        self._side_icons()
+        if OPTS["svn_status"]:
+            paths = sorted({p for _, p in self._side_fav_items()})
+            if paths:
+                POOL.start(FavSvnJob(paths, self._side_sig.done))
+
+    def _side_svn_changed(self, root):
+        rc = os.path.normcase(root)
+        if any(os.path.normcase(p).startswith(rc) for _, p in self._side_fav_items()):
+            self._side_svn_start()
+
+    def _side_svn_apply(self, st):
+        self._side_st = st
+        log.info("탐색 창 즐겨찾기 SVN 표시 %d개", len(st))
+        self._side_icons()
+
+    def _side_icons(self):
+        try:
+            dpr = self.devicePixelRatioF() or 1.0
+            for it, p in self._side_fav_items():
+                it.setIcon(0, svn_badged(fav_icon(fav_item(p) or {"path": p}), self._side_st.get(p), dpr))
+        except RuntimeError:   # 탐색 창이 닫혀 지워짐
+            pass
 
     def refresh_pinned(self):
         self._pinned_at = time.time()
@@ -5911,7 +6066,8 @@ class Sidebar(DragScrollMixin, QtWidgets.QTreeWidget):
         if not items:
             self.fav_root.addChild(QtWidgets.QTreeWidgetItem([T("(비어 있음)")]))
         for d in items:
-            self.fav_root.addChild(self._folder_item(d["name"], d["path"], shellops.icon_for("", True, 16)))
+            self.fav_root.addChild(self._folder_item(d["name"], d["path"], fav_icon({"path": d["path"]})))
+        self._side_svn_start()   # 0.9.135 빌드 2
 
     def refresh_pc(self):
         POOL.start(PcInfoJob(self.sig))
@@ -7622,6 +7778,7 @@ class Pane(QtWidgets.QFrame):
         if main is not None:
             main.closed_tabs.append((self.idx, v.path))   # Ctrl+Shift+T 로 다시 열기
             del main.closed_tabs[:-20]
+            TAB_CLOSED_AT[0] = time.time()
         v.deleteLater()
         self._on_tab_changed(self.bar.currentIndex())
         self.changed.emit()
@@ -8055,6 +8212,7 @@ class FavPanel(QtWidgets.QFrame):
         self.svn = {}   # 즐겨찾기 경로 → SVN 상태 (FavSvnJob)
         self._svn_sig = FavSvnSig(self)
         self._svn_sig.done.connect(self._svn_apply)
+        folder_idx_sig().done.connect(self._on_folder_icons)   # 0.9.135 빌드 2 특수 폴더 아이콘 받음 → 다시 그림 (메서드로 — 창 닫히면 자동으로 끊김)
         self._svn_timer = QtCore.QTimer(self)
         self._svn_timer.setSingleShot(True)
         self._svn_timer.setInterval(400)   # 실시간 변경이 몰려도 한 번만
@@ -8123,17 +8281,10 @@ class FavPanel(QtWidgets.QFrame):
 
     # ---------------------------------------------------------- SVN 표시 (탐색기 즐겨찾기처럼, 10/19)
     def _fav_icon(self, base, st):
-        if not st or not OPTS["svn_status"]:
-            return base
-        dpr = self.devicePixelRatioF() or 1.0
-        pm = QtGui.QPixmap(int(16 * dpr), int(16 * dpr))
-        pm.setDevicePixelRatio(dpr)
-        pm.fill(Qt.transparent)
-        p = QtGui.QPainter(pm)
-        base.paint(p, QtCore.QRect(0, 0, 16, 16))
-        paint_svn_badge(p, QtCore.QRect(0, 0, 16, 16), QtCore.QRect(0, 0, 16, 16), st)
-        p.end()
-        return QtGui.QIcon(pm)
+        return svn_badged(base, st, self.devicePixelRatioF() or 1.0)   # 0.9.135 빌드 2: 탐색 창과 같은 함수
+
+    def _on_folder_icons(self):
+        self._svn_apply(self.svn, force=True)
 
     def _svn_start(self):
         if not OPTS["svn_status"]:
@@ -11046,7 +11197,7 @@ class Main(QtWidgets.QMainWindow):
             "toggle_chips": lambda: self.toggle_opt("type_chips"),   # 빌드 27
             "sync_browse": lambda: self.toggle_sync_browse(),   # 0.9.127 빌드 5
             "color_rules": lambda: self.edit_color_rules(),
-            "reopen_tab": lambda: self.reopen_tab(),
+            "reopen_tab": lambda: self.reopen_last(),
             "focus_filter": lambda: self.pane().focus_filter(),
             "global_search": lambda: self.focus_global_search(),
             "next_tab": lambda: self._cycle_tab(1),
@@ -12395,6 +12546,19 @@ class Main(QtWidgets.QMainWindow):
         for w in list(WINDOWS) or [self]:
             w.refresh_drives()
 
+    def reopen_last(self):
+        """0.9.135 (사용자 11/12 '메인 창을 실수로 닫았는데 Ctrl+Shift+T 로 탭만 돌아옴'): 크롬처럼 가장 나중에 닫은 것부터 —
+        창이면 그 창을 칸 배치·탭 그대로 새 창으로, 탭이면 지금처럼 탭"""
+        if CLOSED and (not self.closed_tabs or CLOSED[-1][0] >= TAB_CLOSED_AT[0]):
+            t, order, st = CLOSED.pop()
+            log.info("닫은 창 다시 열기 (%.0f초 전에 닫음, 칸 %d개 · 탭 %d개, 남은 닫은 창 %d개)", time.time() - t, len(st.get("panes", [])),
+                     sum(len(p.get("tabs", [])) for p in st.get("panes", [])), len(CLOSED))
+            w = Main(open_state=st, src=self)
+            w.show()
+            w.activateWindow()
+            return w
+        return self.reopen_tab()
+
     def reopen_tab(self, k=None, pane=None):
         if not self.closed_tabs:
             return
@@ -12402,7 +12566,7 @@ class Main(QtWidgets.QMainWindow):
         pidx, path = self.closed_tabs[k]
         del self.closed_tabs[k]
         target = pane or (self.panes[pidx] if pidx < len(self.panes) and self.panes[pidx].isVisible() else self.pane())
-        if path != THIS_PC and not os.path.isdir(path):
+        if path != THIS_PC and not is_home(path) and not os.path.isdir(path):   # 0.9.135 홈 탭도
             self.show_notice(T('⚠ 폴더가 없어 다시 열 수 없습니다: {0}  ✕').format(path))
             return
         log.info("닫은 탭 다시 열기 pane=%d %s", target.idx, path)

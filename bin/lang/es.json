@@ -2369,5 +2369,6 @@
  "최근 항목": "Recientes",
  "즐겨찾기 {0}개 · 최근 항목 {1}개": "{0} en Acceso rápido · {1} recientes",
  "홈 목록이 응답하지 않습니다 (끊긴 네트워크 폴더?) — 새로 고침(F5)으로 다시 읽기": "Inicio no responde (¿carpeta de red desconectada?) — pulsa Actualizar (F5) para reintentar",
- "윈도우 탐색기 홈과 같은 목록 — 즐겨찾기 폴더와 최근에 연 파일": "La misma lista que Inicio del Explorador — carpetas de Acceso rápido y archivos abiertos recientemente"
+ "윈도우 탐색기 홈과 같은 목록 — 즐겨찾기 폴더와 최근에 연 파일": "La misma lista que Inicio del Explorador — carpetas de Acceso rápido y archivos abiertos recientemente",
+ "닫은 탭·창 다시 열기 (가장 나중에 닫은 것부터)": "Volver a abrir pestaña o ventana cerrada (la más reciente primero)"
 }
