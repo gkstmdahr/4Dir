@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 사이트 문구 (SITE_TEXT_VER 1.3.1 — 실행 안내 4Dir.exe(막히면 vbs) · FAQ 회사 사용(맨 아래 _BIZ) · 메인 fast 줄 + FAQ 속도 근거, 맨 아래 _FAST) — make_site.py 가 읽음.
+"""4Dir 사이트 문구 (SITE_TEXT_VER 1.4.0 — 1.4.0 Microsoft Store 받기 버튼 문구(맨 아래 STORE) · 실행 안내 4Dir.exe(막히면 vbs) · FAQ 회사 사용(맨 아래 _BIZ) · 메인 fast 줄 + FAQ 속도 근거, 맨 아래 _FAST) — make_site.py 가 읽음.
 키: 언어 폴더 이름(en 은 사이트 맨 위). {ver} {size} {date} 는 make_site 가 채움."""
 
 LANGS = ["en", "ko", "zh-CN", "zh-TW", "ja", "es", "de", "fr", "pt-BR", "ru"]
@@ -396,3 +396,19 @@ _BIZ = {
 }
 for _lg, _qa in _BIZ.items():
     T[_lg]["faq"] = T[_lg]["faq"][:1] + [_qa] + T[_lg]["faq"][1:]
+
+
+# 1.4.0 Microsoft Store 판 (사용자 11/13 '사이트에 스토어 받기 버튼') — 마이크로소프트가 서명 → 백신·SmartScreen 이 안 막음
+STORE_URL = "https://apps.microsoft.com/detail/9P6TPNVB0S37"
+STORE = {   # (버튼, 아래 안내)
+    "en": ("Get it from Microsoft Store", "Antivirus or a work PC blocks the zip? Get the Microsoft-signed Store version instead (updates through the Store; Win+E linking not available there)."),
+    "ko": ("Microsoft Store 에서 받기", "백신이나 회사 PC 가 zip 을 막으면 마이크로소프트가 서명한 스토어판을 받으세요 (업데이트는 스토어가, Win+E 연결은 스토어판에서 안 됨)."),
+    "zh-CN": ("从 Microsoft Store 获取", "杀毒软件或公司电脑拦截 zip？请改用微软签名的应用商店版（由商店更新；商店版不支持 Win+E 关联）。"),
+    "zh-TW": ("從 Microsoft Store 取得", "防毒軟體或公司電腦封鎖 zip？請改用微軟簽署的市集版（由市集更新；市集版不支援 Win+E 連結）。"),
+    "ja": ("Microsoft Store から入手", "ウイルス対策ソフトや会社の PC が zip をブロックする場合は、Microsoft 署名済みのストア版をどうぞ（更新はストアから。ストア版は Win+E 連携なし）。"),
+    "es": ("Obtener en Microsoft Store", "¿El antivirus o un PC del trabajo bloquea el zip? Usa la versión de la Store firmada por Microsoft (se actualiza desde la Store; sin vínculo con Win+E)."),
+    "de": ("Im Microsoft Store herunterladen", "Blockiert ein Virenscanner oder der Firmen-PC die ZIP-Datei? Nehmen Sie die von Microsoft signierte Store-Version (Updates über den Store; ohne Win+E-Verknüpfung)."),
+    "fr": ("Obtenir sur le Microsoft Store", "L'antivirus ou un PC de travail bloque le zip ? Prenez la version du Store signée par Microsoft (mises à jour via le Store ; sans liaison Win+E)."),
+    "pt-BR": ("Baixar na Microsoft Store", "O antivírus ou o PC do trabalho bloqueia o zip? Use a versão da Store assinada pela Microsoft (atualizada pela Store; sem vínculo com Win+E)."),
+    "ru": ("Получить в Microsoft Store", "Антивирус или рабочий ПК блокирует zip? Возьмите версию из Store с подписью Microsoft (обновляется через Store; без привязки к Win+E)."),
+}
