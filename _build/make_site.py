@@ -25,7 +25,7 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.13.1"   # 1.13.1: 받기·스토어 버튼 같은 너비 (사용자 11/13) / 1.13.0: 다운로드 버튼 옆 Microsoft Store 받기 + 안내 한 줄 (사용자 11/13) / 1.12.1: 위쪽 just downloader 버튼 = PC판 페이지로 바로 (💻, 사용자 11/11 'PC판이 먼저 보이면') / 1.12.0: 사용법 페이지 = 앱 사용법 2.0 과 같은 21개 주제 + 움직이는 장면 영상(img/demo, 보이는 것만 재생) · 문구는 앱 번역(bin/lang) / 1.11.1: 후원 버튼 새 창(target=_blank) / 1.11.0: 개인정보처리방침 privacy.html (구글 드라이브 백업 — 구글 앱 등록에 필요) / 1.10.0: 1.10.0: 받기를 누르면 다운로드는 바로 시작 + 후원 안내 창(막지 않음, 닫기 가능 — 사용자 11/6 PureRef 처럼) / 1.9.3: 1.9.3: support 메일 링크에 제목 말머리 [4Dir] / 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
+MAKE_SITE_VER = "1.14.0"   # 1.14.0: 지원 언어 페이지(languages.html, 앱 16개·사이트 10개) + 바닥글 링크, 앱만 지원하는 6개 언어로 온 사람에게 영어 첫 화면에 그 언어로 한 줄 안내 (사용자 11/14 '최소') / 1.13.1: 받기·스토어 버튼 같은 너비 (사용자 11/13) / 1.13.0: 다운로드 버튼 옆 Microsoft Store 받기 + 안내 한 줄 (사용자 11/13) / 1.12.1: 위쪽 just downloader 버튼 = PC판 페이지로 바로 (💻, 사용자 11/11 'PC판이 먼저 보이면') / 1.12.0: 사용법 페이지 = 앱 사용법 2.0 과 같은 21개 주제 + 움직이는 장면 영상(img/demo, 보이는 것만 재생) · 문구는 앱 번역(bin/lang) / 1.11.1: 후원 버튼 새 창(target=_blank) / 1.11.0: 개인정보처리방침 privacy.html (구글 드라이브 백업 — 구글 앱 등록에 필요) / 1.10.0: 1.10.0: 받기를 누르면 다운로드는 바로 시작 + 후원 안내 창(막지 않음, 닫기 가능 — 사용자 11/6 PureRef 처럼) / 1.9.3: 1.9.3: support 메일 링크에 제목 말머리 [4Dir] / 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
 SUPPORT = "support@4dir.net"   # 문제 보고 메일 (1.1.1)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -164,7 +164,7 @@ def page(lang, cfg, rel):
 {app_nav(lang, up)}{guide_nav(lang)}{board_nav(lang)}<label class="lang">{e(t["lang"])} <select onchange="try{{localStorage.setItem('4dir-lang',1)}}catch(e){{}};location.href=this.value">{opts}</select></label>
 </div></header>
 <main class="wrap">
-<section class="hero">
+{app_only_banner() if lang == "en" else ""}<section class="hero">
 <h1>{e(t["tagline"])}</h1>
 <p class="sub">{e(t["sub"])}</p>
 <p><span class="dlrow"><a id="dl" class="btn big" href="{dl_url}">⬇ {e(t["dl"].format(**fmt))}</a><a id="store" class="btn big store" href="{ST.STORE_URL}" target="_blank" rel="noopener">⊞ {e(ST.STORE[lang][0])}</a></span></p>
@@ -182,9 +182,77 @@ def page(lang, cfg, rel):
 <section id="faq"><h2>{e(t["faq_h"])}</h2>{faq}</section>
 </main>
 <footer><div class="wrap">
-<a href="{repo_url}">{e(t["src"])}</a> · <a href="{repo_url}/issues">{e(t["issues"])}</a> · <a href="mailto:{SUPPORT}?subject=%5B4Dir%5D%20">{SUPPORT}</a> · <a href="{repo_url}/releases">v{ver}</a> · <a href="{up}code-signing.html">Code signing policy</a>
+<a href="{repo_url}">{e(t["src"])}</a> · <a href="{repo_url}/issues">{e(t["issues"])}</a> · <a href="mailto:{SUPPORT}?subject=%5B4Dir%5D%20">{SUPPORT}</a> · <a href="{repo_url}/releases">v{ver}</a> · <a href="{up}code-signing.html">Code signing policy</a> · <a href="{up}languages.html">{e(t["lang"])}</a>
 <p>{e(t["lic"])}</p>
 </div></footer>
+</body>
+</html>
+"""
+
+
+def app_langs():
+    """1.14.0 앱 화면 언어 (bin\\i18n.LANGS 순서) → [(앱 코드, 그 언어 이름, 언어 파일 dict)]"""
+    src = open(os.path.join(ROOT, "bin", "i18n.py"), encoding="utf-8").read()
+    codes = re.findall(r'\("([a-zA-Z_]+)", "[^"]+"\)', src[src.index("LANGS = ["):src.index("]", src.index("LANGS = ["))])
+    out = []
+    for c in codes:
+        d = {}
+        if c != "ko":
+            d = json.load(open(os.path.join(ROOT, "bin", "lang", c + ".json"), encoding="utf-8"))
+        out.append((c, d.get("_language", "한국어"), d))
+    assert len(out) >= 16, codes
+    return out
+
+
+def app_only_banner():
+    """1.14.0 영어 첫 화면 맨 위 한 줄 — 브라우저 언어가 앱만 지원하는 언어(ST.APP_ONLY)면 그 언어로 '앱은 지원, 사이트는 영어' (스크립트로 보임)"""
+    langs = {c: d for c, _, d in app_langs()}
+    msgs = {}
+    for k, (code, txt) in ST.APP_ONLY.items():
+        d = langs[code]
+        path = f"⚙ {d['설정']} ▸ {d['일반']} ▸ {d['언어']}"
+        msgs[k] = html.escape(txt.format(path=path))
+    return ('<p id="applang" class="note applang" hidden></p>'
+            "<script>(function(){try{var m=" + json.dumps(msgs, ensure_ascii=False) + ";var L=(navigator.languages||[navigator.language]);"
+            "for(var i=0;i<L.length;i++){var l=(L[i]||'').toLowerCase().split('-')[0];if(l==='en')return;"
+            "if(m[l]){var p=document.getElementById('applang');p.innerHTML=m[l]+' <a href=\"languages.html\">Languages →</a>';p.hidden=false;return;}}}catch(e){}})();</script>\n")
+
+
+def languages_page(cfg):
+    """1.14.0 지원 언어 (영어 한 장) — 앱 화면 16개 / 사이트 10개 / 없는 언어는 영어"""
+    base = site_base(cfg)
+    e = html.escape
+    site = {ST.APP_LANG[lg]: lg for lg in ST.LANGS}
+    rows = []
+    for c, name, _ in app_langs():
+        sl = site.get(c)
+        link = f'<a href="{"" if sl == "en" else sl + "/"}">{e(ST.NAMES[sl])}</a>' if sl else "English"
+        rows.append(f"<tr><td>{e(name)}</td><td>✔</td><td>{link}</td></tr>")
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Languages — 4Dir</title>
+<meta name="description" content="Languages supported by the 4Dir app and website.">
+<link rel="canonical" href="{base}languages.html">
+<link rel="icon" href="icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top"><div class="wrap"><a class="logo" href="./"><img src="icon.png" alt="" width="28" height="28">4Dir</a></div></header>
+<main class="wrap">
+<section><h1>Languages</h1>
+<p>The 4Dir app is available in {len(rows)} languages. It starts in your Windows display language; to change it, open ⚙ Settings ▸ General ▸ Language and restart 4Dir.
+If your language is not in the list, 4Dir shows English.</p>
+<p>This website, the user guide and the release notes are available in {len(ST.LANGS)} languages; other languages see the English pages.</p>
+<table class="langs"><thead><tr><th>Language</th><th>App</th><th>Website</th></tr></thead><tbody>
+{"".join(rows)}
+</tbody></table>
+<p>Want 4Dir in another language, or found a wrong translation? Write to <a href="mailto:{SUPPORT}?subject=%5B4Dir%5D%20Language">{SUPPORT}</a>.</p>
+</section>
+</main>
+<footer><div class="wrap"><a href="./">4Dir</a> · <a href="code-signing.html">Code signing policy</a> · <a href="privacy.html">Privacy</a></div></footer>
 </body>
 </html>
 """
@@ -304,7 +372,7 @@ document.querySelectorAll('section.gs').forEach(function(s){{io.observe(s)}})}}c
 (function(){{try{{var vio=new IntersectionObserver(function(es){{es.forEach(function(x){{var v=x.target;if(x.isIntersecting){{v.play().catch(function(){{}})}}else{{v.pause()}}}})}},{{threshold:0.35}});
 document.querySelectorAll('figure.demo video').forEach(function(v){{vio.observe(v)}})}}catch(e){{}}}})();</script>
 <footer><div class="wrap">
-<a href="{repo_url}">{e(t["src"])}</a> · <a href="{repo_url}/issues">{e(t["issues"])}</a> · <a href="mailto:{SUPPORT}?subject=%5B4Dir%5D%20">{SUPPORT}</a> · <a href="{up}code-signing.html">Code signing policy</a>
+<a href="{repo_url}">{e(t["src"])}</a> · <a href="{repo_url}/issues">{e(t["issues"])}</a> · <a href="mailto:{SUPPORT}?subject=%5B4Dir%5D%20">{SUPPORT}</a> · <a href="{up}code-signing.html">Code signing policy</a> · <a href="{up}languages.html">{e(t["lang"])}</a>
 <p>{e(t["lic"])}</p>
 </div></footer>
 </body>
@@ -498,7 +566,7 @@ def versions_page(lang, cfg, rel):
 </section>
 </main>
 <footer><div class="wrap">
-<a href="{repo_url}">{e(t["src"])}</a> · <a href="{repo_url}/releases">GitHub Releases</a> · <a href="mailto:{SUPPORT}?subject=%5B4Dir%5D%20">{SUPPORT}</a> · <a href="{up}code-signing.html">Code signing policy</a>
+<a href="{repo_url}">{e(t["src"])}</a> · <a href="{repo_url}/releases">GitHub Releases</a> · <a href="mailto:{SUPPORT}?subject=%5B4Dir%5D%20">{SUPPORT}</a> · <a href="{up}code-signing.html">Code signing policy</a> · <a href="{up}languages.html">{e(t["lang"])}</a>
 <p>{e(t["lic"])}</p>
 </div></footer>
 </body>
@@ -538,6 +606,7 @@ code{background:var(--code);padding:2px 6px;border-radius:4px;font-family:Consol
 code.sha{display:inline-block;max-width:100%}
 details{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:8px 0}summary{cursor:pointer;font-weight:600}
 #donate{text-align:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:24px 16px}
+.applang{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:16px 0 0}table.langs{border-collapse:collapse;margin:16px 0}table.langs th,table.langs td{border-bottom:1px solid var(--line);padding:6px 16px 6px 0;text-align:left}
 footer{border-top:1px solid var(--line);padding:24px 0;color:var(--mut);font-size:14px;text-align:center}
 .news{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin:8px 0 24px}.news h2{font-size:20px;margin:0 0 8px}.news ul{margin:0 0 8px;padding-left:20px}.news p{margin:0}
 .ver{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:12px 0}.ver ul{margin:8px 0 0;padding-left:20px}
@@ -627,6 +696,9 @@ def main():
     with open(os.path.join(OUT, "privacy.html"), "w", encoding="utf-8", newline="\n") as f:   # 1.11.0
         f.write(_beacon(privacy_page(cfg), cfg))
     log("개인정보처리방침 privacy.html")
+    with open(os.path.join(OUT, "languages.html"), "w", encoding="utf-8", newline="\n") as f:   # 1.14.0
+        f.write(_beacon(languages_page(cfg), cfg))
+    log(f"지원 언어 languages.html (앱 {len(app_langs())}개 · 사이트 {len(ST.LANGS)}개)")
     open(os.path.join(OUT, "style.css"), "w", encoding="utf-8", newline="\n").write(CSS)
     shutil.copytree(os.path.join(SITE_SRC, "img"), os.path.join(OUT, "img"), dirs_exist_ok=True)
     # 1.3.0: 다른 앱 소개 페이지(_site\apps\<이름>\ → 사이트 /<이름>/) 그대로 복사 — 예: just-downloader. 매번 OUT 을 지우므로 여기서 다시 넣어야 남는다
@@ -650,6 +722,7 @@ def main():
     urls = "".join(f"<url><loc>{base}{'' if lg == 'en' else lg + '/'}{pg}</loc></url>" for lg in ST.LANGS for pg in ("", "versions.html") + (("guide.html",) if lg in GT.GUIDE else ()))
     urls += "".join(f"<url><loc>{base}{u}</loc></url>" for u in sorted(app_urls))   # 1.3.0
     urls += f"<url><loc>{base}code-signing.html</loc></url>"   # 1.7.0
+    urls += f"<url><loc>{base}languages.html</loc></url>"   # 1.14.0
     open(os.path.join(OUT, "sitemap.xml"), "w", encoding="utf-8").write(
         f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>\n')
     open(os.path.join(OUT, ".nojekyll"), "w").close()

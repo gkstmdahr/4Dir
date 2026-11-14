@@ -437,7 +437,7 @@ def _jtype(v):
     if isinstance(v, dict):
         return T("묶음") + " {%d}" % len(v)
     if isinstance(v, list):
-        return T("목록") + " [%d]" % len(v)
+        return T("배열") + " [%d]" % len(v)   # 0.9.137 빌드 9: '목록'은 보기 방식(List)과 겹쳐 영어 메뉴가 'Array'로 나왔음 → 따로 키
     if isinstance(v, str):
         return T("글자")
     if isinstance(v, bool):

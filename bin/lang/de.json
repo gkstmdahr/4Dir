@@ -9,7 +9,7 @@
  "크기": "Größe",
  "위치": "Ort",
  "자세히": "Details",
- "목록": "Array",
+ "목록": "Liste",
  "작은 아이콘": "Kleine Symbole",
  "보통 아이콘": "Mittelgroße Symbole",
  "큰 아이콘": "Große Symbole",
@@ -2370,5 +2370,8 @@
  "즐겨찾기 {0}개 · 최근 항목 {1}개": "{0} im Schnellzugriff · {1} zuletzt verwendet",
  "홈 목록이 응답하지 않습니다 (끊긴 네트워크 폴더?) — 새로 고침(F5)으로 다시 읽기": "Start reagiert nicht (getrennter Netzwerkordner?) — mit Aktualisieren (F5) erneut versuchen",
  "윈도우 탐색기 홈과 같은 목록 — 즐겨찾기 폴더와 최근에 연 파일": "Dieselbe Liste wie „Start“ im Explorer — Schnellzugriff-Ordner und zuletzt geöffnete Dateien",
- "닫은 탭·창 다시 열기 (가장 나중에 닫은 것부터)": "Geschlossenen Tab oder Fenster wieder öffnen (zuletzt geschlossenes zuerst)"
+ "닫은 탭·창 다시 열기 (가장 나중에 닫은 것부터)": "Geschlossenen Tab oder Fenster wieder öffnen (zuletzt geschlossenes zuerst)",
+ "자동 새로고침 (폴더가 바뀌면 목록에 바로 반영 — 끄면 F5 로만 새로 읽음)": "Automatisch aktualisieren (Ordneränderungen sofort zeigen – aus: nur F5 lädt neu)",
+ "끄면 다른 곳에서 파일이 바뀌어도 목록이 그대로이고, F5 를 눌러야 새로 읽습니다": "Wenn aus, bleibt die Liste unverändert, auch wenn sich Dateien anderswo ändern; F5 lädt neu",
+ "배열": "Array"
 }

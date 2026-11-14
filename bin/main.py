@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.136"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 2            #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.137"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 10            #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -32,6 +32,7 @@ import shutil  # 0.9.124 드라이브 용량 (disk_usage)
 import zlib
 
 from PySide6 import QtCore, QtGui, QtWidgets
+import shiboken6   # 0.9.137 빌드 4 지워진 칸 확인
 from PySide6.QtCore import Qt
 
 BIN_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -342,7 +343,8 @@ def _update_done(data, err, manual):
     new = str(data.get("version", ""))
     page = data.get("page") or ""
     if _ver_tuple(new) > _ver_tuple(QE_VERSION):
-        notes = (data.get("notes_i18n") or {}).get(i18n.lang) or data.get("notes") or ""
+        ni = data.get("notes_i18n") or {}
+        notes = ni.get(i18n.lang) or (ni.get("en") if i18n.lang != "ko" else "") or data.get("notes") or ""   # 0.9.137 빌드 10: 사이트에 없는 언어(it·pl·nl·tr·uk·id)는 영어 바뀐 점
         log.info("새 버전 있음 v%s (지금 v%s) %s 건너뛴버전=%r", new, QE_VERSION, page, SETTINGS["update_skip"])
         if not manual and SETTINGS["update_skip"] == new:
             log.info("새 버전 팝업 생략: 사용자가 v%s 를 건너뛰기로 함", new)
@@ -1662,7 +1664,8 @@ class DirModel(QtCore.QAbstractTableModel):
         pc_changed = (self.path == THIS_PC) != (path == THIS_PC)
         self.path, self.all = path, entries
         if pc_changed:   # 내 PC ↔ 폴더: 머리글 이름이 바뀜
-            QtCore.QTimer.singleShot(0, lambda: self.headerDataChanged.emit(Qt.Horizontal, 0, len(COLS) - 1))
+            # 0.9.137 빌드 4: 받는 쪽을 self 로 — 창을 바로 닫아 모델이 지워지면 Qt 가 취소 (예전: 'Signal source has been deleted' 오류)
+            QtCore.QTimer.singleShot(0, self, lambda: self.headerDataChanged.emit(Qt.Horizontal, 0, len(COLS) - 1))
         self.cloud = cloud.root_of(path) if path and path != THIS_PC and not is_search(path) else None
         # 폴더 표지는 폴더 안을 훑고 첫 그림을 읽으므로 네트워크·클라우드(받기 일어남)·휴대폰·검색 결과는 제외
         self.covers_ok = bool(path and path != THIS_PC and not is_search(path) and not devices.is_dev(path) and not archives.is_arc(path)
@@ -3075,14 +3078,23 @@ class DetailView(ViewMixin, QtWidgets.QTreeView):
     _band = None
 
     def name_hit(self, pos):
-        """pos(viewport 좌표)가 이름 칸의 아이콘·글자 위인지 (확인란 포함) — 여기서 끌면 파일 옮기기"""
+        """pos(viewport 좌표)에서 끌면 파일 옮기기인지 (아니면 끌어서 고르기) — 탐색기 자세히 보기와 같게.
+        0.9.137 빌드 7 (받은 영상 프레임으로 확인 + 사용자 11/14 '고르지 않은 줄 빈 곳에서 끌면 여러 개 고르기'):
+        - 아이콘·이름 글자 위 = 언제나 파일 끌기
+        - 이름 글자 오른쪽 빈 곳 = 그 줄이 이미 골라져 있으면 파일 끌기, 아니면 끌어서 고르기
+        - 날짜·유형 등 다른 열 = 언제나 파일 끌기 (빌드 8)
+        - 줄 없는 곳(양옆 빈 띠·아래 빈 곳·마지막 열 오른쪽) = 끌어서 고르기
+        ★mousePressEvent 가 누르기 처리(고르기 바뀜) 전에 불러야 함"""
         idx = self.indexAt(pos)
         if not idx.isValid():
             return False
+        sm = self.selectionModel()
+        if sm is not None and sm.isRowSelected(idx.row(), idx.parent()):
+            return True
         i0 = idx.sibling(idx.row(), 0)
         r = self.visualRect(i0)
         if not r.contains(QtCore.QPoint(pos.x(), r.center().y())):
-            return False
+            return True   # 0.9.137 빌드 8 (사용자 11/14 캡처 '탐색기는 수정한 날짜·유형 열에서 끌면 파일 이동'): 이름 칸 밖 다른 열 = 언제나 파일 끌기
         txt = str(self.model().data(i0, Qt.DisplayRole) or "")
         w = self.iconSize().width() + 10 + self.fontMetrics().horizontalAdvance(txt) + 8
         if OPTS["checkboxes"]:
@@ -4002,6 +4014,9 @@ class Page(QtWidgets.QWidget):
 
     def _on_dir_changed(self, p):
         log.debug("변경감지 %s", p)
+        if not SETTINGS["auto_refresh"]:   # 0.9.137 빌드 2: 자동 새로고침 끔 → F5 로만 (정렬 순서가 바뀌지 않게)
+            log.debug("자동 새로고침 꺼짐 — 다시 읽지 않음 %s", p)
+            return
         if not self.watch_timer.isActive():
             self.watch_timer.start()
 
@@ -7218,6 +7233,8 @@ class GlobalChipBar(ChipBar):
     def views(self):
         out = []
         for p in getattr(self.main, "panes", []):
+            if not shiboken6.isValid(p):   # 0.9.137 빌드 4: 창을 바로 닫아 칸이 이미 지워졌으면 건너뜀
+                continue
             if not p.isHidden() and p.view() is not None and p.view().path and p.view().path != THIS_PC and not devices.is_dev(p.view().path):
                 out.append(p.view())
         return out
@@ -7476,7 +7493,7 @@ class Pane(QtWidgets.QFrame):
         g = getattr(mw, "global_chips", None) if mw is not None else None
         if g is not None:
             g.apply_to(v)
-            QtCore.QTimer.singleShot(0, g.refresh_all)
+            QtCore.QTimer.singleShot(0, g, g.refresh_all)   # 0.9.137 빌드 4: g 가 지워지면 Qt 가 취소
 
     # ---------------------------------------------------------- 빠른 필터
     def _on_filter(self, text):
@@ -8637,7 +8654,8 @@ SET_TOGGLES = [("hide_single_tab", T("탭이 하나면 탭 줄 숨기기 (새 �
                ("arc_browse", T("압축 파일(ZIP·7Z·RAR…)을 두 번 누르면 4Dir 안에서 폴더처럼 열기")),
                ("folder_size", T("폴더 크기 계산 (크기 칸 — 네트워크 드라이브 제외)")), ("keep_favbar", T("메뉴줄을 접어도 즐겨찾기 줄은 보이기")),
                ("show_favbar", T("즐겨찾기 줄 보이기")),
-               ("folder_view_memory", T("폴더마다 보기 기억"))]   # 0.9.116 빌드 2 (사용자 게시판: 안 쓰면 줄째 숨기기)
+               ("folder_view_memory", T("폴더마다 보기 기억")),
+               ("auto_refresh", T("자동 새로고침 (폴더가 바뀌면 목록에 바로 반영 — 끄면 F5 로만 새로 읽음)"))]   # 0.9.137 빌드 2   # 0.9.116 빌드 2 (사용자 게시판: 안 쓰면 줄째 숨기기)
 THEMES = [("system", T("시스템 설정 따름")), ("light", T("밝게 (Light)")), ("dark", T("어둡게 (Dark)"))]
 
 
@@ -9744,6 +9762,7 @@ class SettingsDialog(QtWidgets.QDialog):
         self._sub(lay, T("동작"))
         self._set(lay, "folder_size", T("폴더 크기 계산 (크기 칸 — 네트워크 드라이브 제외)"))
         self._set(lay, "empty_click_up", T("빈 곳을 더블클릭하면 상위 폴더로"))
+        self._set(lay, "auto_refresh", T("자동 새로고침 (폴더가 바뀌면 목록에 바로 반영 — 끄면 F5 로만 새로 읽음)"))   # 0.9.137 빌드 2 받은 의견
         self._set(lay, "arc_browse", T("압축 파일(ZIP·7Z·RAR…)을 두 번 누르면 4Dir 안에서 폴더처럼 열기"))   # 빌드 20
         # 0.9.134 (사용자 11/12): 4Dir 에서 열면 실행이 붙잡히는 파일 → 탐색기에게 넘겨 열 확장자 더하기 (빌드 없이)
         # 빌드 2 (사용자 '한 줄에 하나씩 목록, 입력칸 + 등록, 목록에서 골라 삭제')
@@ -11270,9 +11289,7 @@ class Main(QtWidgets.QMainWindow):
             st0["opts"] = dict(OPTS)   # 보기 옵션은 지금 것 그대로 (기록 속 옵션으로 다른 창까지 바꾸지 않음)
             self.apply_state(st0, geometry=restore_geometry and bool(st0.get("geometry")))
             if src is not None and not restore_geometry:
-                g = src.normalGeometry() if src.isMaximized() else src.geometry()
-                self.resize(g.size())
-                self.move(g.x() + 40, g.y() + 40)
+                self._place_new_window(src)   # 0.9.137 빌드 3 (사용자 11/13 '새 창이 화면 구석에') — 예전: 원래 창 +40,+40 (큰 창이면 화면 밖으로)
             saved = ""
         else:
             saved = self.load_state()
@@ -12269,6 +12286,7 @@ class Main(QtWidgets.QMainWindow):
         for key, lbl in (("hide_single_tab", T("탭이 하나면 탭 줄 숨기기 (새 탭: Ctrl+T)")),
                          ("tab_multirow", T("탭이 넘치면 여러 줄로")),
                          ("empty_click_up", T("빈 곳을 더블클릭하면 상위 폴더로")),
+                         ("auto_refresh", T("자동 새로고침 (폴더가 바뀌면 목록에 바로 반영 — 끄면 F5 로만 새로 읽음)")),
                          ("arc_browse", T("압축 파일(ZIP·7Z·RAR…)을 두 번 누르면 4Dir 안에서 폴더처럼 열기")),
                          ("folder_size", T("폴더 크기 계산 (크기 칸 — 네트워크 드라이브 제외)")),
                          ("keep_favbar", T("메뉴줄을 접어도 즐겨찾기 줄은 보이기"))):
@@ -12738,10 +12756,46 @@ class Main(QtWidgets.QMainWindow):
         """열린 모든 창의 칸 (보기 옵션처럼 프로그램 전체에 걸리는 설정을 바꿀 때)"""
         return [p for w in WINDOWS for p in getattr(w, "panes", [])] or self.panes
 
+    def _place_new_window(self, src):
+        """0.9.137 빌드 3: 새 창 자리 — 탐색기처럼 마지막에 닫은 창 자리·크기(화면 안일 때), 없으면 원래 창이 있는 화면 가운데.
+        다른 창과 똑같은 자리면 조금(+32) 비킴, 제목 줄까지 언제나 화면(작업 표시줄 뺀) 안에 들어오게.
+        좌표는 창 안쪽(geometry) 기준, 제목 줄·테두리 두께는 원래 창에서 잼"""
+        g = src.normalGeometry() if src.isMaximized() else src.geometry()
+        if src.isMaximized() or src.frameGeometry() == src.geometry():
+            ml, mt, mr, mb = 8, 31, 8, 8   # 윈도우 기본 테두리·제목 줄 (최대화면 못 잼)
+        else:
+            fg, cg = src.frameGeometry(), src.geometry()
+            ml, mt, mr, mb = cg.left() - fg.left(), cg.top() - fg.top(), fg.right() - cg.right(), fg.bottom() - cg.bottom()
+        why = "원래 창 화면 가운데"
+        rect, self._want_max = None, False
+        lg = SETTINGS["last_win_geo"]
+        if isinstance(lg, (list, tuple)) and len(lg) >= 4:
+            r = QtCore.QRect(int(lg[0]), int(lg[1]), int(lg[2]), int(lg[3]))
+            if QtGui.QGuiApplication.screenAt(r.center()) is not None and r.width() >= 300 and r.height() >= 200:
+                rect, self._want_max, why = r, bool(lg[4]) if len(lg) > 4 else False, "마지막에 닫은 창 자리"
+        scr = (QtGui.QGuiApplication.screenAt(rect.center()) if rect is not None else None) or src.screen() or QtGui.QGuiApplication.primaryScreen()
+        av = scr.availableGeometry()
+        room = av.adjusted(ml, mt, -mr, -mb)   # 창 안쪽이 들어갈 수 있는 곳
+        if rect is None:
+            w, h = min(g.width(), int(room.width() * 0.85)), min(g.height(), int(room.height() * 0.85))
+            rect = QtCore.QRect(room.x() + (room.width() - w) // 2, room.y() + (room.height() - h) // 2, w, h)
+        for _ in range(8):   # 열려 있는 창과 같은 자리면 비킴
+            if not any((x.normalGeometry() if x.isMaximized() else x.geometry()).topLeft() == rect.topLeft() for x in WINDOWS if x is not self):
+                break
+            rect.translate(32, 32)
+        rect.setWidth(min(rect.width(), room.width()))
+        rect.setHeight(min(rect.height(), room.height()))
+        rect.moveLeft(max(room.left(), min(rect.left(), room.right() - rect.width() + 1)))
+        rect.moveTop(max(room.top(), min(rect.top(), room.bottom() - rect.height() + 1)))
+        self.setGeometry(rect)
+        log.info("새 창 자리 %s (%s, 최대화 %s) — 원래 창 %s, 화면 %s, 테두리 %s", rect.getRect(), why, self._want_max, g.getRect(), av.getRect(), (ml, mt, mr, mb))
+
     def open_window(self, path):
         """탭 우클릭 '새 창으로 열기' — 이 창과 똑같은 창, 칸 1개 + 그 폴더 (같은 프로그램 안 → 바로 열림)"""
         t0 = time.perf_counter()
         w = Main(open_path=path, src=self)
+        if getattr(w, "_want_max", False):   # 0.9.137 빌드 3 마지막에 닫은 창이 최대화였으면
+            w.showMaximized()
         w.show()
         w.activateWindow()
         log.info("새 창 열기 %.0fms %s", (time.perf_counter() - t0) * 1000, path)
@@ -13974,7 +14028,7 @@ eports.
             for p in self.panes:
                 if not p.isHidden() and p.view() is not None:
                     self.global_chips.apply_to(p.view())
-            QtCore.QTimer.singleShot(0, self.global_chips.refresh_all)
+            QtCore.QTimer.singleShot(0, self.global_chips, self.global_chips.refresh_all)   # 0.9.137 빌드 4
         log.info("레이아웃 %s", key)
         self.save_timer.start()
 
@@ -14024,7 +14078,7 @@ eports.
             for w in WINDOWS:
                 if key != "chip_counts":
                     w.chip_sel = set()
-                QtCore.QTimer.singleShot(0, lambda w=w: w.global_chips.refresh_all(force=True))
+                QtCore.QTimer.singleShot(0, w.global_chips, lambda w=w: w.global_chips.refresh_all(force=True))   # 0.9.137 빌드 4
         if key == "svn_status":   # 즐겨찾기 바 SVN 표시도 같이 켜고 끔
             for w in WINDOWS:
                 w.favbar._svn_timer.start()
@@ -14251,6 +14305,11 @@ eports.
 
     def closeEvent(self, ev):
         last = not [w for w in WINDOWS if w is not self]
+        if not self.isMinimized() and not SESSION_END["on"]:   # 0.9.137 빌드 3: 새 창이 이 자리에 (탐색기처럼 마지막에 닫은 창)
+            g = self.normalGeometry() if self.isMaximized() else self.geometry()
+            if g.width() > 0 and g.height() > 0:
+                SETTINGS["last_win_geo"] = [g.x(), g.y(), g.width(), g.height(), bool(self.isMaximized())]
+                log.info("닫은 창 자리 기억 %s", SETTINGS["last_win_geo"])
         if MEMOS is not None:   # v0.9.108 메모는 닫을 때 바로 저장 (0.6초 기다리지 않음)
             MEMOS.save_now()
         if last:   # 빌드 20: 압축에서 꺼낸 임시 폴더 정리 (이 프로그램 것만)

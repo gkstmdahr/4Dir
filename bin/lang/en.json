@@ -9,7 +9,7 @@
  "크기": "Size",
  "위치": "Location",
  "자세히": "Details",
- "목록": "Array",
+ "목록": "List",
  "작은 아이콘": "Small icons",
  "보통 아이콘": "Medium icons",
  "큰 아이콘": "Large icons",
@@ -2370,5 +2370,8 @@
  "즐겨찾기 {0}개 · 최근 항목 {1}개": "{0} in Quick access · {1} recent",
  "홈 목록이 응답하지 않습니다 (끊긴 네트워크 폴더?) — 새로 고침(F5)으로 다시 읽기": "Home isn't responding (a disconnected network folder?) — press Refresh (F5) to try again",
  "윈도우 탐색기 홈과 같은 목록 — 즐겨찾기 폴더와 최근에 연 파일": "Same list as Home in File Explorer — Quick access folders and recently opened files",
- "닫은 탭·창 다시 열기 (가장 나중에 닫은 것부터)": "Reopen closed tab or window (most recent first)"
+ "닫은 탭·창 다시 열기 (가장 나중에 닫은 것부터)": "Reopen closed tab or window (most recent first)",
+ "자동 새로고침 (폴더가 바뀌면 목록에 바로 반영 — 끄면 F5 로만 새로 읽음)": "Auto refresh (show folder changes right away — when off, only F5 reloads)",
+ "끄면 다른 곳에서 파일이 바뀌어도 목록이 그대로이고, F5 를 눌러야 새로 읽습니다": "When off, the list stays as it is even if files change elsewhere; press F5 to reload",
+ "배열": "Array"
 }

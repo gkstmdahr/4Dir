@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 사이트 문구 (SITE_TEXT_VER 1.4.0 — 1.4.0 Microsoft Store 받기 버튼 문구(맨 아래 STORE) · 실행 안내 4Dir.exe(막히면 vbs) · FAQ 회사 사용(맨 아래 _BIZ) · 메인 fast 줄 + FAQ 속도 근거, 맨 아래 _FAST) — make_site.py 가 읽음.
+"""4Dir 사이트 문구 (SITE_TEXT_VER 1.5.0 — 1.5.0 앱만 지원하는 언어 한 줄 안내(맨 아래 APP_ONLY) · 1.4.0 1.4.0 Microsoft Store 받기 버튼 문구(맨 아래 STORE) · 실행 안내 4Dir.exe(막히면 vbs) · FAQ 회사 사용(맨 아래 _BIZ) · 메인 fast 줄 + FAQ 속도 근거, 맨 아래 _FAST) — make_site.py 가 읽음.
 키: 언어 폴더 이름(en 은 사이트 맨 위). {ver} {size} {date} 는 make_site 가 채움."""
 
 LANGS = ["en", "ko", "zh-CN", "zh-TW", "ja", "es", "de", "fr", "pt-BR", "ru"]
@@ -411,4 +411,15 @@ STORE = {   # (버튼, 아래 안내)
     "fr": ("Obtenir sur le Microsoft Store", "L'antivirus ou un PC de travail bloque le zip ? Prenez la version du Store signée par Microsoft (mises à jour via le Store ; sans liaison Win+E)."),
     "pt-BR": ("Baixar na Microsoft Store", "O antivírus ou o PC do trabalho bloqueia o zip? Use a versão da Store assinada pela Microsoft (atualizada pela Store; sem vínculo com Win+E)."),
     "ru": ("Получить в Microsoft Store", "Антивирус или рабочий ПК блокирует zip? Возьмите версию из Store с подписью Microsoft (обновляется через Store; без привязки к Win+E)."),
+}
+
+# 1.5.0 (0.9.137, 사용자 11/14 '최소' 범위): 앱만 지원하는 언어 — 사이트는 영어 그대로, 영어 첫 화면에 그 언어로 한 줄 안내
+# 키 = 브라우저 언어 앞부분(소문자), (앱 언어 코드, 안내 문장). {path} = 앱 메뉴 이름(⚙ 설정 ▸ 일반 ▸ 언어, 그 언어 파일에서 make_site 가 채움)
+APP_ONLY = {
+    "it": ("it", "4Dir è disponibile in italiano: si apre in italiano se Windows è in italiano, altrimenti {path}. Questo sito è in inglese."),
+    "pl": ("pl", "4Dir jest dostępny po polsku: uruchamia się po polsku, jeśli Windows jest po polsku, a w przeciwnym razie {path}. Ta strona jest po angielsku."),
+    "nl": ("nl", "4Dir is beschikbaar in het Nederlands: het opent in het Nederlands als Windows Nederlands is, anders {path}. Deze website is in het Engels."),
+    "tr": ("tr", "4Dir Türkçe olarak kullanılabilir: Windows Türkçe ise Türkçe açılır, değilse {path}. Bu web sitesi İngilizcedir."),
+    "uk": ("uk", "4Dir доступний українською: відкривається українською, якщо Windows українською, інакше {path}. Цей сайт англійською."),
+    "id": ("id", "4Dir tersedia dalam Bahasa Indonesia: terbuka dalam Bahasa Indonesia jika Windows berbahasa Indonesia, jika tidak {path}. Situs ini berbahasa Inggris."),
 }

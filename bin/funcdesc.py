@@ -65,6 +65,7 @@ def by_action():
         "search_roots": T("전체 검색이 훑을 드라이브·폴더를 정합니다"),
         "set_hide_single_tab": T("탭이 하나뿐이면 탭 줄을 숨겨 화면을 넓게 씁니다"),
         "set_empty_click_up": T("목록 빈 곳을 두 번 누르면 상위 폴더로 갑니다"),
+        "set_auto_refresh": T("끄면 다른 곳에서 파일이 바뀌어도 목록이 그대로이고, F5 를 눌러야 새로 읽습니다"),
         "set_arc_browse": T("압축 파일을 풀지 않고 4Dir 안에서 폴더처럼 열어 봅니다"),
         "set_folder_size": T("크기 칸에 폴더 크기도 계산해 보여 줍니다 (네트워크 드라이브 제외)"),
         "set_keep_favbar": T("위쪽 메뉴를 접어도 즐겨찾기 줄은 남겨 둡니다"),

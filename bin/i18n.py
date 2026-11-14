@@ -19,7 +19,9 @@ SETTINGS_FILE = os.path.join(DATA_DIR, "4Dir_settings.json")
 
 # (코드, 그 언어로 쓴 이름) — 메뉴에 이 순서로 나옴
 LANGS = [("ko", "한국어"), ("en", "English"), ("zh_CN", "简体中文"), ("zh_TW", "繁體中文"), ("ja", "日本語"),
-         ("es", "Español"), ("de", "Deutsch"), ("fr", "Français"), ("pt_BR", "Português (Brasil)"), ("ru", "Русский")]
+         ("es", "Español"), ("de", "Deutsch"), ("fr", "Français"), ("pt_BR", "Português (Brasil)"), ("ru", "Русский"),
+         # 0.9.137 빌드 9: 6개 언어 추가 (사용자 11/13 확정)
+         ("it", "Italiano"), ("pl", "Polski"), ("nl", "Nederlands"), ("tr", "Türkçe"), ("uk", "Українська"), ("id", "Bahasa Indonesia")]
 # 언어별 화면 글꼴 (윈도우 기본 탑재)
 FONTS = {"ko": "Malgun Gothic", "ja": "Yu Gothic UI", "zh_CN": "Microsoft YaHei UI", "zh_TW": "Microsoft JhengHei UI"}
 DEFAULT_FONT = "Segoe UI"
@@ -39,7 +41,7 @@ def windows_lang():
     if prim == 0x04:   # 중국어: 대만(1)·홍콩(3)·마카오(5) = 번체, 나머지 = 간체
         return "zh_TW" if sub in (1, 3, 5) else "zh_CN"
     return {0x12: "ko", 0x09: "en", 0x11: "ja", 0x0A: "es", 0x07: "de", 0x0C: "fr", 0x16: "pt_BR",
-            0x19: "ru"}.get(prim, "en")
+            0x19: "ru", 0x10: "it", 0x15: "pl", 0x13: "nl", 0x1F: "tr", 0x22: "uk", 0x21: "id"}.get(prim, "en")
 
 
 def chosen_setting():

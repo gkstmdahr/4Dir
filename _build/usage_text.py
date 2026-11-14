@@ -51,7 +51,7 @@ TEXT["en"] = r"""4Dir v{ver} — free multi-pane (up to 20 panes) tabbed file ma
     If the icons don't appear: Tools > Overlay icon order (Windows) (Windows uses only the first 11)
   - Icon views (small / medium / large icons) show previews of image files (turn off: View > Show > Image previews (icon views))
   - View menu: details/icons, hidden items, file name extensions, path buttons, theme (system/light/dark), colors, always on top, CPU/GPU display
-  - View > Language: 10 languages. Default = your Windows display language. Applied after restarting 4Dir.
+  - View > Language: 16 languages. Default = your Windows display language. Applied after restarting 4Dir.
     Translations are in bin\lang\<language>.json - you can edit them with Notepad.
   - Save/Load windows: save the current tab layout under a name / restore from the automatic record after a crash
   - Tools > Explorer Check: finds and fixes the cause when Windows File Explorer is slow
@@ -99,7 +99,7 @@ TEXT["zh_CN"] = r"""4Dir v{ver} — 免费的 Windows 10/11 多窗格（最多 2
     图标不显示时：工具 > 覆盖图标顺序（Windows）（Windows 只使用前 11 个）
   - 图标视图（小/中/大图标）会显示图片预览（关闭：查看 > 显示 > 图片预览（图标视图））
   - 查看菜单：详细信息/图标、隐藏的项目、文件扩展名、路径按钮、主题（系统/浅色/深色）、颜色、总在最前、CPU/GPU 显示
-  - 查看 > 语言（Language）：10 种语言。默认跟随 Windows 显示语言。重新启动 4Dir 后生效。
+  - 查看 > 语言（Language）：16 种语言。默认跟随 Windows 显示语言。重新启动 4Dir 后生效。
     翻译文件在 bin\lang\<语言>.json，可以用记事本修改。
   - 保存/加载窗口：把当前标签布局命名保存 / 意外关闭后从自动记录恢复
   - 工具 > Explorer Check（资源管理器检查）：Windows 资源管理器变慢时查找并解决原因
@@ -147,7 +147,7 @@ TEXT["zh_TW"] = r"""4Dir v{ver} — 免費的 Windows 10/11 多窗格（最多 2
     圖示沒有出現時：工具 > 覆疊圖示順序（Windows）（Windows 只使用前 11 個）
   - 圖示檢視（小/中/大圖示）會顯示圖片預覽（關閉：檢視 > 顯示 > 圖片預覽（圖示檢視））
   - 檢視選單：詳細資料/圖示、隱藏的項目、副檔名、路徑按鈕、佈景主題（系統/淺色/深色）、色彩、永遠在最上層、CPU/GPU 顯示
-  - 檢視 > 語言（Language）：10 種語言。預設跟隨 Windows 顯示語言。重新啟動 4Dir 後生效。
+  - 檢視 > 語言（Language）：16 種語言。預設跟隨 Windows 顯示語言。重新啟動 4Dir 後生效。
     翻譯檔在 bin\lang\<語言>.json，可以用記事本修改。
   - 儲存/載入視窗：把目前的分頁配置命名儲存 / 意外關閉後從自動記錄復原
   - 工具 > Explorer Check（檔案總管檢查）：Windows 檔案總管變慢時找出並解決原因
@@ -195,7 +195,7 @@ TEXT["de"] = r"""4Dir v{ver} — kostenloser Dateimanager für Windows 10/11 mit
     Erscheinen keine Symbole: Extras > Overlay-Symbol-Reihenfolge (Windows) (Windows nutzt nur die ersten 11)
   - Symbolansichten (kleine / mittelgroße / große Symbole) zeigen eine Vorschau von Bildern (abschalten: Ansicht > Einblenden > Bildvorschau (Symbolansichten))
   - Menü Ansicht: Details/Symbole, ausgeblendete Elemente, Dateinamenerweiterungen, Pfad-Schaltflächen, Design (System/hell/dunkel), Farben, immer im Vordergrund, CPU/GPU-Anzeige
-  - Ansicht > Sprache (Language): 10 Sprachen. Standard = Windows-Anzeigesprache. Wirkt nach Neustart von 4Dir.
+  - Ansicht > Sprache (Language): 16 Sprachen. Standard = Windows-Anzeigesprache. Wirkt nach Neustart von 4Dir.
     Die Übersetzungen liegen in bin\lang\<Sprache>.json - mit dem Editor änderbar.
   - Fenster speichern/laden: aktuelle Tab-Anordnung unter einem Namen speichern / nach einem Absturz aus der Autoaufzeichnung wiederherstellen
   - Extras > Explorer Check (Explorer-Diagnose): findet und behebt die Ursache, wenn der Windows-Explorer langsam ist
@@ -243,7 +243,7 @@ TEXT["es"] = r"""4Dir v{ver} — gestor de archivos gratuito para Windows 10/11 
     Si no aparecen: Herramientas > Orden de iconos superpuestos (Windows) (Windows solo usa los 11 primeros)
   - Las vistas de iconos (pequeños / medianos / grandes) muestran una vista previa de las imágenes (desactivar: Vista > Mostrar > Vista previa de imágenes (vistas de iconos))
   - Menú Vista: detalles/iconos, elementos ocultos, extensiones de nombre de archivo, botones de ruta, tema (sistema/claro/oscuro), colores, siempre visible, CPU/GPU
-  - Vista > Idioma (Language): 10 idiomas. Por defecto = idioma de Windows. Se aplica al reiniciar 4Dir.
+  - Vista > Idioma (Language): 16 idiomas. Por defecto = idioma de Windows. Se aplica al reiniciar 4Dir.
     Las traducciones están en bin\lang\<idioma>.json y se pueden editar con el Bloc de notas.
   - Guardar/cargar ventanas: guardar la distribución de pestañas con un nombre / recuperar del registro automático tras un cierre inesperado
   - Herramientas > Explorer Check (diagnóstico del Explorador): busca y soluciona la causa cuando el Explorador de Windows va lento
@@ -291,7 +291,7 @@ TEXT["fr"] = r"""4Dir v{ver} — gestionnaire de fichiers gratuit pour Windows 1
     Si elles n'apparaissent pas : Outils > Ordre des icônes de superposition (Windows) (Windows n'utilise que les 11 premières)
   - Les affichages icônes (petites / moyennes / grandes) montrent un aperçu des images (désactiver : Affichage > Afficher > Aperçu des images (affichage icônes))
   - Menu Affichage : détails/icônes, éléments masqués, extensions de noms de fichiers, boutons de chemin, thème (système/clair/sombre), couleurs, toujours au premier plan, CPU/GPU
-  - Affichage > Langue (Language) : 10 langues. Par défaut = langue d'affichage de Windows. Appliqué après redémarrage de 4Dir.
+  - Affichage > Langue (Language) : 16 langues. Par défaut = langue d'affichage de Windows. Appliqué après redémarrage de 4Dir.
     Les traductions sont dans bin\lang\<langue>.json et se modifient avec le Bloc-notes.
   - Enregistrer/charger les fenêtres : enregistrer la disposition des onglets sous un nom / restaurer depuis l'enregistrement automatique après un plantage
   - Outils > Explorer Check (diagnostic de l'Explorateur) : trouve et corrige la cause quand l'Explorateur Windows est lent
@@ -339,7 +339,7 @@ TEXT["pt_BR"] = r"""4Dir v{ver} — gerenciador de arquivos gratuito para Window
     Se não aparecerem: Ferramentas > Ordem dos ícones de sobreposição (Windows) (o Windows usa só os 11 primeiros)
   - Os modos de ícones (pequenos / médios / grandes) mostram prévia das imagens (desligar: Exibir > Mostrar > Pré-visualização de imagens (modos de ícones))
   - Menu Exibir: detalhes/ícones, itens ocultos, extensões de nomes de arquivos, botões de caminho, tema (sistema/claro/escuro), cores, sempre visível, CPU/GPU
-  - Exibir > Idioma (Language): 10 idiomas. Padrão = idioma de exibição do Windows. Aplicado ao reiniciar o 4Dir.
+  - Exibir > Idioma (Language): 16 idiomas. Padrão = idioma de exibição do Windows. Aplicado ao reiniciar o 4Dir.
     As traduções ficam em bin\lang\<idioma>.json e podem ser editadas no Bloco de Notas.
   - Salvar/carregar janelas: salvar o layout das abas com um nome / recuperar do registro automático após um fechamento inesperado
   - Ferramentas > Explorer Check (diagnóstico do Explorador): encontra e corrige a causa quando o Explorador do Windows está lento
@@ -387,7 +387,7 @@ TEXT["ru"] = r"""4Dir v{ver} — бесплатный файловый мене�
     Если значков нет: Сервис > Порядок значков-наложений (Windows) (Windows использует только первые 11)
   - В режимах значков (мелкие / обычные / крупные) показываются миниатюры изображений (отключить: Вид > Показать > Миниатюры изображений (режим значков))
   - Меню Вид: таблица/значки, скрытые элементы, расширения имён файлов, кнопки пути, тема (системная/светлая/тёмная), цвета, поверх всех окон, CPU/GPU
-  - Вид > Язык (Language): 10 языков. По умолчанию - язык интерфейса Windows. Применяется после перезапуска 4Dir.
+  - Вид > Язык (Language): 16 языков. По умолчанию - язык интерфейса Windows. Применяется после перезапуска 4Dir.
     Переводы лежат в bin\lang\<язык>.json, их можно править в Блокноте.
   - Сохранить/загрузить окна: сохранить текущую раскладку вкладок под именем / восстановить из автозаписи после сбоя
   - Сервис > Explorer Check (проверка Проводника): находит и устраняет причину, если Проводник Windows тормозит

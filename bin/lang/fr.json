@@ -9,7 +9,7 @@
  "크기": "Taille",
  "위치": "Emplacement",
  "자세히": "Détails",
- "목록": "Tableau",
+ "목록": "Liste",
  "작은 아이콘": "Petites icônes",
  "보통 아이콘": "Icônes moyennes",
  "큰 아이콘": "Grandes icônes",
@@ -2370,5 +2370,8 @@
  "즐겨찾기 {0}개 · 최근 항목 {1}개": "{0} en Accès rapide · {1} récents",
  "홈 목록이 응답하지 않습니다 (끊긴 네트워크 폴더?) — 새로 고침(F5)으로 다시 읽기": "Accueil ne répond pas (dossier réseau déconnecté ?) — appuyez sur Actualiser (F5) pour réessayer",
  "윈도우 탐색기 홈과 같은 목록 — 즐겨찾기 폴더와 최근에 연 파일": "Même liste qu'Accueil dans l'Explorateur — dossiers d'Accès rapide et fichiers ouverts récemment",
- "닫은 탭·창 다시 열기 (가장 나중에 닫은 것부터)": "Rouvrir l'onglet ou la fenêtre fermés (le plus récent d'abord)"
+ "닫은 탭·창 다시 열기 (가장 나중에 닫은 것부터)": "Rouvrir l'onglet ou la fenêtre fermés (le plus récent d'abord)",
+ "자동 새로고침 (폴더가 바뀌면 목록에 바로 반영 — 끄면 F5 로만 새로 읽음)": "Actualisation automatique (affiche aussitôt les changements ; désactivée, seul F5 recharge)",
+ "끄면 다른 곳에서 파일이 바뀌어도 목록이 그대로이고, F5 를 눌러야 새로 읽습니다": "Désactivée, la liste reste telle quelle même si des fichiers changent ailleurs ; appuyez sur F5 pour recharger",
+ "배열": "Tableau"
 }

@@ -501,7 +501,17 @@ def _make_image(path, px):
                 return img
         except Exception as ex:
             log.debug("파일 안 미리보기 못 읽음 %s: %s", path, ex)
+        img = shell_thumbnail(path, px)
+        if img is not None and _one_color(img):   # 0.9.137: 윈도우가 빈(한 색) 그림을 주면 버림 → 형식 아이콘 (스토어 그림에 빈칸)
+            log.info("윈도우 미리보기가 빈 그림 → 형식 아이콘 %s", path)
+            return None
+        return img
     return shell_thumbnail(path, px)
+
+
+def _one_color(img):
+    w, h = img.width(), img.height()
+    return len({img.pixel(x, y) for x in range(0, w, max(1, w // 12)) for y in range(0, h, max(1, h // 12))}) <= 1
 
 
 class Thumbs(QtCore.QObject):

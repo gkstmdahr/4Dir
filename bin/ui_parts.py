@@ -78,6 +78,7 @@ class Settings:
                      "mouse": {},                 # 마우스 버튼 지정 {"Ctrl+middle": 기능} — 기본 동작과 다른 것만 (v0.9.83)
                      "folder_size": True,         # 폴더 크기 계산 — 크기 칸 (v0.9.89, 네트워크 드라이브 제외)
                      "select_pattern": "",        # 패턴으로 고르기 마지막 입력 (v0.9.89)
+                     "auto_refresh": True,        # 0.9.137 빌드 2: 끄면 폴더가 바뀌어도 F5 로만 새로 읽음 (받은 의견 11/13)
                      "empty_click_up": True,      # 목록 빈 곳을 더블클릭하면 상위 폴더로 (v0.9.75 옵션, v0.9.82 기본 켬)
                      "calc_geo": None, "calc_top": False, "calc_hist": [], "calc_tab": 0, "calc_deg": True, "calc_mode": "", "calc_mem": [], "calc_fx": {}, "calc_conv": {}, "calc_graph": [],   # 0.9.111 계산기
                      "gdrive_auto": True, "gdrive_last": 0, "gdrive_last_name": "", "gdrive_asked": False, "show_favbar": True, "folder_view_memory": True, "preview_detail": False, "private_mode": False,   # 0.9.114 구글 드라이브 백업 (로그인했을 때만 동작)
@@ -100,6 +101,7 @@ class Settings:
                      "side_pin": False,
                      "view_all": False,           # 0.9.126 사용자 '보기를 전체 통일하고 싶다': 켜면 한 칸에서 보기를 바꾸면 모든 칸·탭·폴더가 같게           # 0.9.124 사용자: 탐색 창 '폴더 고정' — 켜면 폴더를 옮겨도 탐색 창이 따라 펼치지 않음(유니티 잠금처럼)   # 0.9.124 사용자: 탐색 창에서 폴더를 누르면 펼치기 (끄면 이동만)
                      "color_rules": [],           # 0.9.127 빌드 5 파일 색 규칙 (colorrules.py)
+                     "last_win_geo": None,        # 0.9.137 빌드 3 마지막에 닫은 4Dir 창 [x, y, w, h, 최대화] — 새 창(Win+E·Ctrl+N)이 그 자리에 (탐색기처럼)
                      "tab_max_rows": 0,           # 0.9.127 여러 줄 탭 최대 줄 수 (0 = 자동, 계속 늘어남)
                      "tab_multirow": True,        # 0.9.123 탭이 넘치면 여러 줄로 (끄면 예전처럼 한 줄 + 좌우 화살표)
                      "side_favs": "both",         # 0.9.122 받은 의견: 탐색 창 즐겨찾기 — "both"(4Dir 위 + Windows) / "4dir" / "windows"
@@ -117,7 +119,7 @@ class Settings:
                     self.data[tk].update({k: v for k, v in d.get(tk, {}).items() if k in THEME_KEYS})
                 if "theme_mode" not in d and d.get("dark"):   # 0.6.2 이전: 다크 모드 켜둔 사람은 '어둡게' 유지
                     self.data["theme_mode"] = "dark"
-                for k in ("theme_mode", "dark", "fav_expanded", "on_top", "allow_multi", "sysmon", "breadcrumb", "keys", "search_roots", "lang", "chrome_collapsed", "batch_rename", "guide_shown", "update_check", "update_last", "update_skip", "resume_after_reboot", "keep_favbar", "show_favbar", "preview_detail", "folder_view_memory", "hide_single_tab", "empty_click_up", "columns", "mouse", "folder_size", "select_pattern", "status_col", "ws_slots", "side_shared", "side_shared_w", "side_shared_hidden", "memo_on", "memo_side", "memo_w", "memo_geo", "memo_top", "preview_pane", "preview_w", "preview_geo", "preview_top", "tooltips", "arc_browse", "video_sound", "preview_autoplay", "user_buttons", "ftp_sites", "calc_geo", "calc_top", "calc_hist", "calc_tab", "calc_deg", "calc_mode", "calc_mem", "calc_fx", "calc_conv", "calc_graph", "gdrive_auto", "gdrive_last", "gdrive_last_name", "gdrive_asked", "private_mode", "rename_hide_ext", "side_favs", "tab_multirow", "tab_max_rows", "color_rules", "same_folder_current", "side_click_expand", "side_pin", "view_all", "top_hidden", "folder_prev", "ui_font", "ui_font_pt", "explorer_exts"):   # 0.9.122: rename_hide_ext 가 빠져 다시 켜면 늘 켜짐이던 것 고침
+                for k in ("theme_mode", "dark", "fav_expanded", "on_top", "allow_multi", "sysmon", "breadcrumb", "keys", "search_roots", "lang", "chrome_collapsed", "batch_rename", "guide_shown", "update_check", "update_last", "update_skip", "resume_after_reboot", "keep_favbar", "show_favbar", "preview_detail", "folder_view_memory", "hide_single_tab", "empty_click_up", "auto_refresh", "columns", "mouse", "folder_size", "select_pattern", "status_col", "ws_slots", "side_shared", "side_shared_w", "side_shared_hidden", "memo_on", "memo_side", "memo_w", "memo_geo", "memo_top", "preview_pane", "preview_w", "preview_geo", "preview_top", "tooltips", "arc_browse", "video_sound", "preview_autoplay", "user_buttons", "ftp_sites", "calc_geo", "calc_top", "calc_hist", "calc_tab", "calc_deg", "calc_mode", "calc_mem", "calc_fx", "calc_conv", "calc_graph", "gdrive_auto", "gdrive_last", "gdrive_last_name", "gdrive_asked", "private_mode", "rename_hide_ext", "side_favs", "tab_multirow", "tab_max_rows", "last_win_geo", "color_rules", "same_folder_current", "side_click_expand", "side_pin", "view_all", "top_hidden", "folder_prev", "ui_font", "ui_font_pt", "explorer_exts"):   # 0.9.122: rename_hide_ext 가 빠져 다시 켜면 늘 켜짐이던 것 고침
                     if k in d:
                         self.data[k] = d[k]
             except Exception:
