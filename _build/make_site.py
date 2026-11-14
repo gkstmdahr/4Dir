@@ -25,7 +25,7 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.14.0"   # 1.14.0: 지원 언어 페이지(languages.html, 앱 16개·사이트 10개) + 바닥글 링크, 앱만 지원하는 6개 언어로 온 사람에게 영어 첫 화면에 그 언어로 한 줄 안내 (사용자 11/14 '최소') / 1.13.1: 받기·스토어 버튼 같은 너비 (사용자 11/13) / 1.13.0: 다운로드 버튼 옆 Microsoft Store 받기 + 안내 한 줄 (사용자 11/13) / 1.12.1: 위쪽 just downloader 버튼 = PC판 페이지로 바로 (💻, 사용자 11/11 'PC판이 먼저 보이면') / 1.12.0: 사용법 페이지 = 앱 사용법 2.0 과 같은 21개 주제 + 움직이는 장면 영상(img/demo, 보이는 것만 재생) · 문구는 앱 번역(bin/lang) / 1.11.1: 후원 버튼 새 창(target=_blank) / 1.11.0: 개인정보처리방침 privacy.html (구글 드라이브 백업 — 구글 앱 등록에 필요) / 1.10.0: 1.10.0: 받기를 누르면 다운로드는 바로 시작 + 후원 안내 창(막지 않음, 닫기 가능 — 사용자 11/6 PureRef 처럼) / 1.9.3: 1.9.3: support 메일 링크에 제목 말머리 [4Dir] / 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
+MAKE_SITE_VER = "1.14.1"   # 1.14.1: _site\root 의 파일을 사이트 맨 위에 복사(검색 엔진 소유 확인 파일) / 1.14.0: 지원 언어 페이지(languages.html, 앱 16개·사이트 10개) + 바닥글 링크, 앱만 지원하는 6개 언어로 온 사람에게 영어 첫 화면에 그 언어로 한 줄 안내 (사용자 11/14 '최소') / 1.13.1: 받기·스토어 버튼 같은 너비 (사용자 11/13) / 1.13.0: 다운로드 버튼 옆 Microsoft Store 받기 + 안내 한 줄 (사용자 11/13) / 1.12.1: 위쪽 just downloader 버튼 = PC판 페이지로 바로 (💻, 사용자 11/11 'PC판이 먼저 보이면') / 1.12.0: 사용법 페이지 = 앱 사용법 2.0 과 같은 21개 주제 + 움직이는 장면 영상(img/demo, 보이는 것만 재생) · 문구는 앱 번역(bin/lang) / 1.11.1: 후원 버튼 새 창(target=_blank) / 1.11.0: 개인정보처리방침 privacy.html (구글 드라이브 백업 — 구글 앱 등록에 필요) / 1.10.0: 1.10.0: 받기를 누르면 다운로드는 바로 시작 + 후원 안내 창(막지 않음, 닫기 가능 — 사용자 11/6 PureRef 처럼) / 1.9.3: 1.9.3: support 메일 링크에 제목 말머리 [4Dir] / 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
 SUPPORT = "support@4dir.net"   # 문제 보고 메일 (1.1.1)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -701,6 +701,10 @@ def main():
     log(f"지원 언어 languages.html (앱 {len(app_langs())}개 · 사이트 {len(ST.LANGS)}개)")
     open(os.path.join(OUT, "style.css"), "w", encoding="utf-8", newline="\n").write(CSS)
     shutil.copytree(os.path.join(SITE_SRC, "img"), os.path.join(OUT, "img"), dirs_exist_ok=True)
+    root_src = os.path.join(SITE_SRC, "root")   # 1.14.1: 사이트 맨 위에 그대로 둘 파일 (구글·네이버 검색 등록 소유 확인 파일, 사용자 11/14)
+    for nm in (sorted(os.listdir(root_src)) if os.path.isdir(root_src) else []):
+        shutil.copy2(os.path.join(root_src, nm), os.path.join(OUT, nm))
+        log(f"맨 위 파일 {nm}")
     # 1.3.0: 다른 앱 소개 페이지(_site\apps\<이름>\ → 사이트 /<이름>/) 그대로 복사 — 예: just-downloader. 매번 OUT 을 지우므로 여기서 다시 넣어야 남는다
     app_urls = []
     apps = os.path.join(SITE_SRC, "apps")
