@@ -25,7 +25,7 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.14.2"   # 1.14.2: 언어 선택 상자 맨 아래 '🌐 언어 · 16 →' = languages.html / 1.14.1: _site\root 의 파일을 사이트 맨 위에 복사(검색 엔진 소유 확인 파일) / 1.14.0: 지원 언어 페이지(languages.html, 앱 16개·사이트 10개) + 바닥글 링크, 앱만 지원하는 6개 언어로 온 사람에게 영어 첫 화면에 그 언어로 한 줄 안내 (사용자 11/14 '최소') / 1.13.1: 받기·스토어 버튼 같은 너비 (사용자 11/13) / 1.13.0: 다운로드 버튼 옆 Microsoft Store 받기 + 안내 한 줄 (사용자 11/13) / 1.12.1: 위쪽 just downloader 버튼 = PC판 페이지로 바로 (💻, 사용자 11/11 'PC판이 먼저 보이면') / 1.12.0: 사용법 페이지 = 앱 사용법 2.0 과 같은 21개 주제 + 움직이는 장면 영상(img/demo, 보이는 것만 재생) · 문구는 앱 번역(bin/lang) / 1.11.1: 후원 버튼 새 창(target=_blank) / 1.11.0: 개인정보처리방침 privacy.html (구글 드라이브 백업 — 구글 앱 등록에 필요) / 1.10.0: 1.10.0: 받기를 누르면 다운로드는 바로 시작 + 후원 안내 창(막지 않음, 닫기 가능 — 사용자 11/6 PureRef 처럼) / 1.9.3: 1.9.3: support 메일 링크에 제목 말머리 [4Dir] / 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
+MAKE_SITE_VER = "1.14.3"   # 1.14.3: 첫 화면 사용법 버튼 옆 언어 버튼 / 1.14.2: 언어 선택 상자 맨 아래 '🌐 언어 · 16 →' = languages.html / 1.14.1: _site\root 의 파일을 사이트 맨 위에 복사(검색 엔진 소유 확인 파일) / 1.14.0: 지원 언어 페이지(languages.html, 앱 16개·사이트 10개) + 바닥글 링크, 앱만 지원하는 6개 언어로 온 사람에게 영어 첫 화면에 그 언어로 한 줄 안내 (사용자 11/14 '최소') / 1.13.1: 받기·스토어 버튼 같은 너비 (사용자 11/13) / 1.13.0: 다운로드 버튼 옆 Microsoft Store 받기 + 안내 한 줄 (사용자 11/13) / 1.12.1: 위쪽 just downloader 버튼 = PC판 페이지로 바로 (💻, 사용자 11/11 'PC판이 먼저 보이면') / 1.12.0: 사용법 페이지 = 앱 사용법 2.0 과 같은 21개 주제 + 움직이는 장면 영상(img/demo, 보이는 것만 재생) · 문구는 앱 번역(bin/lang) / 1.11.1: 후원 버튼 새 창(target=_blank) / 1.11.0: 개인정보처리방침 privacy.html (구글 드라이브 백업 — 구글 앱 등록에 필요) / 1.10.0: 1.10.0: 받기를 누르면 다운로드는 바로 시작 + 후원 안내 창(막지 않음, 닫기 가능 — 사용자 11/6 PureRef 처럼) / 1.9.3: 1.9.3: support 메일 링크에 제목 말머리 [4Dir] / 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
 SUPPORT = "support@4dir.net"   # 문제 보고 메일 (1.1.1)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -171,7 +171,7 @@ def page(lang, cfg, rel):
 <p><span class="dlrow"><a id="dl" class="btn big" href="{dl_url}">⬇ {e(t["dl"].format(**fmt))}</a><a id="store" class="btn big store" href="{ST.STORE_URL}" target="_blank" rel="noopener">⊞ {e(ST.STORE[lang][0])}</a></span></p>
 <p class="note">{e(t["dlnote"].format(**fmt))}</p>
 <p class="note">{e(ST.STORE[lang][1])}</p>
-{guide_hero(lang)}</section>
+{guide_hero(lang, up)}</section>
 {donate}
 {thx_box(lang, ("https://ko-fi.com/" + cfg["kofi"]) if cfg["kofi"] else "", t["don_h"])}
 <section class="news"><h2>{e(t["new_h"].format(**fmt))}</h2><ul>{news}</ul><p><a href="versions.html">{e(t["hist_link"])} →</a></p></section>
@@ -281,9 +281,11 @@ def app_nav(lang, up, first=False):
     return f'<a class="nav app{" first" if first else ""}" href="{href}">💻 just downloader</a>'
 
 
-def guide_hero(lang):
+def guide_hero(lang, up=""):
     g = GT.GUIDE.get(lang)
-    return f'<p><a class="btn line" href="guide.html">📖 {html.escape(g["title"])} →</a></p>' if g else ""   # 1.4.3: 글자 링크 → 테두리 버튼 (작아서 안 보임)
+    b = f'<a class="btn line" href="guide.html">📖 {html.escape(g["title"])} →</a>' if g else ""   # 1.4.3: 글자 링크 → 테두리 버튼 (작아서 안 보임)
+    b += f'<a class="btn line" href="{up}languages.html">🌐 {html.escape(ST.T[lang]["lang"])} · {len(app_langs())} →</a>'   # 1.14.3 사용법 옆 언어 버튼 (사용자 11/14)
+    return f'<p class="herobtns">{b}</p>'
 
 
 def app_tr(lang):
@@ -598,7 +600,7 @@ a{color:var(--acc)}
 .dlrow .btn{min-width:330px;box-sizing:border-box;text-align:center}
 @media(max-width:760px){.dlrow{grid-auto-flow:row}.dlrow .btn{min-width:0}}
 .btn.don{background:var(--don);margin:4px}.hero-don{margin-top:4px}
-.btn.line{background:transparent;color:var(--acc);border:2px solid var(--acc);padding:8px 20px;font-size:17px}.btn.line:hover{background:var(--acc);color:#fff}
+.herobtns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}.btn.line{background:transparent;color:var(--acc);border:2px solid var(--acc);padding:8px 20px;font-size:17px}.btn.line:hover{background:var(--acc);color:#fff}
 .shot{margin:24px 0;text-align:center}.shot img{max-width:100%;height:auto;border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.12)}
 figcaption{color:var(--mut);font-size:14px;margin-top:6px}
 section{margin:40px 0}h2{font-size:26px;margin:0 0 16px}
