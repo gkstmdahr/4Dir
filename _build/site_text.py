@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 사이트 문구 (SITE_TEXT_VER 1.5.0 — 1.5.0 앱만 지원하는 언어 한 줄 안내(맨 아래 APP_ONLY) · 1.4.0 1.4.0 Microsoft Store 받기 버튼 문구(맨 아래 STORE) · 실행 안내 4Dir.exe(막히면 vbs) · FAQ 회사 사용(맨 아래 _BIZ) · 메인 fast 줄 + FAQ 속도 근거, 맨 아래 _FAST) — make_site.py 가 읽음.
+"""4Dir 사이트 문구 (SITE_TEXT_VER 1.5.1 — 1.5.1 소개·기능 칸 앱 언어 10→16 · 1.5.0 앱만 지원하는 언어 한 줄 안내(맨 아래 APP_ONLY) · 1.4.0 1.4.0 Microsoft Store 받기 버튼 문구(맨 아래 STORE) · 실행 안내 4Dir.exe(막히면 vbs) · FAQ 회사 사용(맨 아래 _BIZ) · 메인 fast 줄 + FAQ 속도 근거, 맨 아래 _FAST) — make_site.py 가 읽음.
 키: 언어 폴더 이름(en 은 사이트 맨 위). {ver} {size} {date} 는 make_site 가 채움."""
 
 LANGS = ["en", "ko", "zh-CN", "zh-TW", "ja", "es", "de", "fr", "pt-BR", "ru"]
@@ -11,7 +11,7 @@ NAMES = {"en": "English", "ko": "한국어", "zh-CN": "简体中文", "zh-TW": "
 T = {
 "en": dict(
     title="4Dir — Multi-pane tabbed file manager for Windows (free, portable)",
-    desc="4Dir is a free, portable file manager for Windows: split the window into up to 20 panes, each with its own tabs. Fast search, SVN status, light/dark theme, 10 languages.",
+    desc="4Dir is a free, portable file manager for Windows: split the window into up to 20 panes, each with its own tabs. Fast search, SVN status, light/dark theme, 16 languages.",
     tagline="A multi-pane file manager faster than Windows File Explorer!!",
     sub="A free, portable file manager for Windows 10/11. No installation — unzip and run.",
     dl="Download 4Dir v{ver}", dlnote="Windows 10/11 64-bit · {size} · {date} · free",
@@ -22,7 +22,7 @@ T = {
            ("Instant search", "Type to search every file name on your drives. Its own index updates in real time — no admin rights needed."),
            ("SVN status at a glance", "Modified / added / conflict badges read straight from .svn — folders turn red when something inside changed. Git and Perforce through Windows overlays."),
            ("Feels like Explorer", "Same keyboard shortcuts, the full Windows right-click menu, drag & drop to and from Explorer and other apps. Right-click a .webp image to save it as PNG or JPG."),
-           ("Portable and private", "Settings stay in the 4Dir folder. Light/dark theme, 10 languages, batch rename, session restore and an Explorer health check built in.")],
+           ("Portable and private", "Settings stay in the 4Dir folder. Light/dark theme, 16 languages, batch rename, session restore and an Explorer health check built in.")],
     how_h="How to install",
     how=["Download the zip with the button above (or from GitHub <b>Releases</b>). The green “Code → Download ZIP” on GitHub is source code only and won't run.", "Right-click the zip → Properties → check <b>Unblock</b> → OK. (Otherwise Windows shows a security warning every time.)", "Extract it anywhere and double-click <b>4Dir.exe</b>. (or 4Dir.vbs if 4Dir.exe is blocked)"],
     smart="If Windows SmartScreen appears: click <b>More info</b> → <b>Run anyway</b>.",
@@ -44,7 +44,7 @@ T = {
     lang="Language"),
 "ko": dict(
     title="4Dir — 윈도우용 여러 칸 분할 + 탭 파일 관리자 (무료·설치 없음)",
-    desc="4Dir 는 윈도우용 무료 휴대용 파일 관리자입니다. 창을 최대 20칸으로 나누고 칸마다 탭을 씁니다. 빠른 검색, SVN 상태, 밝게/어둡게, 10개 언어.",
+    desc="4Dir 는 윈도우용 무료 휴대용 파일 관리자입니다. 창을 최대 20칸으로 나누고 칸마다 탭을 씁니다. 빠른 검색, SVN 상태, 밝게/어둡게, 16개 언어.",
     tagline="윈도우 탐색기보다 빠른 멀티 탐색기!!",
     sub="윈도우 10/11용 무료 파일 관리자. 설치 없이 압축만 풀고 실행.",
     dl="4Dir v{ver} 받기", dlnote="윈도우 10/11 64비트 · {size} · {date} · 무료",
@@ -55,7 +55,7 @@ T = {
            ("바로 찾는 검색", "입력하는 즉시 드라이브의 모든 파일 이름을 찾습니다. 자체 목록이 실시간으로 갱신되고 관리자 권한이 필요 없습니다."),
            ("SVN 상태 한눈에", ".svn 을 직접 읽어 수정·추가·충돌 표시. 안쪽이 바뀐 폴더는 빨갛게. Git·Perforce 는 윈도우 겹침 아이콘으로."),
            ("탐색기와 같은 손맛", "같은 단축키, 윈도우 우클릭 메뉴 그대로, 탐색기·다른 프로그램과 끌어다 놓기. webp 그림은 우클릭 한 번으로 PNG·JPG로 저장."),
-           ("휴대용·개인정보 보호", "설정은 4Dir 폴더 안에만. 밝게/어둡게, 10개 언어, 이름 일괄 변경, 창 구성 복구, 탐색기 점검 기본 포함.")],
+           ("휴대용·개인정보 보호", "설정은 4Dir 폴더 안에만. 밝게/어둡게, 16개 언어, 이름 일괄 변경, 창 구성 복구, 탐색기 점검 기본 포함.")],
     how_h="설치 방법",
     how=["위 버튼(또는 깃허브 <b>Releases</b>)에서 zip 을 받습니다. 깃허브의 초록색 'Code → Download ZIP' 은 소스 코드만 있어 실행되지 않습니다.", "압축 파일 우클릭 → 속성 → <b>차단 해제</b> 체크 → 확인. (안 하면 실행할 때마다 보안 경고가 뜹니다)", "아무 곳에나 압축을 풀고 <b>4Dir.exe</b> 를 더블클릭. (막히면 <b>4Dir.vbs</b>)"],
     smart="윈도우 보안(SmartScreen) 창이 뜨면 <b>추가 정보</b> → <b>실행</b>.",
@@ -77,7 +77,7 @@ T = {
     lang="언어"),
 "zh-CN": dict(
     title="4Dir — Windows 多窗格标签页文件管理器（免费、便携）",
-    desc="4Dir 是一款免费便携的 Windows 文件管理器：窗口最多可分为 20 个窗格，每个窗格都有自己的标签页。快速搜索、SVN 状态、浅色/深色主题、10 种语言。",
+    desc="4Dir 是一款免费便携的 Windows 文件管理器：窗口最多可分为 20 个窗格，每个窗格都有自己的标签页。快速搜索、SVN 状态、浅色/深色主题、16 种语言。",
     tagline="比 Windows 资源管理器更快的多窗格文件管理器！！",
     sub="适用于 Windows 10/11 的免费文件管理器。无需安装，解压即用。",
     dl="下载 4Dir v{ver}", dlnote="Windows 10/11 64 位 · {size} · {date} · 免费",
@@ -88,7 +88,7 @@ T = {
            ("即时搜索", "输入即可搜索所有驱动器上的文件名。自建索引实时更新，无需管理员权限。"),
            ("SVN 状态一目了然", "直接读取 .svn 显示修改/添加/冲突标记，内部有变更的文件夹显示为红色。Git、Perforce 通过 Windows 覆盖图标显示。"),
            ("用起来像资源管理器", "相同的快捷键、完整的 Windows 右键菜单，可与资源管理器及其他程序互相拖放。右键即可把 .webp 图片另存为 PNG 或 JPG。"),
-           ("便携且注重隐私", "设置只保存在 4Dir 文件夹内。内置浅色/深色主题、10 种语言、批量重命名、会话恢复和资源管理器诊断。")],
+           ("便携且注重隐私", "设置只保存在 4Dir 文件夹内。内置浅色/深色主题、16 种语言、批量重命名、会话恢复和资源管理器诊断。")],
     how_h="安装方法",
     how=["用上方按钮（或 GitHub 的 <b>Releases</b>）下载 zip。GitHub 上绿色的“Code → Download ZIP”只有源代码，无法直接运行。", "右键 zip → 属性 → 勾选<b>解除锁定</b> → 确定。（否则每次运行都会出现安全警告）", "解压到任意位置，双击 <b>4Dir.exe</b>。（被拦截时用 4Dir.vbs）"],
     smart="如果出现 Windows SmartScreen：点击<b>更多信息</b> → <b>仍要运行</b>。",
@@ -110,7 +110,7 @@ T = {
     lang="语言"),
 "zh-TW": dict(
     title="4Dir — Windows 多窗格分頁檔案管理員（免費、免安裝）",
-    desc="4Dir 是免費免安裝的 Windows 檔案管理員：視窗最多可分成 20 個窗格，每個窗格都有自己的分頁。快速搜尋、SVN 狀態、淺色/深色主題、10 種語言。",
+    desc="4Dir 是免費免安裝的 Windows 檔案管理員：視窗最多可分成 20 個窗格，每個窗格都有自己的分頁。快速搜尋、SVN 狀態、淺色/深色主題、16 種語言。",
     tagline="比 Windows 檔案總管更快的多窗格檔案管理員！！",
     sub="適用於 Windows 10/11 的免費檔案管理員。免安裝，解壓縮即可使用。",
     dl="下載 4Dir v{ver}", dlnote="Windows 10/11 64 位元 · {size} · {date} · 免費",
@@ -121,7 +121,7 @@ T = {
            ("即時搜尋", "輸入即可搜尋所有磁碟上的檔名。自有索引即時更新，不需要系統管理員權限。"),
            ("SVN 狀態一目了然", "直接讀取 .svn 顯示修改/新增/衝突標記，內部有變更的資料夾顯示為紅色。Git、Perforce 透過 Windows 覆疊圖示顯示。"),
            ("操作就像檔案總管", "相同的快速鍵、完整的 Windows 右鍵選單，可與檔案總管及其他程式互相拖放。按右鍵即可把 .webp 圖片另存為 PNG 或 JPG。"),
-           ("免安裝且重視隱私", "設定只存在 4Dir 資料夾內。內建淺色/深色主題、10 種語言、批次重新命名、工作階段還原與檔案總管診斷。")],
+           ("免安裝且重視隱私", "設定只存在 4Dir 資料夾內。內建淺色/深色主題、16 種語言、批次重新命名、工作階段還原與檔案總管診斷。")],
     how_h="安裝方式",
     how=["用上方按鈕（或 GitHub 的 <b>Releases</b>）下載 zip。GitHub 上綠色的「Code → Download ZIP」只有原始碼，無法直接執行。", "在 zip 上按右鍵 → 內容 → 勾選<b>解除封鎖</b> → 確定。（否則每次執行都會出現安全性警告）", "解壓縮到任意位置，雙擊 <b>4Dir.exe</b>。（被攔截時用 4Dir.vbs）"],
     smart="如果出現 Windows SmartScreen：按<b>其他資訊</b> → <b>仍要執行</b>。",
@@ -143,7 +143,7 @@ T = {
     lang="語言"),
 "ja": dict(
     title="4Dir — Windows 用マルチペイン・タブ型ファイルマネージャー（無料・インストール不要）",
-    desc="4Dir は Windows 用の無料ポータブルファイルマネージャーです。ウィンドウを最大 20 ペインに分割し、ペインごとにタブを使えます。高速検索、SVN 状態表示、ライト/ダーク、10 言語対応。",
+    desc="4Dir は Windows 用の無料ポータブルファイルマネージャーです。ウィンドウを最大 20 ペインに分割し、ペインごとにタブを使えます。高速検索、SVN 状態表示、ライト/ダーク、16 言語対応。",
     tagline="Windows エクスプローラーより速いマルチペイン ファイラー！！",
     sub="Windows 10/11 用の無料ファイルマネージャー。インストール不要、展開してすぐ使えます。",
     dl="4Dir v{ver} をダウンロード", dlnote="Windows 10/11 64 ビット · {size} · {date} · 無料",
@@ -154,7 +154,7 @@ T = {
            ("すぐに見つかる検索", "入力するだけで全ドライブのファイル名を検索。独自インデックスがリアルタイムで更新され、管理者権限は不要です。"),
            ("SVN の状態がひと目で", ".svn を直接読んで変更・追加・競合のバッジを表示。中身が変わったフォルダーは赤に。Git・Perforce は Windows のオーバーレイで表示。"),
            ("エクスプローラーと同じ操作感", "同じショートカットキー、Windows の右クリックメニューそのまま、エクスプローラーや他のアプリとのドラッグ＆ドロップ。.webp 画像は右クリックで PNG・JPG に保存。"),
-           ("ポータブルでプライバシーも安心", "設定は 4Dir フォルダー内だけに保存。ライト/ダーク、10 言語、一括リネーム、セッション復元、エクスプローラー診断を搭載。")],
+           ("ポータブルでプライバシーも安心", "設定は 4Dir フォルダー内だけに保存。ライト/ダーク、16 言語、一括リネーム、セッション復元、エクスプローラー診断を搭載。")],
     how_h="インストール方法",
     how=["上のボタン（または GitHub の <b>Releases</b>）から zip をダウンロードします。GitHub の緑の「Code → Download ZIP」はソースコードのみで、そのままでは動きません。", "zip を右クリック → プロパティ → <b>許可する</b>にチェック → OK。（しないと毎回セキュリティ警告が表示されます）", "好きな場所に展開して <b>4Dir.exe</b> をダブルクリック。（止められた場合は 4Dir.vbs）"],
     smart="Windows SmartScreen が表示されたら <b>詳細情報</b> → <b>実行</b> をクリック。",
@@ -176,7 +176,7 @@ T = {
     lang="言語"),
 "es": dict(
     title="4Dir — Gestor de archivos con varios paneles y pestañas para Windows (gratis, portable)",
-    desc="4Dir es un gestor de archivos gratuito y portable para Windows: divide la ventana en hasta 20 paneles, cada uno con sus propias pestañas. Búsqueda rápida, estado SVN, tema claro/oscuro, 10 idiomas.",
+    desc="4Dir es un gestor de archivos gratuito y portable para Windows: divide la ventana en hasta 20 paneles, cada uno con sus propias pestañas. Búsqueda rápida, estado SVN, tema claro/oscuro, 16 idiomas.",
     tagline="¡¡Un explorador multipanel más rápido que el de Windows!!",
     sub="Gestor de archivos gratuito para Windows 10/11. Sin instalación: descomprime y ejecuta.",
     dl="Descargar 4Dir v{ver}", dlnote="Windows 10/11 64 bits · {size} · {date} · gratis",
@@ -187,7 +187,7 @@ T = {
            ("Búsqueda instantánea", "Escribe y busca entre todos los nombres de archivo de tus unidades. Su propio índice se actualiza en tiempo real, sin permisos de administrador."),
            ("Estado SVN de un vistazo", "Insignias de modificado / añadido / conflicto leídas directamente de .svn; las carpetas se vuelven rojas si algo cambió dentro. Git y Perforce mediante las superposiciones de Windows."),
            ("Se siente como el Explorador", "Mismos atajos de teclado, el menú contextual completo de Windows y arrastrar y soltar con el Explorador y otras apps. Clic derecho en una imagen .webp para guardarla como PNG o JPG."),
-           ("Portable y privado", "La configuración se queda en la carpeta de 4Dir. Tema claro/oscuro, 10 idiomas, renombrado masivo, restauración de sesión y diagnóstico del Explorador incluidos.")],
+           ("Portable y privado", "La configuración se queda en la carpeta de 4Dir. Tema claro/oscuro, 16 idiomas, renombrado masivo, restauración de sesión y diagnóstico del Explorador incluidos.")],
     how_h="Cómo instalar",
     how=["Descarga el zip con el botón de arriba (o desde <b>Releases</b> en GitHub). El botón verde “Code → Download ZIP” de GitHub solo contiene el código fuente y no se ejecuta.", "Clic derecho en el zip → Propiedades → marca <b>Desbloquear</b> → Aceptar. (Si no, Windows mostrará una advertencia de seguridad cada vez.)", "Descomprímelo donde quieras y haz doble clic en <b>4Dir.exe</b>. (o 4Dir.vbs si 4Dir.exe está bloqueado)"],
     smart="Si aparece Windows SmartScreen: haz clic en <b>Más información</b> → <b>Ejecutar de todas formas</b>.",
@@ -209,7 +209,7 @@ T = {
     lang="Idioma"),
 "de": dict(
     title="4Dir — Dateimanager mit mehreren Fenstern und Tabs für Windows (kostenlos, portabel)",
-    desc="4Dir ist ein kostenloser, portabler Dateimanager für Windows: Teile das Fenster in bis zu 20 Bereiche, jeder mit eigenen Tabs. Schnelle Suche, SVN-Status, helles/dunkles Design, 10 Sprachen.",
+    desc="4Dir ist ein kostenloser, portabler Dateimanager für Windows: Teile das Fenster in bis zu 20 Bereiche, jeder mit eigenen Tabs. Schnelle Suche, SVN-Status, helles/dunkles Design, 16 Sprachen.",
     tagline="Mehrfenster-Dateimanager – schneller als der Windows-Explorer!!",
     sub="Kostenloser Dateimanager für Windows 10/11. Keine Installation – entpacken und starten.",
     dl="4Dir v{ver} herunterladen", dlnote="Windows 10/11 64-Bit · {size} · {date} · kostenlos",
@@ -220,7 +220,7 @@ T = {
            ("Sofortsuche", "Tippen und alle Dateinamen auf deinen Laufwerken durchsuchen. Der eigene Index aktualisiert sich in Echtzeit – ohne Administratorrechte."),
            ("SVN-Status auf einen Blick", "Symbole für geändert / hinzugefügt / Konflikt direkt aus .svn gelesen – Ordner werden rot, wenn sich darin etwas geändert hat. Git und Perforce über Windows-Overlays."),
            ("Wie der Explorer", "Gleiche Tastenkürzel, das vollständige Windows-Kontextmenü, Drag & Drop mit dem Explorer und anderen Programmen. .webp-Bilder per Rechtsklick als PNG oder JPG speichern."),
-           ("Portabel und privat", "Einstellungen bleiben im 4Dir-Ordner. Helles/dunkles Design, 10 Sprachen, Stapelumbenennung, Sitzungswiederherstellung und Explorer-Diagnose inklusive.")],
+           ("Portabel und privat", "Einstellungen bleiben im 4Dir-Ordner. Helles/dunkles Design, 16 Sprachen, Stapelumbenennung, Sitzungswiederherstellung und Explorer-Diagnose inklusive.")],
     how_h="Installation",
     how=["Lade die Zip-Datei über die Schaltfläche oben herunter (oder unter <b>Releases</b> auf GitHub). Das grüne „Code → Download ZIP“ auf GitHub enthält nur den Quellcode und startet nicht.", "Rechtsklick auf die Zip-Datei → Eigenschaften → <b>Zulassen</b> ankreuzen → OK. (Sonst zeigt Windows jedes Mal eine Sicherheitswarnung.)", "An einen beliebigen Ort entpacken und <b>4Dir.exe</b> doppelklicken. (oder 4Dir.vbs, falls 4Dir.exe blockiert wird)"],
     smart="Wenn Windows SmartScreen erscheint: <b>Weitere Informationen</b> → <b>Trotzdem ausführen</b>.",
@@ -242,7 +242,7 @@ T = {
     lang="Sprache"),
 "fr": dict(
     title="4Dir — Gestionnaire de fichiers multi-volets à onglets pour Windows (gratuit, portable)",
-    desc="4Dir est un gestionnaire de fichiers gratuit et portable pour Windows : divisez la fenêtre en jusqu'à 20 volets, chacun avec ses propres onglets. Recherche rapide, état SVN, thème clair/sombre, 10 langues.",
+    desc="4Dir est un gestionnaire de fichiers gratuit et portable pour Windows : divisez la fenêtre en jusqu'à 20 volets, chacun avec ses propres onglets. Recherche rapide, état SVN, thème clair/sombre, 16 langues.",
     tagline="Un explorateur multi-volets plus rapide que celui de Windows !!",
     sub="Gestionnaire de fichiers gratuit pour Windows 10/11. Sans installation : décompressez et lancez.",
     dl="Télécharger 4Dir v{ver}", dlnote="Windows 10/11 64 bits · {size} · {date} · gratuit",
@@ -253,7 +253,7 @@ T = {
            ("Recherche instantanée", "Tapez pour chercher parmi tous les noms de fichiers de vos disques. Son propre index se met à jour en temps réel, sans droits administrateur."),
            ("État SVN en un coup d'œil", "Badges modifié / ajouté / conflit lus directement dans .svn ; les dossiers deviennent rouges si quelque chose a changé dedans. Git et Perforce via les superpositions Windows."),
            ("Comme l'Explorateur", "Mêmes raccourcis clavier, le menu contextuel Windows complet, glisser-déposer avec l'Explorateur et d'autres applications. Clic droit sur une image .webp pour l'enregistrer en PNG ou JPG."),
-           ("Portable et respectueux de la vie privée", "Les réglages restent dans le dossier 4Dir. Thème clair/sombre, 10 langues, renommage par lot, restauration de session et diagnostic de l'Explorateur intégrés.")],
+           ("Portable et respectueux de la vie privée", "Les réglages restent dans le dossier 4Dir. Thème clair/sombre, 16 langues, renommage par lot, restauration de session et diagnostic de l'Explorateur intégrés.")],
     how_h="Installation",
     how=["Téléchargez le zip avec le bouton ci-dessus (ou depuis <b>Releases</b> sur GitHub). Le bouton vert « Code → Download ZIP » de GitHub ne contient que le code source et ne se lance pas.", "Clic droit sur le zip → Propriétés → cochez <b>Débloquer</b> → OK. (Sinon Windows affiche un avertissement de sécurité à chaque fois.)", "Décompressez-le où vous voulez et double-cliquez sur <b>4Dir.exe</b>. (ou 4Dir.vbs si 4Dir.exe est bloqué)"],
     smart="Si Windows SmartScreen apparaît : cliquez sur <b>Informations complémentaires</b> → <b>Exécuter quand même</b>.",
@@ -275,7 +275,7 @@ T = {
     lang="Langue"),
 "pt-BR": dict(
     title="4Dir — Gerenciador de arquivos com vários painéis e abas para Windows (grátis, portátil)",
-    desc="4Dir é um gerenciador de arquivos gratuito e portátil para Windows: divida a janela em até 20 painéis, cada um com suas próprias abas. Busca rápida, status do SVN, tema claro/escuro, 10 idiomas.",
+    desc="4Dir é um gerenciador de arquivos gratuito e portátil para Windows: divida a janela em até 20 painéis, cada um com suas próprias abas. Busca rápida, status do SVN, tema claro/escuro, 16 idiomas.",
     tagline="Um explorador multipainel mais rápido que o do Windows!!",
     sub="Gerenciador de arquivos gratuito para Windows 10/11. Sem instalação: descompacte e execute.",
     dl="Baixar 4Dir v{ver}", dlnote="Windows 10/11 64 bits · {size} · {date} · grátis",
@@ -286,7 +286,7 @@ T = {
            ("Busca instantânea", "Digite para buscar entre todos os nomes de arquivo das suas unidades. O índice próprio é atualizado em tempo real, sem precisar de administrador."),
            ("Status do SVN num relance", "Selos de modificado / adicionado / conflito lidos direto do .svn; as pastas ficam vermelhas quando algo mudou dentro. Git e Perforce pelas sobreposições do Windows."),
            ("Parece o Explorer", "Mesmos atalhos de teclado, o menu de contexto completo do Windows, arrastar e soltar com o Explorer e outros apps. Clique com o botão direito em uma imagem .webp para salvá-la como PNG ou JPG."),
-           ("Portátil e privado", "As configurações ficam na pasta do 4Dir. Tema claro/escuro, 10 idiomas, renomear em lote, restauração de sessão e diagnóstico do Explorer incluídos.")],
+           ("Portátil e privado", "As configurações ficam na pasta do 4Dir. Tema claro/escuro, 16 idiomas, renomear em lote, restauração de sessão e diagnóstico do Explorer incluídos.")],
     how_h="Como instalar",
     how=["Baixe o zip pelo botão acima (ou em <b>Releases</b> no GitHub). O botão verde “Code → Download ZIP” do GitHub tem só o código-fonte e não executa.", "Clique com o botão direito no zip → Propriedades → marque <b>Desbloquear</b> → OK. (Senão o Windows mostra um aviso de segurança toda vez.)", "Descompacte onde quiser e dê dois cliques em <b>4Dir.exe</b>. (ou 4Dir.vbs se o 4Dir.exe for bloqueado)"],
     smart="Se o Windows SmartScreen aparecer: clique em <b>Mais informações</b> → <b>Executar assim mesmo</b>.",
@@ -308,7 +308,7 @@ T = {
     lang="Idioma"),
 "ru": dict(
     title="4Dir — многопанельный файловый менеджер с вкладками для Windows (бесплатно, портативно)",
-    desc="4Dir — бесплатный портативный файловый менеджер для Windows: разделите окно на 20 панелей, у каждой свои вкладки. Быстрый поиск, статус SVN, светлая/тёмная тема, 10 языков.",
+    desc="4Dir — бесплатный портативный файловый менеджер для Windows: разделите окно на 20 панелей, у каждой свои вкладки. Быстрый поиск, статус SVN, светлая/тёмная тема, 16 языков.",
     tagline="Многопанельный проводник — быстрее Проводника Windows!!",
     sub="Бесплатный файловый менеджер для Windows 10/11. Без установки — распакуйте и запустите.",
     dl="Скачать 4Dir v{ver}", dlnote="Windows 10/11 64-бит · {size} · {date} · бесплатно",
@@ -319,7 +319,7 @@ T = {
            ("Мгновенный поиск", "Начните печатать — поиск по всем именам файлов на дисках. Собственный индекс обновляется в реальном времени, права администратора не нужны."),
            ("Статус SVN с первого взгляда", "Значки «изменён / добавлен / конфликт» читаются прямо из .svn; папки краснеют, если внутри что-то изменилось. Git и Perforce — через значки-наложения Windows."),
            ("Как Проводник", "Те же сочетания клавиш, полное контекстное меню Windows, перетаскивание в Проводник и другие программы и обратно. Изображение .webp можно сохранить как PNG или JPG через правый клик."),
-           ("Портативно и приватно", "Настройки хранятся в папке 4Dir. Светлая/тёмная тема, 10 языков, пакетное переименование, восстановление сеанса и диагностика Проводника встроены.")],
+           ("Портативно и приватно", "Настройки хранятся в папке 4Dir. Светлая/тёмная тема, 16 языков, пакетное переименование, восстановление сеанса и диагностика Проводника встроены.")],
     how_h="Установка",
     how=["Скачайте zip кнопкой выше (или в разделе <b>Releases</b> на GitHub). Зелёная кнопка «Code → Download ZIP» на GitHub содержит только исходный код и не запустится.", "Щёлкните архив правой кнопкой → Свойства → отметьте <b>Разблокировать</b> → OK. (Иначе Windows будет каждый раз показывать предупреждение.)", "Распакуйте в любое место и дважды щёлкните <b>4Dir.exe</b>. (или 4Dir.vbs, если 4Dir.exe заблокирован)"],
     smart="Если появится Windows SmartScreen: нажмите <b>Подробнее</b> → <b>Выполнить в любом случае</b>.",
