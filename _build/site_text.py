@@ -398,19 +398,19 @@ for _lg, _qa in _BIZ.items():
     T[_lg]["faq"] = T[_lg]["faq"][:1] + [_qa] + T[_lg]["faq"][1:]
 
 
-# 1.4.0 Microsoft Store 판 (사용자 11/13 '사이트에 스토어 받기 버튼') — 마이크로소프트가 서명 → 백신·SmartScreen 이 안 막음
+# 1.4.1 업데이트 문구 뺌(사용자 11/15) / 1.4.0 Microsoft Store 판 (사용자 11/13 '사이트에 스토어 받기 버튼') — 마이크로소프트가 서명 → 백신·SmartScreen 이 안 막음
 STORE_URL = "https://apps.microsoft.com/detail/9P6TPNVB0S37"
 STORE = {   # (버튼, 아래 안내)
-    "en": ("Get it from Microsoft Store", "Antivirus or a work PC blocks the zip? Get the Microsoft-signed Store version instead (updates through the Store; Win+E linking not available there)."),
-    "ko": ("Microsoft Store 에서 받기", "백신이나 회사 PC 가 zip 을 막으면 마이크로소프트가 서명한 스토어판을 받으세요 (업데이트는 스토어가, Win+E 연결은 스토어판에서 안 됨)."),
-    "zh-CN": ("从 Microsoft Store 获取", "杀毒软件或公司电脑拦截 zip？请改用微软签名的应用商店版（由商店更新；商店版不支持 Win+E 关联）。"),
-    "zh-TW": ("從 Microsoft Store 取得", "防毒軟體或公司電腦封鎖 zip？請改用微軟簽署的市集版（由市集更新；市集版不支援 Win+E 連結）。"),
-    "ja": ("Microsoft Store から入手", "ウイルス対策ソフトや会社の PC が zip をブロックする場合は、Microsoft 署名済みのストア版をどうぞ（更新はストアから。ストア版は Win+E 連携なし）。"),
-    "es": ("Obtener en Microsoft Store", "¿El antivirus o un PC del trabajo bloquea el zip? Usa la versión de la Store firmada por Microsoft (se actualiza desde la Store; sin vínculo con Win+E)."),
-    "de": ("Im Microsoft Store herunterladen", "Blockiert ein Virenscanner oder der Firmen-PC die ZIP-Datei? Nehmen Sie die von Microsoft signierte Store-Version (Updates über den Store; ohne Win+E-Verknüpfung)."),
-    "fr": ("Obtenir sur le Microsoft Store", "L'antivirus ou un PC de travail bloque le zip ? Prenez la version du Store signée par Microsoft (mises à jour via le Store ; sans liaison Win+E)."),
-    "pt-BR": ("Baixar na Microsoft Store", "O antivírus ou o PC do trabalho bloqueia o zip? Use a versão da Store assinada pela Microsoft (atualizada pela Store; sem vínculo com Win+E)."),
-    "ru": ("Получить в Microsoft Store", "Антивирус или рабочий ПК блокирует zip? Возьмите версию из Store с подписью Microsoft (обновляется через Store; без привязки к Win+E)."),
+    "en": ("Get it from Microsoft Store", "Antivirus or a work PC blocks the zip? Get the Microsoft-signed Store version instead (Win+E linking not available there)."),
+    "ko": ("Microsoft Store 에서 받기", "백신이나 회사 PC 가 zip 을 막으면 마이크로소프트가 서명한 스토어판을 받으세요 (Win+E 연결은 스토어판에서 안 됨)."),
+    "zh-CN": ("从 Microsoft Store 获取", "杀毒软件或公司电脑拦截 zip？请改用微软签名的应用商店版（商店版不支持 Win+E 关联）。"),
+    "zh-TW": ("從 Microsoft Store 取得", "防毒軟體或公司電腦封鎖 zip？請改用微軟簽署的市集版（市集版不支援 Win+E 連結）。"),
+    "ja": ("Microsoft Store から入手", "ウイルス対策ソフトや会社の PC が zip をブロックする場合は、Microsoft 署名済みのストア版をどうぞ（ストア版は Win+E 連携なし）。"),
+    "es": ("Obtener en Microsoft Store", "¿El antivirus o un PC del trabajo bloquea el zip? Usa la versión de la Store firmada por Microsoft (sin vínculo con Win+E)."),
+    "de": ("Im Microsoft Store herunterladen", "Blockiert ein Virenscanner oder der Firmen-PC die ZIP-Datei? Nehmen Sie die von Microsoft signierte Store-Version (ohne Win+E-Verknüpfung)."),
+    "fr": ("Obtenir sur le Microsoft Store", "L'antivirus ou un PC de travail bloque le zip ? Prenez la version du Store signée par Microsoft (sans liaison Win+E)."),
+    "pt-BR": ("Baixar na Microsoft Store", "O antivírus ou o PC do trabalho bloqueia o zip? Use a versão da Store assinada pela Microsoft (sem vínculo com Win+E)."),
+    "ru": ("Получить в Microsoft Store", "Антивирус или рабочий ПК блокирует zip? Возьмите версию из Store с подписью Microsoft (без привязки к Win+E)."),
 }
 
 # 1.5.0 (0.9.137, 사용자 11/14 '최소' 범위): 앱만 지원하는 언어 — 사이트는 영어 그대로, 영어 첫 화면에 그 언어로 한 줄 안내
