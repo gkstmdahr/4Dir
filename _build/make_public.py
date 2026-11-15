@@ -16,7 +16,7 @@ import time
 import shutil
 import subprocess
 
-MAKE_PUBLIC_VER = "1.1.0"   # 1.1.0: 태그·가상 그룹 파일(4Dir_tags.json, 개인 데이터) 빼기 / 1.0.9: restore_backup·_restore_pending 빼기 / 1.0.8: 색 라벨 파일(4Dir_labels.json) 빼기
+MAKE_PUBLIC_VER = "1.1.1"   # 1.1.1: README 별 부탁·16개 언어·4Dir.exe / 1.1.0: 태그·가상 그룹 파일(4Dir_tags.json, 개인 데이터) 빼기 / 1.0.9: restore_backup·_restore_pending 빼기 / 1.0.8: 색 라벨 파일(4Dir_labels.json) 빼기
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 BIN = os.path.join(ROOT, "bin")
@@ -141,6 +141,8 @@ README_EN = """# 4Dir
 
 [Website & download]({site}) · [Releases]({repo}/releases) · [한국어](README.ko.md)
 
+> ⭐ **Like 4Dir? Please click the ⭐ Star button at the top right of this page.** It helps more people find it.
+
 > **Download the release zip from [Releases]({repo}/releases/latest)** (`4Dir_v….zip`).
 > The green **Code → Download ZIP** button gives source code only — it won't run without Python 3.12+ and PySide6.
 
@@ -151,13 +153,13 @@ README_EN = """# 4Dir
 - **Instant search** — its own file-name index with real-time updates, no admin rights.
 - **SVN status** — badges read straight from `.svn`; Git / Perforce through Windows overlays.
 - **Feels like Explorer** — same shortcuts, full Windows context menu, drag & drop.
-- **Portable** — settings stay in the folder. Light/dark theme, 10 languages.
+- **Portable** — settings stay in the folder. Light/dark theme, 16 languages.
 
 ## Install
 
 1. Download the zip from [Releases]({repo}/releases).
 2. Right-click the zip → Properties → **Unblock** → OK.
-3. Extract anywhere and run **4Dir.vbs**.
+3. Extract anywhere and run **4Dir.exe** (if it is blocked, run **4Dir.vbs**).
 
 The release zip contains the official python.org embeddable Python, PySide6 (Qt, LGPL-3.0) and pywin32 — nothing to install.
 
@@ -185,6 +187,8 @@ README_KO = """# 4Dir
 
 [사이트·받기]({site}ko/) · [배포판]({repo}/releases) · [English](README.md)
 
+> ⭐ **4Dir 가 마음에 드셨다면 이 페이지 오른쪽 위 ⭐ Star 버튼을 눌러 주세요.** 더 많은 사람이 찾을 수 있게 됩니다.
+
 > **[배포판(Releases)]({repo}/releases/latest) 에서 zip 을 받으세요** (`4Dir_v….zip`).
 > 초록색 **Code → Download ZIP** 은 소스 코드만 들어 있어서, 파이썬 3.12 이상과 PySide6 가 없으면 실행되지 않습니다.
 
@@ -195,13 +199,13 @@ README_KO = """# 4Dir
 - **바로 찾는 검색** — 자체 파일 이름 색인, 실시간 갱신, 관리자 권한 필요 없음.
 - **SVN 상태** — `.svn` 을 직접 읽어 표시. Git·Perforce 는 윈도우 겹침 아이콘.
 - **탐색기와 같은 손맛** — 같은 단축키, 윈도우 우클릭 메뉴, 끌어다 놓기.
-- **휴대용** — 설정은 폴더 안에만. 밝게/어둡게, 10개 언어.
+- **휴대용** — 설정은 폴더 안에만. 밝게/어둡게, 16개 언어.
 
 ## 설치
 
 1. [배포판]({repo}/releases)에서 zip 을 받습니다.
 2. zip 우클릭 → 속성 → **차단 해제** → 확인.
-3. 아무 곳에나 풀고 **4Dir.vbs** 실행.
+3. 아무 곳에나 풀고 **4Dir.exe** 실행 (막히면 **4Dir.vbs**).
 
 ## 문제 보고·의견
 

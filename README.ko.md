@@ -4,6 +4,8 @@
 
 [사이트·받기](https://4dir.net/ko/) · [배포판](https://github.com/gkstmdahr/4Dir/releases) · [English](README.md)
 
+> ⭐ **4Dir 가 마음에 드셨다면 이 페이지 오른쪽 위 ⭐ Star 버튼을 눌러 주세요.** 더 많은 사람이 찾을 수 있게 됩니다.
+
 > **[배포판(Releases)](https://github.com/gkstmdahr/4Dir/releases/latest) 에서 zip 을 받으세요** (`4Dir_v….zip`).
 > 초록색 **Code → Download ZIP** 은 소스 코드만 들어 있어서, 파이썬 3.12 이상과 PySide6 가 없으면 실행되지 않습니다.
 
@@ -14,13 +16,13 @@
 - **바로 찾는 검색** — 자체 파일 이름 색인, 실시간 갱신, 관리자 권한 필요 없음.
 - **SVN 상태** — `.svn` 을 직접 읽어 표시. Git·Perforce 는 윈도우 겹침 아이콘.
 - **탐색기와 같은 손맛** — 같은 단축키, 윈도우 우클릭 메뉴, 끌어다 놓기.
-- **휴대용** — 설정은 폴더 안에만. 밝게/어둡게, 10개 언어.
+- **휴대용** — 설정은 폴더 안에만. 밝게/어둡게, 16개 언어.
 
 ## 설치
 
 1. [배포판](https://github.com/gkstmdahr/4Dir/releases)에서 zip 을 받습니다.
 2. zip 우클릭 → 속성 → **차단 해제** → 확인.
-3. 아무 곳에나 풀고 **4Dir.vbs** 실행.
+3. 아무 곳에나 풀고 **4Dir.exe** 실행 (막히면 **4Dir.vbs**).
 
 ## 문제 보고·의견
 
