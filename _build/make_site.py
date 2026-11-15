@@ -25,7 +25,7 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.14.4"   # 1.14.4: 첫 화면 언어 버튼 이름 = 언어 지원 / 1.14.3: 첫 화면 사용법 버튼 옆 언어 버튼 / 1.14.2: 언어 선택 상자 맨 아래 '🌐 언어 · 16 →' = languages.html / 1.14.1: _site\root 의 파일을 사이트 맨 위에 복사(검색 엔진 소유 확인 파일) / 1.14.0: 지원 언어 페이지(languages.html, 앱 16개·사이트 10개) + 바닥글 링크, 앱만 지원하는 6개 언어로 온 사람에게 영어 첫 화면에 그 언어로 한 줄 안내 (사용자 11/14 '최소') / 1.13.1: 받기·스토어 버튼 같은 너비 (사용자 11/13) / 1.13.0: 다운로드 버튼 옆 Microsoft Store 받기 + 안내 한 줄 (사용자 11/13) / 1.12.1: 위쪽 just downloader 버튼 = PC판 페이지로 바로 (💻, 사용자 11/11 'PC판이 먼저 보이면') / 1.12.0: 사용법 페이지 = 앱 사용법 2.0 과 같은 21개 주제 + 움직이는 장면 영상(img/demo, 보이는 것만 재생) · 문구는 앱 번역(bin/lang) / 1.11.1: 후원 버튼 새 창(target=_blank) / 1.11.0: 개인정보처리방침 privacy.html (구글 드라이브 백업 — 구글 앱 등록에 필요) / 1.10.0: 1.10.0: 받기를 누르면 다운로드는 바로 시작 + 후원 안내 창(막지 않음, 닫기 가능 — 사용자 11/6 PureRef 처럼) / 1.9.3: 1.9.3: support 메일 링크에 제목 말머리 [4Dir] / 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
+MAKE_SITE_VER = "1.15.0"   # 1.15.0: 첫 화면 깃허브 별 부탁 칸 / 1.14.4: 첫 화면 언어 버튼 이름 = 언어 지원 / 1.14.3: 첫 화면 사용법 버튼 옆 언어 버튼 / 1.14.2: 언어 선택 상자 맨 아래 '🌐 언어 · 16 →' = languages.html / 1.14.1: _site\root 의 파일을 사이트 맨 위에 복사(검색 엔진 소유 확인 파일) / 1.14.0: 지원 언어 페이지(languages.html, 앱 16개·사이트 10개) + 바닥글 링크, 앱만 지원하는 6개 언어로 온 사람에게 영어 첫 화면에 그 언어로 한 줄 안내 (사용자 11/14 '최소') / 1.13.1: 받기·스토어 버튼 같은 너비 (사용자 11/13) / 1.13.0: 다운로드 버튼 옆 Microsoft Store 받기 + 안내 한 줄 (사용자 11/13) / 1.12.1: 위쪽 just downloader 버튼 = PC판 페이지로 바로 (💻, 사용자 11/11 'PC판이 먼저 보이면') / 1.12.0: 사용법 페이지 = 앱 사용법 2.0 과 같은 21개 주제 + 움직이는 장면 영상(img/demo, 보이는 것만 재생) · 문구는 앱 번역(bin/lang) / 1.11.1: 후원 버튼 새 창(target=_blank) / 1.11.0: 개인정보처리방침 privacy.html (구글 드라이브 백업 — 구글 앱 등록에 필요) / 1.10.0: 1.10.0: 받기를 누르면 다운로드는 바로 시작 + 후원 안내 창(막지 않음, 닫기 가능 — 사용자 11/6 PureRef 처럼) / 1.9.3: 1.9.3: support 메일 링크에 제목 말머리 [4Dir] / 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
 SUPPORT = "support@4dir.net"   # 문제 보고 메일 (1.1.1)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -171,7 +171,8 @@ def page(lang, cfg, rel):
 <p><span class="dlrow"><a id="dl" class="btn big" href="{dl_url}">⬇ {e(t["dl"].format(**fmt))}</a><a id="store" class="btn big store" href="{ST.STORE_URL}" target="_blank" rel="noopener">⊞ {e(ST.STORE[lang][0])}</a></span></p>
 <p class="note">{e(t["dlnote"].format(**fmt))}</p>
 <p class="note">{e(ST.STORE[lang][1])}</p>
-{guide_hero(lang, up)}</section>
+{guide_hero(lang, up)}
+{star_ask(lang, repo_url)}</section>
 {donate}
 {thx_box(lang, ("https://ko-fi.com/" + cfg["kofi"]) if cfg["kofi"] else "", t["don_h"])}
 <section class="news"><h2>{e(t["new_h"].format(**fmt))}</h2><ul>{news}</ul><p><a href="versions.html">{e(t["hist_link"])} →</a></p></section>
@@ -279,6 +280,26 @@ def app_nav(lang, up, first=False):
     """1.5.3: 다른 앱 just downloader 버튼 — 같은 언어 페이지로. 1.5.5: 로고 옆 왼쪽(margin-right:auto 로 나머지를 오른쪽으로 밂), first 는 안 씀"""
     href = f"{up}just-downloader/" + ("" if lang == "en" else lang + "/") + "windows/"   # 1.12.1 PC판 먼저 (안드로이드는 그 페이지의 '📱 안드로이드 앱 보기')
     return f'<a class="nav app{" first" if first else ""}" href="{href}">💻 just downloader</a>'
+
+
+STAR_ASK = {   # 1.15.0 첫 화면 깃허브 별 부탁 (사용자 11/15 '깃허브 링크 걸고 별 부탁 잘 보이게')
+    "en": ("Like 4Dir? Please give it a star on GitHub. It helps more people find it.", "Star on GitHub"),
+    "ko": ("4Dir 가 마음에 드셨다면 깃허브에서 별을 눌러 주세요. 더 많은 사람이 찾을 수 있게 됩니다.", "깃허브에서 별 주기"),
+    "zh-CN": ("喜欢 4Dir？请在 GitHub 上点个星标，让更多人发现它。", "在 GitHub 上加星标"),
+    "zh-TW": ("喜歡 4Dir？請在 GitHub 上給個星星，讓更多人找到它。", "在 GitHub 上給星星"),
+    "ja": ("4Dir を気に入ったら GitHub でスターをお願いします。ほかの人が見つけやすくなります。", "GitHub でスターを付ける"),
+    "es": ("¿Te gusta 4Dir? Dale una estrella en GitHub. Así más gente podrá encontrarlo.", "Dar una estrella en GitHub"),
+    "de": ("Gefällt dir 4Dir? Gib ihm einen Stern auf GitHub. So finden es mehr Leute.", "Stern auf GitHub geben"),
+    "fr": ("Vous aimez 4Dir ? Mettez-lui une étoile sur GitHub. Cela aide d'autres personnes à le trouver.", "Mettre une étoile sur GitHub"),
+    "pt-BR": ("Gostou do 4Dir? Dê uma estrela no GitHub. Isso ajuda mais pessoas a encontrá-lo.", "Dar estrela no GitHub"),
+    "ru": ("Нравится 4Dir? Поставьте звезду на GitHub — так его найдут больше людей.", "Поставить звезду на GitHub"),
+}
+
+
+def star_ask(lang, repo_url):
+    t, b = STAR_ASK.get(lang, STAR_ASK["en"])
+    return (f'<div class="starask"><p>⭐ {html.escape(t)}</p>'
+            f'<a class="btn star" href="{repo_url}" target="_blank" rel="noopener">⭐ {html.escape(b)}</a></div>')
 
 
 LANG_SUP = {"en": "Language support", "ko": "언어 지원", "zh-CN": "语言支持", "zh-TW": "語言支援", "ja": "対応言語",
@@ -605,7 +626,7 @@ a{color:var(--acc)}
 .dlrow .btn{min-width:330px;box-sizing:border-box;text-align:center}
 @media(max-width:760px){.dlrow{grid-auto-flow:row}.dlrow .btn{min-width:0}}
 .btn.don{background:var(--don);margin:4px}.hero-don{margin-top:4px}
-.herobtns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}.btn.line{background:transparent;color:var(--acc);border:2px solid var(--acc);padding:8px 20px;font-size:17px}.btn.line:hover{background:var(--acc);color:#fff}
+.starask{max-width:640px;margin:18px auto 0;padding:14px 18px;border:2px solid #e3a008;border-radius:12px;background:rgba(227,160,8,.10)}.starask p{margin:0 0 10px;font-size:16px}.btn.star{background:#e3a008;color:#1d2330;font-weight:700}.btn.star:hover{background:#c98a00;color:#1d2330}.herobtns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}.btn.line{background:transparent;color:var(--acc);border:2px solid var(--acc);padding:8px 20px;font-size:17px}.btn.line:hover{background:var(--acc);color:#fff}
 .shot{margin:24px 0;text-align:center}.shot img{max-width:100%;height:auto;border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.12)}
 figcaption{color:var(--mut);font-size:14px;margin-top:6px}
 section{margin:40px 0}h2{font-size:26px;margin:0 0 16px}
