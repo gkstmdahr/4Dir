@@ -17,7 +17,7 @@ import olehook
 
 log = logging.getLogger("QE")
 
-VFILES_VER = "1.2.1"
+VFILES_VER = "1.3.0"   # 1.3.0 (0.9.138): 붙여넣기도 — save(obj=클립보드 IDataObject)
 FMT_FGD = 'application/x-qt-windows-mime;value="FileGroupDescriptorW"'
 FMT_FC = 'application/x-qt-windows-mime;value="FileContents"'
 _FD_SIZE = 592   # FILEDESCRIPTORW 한 개 바이트 수
@@ -197,12 +197,14 @@ def _log_extra(md):
         log.exception("가상 파일 진단 로그 실패")
 
 
-def save(md, folder):
-    """끌어 놓은 가상 파일을 folder 에 저장 → (저장한 경로들, 안내 글자 또는 None)"""
+def save(md, folder, obj=None):
+    """끌어 놓은(또는 붙여 넣은) 가상 파일을 folder 에 저장 → (저장한 경로들, 안내 글자 또는 None)
+    obj: 원래 IDataObject (붙여넣기 = OleGetClipboard). 없으면 끌어 놓는 중인 것(olehook)"""
     fmts = [f for f in md.formats()]
     items = names(md)
-    obj = olehook.current()
-    log.info("가상 파일 끌어 놓기 → %s : 이름 %s / 형식 %s / 직접 받기 %s", folder, items, fmts, obj is not None)
+    if obj is None:
+        obj = olehook.current()
+    log.info("가상 파일 끌어 놓기·붙여넣기 → %s : 이름 %s / 형식 %s / 직접 받기 %s", folder, items, fmts, obj is not None)
     _log_extra(md)
     if not items:
         return [], None

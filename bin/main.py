@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.137"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 10            #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.138"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 5             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -876,11 +876,11 @@ MODE_PX = {k: px for k, _, px in VIEW_MODES}
 SORT_COLS = [(0, T("이름")), (5, T("날짜")), (2, T("유형")), (3, T("크기")), (6, T("길이")), (7, T("만든 날짜")),
              (1, T("수정한 날짜")), (4, T("파일 위치")), (8, T("미디어 작성 날짜")), (9, T("사진 크기")), (12, T("별점")), (13, T("쪽 수"))]
 # v0.9.76: 정렬 기준 = 열 번호 (열 5~9 추가, 머리글 우클릭으로 보이기). 0.9.75 에 저장된 열 없는 정렬 번호 10~14 → 새 열 번호
-OLD_SORT = {13: 8, 14: 9}   # 0.9.116: 12 는 이제 별점 열 (12→7 변환은 공개 안 한 0.9.75 것이라 뺌)
+OLD_SORT = {}   # 0.9.138 빌드 5: 13 = 쪽 수 열 · 14 = 특성 열이라 13→8·14→9 변환도 뺌 (0.9.75 는 공개 안 함) · 0.9.116: 12 는 이제 별점 열 (12→7 변환은 공개 안 한 0.9.75 것이라 뺌)
 #   # 0.9.109: 11 은 이제 태그 열   # v0.9.94: 10 은 이제 상태 열 — 0.9.75(공개 안 함) 의 10(날짜) 변환은 뺌
 PROP_SORTS = {5: "item_date", 6: "duration", 8: "media_date", 9: "pixels", 13: "pages"}   # 뒤에서 셸 속성을 읽어야 하는 정렬
 PROP_COLS = {5: "item_date", 6: "duration", 8: "media_date", 9: "dims", 13: "pages"}       # 그 값을 보여 주는 열
-OPT_COLS = [10, 1, 2, 3, 5, 6, 7, 8, 9, 11, 12, 13]   # 12 = 별점 · 13 = 쪽 수 (0.9.116)
+OPT_COLS = [10, 1, 2, 14, 3, 5, 6, 7, 8, 9, 11, 12, 13]   # 14 = 특성 (0.9.138 빌드 4, 기본 숨김)   # 12 = 별점 · 13 = 쪽 수 (0.9.116)
 #   # 11 = 태그 (0.9.109)   # 10 = 상태(v0.9.94, 동기화 폴더에서만 보임 — 설정 status_col)   # 머리글 우클릭에서 켜고 끄는 열 (이름은 항상, 위치는 검색 결과에서만)
 FAV = favorites.Favorites()
 # 우클릭 메뉴에서 윈도우 자체의 '즐겨찾기에 추가(F)'(탐색기 빠른 실행 고정)와 헷갈리지 않게 ★QE 표시
@@ -1525,9 +1525,15 @@ POOL.setMaxThreadCount(4)
 # ================================================================ 목록 모델
 COLS = [T("이름"), T("수정한 날짜"), T("유형"), T("크기"), T("위치"),   # 위치 = 검색 결과에서만 보임
         T("날짜"), T("길이"), T("만든 날짜"), T("미디어 작성 날짜"), T("사진 크기"),   # v0.9.76: 머리글 우클릭으로 보이기 (기본 숨김)
-        T("상태"), T("태그"), T("별점"), T("쪽 수")]   # 별점 0.9.116 (처음 별점을 주면 저절로 보임)
+        T("상태"), T("태그"), T("별점"), T("쪽 수"), T("특성")]   # 특성 = 0.9.138 빌드 4 (A·R·H·S, 유형과 크기 사이)   # 별점 0.9.116 (처음 별점을 주면 저절로 보임)
 #   # 상태 v0.9.94 · 태그 0.9.109 (처음 태그를 붙이면 저절로 보임)   # v0.9.94: 원드라이브 등 동기화 폴더 상태 (탐색기처럼 이름 바로 오른쪽)
-COL_WIDTH = (322, 145, 120, 80, 320, 145, 80, 145, 145, 100, 46, 140, 84, 60)
+COL_WIDTH = (322, 145, 120, 80, 320, 145, 80, 145, 145, 100, 46, 140, 84, 60, 56)
+ATTR_LETTERS = ((0x1, "R"), (0x2, "H"), (0x4, "S"), (0x20, "A"))   # 0.9.138 빌드 4 특성 열 — 탐색기와 같은 글자·순서
+
+
+def attr_text(a):
+    """파일 특성 숫자 → 'RA' 처럼 (탐색기 특성 열과 같게)"""
+    return "".join(ch for bit, ch in ATTR_LETTERS if (a or 0) & bit)
 
 
 def fmt_duration(sec):
@@ -1718,6 +1724,8 @@ class DirModel(QtCore.QAbstractTableModel):
                 return "" if e[2] < 0 else win_kbsize(e[2])
             if c == 4:
                 return os.path.dirname(e[5]) if e[5] and not e[7] else ""
+            if c == 14:   # 0.9.138 빌드 4 특성 (A·R·H·S)
+                return "" if e[7] or self.path == THIS_PC else attr_text(e[4])
             if c == 11:   # 0.9.109 태그
                 return ", ".join(TAGS.tags_of(self.full(e))) if TAGS.files and not e[7] else ""
             if c == 12:   # 0.9.116 별점
@@ -2068,6 +2076,8 @@ class DirModel(QtCore.QAbstractTableModel):
             key = lambda e: e[2]
         elif c == 4:
             key = lambda e: ((os.path.dirname(e[5]) if e[5] else "").lower(), shellops.natural_key(e[0]))
+        elif c == 14:   # 0.9.138 빌드 4 특성
+            key = lambda e: (attr_text(e[4]), shellops.natural_key(e[0]))
         elif c == 12:   # 0.9.116 별점 (오름차순 = 별 많은 것 먼저가 아니라 적은 것 먼저 — 탐색기 숫자 정렬과 같게, 없는 것은 0)
             key = lambda e: (RATINGS.get(self.full(e)), shellops.natural_key(e[0]))
         elif c == 11:   # 0.9.109 태그 (없는 것은 뒤로)
@@ -2230,6 +2240,12 @@ class CheckDelegate(QtWidgets.QStyledItemDelegate):
         if OPTS["checkboxes"] and idx.column() == 0 and idx.flags() & Qt.ItemIsSelectable:
             opt.features |= QtWidgets.QStyleOptionViewItem.HasCheckIndicator
             opt.checkState = Qt.Checked if self.sel.isSelected(idx) else Qt.Unchecked
+        if idx.column() == 0:   # 0.9.138 빌드 4: Insert 로 표시한 줄 = ▶ (고른 상태인 동안)
+            m = idx.model()
+            mk = getattr(m, "marks", None)
+            rows = getattr(m, "rows", None)
+            if mk and mk[1] and mk[0] == m.path and rows and idx.row() < len(rows) and rows[idx.row()][0] in mk[1] and self.sel.isSelected(idx):
+                opt.text = "▶ " + opt.text
 
     def createEditor(self, parent, opt, idx):
         ed = super().createEditor(parent, opt, idx)
@@ -3368,6 +3384,7 @@ class Page(QtWidgets.QWidget):
             h.setPalette(pal)
         self.tree.setColumnHidden(4, True)   # '위치' 열 = 검색 결과에서만
         h.moveSection(h.visualIndex(10), 1)  # 상태 열은 탐색기처럼 이름 바로 오른쪽 (v0.9.94)
+        h.moveSection(h.visualIndex(14), h.visualIndex(3))   # 0.9.138 빌드 4 특성 열 = 유형과 크기 사이
         self.apply_columns()
         self.tree.doubleClicked.connect(self._activate)
 
@@ -3389,6 +3406,7 @@ class Page(QtWidgets.QWidget):
         self.model_.renamed.connect(lambda a, b: self.reload(reason="rename"))
         self.model_.rename_failed.connect(lambda p: QtCore.QTimer.singleShot(0, lambda: self._focus_failed(p)))   # 누른 다른 파일 선택이 끝난 뒤
         self.sel.selectionChanged.connect(lambda *_: self._emit_status())
+        self.sel.selectionChanged.connect(self._unmark)   # 0.9.138 빌드 4: 선택이 풀린 줄은 ▶ 표시도 뗌
         self.set_mode(mode)
         self.navigate(path, record=False)
 
@@ -4168,6 +4186,8 @@ class Page(QtWidgets.QWidget):
         if ps:
             log.info("붙여넣기 %d개 → %s", len(ps), self.path)
             self.file_op(ps, self.path, cut, select_in=self)
+        elif self.paste_virtual():   # 0.9.138 빌드 1 (받은 의견 11/16: 팀뷰어에서 복사한 파일이 안 붙음 — 가상 파일로 옴)
+            return
         elif self.paste_image():   # 0.9.116 빌드 3 (사용자 11/8 #7): 캡처한 그림 → 지금 폴더에 PNG 파일
             return
         else:   # 예전엔 조용히 끝남 → 원인 확정용으로 클립보드 상태 기록 (10/8 '붙여넣기 안 됨' 간헐)
@@ -4176,6 +4196,56 @@ class Page(QtWidgets.QWidget):
             log.warning("붙여넣기: 클립보드에 파일 없음 — %s, 마지막 복사 뒤 바뀜=%s (순번 %d → %d)",
                         info, changed, shellops._CLIP_SEQ[0], info["seq"])
             self.status.emit(T("⚠ 클립보드에 파일이 없습니다"))
+
+    def paste_virtual(self):
+        """클립보드에 진짜 경로 없이 가상 파일(FileGroupDescriptorW + FileContents)만 있으면 내용을 받아 지금 폴더에 저장.
+        팀뷰어 파일 복사·아웃룩 첨부 복사가 이 형식. 끌어 놓기와 같은 vfiles 사용 (원래 IDataObject = OleGetClipboard)"""
+        md = QtGui.QGuiApplication.clipboard().mimeData()
+        if not vfiles.has_virtual(md):
+            return False
+        if devices.is_dev(self.path) or not os.path.isdir(self.path):
+            log.warning("가상 파일 붙여넣기: 저장할 수 없는 곳 %s", self.path)
+            self.status.emit(T("⚠ 붙여 넣은 파일을 저장하지 못했습니다 (로그에 기록)"))
+            return True
+        obj = None
+        try:
+            import pythoncom
+            obj = pythoncom.OleGetClipboard()
+        except Exception:
+            log.exception("가상 파일 붙여넣기: OleGetClipboard 실패 — Qt 방식으로")
+        log.info("가상 파일 붙여넣기 → %s (클립보드 %s)", self.path, shellops.clipboard_info())
+        QtWidgets.QApplication.setOverrideCursor(Qt.WaitCursor)   # 팀뷰어는 내용을 그때 받아 옴 — 큰 파일은 잠깐 걸림
+        try:
+            saved, why = vfiles.save(md, self.path, obj=obj)
+        except Exception as ex:
+            log.exception("가상 파일 붙여넣기 실패 → %s", self.path)
+            saved, why = [], str(ex)
+        finally:
+            QtWidgets.QApplication.restoreOverrideCursor()
+        self._vfile_done(self.path, saved, why, paste=True)
+        return True
+
+    def _vfile_done(self, tgt, saved, why, paste=False):
+        """가상 파일 저장 결과 → 상태 줄 안내 + 저장한 파일 골라 둠 (끌어 놓기·붙여넣기 공용, 0.9.138 빌드 1 에서 끌어 놓기 코드를 옮김)"""
+        log.info("가상 파일 결과 %s : 저장 %d개 %s, 안내=%s", "붙여넣기" if paste else "끌어 놓기", len(saved), [os.path.basename(p) for p in saved[:10]], why)
+        if why == "multi":
+            self.status.emit(T("⚠ 여러 개를 한꺼번에 끌어 놓을 수 없습니다 — 하나씩 끌어 놓아 주세요"))
+        elif why == "partial":   # v0.9.78: 여러 개 중 일부만 내용을 못 받음
+            self.status.emit(T("⚠ 일부 파일은 내용을 받지 못해 저장하지 않았습니다 (로그에 기록)"))
+        elif why == "preview":   # v0.9.81: 웹 아웃룩 첨부를 끌면 원본 대신 미리보기 그림(png)만 옴 → v0.9.82 저장 안 함. 다른 파일과 같이 끌면 상태 줄이 덮이므로 알림 줄로
+            msg = T("⚠ 웹 메일 첨부는 원본을 받을 수 없어 저장하지 않았습니다 — 메일에서 다운로드하세요")
+            self.status.emit(msg)
+            main = main_of(self)
+            if main is not None:
+                main.show_notice(msg, sticky=False, ms=12000)
+        elif why == "empty":   # v0.9.77: 웹 아웃룩 본문 이미지 등 — 내용이 비어 옴
+            self.status.emit(T("⚠ 내용을 받지 못해 저장하지 않았습니다 — 웹 메일 본문 이미지는 우클릭 → 다른 이름으로 저장"))
+        elif why:
+            self.status.emit(T("⚠ 붙여 넣은 파일을 저장하지 못했습니다 (로그에 기록)") if paste else T("⚠ 끌어 놓은 파일을 저장하지 못했습니다 (로그에 기록)"))
+        if saved and os.path.normcase(tgt) == os.path.normcase(self.path):
+            # 저장한 파일을 골라 둠 — 붙여넣기(file_op)와 같은 new_from 방식 (keep_sel 은 다 읽을 때 지금 선택으로 바뀌어 안 먹었음, 0.9.138 빌드 1 시험으로 확인)
+            self.new_from = ({e[0] for e in self.model_.all}, time.time(), "select", self.path)
+            self.reload("vfile")
 
     def paste_image(self):
         """클립보드에 파일은 없고 그림만 있으면(캡처·그림 프로그램에서 복사) 지금 폴더에 PNG 로 저장하고 이름 편집 (Files·Directory Opus 처럼)"""
@@ -4285,11 +4355,36 @@ class Page(QtWidgets.QWidget):
             devices.run_op("delete", self.hwnd(), ps, done=lambda ok, err: DEV_SIG.done.emit(here, ok, err, ""))
             return
         if ps and self.path != THIS_PC:   # 검색 결과에서도 됨 (전체 경로)
+            silent = False
+            if SETTINGS["delete_confirm"] and not permanent:   # 0.9.138 빌드 4 받은 의견: 휴지통·영구 삭제·취소 묻기
+                ch = self.ask_delete(ps)
+                log.info("삭제 묻기 %d개 → %s", len(ps), ch)
+                if ch is None:
+                    return
+                permanent, silent = ch == "perm", True   # 여기서 물었으니 윈도우 확인 창은 안 띄움
             def done(res, aborted, ps=ps):   # 작업 스레드에서 불림
                 gone = [p for p in ps if not os.path.exists(p)]
                 if gone and not permanent:   # 휴지통으로 간 것 → Ctrl+Z 로 복원 (탐색기와 같게, 10/6 사용자 요청)
                     push_undo("delete", gone, T('삭제 {0}개 ({1})').format(len(gone), os.path.basename(gone[0])))
-            shellops.delete(self.hwnd(), ps, permanent, done=done)
+            shellops.delete(self.hwnd(), ps, permanent, done=done, silent=silent)
+
+    def ask_delete(self, ps):
+        """0.9.138 빌드 4: [휴지통으로] [영구 삭제] [취소] → "recycle" / "perm" / None"""
+        box = QtWidgets.QMessageBox(self)
+        box.setIcon(QtWidgets.QMessageBox.Question)
+        box.setWindowTitle(T("삭제"))
+        names = [os.path.basename(os.path.normpath(p)) for p in ps[:5]] + (["…"] if len(ps) > 5 else [])
+        box.setText(T("{0}개 항목을 어떻게 지울까요?").format(len(ps)) + "\n\n" + "\n".join(names))
+        rb = box.addButton(T("휴지통으로"), QtWidgets.QMessageBox.AcceptRole)
+        pb = box.addButton(T("영구 삭제"), QtWidgets.QMessageBox.DestructiveRole)
+        cb = box.addButton(T("취소"), QtWidgets.QMessageBox.RejectRole)
+        box.setDefaultButton(rb)
+        box.setEscapeButton(cb)
+        self._del_box = box   # 시험용
+        box.exec()
+        b = box.clickedButton()
+        self._del_box = None
+        return "recycle" if b is rb else "perm" if b is pb else None
 
     def file_op(self, srcs, tgt, move, select_in=None):
         """복사·이동 (셸 작업) + 되돌리기 기록 + 보고 있는 칸이면 새로 생긴 것 선택"""
@@ -4458,6 +4553,47 @@ class Page(QtWidgets.QWidget):
 
     TYPE_MS = 1000   # 0.9.124 사용자 '탐색기처럼 de 빠르게 치면 debug': Qt 기본은 0.4초·처리 시각 기준이라 첫 글자 처리(미리보기 등)가 늦으면 끊겼음(재현 확인)
 
+    def mark_toggle(self):
+        """0.9.138 빌드 4: 지금 줄을 고름(▶ 표시)/풂 → 다음 줄로. 고른 것과 같아 복사·삭제·F6 그대로"""
+        v, m = self.view(), self.model_
+        n = len(m.rows)
+        if not n or self.path == THIS_PC:
+            return
+        cur = v.currentIndex()
+        r = cur.row() if cur.isValid() else 0
+        e = m.rows[r]
+        if not is_group(e):
+            mk = getattr(m, "marks", None)
+            if not mk or mk[0] != m.path:
+                m.marks = mk = (m.path, set())
+            i0 = m.index(r, 0)
+            if self.sel.isSelected(i0):
+                mk[1].discard(e[0])
+                self.sel.select(i0, QtCore.QItemSelectionModel.Deselect | QtCore.QItemSelectionModel.Rows)
+                log.debug("표시 풂 %s", e[0])
+            else:
+                mk[1].add(e[0])
+                self.sel.select(i0, QtCore.QItemSelectionModel.Select | QtCore.QItemSelectionModel.Rows)
+                log.debug("표시 %s", e[0])
+        nx = r + 1
+        while nx < n and is_group(m.rows[nx]):
+            nx += 1
+        if nx >= n:
+            nx = r
+        ni = m.index(nx, 0)
+        self.sel.setCurrentIndex(ni, QtCore.QItemSelectionModel.NoUpdate)
+        v.scrollTo(ni)
+        v.viewport().update()
+
+    def _unmark(self, _sel, desel):
+        mk = getattr(self.model_, "marks", None)
+        if not mk or not mk[1]:
+            return
+        rows = self.model_.rows
+        for i in desel.indexes():
+            if i.column() == 0 and i.row() < len(rows):
+                mk[1].discard(rows[i.row()][0])
+
     def type_ahead(self, view, ev):
         """이름 앞부분 글자로 찾기 (탐색기처럼): 1초 안에 이어 치면 이어 붙여 찾음. 시간은 키를 누른 시각(ev.timestamp) 기준.
         같은 글자만 거듭 치면(d d d) 그 글자로 시작하는 다음 항목으로 돌아감"""
@@ -4542,6 +4678,8 @@ class Page(QtWidgets.QWidget):
             m = main_of(self)
             if m is not None:
                 m.set_preview(not (SETTINGS["preview_pane"] and PREVIEW_WIN is not None and PREVIEW_WIN.isVisible()))
+        elif act == "mark_toggle":   # 0.9.138 빌드 4 (받은 의견): Insert = 표시하고 다음 줄로
+            self.mark_toggle()
         elif act == "flat_view":
             self.flat_view()
         elif act == "show_selected":
@@ -5359,24 +5497,7 @@ class Page(QtWidgets.QWidget):
             except Exception as ex:
                 log.exception("가상 파일 저장 실패 → %s", tgt)
                 saved, why = [], str(ex)
-            if why == "multi":
-                self.status.emit(T("⚠ 여러 개를 한꺼번에 끌어 놓을 수 없습니다 — 하나씩 끌어 놓아 주세요"))
-            elif why == "partial":   # v0.9.78: 여러 개 중 일부만 내용을 못 받음
-                self.status.emit(T("⚠ 일부 파일은 내용을 받지 못해 저장하지 않았습니다 (로그에 기록)"))
-            elif why == "preview":   # v0.9.81: 웹 아웃룩 첨부를 끌면 원본 대신 미리보기 그림(png)만 옴 → v0.9.82 저장 안 함. 다른 파일과 같이 끌면 상태 줄이 덮이므로 알림 줄로
-                msg = T("⚠ 웹 메일 첨부는 원본을 받을 수 없어 저장하지 않았습니다 — 메일에서 다운로드하세요")
-                self.status.emit(msg)
-                main = main_of(self)
-                if main is not None:
-                    main.show_notice(msg, sticky=False, ms=12000)
-            elif why == "empty":   # v0.9.77: 웹 아웃룩 본문 이미지 등 — 내용이 비어 옴
-                self.status.emit(T("⚠ 내용을 받지 못해 저장하지 않았습니다 — 웹 메일 본문 이미지는 우클릭 → 다른 이름으로 저장"))
-            elif why:
-                self.status.emit(T("⚠ 끌어 놓은 파일을 저장하지 못했습니다 (로그에 기록)"))
-            if saved and os.path.normcase(tgt) == os.path.normcase(self.path):
-                names = [os.path.basename(p) for p in saved]
-                self.keep_sel = (names, self.view().verticalScrollBar().value(), names[0], -1)   # 저장한 파일을 골라 둠
-                self.reload("vfile")
+            self._vfile_done(tgt, saved, why)
             ev.setDropAction(Qt.CopyAction)
             ev.accept()
             return
@@ -8655,7 +8776,8 @@ SET_TOGGLES = [("hide_single_tab", T("탭이 하나면 탭 줄 숨기기 (새 �
                ("folder_size", T("폴더 크기 계산 (크기 칸 — 네트워크 드라이브 제외)")), ("keep_favbar", T("메뉴줄을 접어도 즐겨찾기 줄은 보이기")),
                ("show_favbar", T("즐겨찾기 줄 보이기")),
                ("folder_view_memory", T("폴더마다 보기 기억")),
-               ("auto_refresh", T("자동 새로고침 (폴더가 바뀌면 목록에 바로 반영 — 끄면 F5 로만 새로 읽음)"))]   # 0.9.137 빌드 2   # 0.9.116 빌드 2 (사용자 게시판: 안 쓰면 줄째 숨기기)
+               ("auto_refresh", T("자동 새로고침 (폴더가 바뀌면 목록에 바로 반영 — 끄면 F5 로만 새로 읽음)")),
+               ("delete_confirm", T("삭제할 때 휴지통으로 버릴지 영구 삭제할지 묻기"))]   # 0.9.138 빌드 4   # 0.9.137 빌드 2   # 0.9.116 빌드 2 (사용자 게시판: 안 쓰면 줄째 숨기기)
 THEMES = [("system", T("시스템 설정 따름")), ("light", T("밝게 (Light)")), ("dark", T("어둡게 (Dark)"))]
 
 
@@ -8683,6 +8805,8 @@ def _extra_actions():
             ("import_settings", T("설정 가져오기 (백업 파일에서 되돌리기)…"), "", w, "settings"),
             ("guide", T("사용법…"), "", w, "settings"), ("check_update", T("새 버전 확인"), "", w, "settings"),
             ("open_logs", T("로그 폴더 열기"), "", w, "settings"), ("save_report", T("문제 보고용 로그 저장… (4Dir 폴더의 reports 에 zip)"), "", w, "settings")]
+    if SUPPORT_EMAIL:
+        out.append(("mail_support", T("메일 보내기"), "", w, "settings"))
     return out
 
 
@@ -9763,6 +9887,7 @@ class SettingsDialog(QtWidgets.QDialog):
         self._set(lay, "folder_size", T("폴더 크기 계산 (크기 칸 — 네트워크 드라이브 제외)"))
         self._set(lay, "empty_click_up", T("빈 곳을 더블클릭하면 상위 폴더로"))
         self._set(lay, "auto_refresh", T("자동 새로고침 (폴더가 바뀌면 목록에 바로 반영 — 끄면 F5 로만 새로 읽음)"))   # 0.9.137 빌드 2 받은 의견
+        self._set(lay, "delete_confirm", T("삭제할 때 휴지통으로 버릴지 영구 삭제할지 묻기"))   # 0.9.138 빌드 4 받은 의견
         self._set(lay, "arc_browse", T("압축 파일(ZIP·7Z·RAR…)을 두 번 누르면 4Dir 안에서 폴더처럼 열기"))   # 빌드 20
         # 0.9.134 (사용자 11/12): 4Dir 에서 열면 실행이 붙잡히는 파일 → 탐색기에게 넘겨 열 확장자 더하기 (빌드 없이)
         # 빌드 2 (사용자 '한 줄에 하나씩 목록, 입력칸 + 등록, 목록에서 골라 삭제')
@@ -9928,6 +10053,13 @@ class SettingsDialog(QtWidgets.QDialog):
             hp.setTextInteractionFlags(Qt.LinksAccessibleByMouse)
             hp.linkActivated.connect(lambda *_: open_link(SITE_URL, "홈페이지"))
             lay.addWidget(hp)
+        if SUPPORT_EMAIL:   # 0.9.138 빌드 1 (사용자 11/16: 툴에 메일 주소가 없어 바로 못 보냄)
+            ml = QtWidgets.QLabel(T("메일") + f' - <a href="mailto:{SUPPORT_EMAIL}">{SUPPORT_EMAIL}</a>')
+            ml.setObjectName("mailLink")
+            ml.setTextFormat(Qt.RichText)
+            ml.setTextInteractionFlags(Qt.LinksAccessibleByMouse | Qt.TextSelectableByMouse)
+            ml.linkActivated.connect(lambda *_: m.mail_support())
+            lay.addWidget(ml)
         lay.addSpacing(6)
         upd_row = QtWidgets.QHBoxLayout()
         b_upd = QtWidgets.QPushButton(T("새 버전 확인"))
@@ -9951,7 +10083,7 @@ class SettingsDialog(QtWidgets.QDialog):
         self._check(lay, "update_check", T("시작할 때 새 버전 확인 (하루 한 번)"), lambda: SETTINGS["update_check"],
                     lambda: SETTINGS.__setitem__("update_check", not SETTINGS["update_check"]))
         self._sub(lay, T("도움말"))
-        gb = QtWidgets.QPushButton("📖 " + T("사용법…"))   # 0.9.126 사용자: 네이버 초록 · 크게
+        gb = QtWidgets.QPushButton("📖 " + T("사용법"))   # 0.9.126 사용자: 네이버 초록 · 크게 · 0.9.138 빌드 3: … 뺌
         gb.setObjectName("guideBtn")
         gb.setCursor(Qt.PointingHandCursor)
         gb.setStyleSheet("QPushButton#guideBtn{background:#03C75A; color:#ffffff; font-weight:bold; font-size:14px; border:none;"
@@ -9961,11 +10093,25 @@ class SettingsDialog(QtWidgets.QDialog):
         self.guide_btn = gb
         lay.addWidget(gb)
         self._sub(lay, T("문제가 있을 때"))
+        if SUPPORT_EMAIL:
+            self._btn(lay, T("메일 보내기"), m.mail_support)
         self._btn(lay, T("로그 폴더 열기"), lambda: os.startfile(LOG_DIR))
-        self._btn(lay, T("문제 보고용 로그 저장… (4Dir 폴더의 reports 에 zip)"), m.save_report)
+        self._btn(lay, T("문제 보고용 로그 저장"), m.save_report)   # 0.9.138 빌드 2 사용자: 정보 페이지 단추 글자 간단히 (… · 괄호 설명 뺌)
 
 
 # 화면 색상은 ui_parts.build_style(SETTINGS[theme 또는 theme_dark]) 로 만든다 (보기 > 색상 설정에서 변경)
+
+
+class DblClickLabel(QtWidgets.QLabel):
+    """더블클릭 신호가 있는 글자 칸 (0.9.138 빌드 3: CPU 사용량 → 작업 관리자)"""
+    doubleClicked = QtCore.Signal()
+
+    def mouseDoubleClickEvent(self, ev):
+        if ev.button() == Qt.LeftButton:
+            self.doubleClicked.emit()
+            ev.accept()
+            return
+        super().mouseDoubleClickEvent(ev)
 
 
 class SearchSig(QtCore.QObject):
@@ -11616,8 +11762,10 @@ class Main(QtWidgets.QMainWindow):
         sp.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
         self._top_sp = tb.addWidget(sp)   # 0.9.128 구분선 정리 때 '항목' 으로 안 셈
         # CPU·GPU 사용량 (1초마다, 창 최소화·표시 끔이면 멈춤)
-        self.mon_label = QtWidgets.QLabel()
+        self.mon_label = DblClickLabel()   # 0.9.138 빌드 3 사용자: 더블클릭 → 작업 관리자
         self.mon_label.setObjectName("sysmon")
+        self.mon_label.setToolTip(T("더블클릭하면 작업 관리자를 엽니다"))
+        self.mon_label.doubleClicked.connect(self.open_taskmgr)
         self.mon_label.setTextFormat(Qt.RichText)
         self.mon_act = tb.addWidget(self.mon_label)
         self.mon = None
@@ -12287,6 +12435,7 @@ class Main(QtWidgets.QMainWindow):
                          ("tab_multirow", T("탭이 넘치면 여러 줄로")),
                          ("empty_click_up", T("빈 곳을 더블클릭하면 상위 폴더로")),
                          ("auto_refresh", T("자동 새로고침 (폴더가 바뀌면 목록에 바로 반영 — 끄면 F5 로만 새로 읽음)")),
+                         ("delete_confirm", T("삭제할 때 휴지통으로 버릴지 영구 삭제할지 묻기")),
                          ("arc_browse", T("압축 파일(ZIP·7Z·RAR…)을 두 번 누르면 4Dir 안에서 폴더처럼 열기")),
                          ("folder_size", T("폴더 크기 계산 (크기 칸 — 네트워크 드라이브 제외)")),
                          ("keep_favbar", T("메뉴줄을 접어도 즐겨찾기 줄은 보이기"))):
@@ -12314,9 +12463,20 @@ class Main(QtWidgets.QMainWindow):
         m.addAction(T("새 버전 확인"), lambda: start_update_check(self, manual=True))
         m.addAction(T("로그 폴더 열기"), lambda: os.startfile(LOG_DIR))
         m.addAction(T("문제 보고용 로그 저장… (4Dir 폴더의 reports 에 zip)"), self.save_report)
+        if SUPPORT_EMAIL:
+            m.addAction(T("메일 보내기"), self.mail_support)
         set_menu_tips(m)
 
     # ---------------------------------------------------------- CPU·GPU 사용량
+    def open_taskmgr(self):
+        """0.9.138 빌드 3: CPU·GPU 사용량 더블클릭 → 윈도우 작업 관리자 (ShellExecute — 관리자 권한 요구 프로그램이라 Popen 은 740 오류)"""
+        log.info("작업 관리자 열기 (사용량 더블클릭)")
+        try:
+            os.startfile("taskmgr.exe")
+        except OSError as e:
+            log.exception("작업 관리자 열기 실패")
+            self.show_notice(T("작업 관리자를 열지 못했습니다: {0}  ✕").format(e), sticky=False, ms=8000)
+
     def set_sysmon(self, on, save=True):
         if on and self.mon is None:
             import sysmon
@@ -12352,7 +12512,7 @@ class Main(QtWidgets.QMainWindow):
             parts.append(f"VRAM <b style='color:{col(used * 100 / total)}'>{used:.1f}</b>/{total:.0f}GB")
         self.mon_label.setText("&nbsp;&nbsp;".join(parts) + "&nbsp;&nbsp;")
         if self.mon.gpu_name:
-            self.mon_label.setToolTip(T('{0}\n1.5초마다 갱신 · 보기 메뉴에서 끄기').format(self.mon.gpu_name))
+            self.mon_label.setToolTip(T('{0}\n1.5초마다 갱신 · 보기 메뉴에서 끄기').format(self.mon.gpu_name) + "\n" + T("더블클릭하면 작업 관리자를 엽니다"))
         ms = (time.perf_counter() - t0) * 1000
         if ms > 20:
             log.warning("사용량 갱신 느림 %.1fms", ms)
@@ -12971,6 +13131,7 @@ class Main(QtWidgets.QMainWindow):
         acts["check_update"] = lambda: start_update_check(self, manual=True)
         acts["open_logs"] = lambda: os.startfile(LOG_DIR)
         acts["save_report"] = lambda: self.save_report()
+        acts["mail_support"] = lambda: self.mail_support()
         return acts
 
     def run_named(self, a):
@@ -13853,6 +14014,22 @@ eports.
         # v0.9.61: 깃허브 계정 없이도 보낼 수 있게 '메일로 보내기' (support@4dir.net) — 메일 창 + 탐색기에서 zip 끌어 넣기
         self.show_notice(T('저장했고 파일 경로를 복사했습니다: {0} — 이 파일을 {1} 로 보내 주세요  ✕').format(out, SUPPORT_EMAIL), sticky=True,
                          action=(T("메일로 보내기"), lambda: self.mail_report(out)))
+
+    def mail_support(self):
+        """0.9.138 빌드 1: 문제·의견 메일 창 (첨부 없음). 메일 프로그램이 없으면 주소를 복사하고 알림"""
+        import platform
+        from urllib.parse import quote
+        subject = f"[4Dir] v{QE_VERSION}"
+        body = (chr(13) + chr(10)).join([T("어떤 문제가 있었나요? (무엇을 하다가, 어떻게 됐는지)"), "", "", "----",
+                                         f"4Dir {QE_VERSION} ({QE_BUILD}) / {platform.platform()}",
+                                         T("로그가 필요하면: 설정 → 정보 → 문제 보고용 로그 저장")])
+        url = f"mailto:{SUPPORT_EMAIL}?subject={quote(subject)}&body={quote(body)}"
+        ok = QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
+        log.info("메일 보내기 창 열기 %s → %s", SUPPORT_EMAIL, ok)
+        if not ok:
+            QtWidgets.QApplication.clipboard().setText(SUPPORT_EMAIL)
+            self.show_notice(T("메일 프로그램을 열지 못했습니다. 주소를 복사했습니다: {0}  ✕").format(SUPPORT_EMAIL), sticky=True)
+        return ok
 
     def mail_report(self, path):
         """문제 보고 메일 창 열기 (mailto). 첨부는 메일 프로그램 규칙상 자동으로 못 넣음 → 탐색기에 zip 을 보여 주고 끌어 넣게 안내.

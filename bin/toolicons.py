@@ -707,13 +707,13 @@ ACTION_MORE = {
     "open": "open", "open_new_tab": "newtab", "up": "up", "back": "back", "fwd": "fwd", "refresh": "refresh",
     "delete": "trash", "delete_perm": "trashx", "new_folder": "newfolder", "copy": "copy", "cut": "cut", "paste": "paste",
     "send_copy": "sendcopy", "send_move": "sendmove", "undo": "undo", "copy_path": "path", "properties": "props",
-    "quick_preview": "eye", "new_window": "newwin", "new_tab": "newtab", "close_tab": "closetab", "lock_tab": "lock",
+    "quick_preview": "eye", "mark_toggle": "check", "new_window": "newwin", "new_tab": "newtab", "close_tab": "closetab", "lock_tab": "lock",
     "reopen_tab": "reopen", "next_tab": "tabnext", "prev_tab": "tabprev", "focus_addr": "addr", "focus_filter": "filter",
     "global_search": "search", "global_hotkey": "keyboard", "toggle_hidden": "hidden", "add_fav": "star", "toggle_chrome": "chrome",
     "toggle_nav": "nav", "side_shared": "nav", "toggle_favbar": "star", "fav_organize": "star", "fav_import": "star",
     "toggle_sysmon": "cpu", "toggle_on_top": "pin", "settings": "gear", "keys_settings": "keyboard", "color_settings": "colors",
     "search_roots": "drive", "overlay_order": "layers", "export_settings": "export", "import_settings": "import",
-    "guide": "guide", "check_update": "update", "open_logs": "log", "save_report": "report",
+    "guide": "guide", "check_update": "update", "open_logs": "log", "save_report": "report", "mail_support": "report",
     "ws_save": "workspace", "ws_latest": "workspace", "ws_slot1": "workspace", "ws_slot2": "workspace",
 }
 ACTION_PREFIX = (("rate_", "star"), ("view_", "view"), ("show_", "showopt"), ("sort_", "sort"), ("theme_", "theme"), ("set_", "gear"), ("pane", "pane"))

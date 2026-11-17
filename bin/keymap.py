@@ -37,7 +37,8 @@ ACTIONS = [
     ("properties", T("속성"), "Alt+Return; Alt+Enter", "view"),
     ("select_pattern", T("패턴으로 고르기…"), "Ctrl+Shift+A", "view"),   # v0.9.89
     ("sha256", T("확인값(SHA256) 보기"), "", "view"),   # v0.9.89
-    ("quick_preview", T("미리보기 창 바로 보기/닫기"), "Space", "view"),   # 빌드 20 (다른 파일 관리자처럼 스페이스)
+    ("quick_preview", T("미리보기 창 바로 보기/닫기"), "Space", "view"),
+    ("mark_toggle", T("표시하고 다음 줄로"), "Insert", "view"),   # 0.9.138 빌드 4 받은 의견 (스페이스로 쓰려면 단축키 설정에서)   # 빌드 20 (다른 파일 관리자처럼 스페이스)
     ("flat_view", T("하위 폴더 펼쳐 보기 (모든 파일 한 목록)"), "", "view"),   # 빌드 20
     ("show_selected", T("고른 것만 보기 (다시 누르면 모두)"), "", "view"),   # 0.9.127 빌드 5 (토탈 커맨더 참고)
     ("find_dupes", T("중복 파일 찾기…"), "", "view"),   # 빌드 20
