@@ -2387,5 +2387,15 @@
  "지금 줄을 ▶ 표시해 고르고 다음 줄로 내려갑니다 (다시 누르면 풀림)": "Sélectionne la ligne actuelle avec ▶ et passe à la suivante (appuyer de nouveau pour annuler)",
  "삭제할 때 휴지통으로 버릴지 영구 삭제할지 묻기": "Demander s'il faut mettre à la corbeille ou supprimer définitivement",
  "{0}개 항목을 어떻게 지울까요?": "Comment supprimer {0} élément(s) ?",
- "고른 파일만 남기고 나머지를 숨깁니다 (다시 누르거나 다른 폴더로 가면 모두 보임)": "Affiche uniquement les fichiers sélectionnés et masque le reste (appuyer de nouveau ou changer de dossier pour tout afficher)"
+ "고른 파일만 남기고 나머지를 숨깁니다 (다시 누르거나 다른 폴더로 가면 모두 보임)": "Affiche uniquement les fichiers sélectionnés et masque le reste (appuyer de nouveau ou changer de dossier pour tout afficher)",
+ "다른 프로그램에서 바뀐 것도 바로 반영 (끄면 4Dir 에서 한 작업만 반영)": "Afficher tout de suite les changements faits par d'autres programmes (désactivé : seulement les opérations de 4Dir)",
+ "파일이 바뀌면 다시 정렬 (끄면 있던 순서 그대로, 새 항목은 맨 아래 — F5 로 정렬)": "Retrier quand les fichiers changent (désactivé : l'ordre reste, les nouveaux éléments vont à la fin — F5 trie)",
+ "끄면 다른 프로그램에서 파일이 바뀌어도 목록이 그대로입니다 (4Dir 에서 한 복사·삭제 등은 반영, F5 로 새로 읽기)": "Désactivé : la liste ne change pas si d'autres programmes modifient des fichiers (les copies, suppressions, etc. faites dans 4Dir s'affichent ; F5 recharge)",
+ "끄면 파일이 바뀌어도 있던 순서를 지키고 새 항목은 맨 아래에 붙입니다 (F5·열 머리글로 다시 정렬)": "Désactivé : l'ordre est conservé quand les fichiers changent et les nouveaux éléments sont ajoutés à la fin (F5 ou un en-tête de colonne retrie)",
+ "목록 새로 고침 — 4Dir 에서 한 복사·삭제·이름 바꾸기는 언제나 바로 보입니다": "Actualisation de la liste — les copies, suppressions et renommages faits dans 4Dir s'affichent toujours tout de suite",
+ "탐색기 등 다른 프로그램에서 바뀐 것도 보이기": "Afficher aussi les changements faits dans l'Explorateur et d'autres programmes",
+ "바뀌면 다시 정렬 (끄면 새 파일은 맨 아래, F5 로 정렬)": "Retrier en cas de changement (désactivé : les nouveaux fichiers vont à la fin ; F5 trie)",
+ "탐색기 등 다른 프로그램이 파일을 바꿔도 목록에 바로 보입니다 (4Dir 에서 한 작업은 언제나 보임)": "Les changements faits par l'Explorateur et d'autres programmes apparaissent tout de suite (les opérations de 4Dir s'affichent toujours)",
+ "끄면 목록 순서를 그대로 두고 새 파일은 맨 아래에 붙입니다 (F5 로 정렬)": "Désactivé : la liste garde son ordre et les nouveaux fichiers sont ajoutés à la fin (F5 trie)",
+ "바뀌면 다시 정렬 (윈도우 기본, 끄면 새 파일은 맨 아래, F5 로 정렬)": "Retrier en cas de changement (par défaut dans Windows, désactivé : les nouveaux fichiers vont à la fin ; F5 trie)"
 }

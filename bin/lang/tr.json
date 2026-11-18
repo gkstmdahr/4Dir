@@ -2387,5 +2387,15 @@
  "지금 줄을 ▶ 표시해 고르고 다음 줄로 내려갑니다 (다시 누르면 풀림)": "Geçerli satırı ▶ ile işaretleyip seçer ve aşağı iner (kaldırmak için tekrar basın)",
  "삭제할 때 휴지통으로 버릴지 영구 삭제할지 묻기": "Silerken geri dönüşüm kutusu mu kalıcı silme mi diye sor",
  "{0}개 항목을 어떻게 지울까요?": "{0} öğe nasıl silinsin?",
- "고른 파일만 남기고 나머지를 숨깁니다 (다시 누르거나 다른 폴더로 가면 모두 보임)": "Yalnızca seçili dosyaları gösterir, diğerlerini gizler (tekrar basın veya başka klasöre geçin = hepsi)"
+ "고른 파일만 남기고 나머지를 숨깁니다 (다시 누르거나 다른 폴더로 가면 모두 보임)": "Yalnızca seçili dosyaları gösterir, diğerlerini gizler (tekrar basın veya başka klasöre geçin = hepsi)",
+ "다른 프로그램에서 바뀐 것도 바로 반영 (끄면 4Dir 에서 한 작업만 반영)": "Diğer programların yaptığı değişiklikleri hemen göster (kapalıyken yalnızca 4Dir işlemleri)",
+ "파일이 바뀌면 다시 정렬 (끄면 있던 순서 그대로, 새 항목은 맨 아래 — F5 로 정렬)": "Dosyalar değişince yeniden sırala (kapalıyken sıra korunur, yeni öğeler en alta — F5 sıralar)",
+ "끄면 다른 프로그램에서 파일이 바뀌어도 목록이 그대로입니다 (4Dir 에서 한 복사·삭제 등은 반영, F5 로 새로 읽기)": "Kapalıyken diğer programlar dosyaları değiştirse de liste aynı kalır (4Dir'de yapılan kopyalama, silme vb. gösterilir; F5 yeniden okur)",
+ "끄면 파일이 바뀌어도 있던 순서를 지키고 새 항목은 맨 아래에 붙입니다 (F5·열 머리글로 다시 정렬)": "Kapalıyken dosyalar değişince sıra korunur, yeni öğeler en alta eklenir (F5 veya sütun başlığı yeniden sıralar)",
+ "목록 새로 고침 — 4Dir 에서 한 복사·삭제·이름 바꾸기는 언제나 바로 보입니다": "Liste yenileme — 4Dir'de yapılan kopyalama, silme ve yeniden adlandırma her zaman hemen görünür",
+ "탐색기 등 다른 프로그램에서 바뀐 것도 보이기": "Dosya Gezgini ve diğer programlardaki değişiklikleri de göster",
+ "바뀌면 다시 정렬 (끄면 새 파일은 맨 아래, F5 로 정렬)": "Değişince yeniden sırala (kapalıyken yeni dosyalar en alta; F5 sıralar)",
+ "탐색기 등 다른 프로그램이 파일을 바꿔도 목록에 바로 보입니다 (4Dir 에서 한 작업은 언제나 보임)": "Dosya Gezgini ve diğer programların değişiklikleri listede hemen görünür (4Dir işlemleri her zaman görünür)",
+ "끄면 목록 순서를 그대로 두고 새 파일은 맨 아래에 붙입니다 (F5 로 정렬)": "Kapalıyken liste sırasını korur, yeni dosyalar en alta eklenir (F5 sıralar)",
+ "바뀌면 다시 정렬 (윈도우 기본, 끄면 새 파일은 맨 아래, F5 로 정렬)": "Değişince yeniden sırala (Windows varsayılanı, kapalıyken yeni dosyalar en alta; F5 sıralar)"
 }

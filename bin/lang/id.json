@@ -2387,5 +2387,15 @@
  "지금 줄을 ▶ 표시해 고르고 다음 줄로 내려갑니다 (다시 누르면 풀림)": "Menandai baris ini dengan ▶ lalu turun ke baris berikutnya (tekan lagi untuk batal)",
  "삭제할 때 휴지통으로 버릴지 영구 삭제할지 묻기": "Tanyakan: ke Recycle Bin atau hapus permanen",
  "{0}개 항목을 어떻게 지울까요?": "Bagaimana menghapus {0} item?",
- "고른 파일만 남기고 나머지를 숨깁니다 (다시 누르거나 다른 폴더로 가면 모두 보임)": "Hanya menampilkan file yang dipilih dan menyembunyikan sisanya (tekan lagi atau pindah folder untuk tampilkan semua)"
+ "고른 파일만 남기고 나머지를 숨깁니다 (다시 누르거나 다른 폴더로 가면 모두 보임)": "Hanya menampilkan file yang dipilih dan menyembunyikan sisanya (tekan lagi atau pindah folder untuk tampilkan semua)",
+ "다른 프로그램에서 바뀐 것도 바로 반영 (끄면 4Dir 에서 한 작업만 반영)": "Langsung tampilkan perubahan dari program lain (jika mati: hanya operasi 4Dir sendiri)",
+ "파일이 바뀌면 다시 정렬 (끄면 있던 순서 그대로, 새 항목은 맨 아래 — F5 로 정렬)": "Urutkan ulang saat file berubah (jika mati: urutan tetap, item baru di bawah — F5 mengurutkan)",
+ "끄면 다른 프로그램에서 파일이 바뀌어도 목록이 그대로입니다 (4Dir 에서 한 복사·삭제 등은 반영, F5 로 새로 읽기)": "Jika mati, daftar tetap meski program lain mengubah file (salin, hapus, dll. di 4Dir tetap tampil; F5 memuat ulang)",
+ "끄면 파일이 바뀌어도 있던 순서를 지키고 새 항목은 맨 아래에 붙입니다 (F5·열 머리글로 다시 정렬)": "Jika mati, urutan tetap saat file berubah dan item baru ditambahkan di bawah (F5 atau judul kolom mengurutkan ulang)",
+ "목록 새로 고침 — 4Dir 에서 한 복사·삭제·이름 바꾸기는 언제나 바로 보입니다": "Muat ulang daftar — salin, hapus, dan ganti nama di 4Dir selalu langsung tampil",
+ "탐색기 등 다른 프로그램에서 바뀐 것도 보이기": "Tampilkan juga perubahan dari File Explorer dan program lain",
+ "바뀌면 다시 정렬 (끄면 새 파일은 맨 아래, F5 로 정렬)": "Urutkan ulang saat berubah (jika mati: file baru di bawah; F5 mengurutkan)",
+ "탐색기 등 다른 프로그램이 파일을 바꿔도 목록에 바로 보입니다 (4Dir 에서 한 작업은 언제나 보임)": "Perubahan dari File Explorer dan program lain langsung tampil di daftar (operasi 4Dir selalu tampil)",
+ "끄면 목록 순서를 그대로 두고 새 파일은 맨 아래에 붙입니다 (F5 로 정렬)": "Jika mati, urutan daftar tetap dan file baru ditambahkan di bawah (F5 mengurutkan)",
+ "바뀌면 다시 정렬 (윈도우 기본, 끄면 새 파일은 맨 아래, F5 로 정렬)": "Urutkan ulang saat berubah (bawaan Windows, jika mati: file baru di bawah; F5 mengurutkan)"
 }

@@ -2387,5 +2387,15 @@
  "지금 줄을 ▶ 표시해 고르고 다음 줄로 내려갑니다 (다시 누르면 풀림)": "Selects the current row with a ▶ mark and moves down (press again to unmark)",
  "삭제할 때 휴지통으로 버릴지 영구 삭제할지 묻기": "Ask whether to recycle or permanently delete",
  "{0}개 항목을 어떻게 지울까요?": "How do you want to delete {0} item(s)?",
- "고른 파일만 남기고 나머지를 숨깁니다 (다시 누르거나 다른 폴더로 가면 모두 보임)": "Shows only the selected files and hides the rest (press again or go to another folder to show all)"
+ "고른 파일만 남기고 나머지를 숨깁니다 (다시 누르거나 다른 폴더로 가면 모두 보임)": "Shows only the selected files and hides the rest (press again or go to another folder to show all)",
+ "다른 프로그램에서 바뀐 것도 바로 반영 (끄면 4Dir 에서 한 작업만 반영)": "Show changes made by other programs right away (when off, only 4Dir's own operations are shown)",
+ "파일이 바뀌면 다시 정렬 (끄면 있던 순서 그대로, 새 항목은 맨 아래 — F5 로 정렬)": "Re-sort when files change (when off, keep the current order and add new items at the bottom — F5 sorts)",
+ "끄면 다른 프로그램에서 파일이 바뀌어도 목록이 그대로입니다 (4Dir 에서 한 복사·삭제 등은 반영, F5 로 새로 읽기)": "When off, the list stays the same even if other programs change files (copies, deletes, etc. done in 4Dir are still shown; F5 reloads)",
+ "끄면 파일이 바뀌어도 있던 순서를 지키고 새 항목은 맨 아래에 붙입니다 (F5·열 머리글로 다시 정렬)": "When off, the current order is kept when files change and new items are added at the bottom (F5 or a column header re-sorts)",
+ "목록 새로 고침 — 4Dir 에서 한 복사·삭제·이름 바꾸기는 언제나 바로 보입니다": "List refresh — copies, deletes and renames done in 4Dir always show up right away",
+ "탐색기 등 다른 프로그램에서 바뀐 것도 보이기": "Also show changes made in File Explorer and other programs",
+ "바뀌면 다시 정렬 (끄면 새 파일은 맨 아래, F5 로 정렬)": "Re-sort on change (when off, new files go to the bottom; F5 sorts)",
+ "탐색기 등 다른 프로그램이 파일을 바꿔도 목록에 바로 보입니다 (4Dir 에서 한 작업은 언제나 보임)": "Changes made by File Explorer and other programs show up in the list right away (4Dir's own operations always show)",
+ "끄면 목록 순서를 그대로 두고 새 파일은 맨 아래에 붙입니다 (F5 로 정렬)": "When off, the list keeps its order and new files are added at the bottom (F5 sorts)",
+ "바뀌면 다시 정렬 (윈도우 기본, 끄면 새 파일은 맨 아래, F5 로 정렬)": "Re-sort on change (Windows default; when off, new files go to the bottom; F5 sorts)"
 }

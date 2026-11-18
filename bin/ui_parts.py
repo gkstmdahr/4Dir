@@ -79,7 +79,8 @@ class Settings:
                      "folder_size": True,         # 폴더 크기 계산 — 크기 칸 (v0.9.89, 네트워크 드라이브 제외)
                      "select_pattern": "",        # 패턴으로 고르기 마지막 입력 (v0.9.89)
                      "delete_confirm": False,     # 0.9.138 빌드 4 받은 의견: 삭제할 때 휴지통·영구 삭제·취소 묻기 (기본 끔 = 탐색기와 같게)
-                     "auto_refresh": True,        # 0.9.137 빌드 2: 끄면 폴더가 바뀌어도 F5 로만 새로 읽음 (받은 의견 11/13)
+                     "auto_refresh": True,        # 0.9.137 빌드 2: 끄면 폴더가 바뀌어도 F5 로만 새로 읽음 (받은 의견 11/13) · 0.9.139 = 다른 프로그램 변경만
+                     "auto_resort": True,         # 0.9.139 이슈 11: 끄면 바뀐 것을 반영해도 순서 유지, 새 항목은 맨 아래 (F5·머리글로 정렬)
                      "empty_click_up": True,      # 목록 빈 곳을 더블클릭하면 상위 폴더로 (v0.9.75 옵션, v0.9.82 기본 켬)
                      "calc_geo": None, "calc_top": False, "calc_hist": [], "calc_tab": 0, "calc_deg": True, "calc_mode": "", "calc_mem": [], "calc_fx": {}, "calc_conv": {}, "calc_graph": [],   # 0.9.111 계산기
                      "gdrive_auto": True, "gdrive_last": 0, "gdrive_last_name": "", "gdrive_asked": False, "show_favbar": True, "folder_view_memory": True, "preview_detail": False, "private_mode": False,   # 0.9.114 구글 드라이브 백업 (로그인했을 때만 동작)

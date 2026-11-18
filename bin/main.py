@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.138"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 5             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.139"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 3             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -1351,6 +1351,33 @@ class TreeSig(QtCore.QObject):
 TREE_SIG = TreeSig()
 
 
+class OwnSig(QtCore.QObject):
+    """0.9.139 (이슈 11): 4Dir 가 직접 한 복사·이동·삭제·이름 바꾸기·새로 만들기가 끝남 → 그 폴더를 보는 칸이 다시 읽음.
+    '다른 프로그램 변경 반영(auto_refresh)'을 꺼도 반영됨 (작업 스레드에서도 보냄)"""
+    changed = QtCore.Signal(list, str)
+
+
+OWN_SIG = OwnSig()
+RENAMES = {}   # 0.9.139 최근 이름 바꾸기 normcase(옛 전체 경로) → (normcase(새 전체 경로), 시각) — 순서 유지 때 제자리에 둠
+KEEP_ORDER_REASONS = {"watch", "own", "rename", "after-edit", "newfolder", "newfile", "paste_image", "batch-rename", "undo",
+                      "vfile", "dev", "dev2", "attrs", "datefolders", "sync", "edit", "imgedit", "show", "tag", "set"}   # F5·이동·주소 입력 등은 늘 다시 정렬
+
+
+def own_changed(dirs, why, renames=()):
+    """0.9.139 이슈 11: 4Dir 작업 결과 반영 요청 (dirs = 바뀐 폴더들, renames = [(옛 경로, 새 경로)])"""
+    now = time.time()
+    for k in [k for k, (_n, t) in RENAMES.items() if now - t > 60]:
+        del RENAMES[k]
+    for a, b in renames:
+        RENAMES[os.path.normcase(os.path.normpath(a))] = (os.path.normcase(os.path.normpath(b)), now)
+    ds = sorted({os.path.normcase(os.path.normpath(d)) for d in dirs if d})
+    log.info("자체 작업 반영 %s 폴더 %s 이름바꿈 %d", why, ds, len(renames))
+    try:
+        OWN_SIG.changed.emit(ds, why)
+    except RuntimeError:
+        pass
+
+
 class ScanJob(QtCore.QRunnable):
     """entry = [name, is_dir, size, mtime, attrs, full_path, sysidx, label]"""
 
@@ -1657,7 +1684,27 @@ class DirModel(QtCore.QAbstractTableModel):
         e = self.rows[row]
         return self.svn.get(e[5] if is_home(self.path) and e[5] else e[0])   # 0.9.135 빌드 3 홈: 전체 경로로 (즐겨찾기 바·탐색 창과 같은 4Dir SVN 표시)
 
-    def set_entries(self, path, entries):
+    def _merged(self, entries):
+        """0.9.139 이슈 11 '자동 재정렬 끔': 있던 항목은 그 자리(내용만 새것), 없어진 것은 빠지고, 새 항목은 맨 아래 (새로 읽은 순서)"""
+        key = lambda e: os.path.normcase(e[5] or os.path.join(self.path, e[0]))
+        new = {key(e): e for e in entries}
+        out, used = [], set()
+        for e in self.all:
+            if is_group(e):
+                continue
+            k = key(e)
+            if k not in new and k in RENAMES and RENAMES[k][0] in new:   # 4Dir 에서 이름 바꾼 것 → 그 자리
+                k = RENAMES[k][0]
+            if k in new and k not in used:
+                out.append(new[k])
+                used.add(k)
+        added = [e for e in entries if key(e) not in used]
+        log.info("순서 유지 합치기 %s 그대로 %d 빠짐 %d 새로 %d", self.path, len(out), len(self.all) - len(out), len(added))
+        return out + added
+
+    def set_entries(self, path, entries, keep_order=False):
+        keep_order = keep_order and path == self.path and bool(self.all)
+        merged = self._merged(entries) if keep_order else None   # self.all 이 바뀌기 전에 (있던 순서 기준)
         self.beginResetModel()
         self.cmp = {}   # 두 칸 비교 표시는 목록이 바뀌면 지움 (복사 뒤 등)
         if path != self.path:
@@ -1676,7 +1723,11 @@ class DirModel(QtCore.QAbstractTableModel):
         # 폴더 표지는 폴더 안을 훑고 첫 그림을 읽으므로 네트워크·클라우드(받기 일어남)·휴대폰·검색 결과는 제외
         self.covers_ok = bool(path and path != THIS_PC and not is_search(path) and not devices.is_dev(path) and not archives.is_arc(path)
                               and self.cloud is None and not foldersize.is_remote(path))
-        self._sort()
+        if keep_order:   # 0.9.139 이슈 11: 다시 정렬 안 함 (F5·머리글 누르면 정렬)
+            self.all = merged
+            self.rows = self._grouped(self._filtered(self.all))
+        else:
+            self._sort()
         self.endResetModel()
 
     def rowCount(self, parent=QtCore.QModelIndex()):
@@ -1873,6 +1924,7 @@ class DirModel(QtCore.QAbstractTableModel):
             self.rename_failed.emit(src)   # 0.9.136 사용자 11/12: 다른 파일 눌러 끝냈어도 실패하면 그 파일로 돌아감
             return False
         log.info("이름변경 %s -> %s", src, new)
+        own_changed([os.path.dirname(src)], "rename", [(src, dst)])   # 0.9.139 같은 폴더를 보는 다른 칸도
         push_undo("rename", (dst, src), T('이름 바꾸기 ({0} → {1})').format(os.path.basename(src), new))
         e[0] = new
         if e[5]:
@@ -3404,6 +3456,7 @@ class Page(QtWidgets.QWidget):
         self.stack.addWidget(self.icons)
 
         self.model_.renamed.connect(lambda a, b: self.reload(reason="rename"))
+        OWN_SIG.changed.connect(self._on_own_changed)   # 0.9.139 이슈 11
         self.model_.rename_failed.connect(lambda p: QtCore.QTimer.singleShot(0, lambda: self._focus_failed(p)))   # 누른 다른 파일 선택이 끝난 뒤
         self.sel.selectionChanged.connect(lambda *_: self._emit_status())
         self.sel.selectionChanged.connect(self._unmark)   # 0.9.138 빌드 4: 선택이 풀린 줄은 ▶ 표시도 뗌
@@ -3741,6 +3794,7 @@ class Page(QtWidgets.QWidget):
         if self.keep_sel is None and self.model_.path == self.path:
             self.keep_sel = self._sel_snapshot()
         self.gen += 1
+        self.scan_reason = reason   # 0.9.139 다시 정렬할지 판단 (KEEP_ORDER_REASONS)
         self.scan_count += 1
         if self._fsize_job is not None:   # 폴더 크기 재던 것 중단 (다 읽으면 다시)
             self._fsize_job.cancel()
@@ -3824,7 +3878,11 @@ class Page(QtWidgets.QWidget):
         if is_search(path) and parse_search(path)[1]:
             self.model_.sort(self.model_.sort_col, self.model_.sort_order)   # 폴더 아래 찾기: 다 모은 뒤 정렬
         else:
-            self.model_.set_entries(path, entries)
+            no_sort = (not SETTINGS["auto_resort"] and getattr(self, "scan_reason", "") in KEEP_ORDER_REASONS
+                       and self.model_.path == path and path != THIS_PC and not is_search(path) and not is_home(path))
+            if no_sort:
+                log.info("다시 정렬 안 함(설정) reason=%s", self.scan_reason)
+            self.model_.set_entries(path, entries, keep_order=no_sort)
             if is_home(path):
                 self._home_svn_start()
             self.apply_columns()   # 상태 열: 동기화 폴더에서만 (v0.9.94)
@@ -4030,10 +4088,21 @@ class Page(QtWidgets.QWidget):
                 m.note_drive(new)   # v0.9.96 꺼내기 전에 감시를 풀 수 있게
         log.debug("감시 %s -> %s", old, new)
 
+    def _on_own_changed(self, dirs, why):
+        """0.9.139 이슈 11: 4Dir 자체 작업 → 보고 있는 폴더면 다시 읽음 (외부 변경 반영 설정과 상관없이)"""
+        try:
+            if not self.path or self.path == THIS_PC or is_search(self.path):
+                return
+            if os.path.normcase(os.path.normpath(self.path)) in dirs:
+                log.info("자체 작업(%s) 반영 → 다시 읽기 %s", why, self.path)
+                self.watch_timer.start()
+        except RuntimeError:   # 칸이 닫힘
+            pass
+
     def _on_dir_changed(self, p):
         log.debug("변경감지 %s", p)
-        if not SETTINGS["auto_refresh"]:   # 0.9.137 빌드 2: 자동 새로고침 끔 → F5 로만 (정렬 순서가 바뀌지 않게)
-            log.debug("자동 새로고침 꺼짐 — 다시 읽지 않음 %s", p)
+        if not SETTINGS["auto_refresh"]:   # 0.9.137 빌드 2 → 0.9.139: 다른 프로그램 변경 반영 끔 (4Dir 작업은 OWN_SIG 로 반영)
+            log.debug("외부 변경 반영 꺼짐 — 다시 읽지 않음 %s", p)
             return
         if not self.watch_timer.isActive():
             self.watch_timer.start()
@@ -4364,6 +4433,7 @@ class Page(QtWidgets.QWidget):
                 permanent, silent = ch == "perm", True   # 여기서 물었으니 윈도우 확인 창은 안 띄움
             def done(res, aborted, ps=ps):   # 작업 스레드에서 불림
                 gone = [p for p in ps if not os.path.exists(p)]
+                own_changed([os.path.dirname(os.path.normpath(p)) for p in ps], "delete")   # 0.9.139 이슈 11
                 if gone and not permanent:   # 휴지통으로 간 것 → Ctrl+Z 로 복원 (탐색기와 같게, 10/6 사용자 요청)
                     push_undo("delete", gone, T('삭제 {0}개 ({1})').format(len(gone), os.path.basename(gone[0])))
             shellops.delete(self.hwnd(), ps, permanent, done=done, silent=silent)
@@ -4421,7 +4491,8 @@ class Page(QtWidgets.QWidget):
         src_by_name = {os.path.basename(os.path.normpath(s)).lower(): os.path.normpath(s) for s in srcs}
         has_dir = any(os.path.isdir(x) for x in srcs)
 
-        def done(res, aborted):   # 작업 스레드에서 불림 — 기록만
+        def done(res, aborted):   # 작업 스레드에서 불림 — 기록 + 0.9.139 보는 칸 반영
+            own_changed([tgt] + ([os.path.dirname(os.path.normpath(x)) for x in srcs] if move else []), "move" if move else "copy")
             if has_dir:   # 폴더가 움직임 → 탐색 창 트리도 고침
                 TREE_SIG.changed.emit([tgt] + ([os.path.dirname(os.path.normpath(x)) for x in srcs] if move else []))
             if before is None or res != 0:
@@ -4508,6 +4579,7 @@ class Page(QtWidgets.QWidget):
             return
         log.info("새 폴더 %s", os.path.join(self.path, name))
         push_undo("newfolder", os.path.join(self.path, name), T('새 폴더 ({0})').format(name))
+        own_changed([self.path], "newfolder")   # 0.9.139 같은 폴더를 보는 다른 칸도
         self.pending_edit = name
         self.reload(reason="newfolder")
 
@@ -4534,6 +4606,7 @@ class Page(QtWidgets.QWidget):
             self.status.emit(f"⚠ {ex}")
             return
         push_undo("newfile", (p, os.path.getsize(p)), T("새 파일 ({0})").format(os.path.basename(p)))
+        own_changed([os.path.dirname(p)], "newfile")   # 0.9.139
         self.pending_edit = os.path.basename(p)
         self.reload(reason="newfile")
 
@@ -8776,7 +8849,8 @@ SET_TOGGLES = [("hide_single_tab", T("탭이 하나면 탭 줄 숨기기 (새 �
                ("folder_size", T("폴더 크기 계산 (크기 칸 — 네트워크 드라이브 제외)")), ("keep_favbar", T("메뉴줄을 접어도 즐겨찾기 줄은 보이기")),
                ("show_favbar", T("즐겨찾기 줄 보이기")),
                ("folder_view_memory", T("폴더마다 보기 기억")),
-               ("auto_refresh", T("자동 새로고침 (폴더가 바뀌면 목록에 바로 반영 — 끄면 F5 로만 새로 읽음)")),
+               ("auto_refresh", T("탐색기 등 다른 프로그램에서 바뀐 것도 보이기")),
+               ("auto_resort", T("바뀌면 다시 정렬 (윈도우 기본, 끄면 새 파일은 맨 아래, F5 로 정렬)")),   # 0.9.139 이슈 11
                ("delete_confirm", T("삭제할 때 휴지통으로 버릴지 영구 삭제할지 묻기"))]   # 0.9.138 빌드 4   # 0.9.137 빌드 2   # 0.9.116 빌드 2 (사용자 게시판: 안 쓰면 줄째 숨기기)
 THEMES = [("system", T("시스템 설정 따름")), ("light", T("밝게 (Light)")), ("dark", T("어둡게 (Dark)"))]
 
@@ -9886,7 +9960,13 @@ class SettingsDialog(QtWidgets.QDialog):
         self._sub(lay, T("동작"))
         self._set(lay, "folder_size", T("폴더 크기 계산 (크기 칸 — 네트워크 드라이브 제외)"))
         self._set(lay, "empty_click_up", T("빈 곳을 더블클릭하면 상위 폴더로"))
-        self._set(lay, "auto_refresh", T("자동 새로고침 (폴더가 바뀌면 목록에 바로 반영 — 끄면 F5 로만 새로 읽음)"))   # 0.9.137 빌드 2 받은 의견
+        rf = QtWidgets.QLabel(T("목록 새로 고침 — 4Dir 에서 한 복사·삭제·이름 바꾸기는 언제나 바로 보입니다"))   # 0.9.139 빌드 2 사용자: 두 설정을 묶고 설명은 위에 한 줄
+        rf.setWordWrap(True)
+        lay.addSpacing(4)
+        lay.addWidget(rf)
+        self._set(lay, "auto_refresh", "  " + T("탐색기 등 다른 프로그램에서 바뀐 것도 보이기"))   # 0.9.137 빌드 2 받은 의견 · 0.9.139 이슈 11
+        self._set(lay, "auto_resort", "  " + T("바뀌면 다시 정렬 (윈도우 기본, 끄면 새 파일은 맨 아래, F5 로 정렬)"))   # 0.9.139 이슈 11
+        lay.addSpacing(4)
         self._set(lay, "delete_confirm", T("삭제할 때 휴지통으로 버릴지 영구 삭제할지 묻기"))   # 0.9.138 빌드 4 받은 의견
         self._set(lay, "arc_browse", T("압축 파일(ZIP·7Z·RAR…)을 두 번 누르면 4Dir 안에서 폴더처럼 열기"))   # 빌드 20
         # 0.9.134 (사용자 11/12): 4Dir 에서 열면 실행이 붙잡히는 파일 → 탐색기에게 넘겨 열 확장자 더하기 (빌드 없이)
@@ -12434,7 +12514,8 @@ class Main(QtWidgets.QMainWindow):
         for key, lbl in (("hide_single_tab", T("탭이 하나면 탭 줄 숨기기 (새 탭: Ctrl+T)")),
                          ("tab_multirow", T("탭이 넘치면 여러 줄로")),
                          ("empty_click_up", T("빈 곳을 더블클릭하면 상위 폴더로")),
-                         ("auto_refresh", T("자동 새로고침 (폴더가 바뀌면 목록에 바로 반영 — 끄면 F5 로만 새로 읽음)")),
+                         ("auto_refresh", T("탐색기 등 다른 프로그램에서 바뀐 것도 보이기")),
+                         ("auto_resort", T("바뀌면 다시 정렬 (윈도우 기본, 끄면 새 파일은 맨 아래, F5 로 정렬)")),
                          ("delete_confirm", T("삭제할 때 휴지통으로 버릴지 영구 삭제할지 묻기")),
                          ("arc_browse", T("압축 파일(ZIP·7Z·RAR…)을 두 번 누르면 4Dir 안에서 폴더처럼 열기")),
                          ("folder_size", T("폴더 크기 계산 (크기 칸 — 네트워크 드라이브 제외)")),
@@ -12835,6 +12916,7 @@ class Main(QtWidgets.QMainWindow):
 
         def done(pairs):
             push_undo("batch", pairs, T('이름 일괄 변경 {0}개').format(len(pairs)))
+            own_changed([], "batch-rename", [(old, new) for new, old in pairs])   # 0.9.139 순서 유지 때 제자리
             for p in self.all_panes():
                 v = p.view()
                 if v is not None and v.active and v.path != THIS_PC:

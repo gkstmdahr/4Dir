@@ -2387,5 +2387,15 @@
  "지금 줄을 ▶ 표시해 고르고 다음 줄로 내려갑니다 (다시 누르면 풀림)": "Selecteert de huidige rij met ▶ en gaat omlaag (nogmaals drukken om te wissen)",
  "삭제할 때 휴지통으로 버릴지 영구 삭제할지 묻기": "Vragen: naar prullenbak of definitief verwijderen",
  "{0}개 항목을 어떻게 지울까요?": "Hoe wilt u {0} item(s) verwijderen?",
- "고른 파일만 남기고 나머지를 숨깁니다 (다시 누르거나 다른 폴더로 가면 모두 보임)": "Toont alleen de geselecteerde bestanden en verbergt de rest (nogmaals drukken of andere map openen = alles)"
+ "고른 파일만 남기고 나머지를 숨깁니다 (다시 누르거나 다른 폴더로 가면 모두 보임)": "Toont alleen de geselecteerde bestanden en verbergt de rest (nogmaals drukken of andere map openen = alles)",
+ "다른 프로그램에서 바뀐 것도 바로 반영 (끄면 4Dir 에서 한 작업만 반영)": "Wijzigingen door andere programma's meteen tonen (uit: alleen bewerkingen van 4Dir)",
+ "파일이 바뀌면 다시 정렬 (끄면 있던 순서 그대로, 새 항목은 맨 아래 — F5 로 정렬)": "Opnieuw sorteren als bestanden wijzigen (uit: volgorde blijft, nieuwe items onderaan — F5 sorteert)",
+ "끄면 다른 프로그램에서 파일이 바뀌어도 목록이 그대로입니다 (4Dir 에서 한 복사·삭제 등은 반영, F5 로 새로 읽기)": "Uit: de lijst blijft gelijk als andere programma's bestanden wijzigen (kopiëren, verwijderen enz. in 4Dir wordt wel getoond; F5 laadt opnieuw)",
+ "끄면 파일이 바뀌어도 있던 순서를 지키고 새 항목은 맨 아래에 붙입니다 (F5·열 머리글로 다시 정렬)": "Uit: bij wijzigingen blijft de volgorde en komen nieuwe items onderaan (F5 of een kolomkop sorteert opnieuw)",
+ "목록 새로 고침 — 4Dir 에서 한 복사·삭제·이름 바꾸기는 언제나 바로 보입니다": "Lijst vernieuwen — kopiëren, verwijderen en hernoemen in 4Dir is altijd meteen zichtbaar",
+ "탐색기 등 다른 프로그램에서 바뀐 것도 보이기": "Ook wijzigingen uit Verkenner en andere programma's tonen",
+ "바뀌면 다시 정렬 (끄면 새 파일은 맨 아래, F5 로 정렬)": "Opnieuw sorteren bij wijziging (uit: nieuwe bestanden onderaan; F5 sorteert)",
+ "탐색기 등 다른 프로그램이 파일을 바꿔도 목록에 바로 보입니다 (4Dir 에서 한 작업은 언제나 보임)": "Wijzigingen uit Verkenner en andere programma's verschijnen meteen in de lijst (bewerkingen van 4Dir altijd)",
+ "끄면 목록 순서를 그대로 두고 새 파일은 맨 아래에 붙입니다 (F5 로 정렬)": "Uit: de lijst houdt de volgorde, nieuwe bestanden komen onderaan (F5 sorteert)",
+ "바뀌면 다시 정렬 (윈도우 기본, 끄면 새 파일은 맨 아래, F5 로 정렬)": "Opnieuw sorteren bij wijziging (Windows-standaard, uit: nieuwe bestanden onderaan; F5 sorteert)"
 }

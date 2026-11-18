@@ -2387,5 +2387,15 @@
  "지금 줄을 ▶ 표시해 고르고 다음 줄로 내려갑니다 (다시 누르면 풀림)": "Seleziona la riga corrente con ▶ e passa alla successiva (premi di nuovo per togliere)",
  "삭제할 때 휴지통으로 버릴지 영구 삭제할지 묻기": "Chiedi se spostare nel cestino o eliminare definitivamente",
  "{0}개 항목을 어떻게 지울까요?": "Come eliminare {0} elemento/i?",
- "고른 파일만 남기고 나머지를 숨깁니다 (다시 누르거나 다른 폴더로 가면 모두 보임)": "Mostra solo i file selezionati e nasconde il resto (premi di nuovo o cambia cartella per mostrare tutto)"
+ "고른 파일만 남기고 나머지를 숨깁니다 (다시 누르거나 다른 폴더로 가면 모두 보임)": "Mostra solo i file selezionati e nasconde il resto (premi di nuovo o cambia cartella per mostrare tutto)",
+ "다른 프로그램에서 바뀐 것도 바로 반영 (끄면 4Dir 에서 한 작업만 반영)": "Mostra subito le modifiche fatte da altri programmi (se disattivato: solo le operazioni di 4Dir)",
+ "파일이 바뀌면 다시 정렬 (끄면 있던 순서 그대로, 새 항목은 맨 아래 — F5 로 정렬)": "Riordina quando i file cambiano (se disattivato: l'ordine resta, i nuovi elementi in fondo — F5 ordina)",
+ "끄면 다른 프로그램에서 파일이 바뀌어도 목록이 그대로입니다 (4Dir 에서 한 복사·삭제 등은 반영, F5 로 새로 읽기)": "Se disattivato, l'elenco resta uguale anche se altri programmi cambiano i file (copie, eliminazioni ecc. fatte in 4Dir vengono mostrate; F5 ricarica)",
+ "끄면 파일이 바뀌어도 있던 순서를 지키고 새 항목은 맨 아래에 붙입니다 (F5·열 머리글로 다시 정렬)": "Se disattivato, l'ordine resta quando i file cambiano e i nuovi elementi vanno in fondo (F5 o un'intestazione di colonna riordina)",
+ "목록 새로 고침 — 4Dir 에서 한 복사·삭제·이름 바꾸기는 언제나 바로 보입니다": "Aggiornamento elenco — copie, eliminazioni e rinomine fatte in 4Dir compaiono sempre subito",
+ "탐색기 등 다른 프로그램에서 바뀐 것도 보이기": "Mostra anche le modifiche fatte in Esplora file e in altri programmi",
+ "바뀌면 다시 정렬 (끄면 새 파일은 맨 아래, F5 로 정렬)": "Riordina quando cambia (se disattivato: i file nuovi in fondo; F5 ordina)",
+ "탐색기 등 다른 프로그램이 파일을 바꿔도 목록에 바로 보입니다 (4Dir 에서 한 작업은 언제나 보임)": "Le modifiche di Esplora file e altri programmi compaiono subito nell'elenco (le operazioni di 4Dir sempre)",
+ "끄면 목록 순서를 그대로 두고 새 파일은 맨 아래에 붙입니다 (F5 로 정렬)": "Se disattivato, l'elenco mantiene l'ordine e i file nuovi vanno in fondo (F5 ordina)",
+ "바뀌면 다시 정렬 (윈도우 기본, 끄면 새 파일은 맨 아래, F5 로 정렬)": "Riordina quando cambia (predefinito di Windows, se disattivato: i file nuovi in fondo; F5 ordina)"
 }
