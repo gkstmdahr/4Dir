@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 사이트 문구 (SITE_TEXT_VER 1.5.1 — 1.5.1 소개·기능 칸 앱 언어 10→16 · 1.5.0 앱만 지원하는 언어 한 줄 안내(맨 아래 APP_ONLY) · 1.4.0 1.4.0 Microsoft Store 받기 버튼 문구(맨 아래 STORE) · 실행 안내 4Dir.exe(막히면 vbs) · FAQ 회사 사용(맨 아래 _BIZ) · 메인 fast 줄 + FAQ 속도 근거, 맨 아래 _FAST) — make_site.py 가 읽음.
+"""4Dir 사이트 문구 (SITE_TEXT_VER 1.6.0 — 1.6.0 백신 오탐 안내(맨 아래 FP) · 1.5.1 — 1.5.1 소개·기능 칸 앱 언어 10→16 · 1.5.0 앱만 지원하는 언어 한 줄 안내(맨 아래 APP_ONLY) · 1.4.0 1.4.0 Microsoft Store 받기 버튼 문구(맨 아래 STORE) · 실행 안내 4Dir.exe(막히면 vbs) · FAQ 회사 사용(맨 아래 _BIZ) · 메인 fast 줄 + FAQ 속도 근거, 맨 아래 _FAST) — make_site.py 가 읽음.
 키: 언어 폴더 이름(en 은 사이트 맨 위). {ver} {size} {date} 는 make_site 가 채움."""
 
 LANGS = ["en", "ko", "zh-CN", "zh-TW", "ja", "es", "de", "fr", "pt-BR", "ru"]
@@ -423,3 +423,19 @@ APP_ONLY = {
     "uk": ("uk", "4Dir доступний українською: відкривається українською, якщо Windows українською, інакше {path}. Цей сайт англійською."),
     "id": ("id", "4Dir tersedia dalam Bahasa Indonesia: terbuka dalam Bahasa Indonesia jika Windows berbahasa Indonesia, jika tidak {path}. Situs ini berbahasa Inggris."),
 }
+
+
+# 1.6.0 (사용자 11/18 '사이트에 오탐이라고 공지'): 4Dir.exe(18KB 실행기) 백신 오탐 안내 — {src} = 실행기 소스 링크
+FP = {
+    "en": "Some antivirus programs (Microsoft Defender, HP Wolf Security, etc.) wrongly flag 4Dir.exe in the zip as malware. It is a false positive: 4Dir.exe is an 18 KB launcher that only starts the app ({src}), and it has been reported to the vendors. If it is blocked, use the Store version.",
+    "ko": "일부 백신(Microsoft Defender, HP Wolf Security 등)이 zip 안의 4Dir.exe 를 악성코드로 잘못 잡습니다. 오탐입니다 — 4Dir.exe 는 앱을 띄우기만 하는 18KB 실행기이며({src}) 백신 회사에 신고했습니다. 막히면 스토어판을 쓰세요.",
+    "zh-CN": "部分杀毒软件（Microsoft Defender、HP Wolf Security 等）会把 zip 中的 4Dir.exe 误报为恶意软件。这是误报：4Dir.exe 只是用来启动程序的 18 KB 启动器（{src}），已向厂商报告。如被拦截，请使用商店版。",
+    "zh-TW": "部分防毒軟體（Microsoft Defender、HP Wolf Security 等）會把 zip 中的 4Dir.exe 誤判為惡意軟體。這是誤判：4Dir.exe 只是用來啟動程式的 18 KB 啟動器（{src}），已向廠商回報。如被封鎖，請使用市集版。",
+    "ja": "一部のウイルス対策ソフト（Microsoft Defender、HP Wolf Security など）が zip 内の 4Dir.exe をマルウェアと誤検出します。これは誤検出です — 4Dir.exe はアプリを起動するだけの 18 KB のランチャーで（{src}）、各社に報告済みです。ブロックされる場合はストア版をご利用ください。",
+    "es": "Algunos antivirus (Microsoft Defender, HP Wolf Security, etc.) marcan por error 4Dir.exe del zip como malware. Es un falso positivo: 4Dir.exe es un lanzador de 18 KB que solo inicia la app ({src}) y ya se ha notificado a los fabricantes. Si se bloquea, usa la versión de la Store.",
+    "de": "Einige Virenscanner (Microsoft Defender, HP Wolf Security usw.) melden 4Dir.exe aus der ZIP-Datei fälschlich als Schadsoftware. Das ist ein Fehlalarm: 4Dir.exe ist ein 18-KB-Starter, der nur die App startet ({src}), und wurde den Herstellern gemeldet. Wird er blockiert, nehmen Sie die Store-Version.",
+    "fr": "Certains antivirus (Microsoft Defender, HP Wolf Security, etc.) signalent à tort 4Dir.exe du zip comme malveillant. C'est un faux positif : 4Dir.exe est un lanceur de 18 Ko qui ne fait que démarrer l'app ({src}), et il a été signalé aux éditeurs. S'il est bloqué, utilisez la version du Store.",
+    "pt-BR": "Alguns antivírus (Microsoft Defender, HP Wolf Security etc.) marcam por engano o 4Dir.exe do zip como malware. É um falso positivo: o 4Dir.exe é um iniciador de 18 KB que só abre o app ({src}) e já foi reportado aos fabricantes. Se for bloqueado, use a versão da Store.",
+    "ru": "Некоторые антивирусы (Microsoft Defender, HP Wolf Security и др.) ошибочно считают 4Dir.exe из zip вредоносным. Это ложное срабатывание: 4Dir.exe — 18-КБ загрузчик, который только запускает приложение ({src}); производителям уже сообщено. Если он заблокирован, используйте версию из Store.",
+}
+FP_SRC = {"en": "source", "ko": "소스", "zh-CN": "源代码", "zh-TW": "原始碼", "ja": "ソース", "es": "código", "de": "Quellcode", "fr": "code source", "pt-BR": "código", "ru": "исходный код"}
