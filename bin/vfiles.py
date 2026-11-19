@@ -17,7 +17,8 @@ import olehook
 
 log = logging.getLogger("QE")
 
-VFILES_VER = "1.3.0"   # 1.3.0 (0.9.138): 붙여넣기도 — save(obj=클립보드 IDataObject)
+VFILES_VER = "1.3.1"   # 1.3.1 (0.9.140): 같은 이름 반복은 한 번만 받기 (TortoiseSVN)
+# VFILES 1.3.0   # 1.3.0 (0.9.138): 붙여넣기도 — save(obj=클립보드 IDataObject)
 FMT_FGD = 'application/x-qt-windows-mime;value="FileGroupDescriptorW"'
 FMT_FC = 'application/x-qt-windows-mime;value="FileContents"'
 _FD_SIZE = 592   # FILEDESCRIPTORW 한 개 바이트 수
@@ -124,12 +125,17 @@ def _save_direct(obj, items, folder, hints=None):
     1.2.0: hints(원래 이름) 있으면 그 이름으로
     1.2.1: 원본 크기와 다르면(웹 아웃룩 첨부 = 원본 대신 미리보기 png) 저장 안 함 → 'preview' (사용자 11/3: 헷갈리니 막아)"""
     tops, made, skipped, out, preview = {}, [], [], [], []
+    seen = set()
     for i, (nm, size, isdir) in enumerate(items):
         parts = [p for p in nm.split(chr(92)) if p]
         if not parts:
             continue
+        if nm.lower() in seen:   # 1.3.1: TortoiseSVN 은 같은 파일을 여러 번 넘김 → 한 번만 받음 (51MB 를 3번 받던 것)
+            log.info("가상 파일 같은 이름 다시 옴 [%d] %s → 건너뜀", i, nm)
+            continue
+        seen.add(nm.lower())
         data = None if isdir else olehook.get_bytes(obj, "FileContents", i)
-        if data and size is not None and len(data) > size:
+        if data and size and len(data) > size:   # 1.3.1: 크기 0 = 모름 (TortoiseSVN 은 일부러 0 을 적음, 탐색기도 전부 받음) → 자르지 않음
             data = data[:size]   # 한 덩어리(HGLOBAL)는 실제보다 크게 잡혀 올 수 있음
         if not isdir:
             log.info("가상 파일 내용 [%d] %s : 받은 %s바이트, 이름표 크기 %s", i, nm, None if data is None else len(data), size)

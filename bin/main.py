@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.139"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 3             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.140"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 2             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -2826,6 +2826,8 @@ class ViewMixin(DragScrollMixin):
     def dragEnterEvent(self, ev):
         md = ev.mimeData()
         if (md.hasUrls() or vfiles.has_virtual(md)) and self.page.path != THIS_PC and not is_search(self.page.path):   # v0.9.75 아웃룩 첨부 등 가상 파일
+            if vfiles.has_virtual(md):   # 0.9.140 진단: TortoiseSVN 끌기 처음에 X 표시 (사용자 11/19)
+                log.info("끌기 들어옴(가상 파일) 제안=%s 형식 %d개", ev.proposedAction(), len(md.formats()))
             ev.acceptProposedAction()
         else:
             if not md.hasUrls():

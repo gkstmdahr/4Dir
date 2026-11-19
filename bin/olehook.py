@@ -13,10 +13,12 @@
 import ctypes
 import ctypes.wintypes as W
 import logging
+import time
 
 log = logging.getLogger("QE")
 
-OLEHOOK_VER = "1.1.0"
+OLEHOOK_VER = "1.1.2"   # 1.1.2 (0.9.140 b2): 끌기 진단 — 들어옴·커서 표시 바뀜 시각 로그 (TortoiseSVN 처음 X 표시)
+# 1.1.1 — 1.1.1 (0.9.140): 스트림 읽기 전 처음으로 (TortoiseSVN 끌기 0바이트)
 _u = ctypes.windll.user32
 _u.GetPropW.restype = ctypes.c_void_p
 _u.GetPropW.argtypes = [W.HWND, W.LPCWSTR]
@@ -38,6 +40,15 @@ _IID_DROPTARGET = b"\x22\x01\x00\x00\x00\x00\x00\x00\xc0\x00\x00\x00\x00\x00\x00
 _HOOKS = {}       # hwnd → (우리 입구 주소, _Target)  — 창이 다시 만들어지면 새로 끼움
 _KEEP = []        # 만든 입구는 프로그램 끝까지 붙잡음 (OLE 가 아직 쥐고 있을 수 있음)
 _CUR = {"ptr": None}   # 지금 끌고 있는 IDataObject 주소 (끌기 중에만)
+
+
+_EFF = {0: "X 안 됨", 1: "복사", 2: "이동", 4: "바로 가기"}
+
+
+def _pt(v):
+    """POINTL(64비트로 받은 것) → (x, y)"""
+    x, y = v & 0xFFFFFFFF, v >> 32
+    return (x - (1 << 32) if x >> 31 else x, y - (1 << 32) if y >> 31 else y)
 
 
 def _vt(p):
@@ -80,10 +91,24 @@ class _Target:
 
     def enter(self, this, obj, keys, pt, eff):
         _CUR["ptr"] = obj
-        return self.o_enter(self.orig, obj, keys, pt, eff)
+        t0 = time.perf_counter()
+        want = eff[0] if eff else None
+        hr = self.o_enter(self.orig, obj, keys, pt, eff)
+        self.last_eff = eff[0] if eff else None
+        self.n_over = 0
+        log.info("끌기 진단 창에 들어옴 위치=%s 원함=%s → 표시=%s (%s) %.0fms", _pt(pt), want, self.last_eff, _EFF.get(self.last_eff, "?"), (time.perf_counter() - t0) * 1000)
+        return hr
 
     def over(self, this, keys, pt, eff):
-        return self.o_over(self.orig, keys, pt, eff)
+        t0 = time.perf_counter()
+        hr = self.o_over(self.orig, keys, pt, eff)
+        e = eff[0] if eff else None
+        self.n_over = getattr(self, "n_over", 0) + 1
+        ms = (time.perf_counter() - t0) * 1000
+        if e != getattr(self, "last_eff", None) or ms > 100:   # 표시가 바뀔 때·느릴 때만 (로그 넘침 방지)
+            log.info("끌기 진단 움직임 %d번째 위치=%s 표시 %s → %s (%s) %.0fms", self.n_over, _pt(pt), getattr(self, "last_eff", None), e, _EFF.get(e, "?"), ms)
+            self.last_eff = e
+        return hr
 
     def leave(self, this):
         _CUR["ptr"] = None
@@ -150,6 +175,10 @@ def get_bytes(obj, fmt_name, lindex=-1):
             continue
         if med.tymed == pythoncom.TYMED_ISTREAM:
             st, parts = med.data, []
+            try:   # 1.1.1 (0.9.140): TortoiseSVN 저장소 브라우저는 읽는 자리를 끝으로 옮겨서 줌 → 처음으로 (탐색기와 같음, 안 하면 0바이트)
+                st.Seek(0, 0)
+            except Exception as ex:
+                log.debug("스트림 처음으로 못 감 %s", ex)
             while True:
                 b = st.Read(1 << 20)
                 if not b:
