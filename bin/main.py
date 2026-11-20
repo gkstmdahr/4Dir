@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.142"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 3             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.143"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 1             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -2106,10 +2106,29 @@ class DirModel(QtCore.QAbstractTableModel):
         return True
 
     def sort(self, col, order=Qt.AscendingOrder):
+        """0.9.143 이슈 #12: 순서를 바꾼 뒤 '옛 줄 → 새 줄'을 Qt 에 알려 줌(changePersistentIndexList)
+        → 현재 파일·여러 개 선택·Shift 기준점이 줄 번호가 아니라 파일을 따라감. 열 머리글·정렬 메뉴·자동 다시 정렬
+        (크기순 폴더 크기 다 잼, 셸 속성 읽음, 묶기 설정) 모두 이 한 곳을 지남. 열쇠 = 전체 경로(검색 결과는 다른 폴더 같은 이름이 섞임)"""
         self.sort_col, self.sort_order = col, order
         self.layoutAboutToBeChanged.emit()
+        old = self.persistentIndexList()
+        keys = [(self._row_key(i.row()), i.column()) for i in old]
         self._sort()
+        pos = {}
+        for r in range(len(self.rows)):
+            pos.setdefault(self._row_key(r), r)
+        new = [self.index(pos[k], c) if k is not None and k in pos else QtCore.QModelIndex() for k, c in keys]
+        self.changePersistentIndexList(old, new)
         self.layoutChanged.emit()
+
+    def _row_key(self, r):
+        """줄 → 그 항목 열쇠 (정렬 전후 짝짓기). 묶음 제목 줄은 제목 글자, 범위 밖은 None"""
+        if r < 0 or r >= len(self.rows):
+            return None
+        e = self.rows[r]
+        if e[0][:1] == GROUP_MARK:
+            return ("group", e[7])
+        return os.path.normcase(self.full(e))
 
     def _sort(self):
         self.all = self._sorted(self.all)
@@ -3733,6 +3752,21 @@ class Page(QtWidgets.QWidget):
 
     def _vm_sorted(self, *_a):
         """정렬이 바뀜(머리글 누름·메뉴) → 이 폴더 정렬 기억 (복원·기억 적용 중엔 안 함)"""
+        if getattr(self, "_vm_quiet", False):
+            return
+        QtCore.QTimer.singleShot(0, self, self._scroll_current)   # 0.9.143 이슈 #12: 사용자가 정렬을 바꾸면 현재 파일이 보이게
+        self._vm_remember_sort()
+
+    def _scroll_current(self):
+        try:
+            v = self.view()
+            i = v.currentIndex()
+            if i.isValid():
+                v.scrollTo(i)
+        except RuntimeError:
+            pass
+
+    def _vm_remember_sort(self):
         if getattr(self, "_vm_quiet", False):
             return
         if not self._vm_ok():
