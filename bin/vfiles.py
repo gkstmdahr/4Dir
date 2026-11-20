@@ -17,7 +17,8 @@ import olehook
 
 log = logging.getLogger("QE")
 
-VFILES_VER = "1.3.1"   # 1.3.1 (0.9.140): 같은 이름 반복은 한 번만 받기 (TortoiseSVN)
+VFILES_VER = "1.4.0"   # 1.4.0 (0.9.141): 비동기 받기용 — prepare(이름 먼저) + fetch(뒤 스레드, 진행 알림)
+# 1.3.1 — 1.3.1 (0.9.140): 같은 이름 반복은 한 번만 받기 (TortoiseSVN)
 # VFILES 1.3.0   # 1.3.0 (0.9.138): 붙여넣기도 — save(obj=클립보드 IDataObject)
 FMT_FGD = 'application/x-qt-windows-mime;value="FileGroupDescriptorW"'
 FMT_FC = 'application/x-qt-windows-mime;value="FileContents"'
@@ -120,12 +121,14 @@ def _named(nm, data):
     return nm
 
 
-def _save_direct(obj, items, folder, hints=None):
+def _save_direct(obj, items, folder, hints=None, progress=None):
     """1.1.0: 원래 데이터(IDataObject)에서 lindex 0,1,2… 로 하나씩 받기 (탐색기와 같은 방식) — 여러 개·폴더째·스트림 다 됨
     1.2.0: hints(원래 이름) 있으면 그 이름으로
     1.2.1: 원본 크기와 다르면(웹 아웃룩 첨부 = 원본 대신 미리보기 png) 저장 안 함 → 'preview' (사용자 11/3: 헷갈리니 막아)"""
     tops, made, skipped, out, preview = {}, [], [], [], []
     seen = set()
+    total = len({nm.lower() for nm, _s, d in items if not d})   # 진행 n/전체 — 같은 이름 반복은 한 번으로
+    k = 0
     for i, (nm, size, isdir) in enumerate(items):
         parts = [p for p in nm.split(chr(92)) if p]
         if not parts:
@@ -134,6 +137,9 @@ def _save_direct(obj, items, folder, hints=None):
             log.info("가상 파일 같은 이름 다시 옴 [%d] %s → 건너뜀", i, nm)
             continue
         seen.add(nm.lower())
+        if progress and not isdir:
+            k += 1
+            progress(k, total, parts[-1])
         data = None if isdir else olehook.get_bytes(obj, "FileContents", i)
         if data and size and len(data) > size:   # 1.3.1: 크기 0 = 모름 (TortoiseSVN 은 일부러 0 을 적음, 탐색기도 전부 받음) → 자르지 않음
             data = data[:size]   # 한 덩어리(HGLOBAL)는 실제보다 크게 잡혀 올 수 있음
@@ -203,19 +209,38 @@ def _log_extra(md):
         log.exception("가상 파일 진단 로그 실패")
 
 
+def prepare(md, folder, obj):
+    """1.4.0: 이름표·원래 이름만 먼저 읽음 (메인 스레드, 끌어 놓는 그 순간 — 놓고 나면 md 는 못 씀) → (items, hints)"""
+    items = names(md)
+    log.info("가상 파일 끌어 놓기·붙여넣기 → %s : 이름 %s / 형식 %s / 직접 받기 %s", folder, items, list(md.formats()), obj is not None)
+    _log_extra(md)
+    return items, (_hints(md, items) if items else None)
+
+
+def fetch(stream, items, folder, hints, progress=None):
+    """1.4.0: 뒤 스레드에서 내용 받기. stream = CoMarshalInterThreadInterfaceInStream 한 IDataObject → (저장한 경로들, 안내)"""
+    import pythoncom
+    pythoncom.CoInitializeEx(pythoncom.COINIT_APARTMENTTHREADED)
+    try:
+        obj = pythoncom.CoGetInterfaceAndReleaseStream(stream, pythoncom.IID_IDataObject)
+        try:
+            return _save_direct(obj, items, folder, hints, progress)
+        finally:
+            obj = None
+    finally:
+        pythoncom.CoUninitialize()
+
+
 def save(md, folder, obj=None):
     """끌어 놓은(또는 붙여 넣은) 가상 파일을 folder 에 저장 → (저장한 경로들, 안내 글자 또는 None)
     obj: 원래 IDataObject (붙여넣기 = OleGetClipboard). 없으면 끌어 놓는 중인 것(olehook)"""
-    fmts = [f for f in md.formats()]
-    items = names(md)
     if obj is None:
         obj = olehook.current()
-    log.info("가상 파일 끌어 놓기·붙여넣기 → %s : 이름 %s / 형식 %s / 직접 받기 %s", folder, items, fmts, obj is not None)
-    _log_extra(md)
+    items, hints = prepare(md, folder, obj)
     if not items:
         return [], None
     if obj is not None:
-        return _save_direct(obj, items, folder, _hints(md, items))
+        return _save_direct(obj, items, folder, hints)
     files = [it for it in items if not it[2]]
     if len(files) != 1 or len(items) != 1:
         log.warning("가상 파일 %d개(폴더 포함 %d) — Qt 는 내용 1개만 꺼낼 수 있어 저장 안 함", len(files), len(items))

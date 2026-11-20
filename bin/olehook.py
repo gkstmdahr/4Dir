@@ -17,7 +17,8 @@ import time
 
 log = logging.getLogger("QE")
 
-OLEHOOK_VER = "1.1.2"   # 1.1.2 (0.9.140 b2): 끌기 진단 — 들어옴·커서 표시 바뀜 시각 로그 (TortoiseSVN 처음 X 표시)
+OLEHOOK_VER = "1.2.0"   # 1.2.0 (0.9.141): 비동기 끌기(IDataObjectAsyncCapability) — 놓자마자 돌려주고 뒤에서 받음 (탐색기 방식)
+# 1.1.2 (0.9.140 b2): 끌기 진단 — 들어옴·커서 표시 바뀜 시각 로그 (TortoiseSVN 처음 X 표시)
 # 1.1.1 — 1.1.1 (0.9.140): 스트림 읽기 전 처음으로 (TortoiseSVN 끌기 0바이트)
 _u = ctypes.windll.user32
 _u.GetPropW.restype = ctypes.c_void_p
@@ -147,6 +148,59 @@ def install(hwnd):
     except Exception:
         log.exception("끌어 놓기 입구 감싸기 실패 hwnd=%s — 예전 방식으로", hwnd)
         return False
+
+
+# IDataObjectAsyncCapability {3D8B0590-F691-11d2-8EA9-006097DF5BD4}: 보내는 쪽이 '받는 쪽이 뒤에서 천천히 받아도 됨' 을 지원하는가
+_IID_ASYNC = b"\x90\x05\x8b\x3d\x91\xf6\xd2\x11\x8e\xa9\x00\x60\x97\xdf\x5b\xd4"
+_GETMODE = ctypes.WINFUNCTYPE(HR, ctypes.c_void_p, ctypes.POINTER(W.BOOL))
+_START = ctypes.WINFUNCTYPE(HR, ctypes.c_void_p, ctypes.c_void_p)
+_END = ctypes.WINFUNCTYPE(HR, ctypes.c_void_p, HR, ctypes.c_void_p, W.DWORD)
+
+
+def async_begin():
+    """1.2.0: 지금 놓는 데이터가 비동기 받기를 지원하면 StartOperation 하고 붙잡음 → 표 (async_end 에 넘김), 아니면 None.
+    탐색기도 이렇게 함: Drop 은 바로 돌려주고 내용은 뒤에서 받음 (TortoiseSVN 은 서버에서 받는 동안 창이 멈추지 않게)"""
+    p = _CUR["ptr"]
+    if not p:
+        return None
+    try:
+        cap = ctypes.c_void_p()
+        hr = _QI(_vt(p)[0])(p, ctypes.c_char_p(_IID_ASYNC), ctypes.byref(cap))
+        if hr != 0 or not cap.value:
+            log.info("비동기 끌기 지원 안 함 (hr=%s) → 예전처럼 바로 받음", hr)
+            return None
+        c = cap.value
+        on = W.BOOL(0)
+        _GETMODE(_vt(c)[4])(c, ctypes.byref(on))
+        if not on.value:
+            _REF(_vt(c)[2])(c)
+            log.info("비동기 끌기 꺼져 있음 → 예전처럼 바로 받음")
+            return None
+        hr = _START(_vt(c)[5])(c, None)
+        _REF(_vt(p)[1])(p)   # 데이터를 붙잡음 (Drop 이 끝나도 받을 때까지 살아 있게)
+        log.info("비동기 끌기 시작 StartOperation hr=%s", hr)
+        return (c, p)
+    except Exception:
+        log.exception("비동기 끌기 시작 실패 → 예전처럼 바로 받음")
+        return None
+
+
+def async_end(tok, ok, effect=1):
+    """async_begin 의 표 → EndOperation(결과, 복사=1) 알리고 놓아 줌 (메인 스레드에서)"""
+    if not tok:
+        return
+    c, p = tok
+    try:
+        hr = _END(_vt(c)[7])(c, 0 if ok else -2147467259, None, effect if ok else 0)   # 실패 = E_FAIL
+        log.info("비동기 끌기 끝 EndOperation ok=%s hr=%s", ok, hr)
+    except Exception:
+        log.exception("비동기 끌기 끝 알리기 실패")
+    finally:
+        try:
+            _REF(_vt(c)[2])(c)
+            _REF(_vt(p)[2])(p)
+        except Exception:
+            log.exception("비동기 끌기 놓아 주기 실패")
 
 
 def current():

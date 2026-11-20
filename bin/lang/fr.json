@@ -2397,5 +2397,9 @@
  "바뀌면 다시 정렬 (끄면 새 파일은 맨 아래, F5 로 정렬)": "Retrier en cas de changement (désactivé : les nouveaux fichiers vont à la fin ; F5 trie)",
  "탐색기 등 다른 프로그램이 파일을 바꿔도 목록에 바로 보입니다 (4Dir 에서 한 작업은 언제나 보임)": "Les changements faits par l'Explorateur et d'autres programmes apparaissent tout de suite (les opérations de 4Dir s'affichent toujours)",
  "끄면 목록 순서를 그대로 두고 새 파일은 맨 아래에 붙입니다 (F5 로 정렬)": "Désactivé : la liste garde son ordre et les nouveaux fichiers sont ajoutés à la fin (F5 trie)",
- "바뀌면 다시 정렬 (윈도우 기본, 끄면 새 파일은 맨 아래, F5 로 정렬)": "Retrier en cas de changement (par défaut dans Windows, désactivé : les nouveaux fichiers vont à la fin ; F5 trie)"
+ "바뀌면 다시 정렬 (윈도우 기본, 끄면 새 파일은 맨 아래, F5 로 정렬)": "Retrier en cas de changement (par défaut dans Windows, désactivé : les nouveaux fichiers vont à la fin ; F5 trie)",
+ "끌어 놓은 파일 받는 중 {0}/{1} — {2}": "Réception des fichiers déposés {0}/{1} — {2}",
+ "복사 중": "Copie en cours",
+ "'{0}' 받는 중": "Réception de « {0} »",
+ "'{0}' 받는 중 ({1}/{2})": "Réception de « {0} » ({1}/{2})"
 }

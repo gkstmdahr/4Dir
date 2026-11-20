@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.140"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 2             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.141"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 3             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -1358,6 +1358,121 @@ class OwnSig(QtCore.QObject):
 
 
 OWN_SIG = OwnSig()
+
+
+class MainCall(QtCore.QObject):
+    """0.9.141: 뒤 스레드 → 메인 스레드에서 함수 실행 (가상 파일 비동기 받기 진행·끝)"""
+    call = QtCore.Signal(object)
+
+    def __init__(self):
+        super().__init__()
+        self.call.connect(self._run)
+
+    def _run(self, fn):
+        try:
+            fn()
+        except Exception:
+            log.exception("메인 스레드 호출 실패")
+
+
+MAIN_CALL = MainCall()
+
+
+class VFileProgress(QtWidgets.QDialog):
+    """0.9.141 빌드 2 (사용자 11/20 '아무 반응이 없으니 복사가 안 되는 줄 알 듯'): 끌어 놓은 파일을 뒤에서 받는 동안
+    윈도우 '복사 중' 창처럼 작은 창. 0.4초 넘게 걸릴 때만 뜨고 끝나면 저절로 닫힘.
+    TortoiseSVN 은 서버에서 다 받은 뒤에야 내용을 주므로(GetData 한 번에 몇 초) 몇 % 인지 알 수 없음 → 움직이는 막대.
+    취소 단추 없음: 받는 중인 GetData 는 중간에 끊을 수 없음. 창을 닫아도 받기는 계속됨"""
+
+    def __init__(self, parent, tgt):
+        super().__init__(parent)
+        self.setAttribute(Qt.WA_DeleteOnClose)
+        self.setWindowFlags(Qt.Dialog | Qt.WindowTitleHint | Qt.WindowCloseButtonHint)
+        self.setWindowTitle(T("복사 중"))
+        self.setWindowIcon(QtWidgets.QApplication.windowIcon())
+        # 빌드 3 (사용자 11/20 '윈도우랑 비슷한 디자인, 진행바가 너무 얇아 눈에 안 띔'): 윈도우 복사 창처럼
+        # 위 띠(그라데이션 + 큰 파란 글자) · 대상 줄 · 굵은 초록 막대 · 아래 회색 띠
+        dark = self.palette().color(QtGui.QPalette.Window).lightness() < 128
+        c = (dict(bg="#202020", fg="#e6e6e6", band="qlineargradient(x1:0,y1:0,x2:1,y2:0, stop:0 #2b3a52, stop:1 #16223a)", head="#cfe0ff", foot="#2b2b2b", line="#3c3c3c")
+             if dark else
+             dict(bg="#ffffff", fg="#1a1a1a", band="qlineargradient(x1:0,y1:0,x2:1,y2:0, stop:0 #ffffff, stop:0.55 #e3edf8, stop:1 #1c3f73)", head="#0f3b7a", foot="#f0f0f0", line="#dfdfdf"))
+        self.setObjectName("vfp")
+        self.setStyleSheet(f"#vfp {{ background:{c['bg']}; }} #vfpBand {{ background:{c['band']}; }} #vfpHead {{ color:{c['head']}; background:transparent; }}"
+                           f" #vfpDst {{ color:{c['fg']}; }} #vfpFoot {{ background:{c['foot']}; border-top:1px solid {c['line']}; }}")
+        lay = QtWidgets.QVBoxLayout(self)
+        lay.setContentsMargins(0, 0, 0, 0); lay.setSpacing(0)
+        band = QtWidgets.QFrame(); band.setObjectName("vfpBand")
+        bl = QtWidgets.QVBoxLayout(band); bl.setContentsMargins(16, 12, 16, 12)
+        self.head = QtWidgets.QLabel(); self.head.setObjectName("vfpHead")
+        f = self.head.font(); f.setPointSizeF(f.pointSizeF() * 1.45); self.head.setFont(f)
+        bl.addWidget(self.head)
+        lay.addWidget(band)
+        body = QtWidgets.QVBoxLayout(); body.setContentsMargins(16, 14, 16, 18); body.setSpacing(14)
+        self.dst = QtWidgets.QLabel(); self.dst.setObjectName("vfpDst")
+        self.dst.setText(self.dst.fontMetrics().elidedText(T("대상: {0}").format(tgt), Qt.ElideMiddle, 440))
+        self.dst.setToolTip(tgt)
+        body.addWidget(self.dst)
+        self.bar = _Marquee(dark)
+        body.addWidget(self.bar)
+        lay.addLayout(body)
+        foot = QtWidgets.QFrame(); foot.setObjectName("vfpFoot"); foot.setFixedHeight(22)
+        lay.addWidget(foot)
+        self.setFixedWidth(500)
+
+    def set_item(self, i, n, nm):
+        txt = T("'{0}' 받는 중").format(nm) if n <= 1 else T("'{0}' 받는 중 ({1}/{2})").format(nm, i, n)
+        self.head.setText(self.head.fontMetrics().elidedText(txt, Qt.ElideMiddle, 460))
+
+    def show_on(self, gpos):
+        """끌어 놓은 자리(전체 화면 좌표)가 있는 모니터 한가운데에 띄움"""
+        scr = QtGui.QGuiApplication.screenAt(gpos) or self.screen()
+        self.adjustSize()
+        g = scr.availableGeometry()
+        self.move(g.center().x() - self.width() // 2, g.center().y() - self.height() // 2)
+        self.show()
+        fg = self.frameGeometry()   # 제목줄까지 포함해 다시 가운데 (보이기 전엔 제목줄 높이를 모름)
+        self.move(self.x() + g.center().x() - fg.center().x(), self.y() + g.center().y() - fg.center().y())
+        log.info("받는 중 창 위치 모니터=%s %s 창=%s", scr.name(), g.getRect(), self.geometry().getRect())
+
+
+class _Marquee(QtWidgets.QWidget):
+    """윈도우 복사 창처럼 굵은(18px) 초록 막대. 몇 % 인지 모르므로 초록 덩어리가 왼→오 로 계속 흐름.
+    타이머는 창이 보일 때만 돎 (닫히면 같이 사라짐)"""
+
+    def __init__(self, dark):
+        super().__init__()
+        self.setFixedHeight(18)
+        self.dark = dark
+        self.pos_ = 0.0
+        self.tm = QtCore.QTimer(self)
+        self.tm.timeout.connect(self._tick)
+
+    def showEvent(self, ev):
+        self.tm.start(30)
+        super().showEvent(ev)
+
+    def hideEvent(self, ev):
+        self.tm.stop()
+        super().hideEvent(ev)
+
+    def _tick(self):
+        self.pos_ = (self.pos_ + 0.012) % 1.0
+        self.update()
+
+    def paintEvent(self, ev):
+        p = QtGui.QPainter(self)
+        r = self.rect().adjusted(0, 0, -1, -1)
+        p.setPen(QtGui.QColor("#5a5a5a" if self.dark else "#bcbcbc"))
+        p.setBrush(QtGui.QColor("#333333" if self.dark else "#e6e6e6"))
+        p.drawRect(r)
+        w = r.width() - 2
+        bw = max(40, int(w * 0.3))
+        x = int(-bw + (w + bw) * self.pos_)
+        p.setClipRect(r.adjusted(1, 1, 0, 0))
+        p.fillRect(QtCore.QRect(r.x() + 1 + x, r.y() + 1, bw, r.height() - 1), QtGui.QColor("#16c60c" if self.dark else "#06b025"))
+        p.end()
+
+
 RENAMES = {}   # 0.9.139 최근 이름 바꾸기 normcase(옛 전체 경로) → (normcase(새 전체 경로), 시각) — 순서 유지 때 제자리에 둠
 KEEP_ORDER_REASONS = {"watch", "own", "rename", "after-edit", "newfolder", "newfile", "paste_image", "batch-rename", "undo",
                       "vfile", "dev", "dev2", "attrs", "datefolders", "sync", "edit", "imgedit", "show", "tag", "set"}   # F5·이동·주소 입력 등은 늘 다시 정렬
@@ -4296,6 +4411,81 @@ class Page(QtWidgets.QWidget):
         self._vfile_done(self.path, saved, why, paste=True)
         return True
 
+    def _vfile_async(self, md, tgt, gpos=None):
+        """0.9.141 (사용자 11/19 '진행해'): 보내는 쪽이 비동기 받기를 지원하면(TortoiseSVN 저장소 브라우저 등) 놓기는 바로 끝내고
+        내용은 뒤 스레드에서 받음 + 상태 줄에 '받는 중 n/전체' → True. 지원 안 하면 False (예전처럼 그 자리에서 받음).
+        탐색기와 같은 방식 — 전엔 서버에서 받는 동안(51MB 약 5초) 4Dir 창이 멈췄음"""
+        tok = olehook.async_begin()
+        if not tok:
+            return False
+        try:
+            import pythoncom
+            obj = olehook.current()
+            items, hints = vfiles.prepare(md, tgt, obj)
+            if not items:
+                raise ValueError("이름표 비어 있음")
+            stream = pythoncom.CoMarshalInterThreadInterfaceInStream(pythoncom.IID_IDataObject, obj)
+        except Exception:
+            log.exception("비동기 받기 준비 실패 → 그 자리에서 받기")
+            olehook.async_end(tok, False)
+            return False
+        status, t0 = self.status, time.time()
+        msg = T("끌어 놓은 파일 받는 중 {0}/{1} — {2}")
+        dlg = VFileProgress(self.window(), tgt)   # 빌드 2: 윈도우 '복사 중' 창처럼 (0.4초 넘으면 보임)
+        box = {"dlg": dlg, "last": (1, 1, "")}
+        if gpos is None:   # 빌드 3: 놓은 자리 → 그 모니터 한가운데
+            gpos = self.mapToGlobal(self.rect().center())
+
+        def show_dlg():
+            d = box["dlg"]
+            if d is not None:
+                try:
+                    d.set_item(*box["last"]); d.show_on(gpos)
+                    log.info("받는 중 창 띄움 %s", box["last"])
+                except RuntimeError:
+                    box["dlg"] = None
+        QtCore.QTimer.singleShot(400, show_dlg)
+
+        def prog(i, n, nm):
+            def ui():
+                status.emit(msg.format(i, n, nm))
+                box["last"] = (i, n, nm)
+                d = box["dlg"]
+                if d is not None:
+                    try:
+                        d.set_item(i, n, nm)
+                    except RuntimeError:   # 사용자가 창을 닫음 — 받기는 계속
+                        box["dlg"] = None
+            MAIN_CALL.call.emit(ui)
+
+        def run():
+            try:
+                saved, why = vfiles.fetch(stream, items, tgt, hints, prog)
+            except Exception as ex:
+                log.exception("비동기 받기 실패 → %s", tgt)
+                saved, why = [], str(ex)
+
+            def done():
+                d, box["dlg"] = box["dlg"], None
+                if d is not None:
+                    try:
+                        d.hide(); d.deleteLater()   # 0.4초 전에 끝나 안 뜬 창도 지움
+                    except RuntimeError:
+                        pass
+                olehook.async_end(tok, bool(saved))
+                log.info("비동기 받기 끝 %.1f초 저장 %d개", time.time() - t0, len(saved))
+                try:
+                    self._vfile_done(tgt, saved, why)
+                    if os.path.normcase(tgt) != os.path.normcase(self.path):
+                        self._emit_status()   # 다른 폴더(하위 폴더 위)에 놓았으면 '받는 중' 글자를 지움
+                except RuntimeError:
+                    log.info("비동기 받기 끝났는데 칸이 닫힘 — 파일만 저장됨 %s", saved[:5])
+            MAIN_CALL.call.emit(done)
+        prog(1, len({it[0].lower() for it in items if not it[2]}) or 1, items[0][0].split(chr(92))[-1])
+        threading.Thread(target=run, daemon=True, name="vfile-fetch").start()
+        log.info("비동기 받기 시작 → %s (%d개) — 놓기는 바로 끝냄", tgt, len(items))
+        return True
+
     def _vfile_done(self, tgt, saved, why, paste=False):
         """가상 파일 저장 결과 → 상태 줄 안내 + 저장한 파일 골라 둠 (끌어 놓기·붙여넣기 공용, 0.9.138 빌드 1 에서 끌어 놓기 코드를 옮김)"""
         log.info("가상 파일 결과 %s : 저장 %d개 %s, 안내=%s", "붙여넣기" if paste else "끌어 놓기", len(saved), [os.path.basename(p) for p in saved[:10]], why)
@@ -5567,6 +5757,10 @@ class Page(QtWidgets.QWidget):
             ev.accept()
             return
         if not srcs and vfiles.has_virtual(ev.mimeData()):   # v0.9.75: 아웃룩 첨부 등 가상 파일 → 내용을 받아 저장
+            if self._vfile_async(ev.mimeData(), tgt, view.viewport().mapToGlobal(ev.position().toPoint())):   # 0.9.141: TortoiseSVN 등 — 뒤에서 받음 (창 안 멈춤)
+                ev.setDropAction(Qt.CopyAction)
+                ev.accept()
+                return
             try:
                 saved, why = vfiles.save(ev.mimeData(), tgt)
             except Exception as ex:

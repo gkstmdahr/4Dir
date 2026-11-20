@@ -2397,5 +2397,9 @@
  "바뀌면 다시 정렬 (끄면 새 파일은 맨 아래, F5 로 정렬)": "Değişince yeniden sırala (kapalıyken yeni dosyalar en alta; F5 sıralar)",
  "탐색기 등 다른 프로그램이 파일을 바꿔도 목록에 바로 보입니다 (4Dir 에서 한 작업은 언제나 보임)": "Dosya Gezgini ve diğer programların değişiklikleri listede hemen görünür (4Dir işlemleri her zaman görünür)",
  "끄면 목록 순서를 그대로 두고 새 파일은 맨 아래에 붙입니다 (F5 로 정렬)": "Kapalıyken liste sırasını korur, yeni dosyalar en alta eklenir (F5 sıralar)",
- "바뀌면 다시 정렬 (윈도우 기본, 끄면 새 파일은 맨 아래, F5 로 정렬)": "Değişince yeniden sırala (Windows varsayılanı, kapalıyken yeni dosyalar en alta; F5 sıralar)"
+ "바뀌면 다시 정렬 (윈도우 기본, 끄면 새 파일은 맨 아래, F5 로 정렬)": "Değişince yeniden sırala (Windows varsayılanı, kapalıyken yeni dosyalar en alta; F5 sıralar)",
+ "끌어 놓은 파일 받는 중 {0}/{1} — {2}": "Bırakılan dosyalar alınıyor {0}/{1} — {2}",
+ "복사 중": "Kopyalanıyor",
+ "'{0}' 받는 중": "'{0}' alınıyor",
+ "'{0}' 받는 중 ({1}/{2})": "'{0}' alınıyor ({1}/{2})"
 }

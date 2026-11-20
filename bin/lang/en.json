@@ -2397,5 +2397,9 @@
  "바뀌면 다시 정렬 (끄면 새 파일은 맨 아래, F5 로 정렬)": "Re-sort on change (when off, new files go to the bottom; F5 sorts)",
  "탐색기 등 다른 프로그램이 파일을 바꿔도 목록에 바로 보입니다 (4Dir 에서 한 작업은 언제나 보임)": "Changes made by File Explorer and other programs show up in the list right away (4Dir's own operations always show)",
  "끄면 목록 순서를 그대로 두고 새 파일은 맨 아래에 붙입니다 (F5 로 정렬)": "When off, the list keeps its order and new files are added at the bottom (F5 sorts)",
- "바뀌면 다시 정렬 (윈도우 기본, 끄면 새 파일은 맨 아래, F5 로 정렬)": "Re-sort on change (Windows default; when off, new files go to the bottom; F5 sorts)"
+ "바뀌면 다시 정렬 (윈도우 기본, 끄면 새 파일은 맨 아래, F5 로 정렬)": "Re-sort on change (Windows default; when off, new files go to the bottom; F5 sorts)",
+ "끌어 놓은 파일 받는 중 {0}/{1} — {2}": "Receiving dropped files {0}/{1} — {2}",
+ "복사 중": "Copying",
+ "'{0}' 받는 중": "Receiving '{0}'",
+ "'{0}' 받는 중 ({1}/{2})": "Receiving '{0}' ({1}/{2})"
 }
