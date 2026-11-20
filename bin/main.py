@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.141"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_VERSION = "0.9.142"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
 QE_BUILD = 3             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
@@ -1835,6 +1835,10 @@ class DirModel(QtCore.QAbstractTableModel):
             # 0.9.137 빌드 4: 받는 쪽을 self 로 — 창을 바로 닫아 모델이 지워지면 Qt 가 취소 (예전: 'Signal source has been deleted' 오류)
             QtCore.QTimer.singleShot(0, self, lambda: self.headerDataChanged.emit(Qt.Horizontal, 0, len(COLS) - 1))
         self.cloud = cloud.root_of(path) if path and path != THIS_PC and not is_search(path) else None
+        if self.cloud:   # 0.9.142 빌드 2: 폴더(와 항목 200개 이하면 전부) 상태는 원드라이브에 물어 봄 — 탐색기와 같게
+            self._cloud_ask(path, entries)
+        else:
+            self.cstate = {}
         # 폴더 표지는 폴더 안을 훑고 첫 그림을 읽으므로 네트워크·클라우드(받기 일어남)·휴대폰·검색 결과는 제외
         self.covers_ok = bool(path and path != THIS_PC and not is_search(path) and not devices.is_dev(path) and not archives.is_arc(path)
                               and self.cloud is None and not foldersize.is_remote(path))
@@ -1844,6 +1848,55 @@ class DirModel(QtCore.QAbstractTableModel):
         else:
             self._sort()
         self.endResetModel()
+
+    def _cstate(self, e):
+        """동기화 상태: 원드라이브에 물어 본 값(폴더 등) → 없으면 속성 (0.9.142 빌드 2)
+        빌드 3: 원드라이브는 '항상 유지' 폴더도 '이 PC 에 있음'(2)으로 알려 줌(실측) → 속성에 PINNED 가 있으면 항상 유지"""
+        v = getattr(self, "cstate", {}).get(e[0])
+        if v == "local" and (e[4] or 0) & cloud.A_PINNED:
+            return "pinned"
+        return v or cloud.state(e[4])
+
+    def _cloud_ask(self, path, entries, again=0):
+        """뒤 스레드에서 cloud.folder_states → 메인 스레드에서 상태 열만 다시 그림. 같은 폴더 다시 읽기면 전 값 유지(깜빡임 방지)
+        빌드 3 (사용자 11/20 '항상 유지 누르면 파란 화살표 → 들어갔다 나오니 바뀜'): 원드라이브가 받기를 끝내도 폴더 속성은 안 바뀌어
+        다시 읽기가 안 일어남 → '동기화 중' 이 하나라도 있으면 2초 뒤 다시 물어 봄 (최대 30번 = 1분, 다른 폴더로 가면 멈춤)"""
+        if getattr(self, "_cstate_path", None) != path:
+            self.cstate = {}
+        self._cstate_path = path
+        names = [e[0] for e in entries if e[1] and not e[7]]
+        if len(entries) <= 200:
+            names += [e[0] for e in entries if not e[1] and not e[7]]
+        if not names:
+            return
+        self._cstate_gen = getattr(self, "_cstate_gen", 0) + 1
+        gen = self._cstate_gen
+        paths = [os.path.join(path, n) for n in names]
+
+        def run():
+            st = cloud.folder_states(paths)
+
+            def apply():
+                try:
+                    if gen != self._cstate_gen or self.path != path:
+                        return
+                    self.cstate = {os.path.basename(p): v for p, v in st.items()}
+                    if self.rows:
+                        self.dataChanged.emit(self.index(0, 10), self.index(len(self.rows) - 1, 10))
+                    # 동기화 중이면 계속, 끝난 뒤에도 3번 더(원드라이브가 '이 PC' → '항상 유지' 로 한 번 더 바꿈, 실측)
+                    if "sync" in self.cstate.values():
+                        self._cstate_tail = 3
+                    elif again:
+                        self._cstate_tail = getattr(self, "_cstate_tail", 0) - 1
+                    if again < 30 and ("sync" in self.cstate.values() or (again and self._cstate_tail > 0)):
+                        QtCore.QTimer.singleShot(2000, self, lambda: (gen == self._cstate_gen and self.path == path
+                                                                      and self._cloud_ask(path, self.all, again + 1)))
+                    elif again:
+                        log.info("동기화 중 다시 묻기 끝 %d번 %s → %s", again, path, self.cstate)
+                except RuntimeError:   # 칸이 닫힘
+                    pass
+            MAIN_CALL.call.emit(apply)
+        threading.Thread(target=run, daemon=True, name="cloud-state").start()
 
     def rowCount(self, parent=QtCore.QModelIndex()):
         return 0 if parent.isValid() else len(self.rows)
@@ -1921,7 +1974,7 @@ class DirModel(QtCore.QAbstractTableModel):
         elif role == Qt.EditRole and c == 0:
             return e[0]
         elif c == 10 and self.cloud and role in (Qt.DecorationRole, Qt.ToolTipRole):   # 동기화 상태 (v0.9.94)
-            st = cloud.state(e[4])
+            st = self._cstate(e)
             return cloud.icon(st, self.icon_px if self.icon_px <= 20 else 16) if role == Qt.DecorationRole else cloud.STATES[st][1]
         elif role == Qt.DecorationRole and c == 0:
             if self.thumbs_on and not e[1] and thumbs.has_preview(e[0]) and not devices.is_dev(self.full(e)) and not archives.is_arc(self.full(e)):   # 휴대폰 사진 미리보기는 2차 · 0.9.121 PDF 첫 쪽
@@ -2250,7 +2303,7 @@ class DirModel(QtCore.QAbstractTableModel):
         elif c == 11:   # 0.9.109 태그 (없는 것은 뒤로)
             key = lambda e: (", ".join(TAGS.tags_of(self.full(e))).lower() or "\uffff", shellops.natural_key(e[0]))
         elif c == 10:   # 상태: 클라우드에만 → 이 PC → 항상 유지
-            key = lambda e: (cloud.STATES[cloud.state(e[4])][0], shellops.natural_key(e[0]))
+            key = lambda e: (cloud.STATES[self._cstate(e)][0], shellops.natural_key(e[0]))
         else:
             key = lambda e: shellops.natural_key(e[0])
         if c == 1 and not OPTS["date_folders_first"]:
@@ -6200,6 +6253,13 @@ class Sidebar(DragScrollMixin, QtWidgets.QTreeWidget):
         self.home_root.setToolTip(0, T("윈도우 탐색기 홈과 같은 목록 — 즐겨찾기 폴더와 최근에 연 파일"))
         self.home_root.setFont(0, bold)
         self.addTopLevelItem(self.home_root)
+        # 0.9.142 (사용자 11/20 '원드라이브 탐색 창에 넣어'): 탐색기처럼 홈 바로 밑에 원드라이브 등 동기화 폴더 (펼치면 하위 폴더)
+        self.cloud_items = []
+        for cp, cname in cloud.nav_roots():
+            it = self._folder_item(cname, cp, cloud.nav_icon(cp) or fav_icon({"path": cp}))   # 탐색기처럼 원드라이브 파란 구름 (못 읽으면 폴더 아이콘)
+            it.setFont(0, bold)
+            self.addTopLevelItem(it)
+            self.cloud_items.append(it)
         for r in (self.qe_root, self.fav_root, self.pc_root):
             r.setFont(0, bold)
             r.setFlags(Qt.ItemIsEnabled)
@@ -6484,6 +6544,8 @@ class Sidebar(DragScrollMixin, QtWidgets.QTreeWidget):
             dpr = self.devicePixelRatioF() or 1.0
             for it, p in self._side_fav_items():
                 it.setIcon(0, svn_badged(fav_icon(fav_item(p) or {"path": p}), self._side_st.get(p), dpr))
+            for it in getattr(self, "cloud_items", []):   # 0.9.142 원드라이브 등
+                it.setIcon(0, cloud.nav_icon(it.data(0, PATH_ROLE)) or fav_icon({"path": it.data(0, PATH_ROLE)}))
         except RuntimeError:   # 탐색 창이 닫혀 지워짐
             pass
 

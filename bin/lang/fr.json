@@ -2401,5 +2401,6 @@
  "끌어 놓은 파일 받는 중 {0}/{1} — {2}": "Réception des fichiers déposés {0}/{1} — {2}",
  "복사 중": "Copie en cours",
  "'{0}' 받는 중": "Réception de « {0} »",
- "'{0}' 받는 중 ({1}/{2})": "Réception de « {0} » ({1}/{2})"
+ "'{0}' 받는 중 ({1}/{2})": "Réception de « {0} » ({1}/{2})",
+ "동기화 중": "Synchronisation en attente"
 }

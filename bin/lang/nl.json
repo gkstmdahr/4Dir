@@ -2401,5 +2401,6 @@
  "끌어 놓은 파일 받는 중 {0}/{1} — {2}": "Neergezette bestanden ontvangen {0}/{1} — {2}",
  "복사 중": "Kopiëren",
  "'{0}' 받는 중": "'{0}' ontvangen",
- "'{0}' 받는 중 ({1}/{2})": "'{0}' ontvangen ({1}/{2})"
+ "'{0}' 받는 중 ({1}/{2})": "'{0}' ontvangen ({1}/{2})",
+ "동기화 중": "Synchronisatie in behandeling"
 }

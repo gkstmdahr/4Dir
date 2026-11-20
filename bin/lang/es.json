@@ -2401,5 +2401,6 @@
  "끌어 놓은 파일 받는 중 {0}/{1} — {2}": "Recibiendo archivos soltados {0}/{1} — {2}",
  "복사 중": "Copiando",
  "'{0}' 받는 중": "Recibiendo «{0}»",
- "'{0}' 받는 중 ({1}/{2})": "Recibiendo «{0}» ({1}/{2})"
+ "'{0}' 받는 중 ({1}/{2})": "Recibiendo «{0}» ({1}/{2})",
+ "동기화 중": "Sincronización pendiente"
 }
