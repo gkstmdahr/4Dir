@@ -25,7 +25,7 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.16.2"   # 1.16.2: 오탐 안내 줄바꿈(\n → <br>, 사용자 11/18) / 1.16.1: 오탐 안내 빨간 굵은 글씨 (사용자 11/18) / 1.16.0: 첫 화면 스토어 안내 밑에 백신 오탐 안내 한 줄(실행기 소스 링크, 사용자 11/18) / 1.15.2: 스토어 안내에서 업데이트 문구 뺌 (사용자 11/15) / 1.15.1: 첫 화면 정리(사용법 버튼 뺌·언어 지원 글자 링크·별 부탁 한 줄) / 1.15.0: 첫 화면 깃허브 별 부탁 칸 / 1.14.4: 첫 화면 언어 버튼 이름 = 언어 지원 / 1.14.3: 첫 화면 사용법 버튼 옆 언어 버튼 / 1.14.2: 언어 선택 상자 맨 아래 '🌐 언어 · 16 →' = languages.html / 1.14.1: _site\root 의 파일을 사이트 맨 위에 복사(검색 엔진 소유 확인 파일) / 1.14.0: 지원 언어 페이지(languages.html, 앱 16개·사이트 10개) + 바닥글 링크, 앱만 지원하는 6개 언어로 온 사람에게 영어 첫 화면에 그 언어로 한 줄 안내 (사용자 11/14 '최소') / 1.13.1: 받기·스토어 버튼 같은 너비 (사용자 11/13) / 1.13.0: 다운로드 버튼 옆 Microsoft Store 받기 + 안내 한 줄 (사용자 11/13) / 1.12.1: 위쪽 just downloader 버튼 = PC판 페이지로 바로 (💻, 사용자 11/11 'PC판이 먼저 보이면') / 1.12.0: 사용법 페이지 = 앱 사용법 2.0 과 같은 21개 주제 + 움직이는 장면 영상(img/demo, 보이는 것만 재생) · 문구는 앱 번역(bin/lang) / 1.11.1: 후원 버튼 새 창(target=_blank) / 1.11.0: 개인정보처리방침 privacy.html (구글 드라이브 백업 — 구글 앱 등록에 필요) / 1.10.0: 1.10.0: 받기를 누르면 다운로드는 바로 시작 + 후원 안내 창(막지 않음, 닫기 가능 — 사용자 11/6 PureRef 처럼) / 1.9.3: 1.9.3: support 메일 링크에 제목 말머리 [4Dir] / 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
+MAKE_SITE_VER = "1.17.0"   # 1.17.0: code-signing.html 을 SignPath 재신청용으로 되돌림(서명 문구·역할·MFA, 스토어판은 MS 서명 안내 — 사용자 11/20 "진행해") / 1.16.2: 오탐 안내 줄바꿈(\n → <br>, 사용자 11/18) / 1.16.1: 오탐 안내 빨간 굵은 글씨 (사용자 11/18) / 1.16.0: 첫 화면 스토어 안내 밑에 백신 오탐 안내 한 줄(실행기 소스 링크, 사용자 11/18) / 1.15.2: 스토어 안내에서 업데이트 문구 뺌 (사용자 11/15) / 1.15.1: 첫 화면 정리(사용법 버튼 뺌·언어 지원 글자 링크·별 부탁 한 줄) / 1.15.0: 첫 화면 깃허브 별 부탁 칸 / 1.14.4: 첫 화면 언어 버튼 이름 = 언어 지원 / 1.14.3: 첫 화면 사용법 버튼 옆 언어 버튼 / 1.14.2: 언어 선택 상자 맨 아래 '🌐 언어 · 16 →' = languages.html / 1.14.1: _site\root 의 파일을 사이트 맨 위에 복사(검색 엔진 소유 확인 파일) / 1.14.0: 지원 언어 페이지(languages.html, 앱 16개·사이트 10개) + 바닥글 링크, 앱만 지원하는 6개 언어로 온 사람에게 영어 첫 화면에 그 언어로 한 줄 안내 (사용자 11/14 '최소') / 1.13.1: 받기·스토어 버튼 같은 너비 (사용자 11/13) / 1.13.0: 다운로드 버튼 옆 Microsoft Store 받기 + 안내 한 줄 (사용자 11/13) / 1.12.1: 위쪽 just downloader 버튼 = PC판 페이지로 바로 (💻, 사용자 11/11 'PC판이 먼저 보이면') / 1.12.0: 사용법 페이지 = 앱 사용법 2.0 과 같은 21개 주제 + 움직이는 장면 영상(img/demo, 보이는 것만 재생) · 문구는 앱 번역(bin/lang) / 1.11.1: 후원 버튼 새 창(target=_blank) / 1.11.0: 개인정보처리방침 privacy.html (구글 드라이브 백업 — 구글 앱 등록에 필요) / 1.10.0: 1.10.0: 받기를 누르면 다운로드는 바로 시작 + 후원 안내 창(막지 않음, 닫기 가능 — 사용자 11/6 PureRef 처럼) / 1.9.3: 1.9.3: support 메일 링크에 제목 말머리 [4Dir] / 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
 SUPPORT = "support@4dir.net"   # 문제 보고 메일 (1.1.1)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -417,7 +417,7 @@ document.querySelectorAll('figure.demo video').forEach(function(v){{vio.observe(
 
 
 def signing_page(cfg):
-    """코드 서명 정책 (1.7.0 SignPath 신청용 → 1.9.0 서명 없음: 빌드 방식·SHA256 확인·개인 정보)"""
+    """코드 서명 정책 (1.7.0 SignPath 신청용 → 1.9.0 서명 없음 → 1.17.0 SignPath 재신청용: 서명 문구·역할·MFA 다시, 스토어판 안내)"""
     repo_url = f"https://github.com/{cfg['owner'] or 'OWNER'}/{cfg['repo']}"
     owner = cfg["owner"] or "OWNER"
     base = site_base(cfg)
@@ -427,7 +427,7 @@ def signing_page(cfg):
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>4Dir - Code signing policy</title>
-<meta name="description" content="4Dir release files are not code-signed: how they are built, how to check them, and what data 4Dir sends.">
+<meta name="description" content="How 4Dir release files are built and signed, who approves them, and what data 4Dir sends.">
 <link rel="canonical" href="{base}code-signing.html">
 <link rel="icon" href="icon.png">
 <link rel="stylesheet" href="style.css">
@@ -439,22 +439,25 @@ def signing_page(cfg):
 <main class="wrap">
 <p><a href="./">Home</a></p>
 <section><h1>Code signing policy</h1>
-<p class="tip">Status: release files are <b>not</b> code-signed. Windows may show a SmartScreen warning the first time you run 4Dir
-(<b>More info &gt; Run anyway</b>). To make sure the file is genuine, check the SHA256 fingerprint shown on the download page and on
-<a href="{repo_url}/releases">GitHub Releases</a>.</p>
-<h2>How release files are built</h2>
+<p>Free code signing provided by <a href="https://signpath.io">SignPath.io</a>, certificate by <a href="https://signpath.org">SignPath Foundation</a>.</p>
+<p class="tip">Status: applying to SignPath Foundation. Until it is approved, the release zip is <b>not</b> code-signed — Windows may show a
+SmartScreen warning the first time you run 4Dir (<b>More info &gt; Run anyway</b>); check the SHA256 fingerprint shown on the download page and on
+<a href="{repo_url}/releases">GitHub Releases</a>. The <a href="{ST.STORE_URL}">Microsoft Store</a> version is signed by Microsoft.</p>
+<h2>What is signed</h2>
 <ul>
 <li><code>4Dir.exe</code> — the small starter program in the release zip. It only starts the bundled Python with 4Dir's program files
 (the same job as <code>4Dir.vbs</code>). Source: <a href="{repo_url}/blob/main/launcher/4Dir_launcher.cs">launcher/4Dir_launcher.cs</a>.</li>
 <li>It is built by GitHub Actions directly from the public source code (<a href="{repo_url}/actions">build logs</a>,
-workflow <a href="{repo_url}/blob/main/.github/workflows/build-exe.yml">build-exe.yml</a>).</li>
+workflow <a href="{repo_url}/blob/main/.github/workflows/build-exe.yml">build-exe.yml</a>). Files built on a personal PC are never signed.</li>
 <li>The bundled Python runtime (<code>python.exe</code>, <code>pythonw.exe</code>) is the official build, signed by the Python Software Foundation.
 Third-party components keep their own licenses (see the <code>licenses</code> folder in the zip).</li>
 </ul>
-<h2>Maintainer</h2>
+<h2>Team roles</h2>
 <ul>
-<li><a href="https://github.com/{owner}">{owner}</a> — writes, reviews and publishes every release.</li>
+<li>Committers and reviewers: <a href="https://github.com/{owner}">{owner}</a></li>
+<li>Approvers: <a href="https://github.com/{owner}">{owner}</a> — every signing request is approved by hand, one release at a time.</li>
 </ul>
+<p>All accounts used for the source code, builds and signing use multi-factor authentication.</p>
 <h2 id="privacy">Privacy policy</h2>
 <p>This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.</p>
 <p>Network access: the new-version check (once a day 4Dir reads <code>{base}version.json</code>, a small public file; nothing about you or your files is sent),
