@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.144"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 4             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.145"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 1             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -567,6 +567,8 @@ import datefolders  # noqa: E402  0.9.116 날짜별 폴더 정리
 import oplog  # noqa: E402  0.9.116 작업 기록 보기
 import gitstat  # noqa: E402  0.9.116 Git 상태 (SVN 과 같은 자리)
 import grepsearch  # noqa: E402  0.9.116 파일 내용 찾기
+import doctext  # noqa: E402  0.9.145 문서에서 글자 꺼내기 (엑셀·워드·한글·PDF)
+import winsearch  # noqa: E402  0.9.145 윈도우 검색 색인으로 문서 내용 찾기
 import locksmith  # noqa: E402  0.9.116 파일을 잡고 있는 프로그램
 import textdiff  # noqa: E402  0.9.116 두 글자 파일 비교
 import imgedit  # noqa: E402  0.9.118 그림 편집 창
@@ -1137,6 +1139,16 @@ HOME_Q = "⌂home"   # 0.9.134 홈 = 윈도우 탐색기 홈(즐겨찾기 + 최�
 WIN_HOME = "shell:::{f874310e-b6b7-47dc-bc84-b9e6b38f5903}"   # 윈도우 11 탐색기 '홈' (고정·자주 쓰는 폴더 + 최근 파일, 탐색기와 같은 순서)
 HOME_INDENT = 16   # 빌드 8 홈 묶음 안 항목 들여쓰기 (px)
 HOME_WAIT = 2.0   # 끊긴 네트워크 폴더가 고정돼 있으면 셸이 멈춤 → 이 초 넘으면 포기 (화면은 안 멈춤: 읽기는 작업 스레드)
+CONTENT_HITS = {}   # 0.9.145 전체 검색의 '내용에서 찾음' 결과: (검색 글자, normcase 경로) → 찾은 문장 조각 (없으면 "")
+CONTENT_SNIP_N = 40     # 조각을 미리 읽어 둘 결과 수 (뒤 스레드, 시간 제한 CONTENT_SNIP_SEC)
+CONTENT_SNIP_SEC = 1.5
+
+
+def content_snip(q, e):
+    """이 검색(q)의 내용 결과면 조각 글자("" 가능), 아니면 None"""
+    return CONTENT_HITS.get((q, os.path.normcase(e[5] or "")))
+
+
 HOME_FAV = set()   # 홈 목록 중 즐겨찾기(탐색기 '즐겨찾기' = 고정·자주 쓰는 폴더) 경로 (normcase). 나머지 = 최근 항목 (최근 항목에 폴더도 있음 — 실측 'test')
 
 
@@ -1534,10 +1546,35 @@ class ScanJob(QtCore.QRunnable):
                         limit=50000 if flat else 5000, files_only=flat)
                     self.sig.info.emit(self.gen, T('{0:,}개 찾음 (훑은 항목 {1:,}개)').format(total, scanned) + (T(" — 취소됨") if self.cancel() else ""))
                 elif SEARCH is not None:
+                    # 0.9.145 (사용자 11/22 '내용까지 검색'): 이름 색인 검색과 동시에 윈도우 색인으로 문서 내용 질의
+                    wbox, wth = {}, None
+                    if SETTINGS["content_search"] and winsearch.terms_of(q):
+                        wth = threading.Thread(target=lambda: wbox.update(r=winsearch.query(q)), name="winsearch-q", daemon=True)
+                        wth.start()
                     res, total, ms = SEARCH.search(q)
                     entries = rows(res)
                     note = "" if SEARCH.state == "ready" else T(" (색인 만드는 중 — 결과가 덜 나올 수 있음)")
-                    self.sig.info.emit(self.gen, T('{0:,}개').format(total) + (T(' (앞 {0:,}개만 표시)').format(len(res)) if total > len(res) else "") + f" · {ms:.0f}ms" + note)
+                    msg = T('{0:,}개').format(total) + (T(' (앞 {0:,}개만 표시)').format(len(res)) if total > len(res) else "") + f" · {ms:.0f}ms" + note
+                    if wth is not None:
+                        wth.join(3.5)
+                        crows, cms, cerr = wbox.get("r", ([], 0.0, "timeout"))
+                        names = {os.path.normcase(e[5]) for e in entries}
+                        add = [r for r in crows if os.path.normcase(r[0]) not in names]
+                        terms = winsearch.terms_of(q)
+                        t_snip = time.perf_counter()
+                        n_snip = 0
+                        for i, (pth, nm, sz, mt) in enumerate(add):
+                            snip = ""
+                            if i < CONTENT_SNIP_N and time.perf_counter() - t_snip < CONTENT_SNIP_SEC and not self.cancel():
+                                snip = doctext.snippet(doctext.extract(pth, max_chars=300000) or "", terms, 50)
+                                n_snip += 1
+                            CONTENT_HITS[(q, os.path.normcase(pth))] = snip
+                            entries.append([nm, False, sz, mt, 0, pth, None, None])
+                        log.info("전체 검색 %r: 이름 %d개 · 내용 %d개 (윈도우 색인 %.0fms%s, 겹쳐 뺀 것 %d, 조각 %d개 %.0fms)",
+                                 q, len(res), len(add), cms, f" 오류 {cerr[:80]}" if cerr else "", len(crows) - len(add),
+                                 n_snip, (time.perf_counter() - t_snip) * 1000)
+                        msg += " · " + (T("내용 {0:,}개 (윈도우 색인)").format(len(add)) if not cerr else T("내용 검색 안 됨 (윈도우 검색 서비스)"))
+                    self.sig.info.emit(self.gen, msg)
             else:
                 # DirEntry.stat() 은 윈도우에서 FindFirstFile 결과를 재사용 → 파일을 열지 않음
                 with os.scandir(self.path) as it:
@@ -2182,6 +2219,10 @@ class DirModel(QtCore.QAbstractTableModel):
             tot, free = PC_SPACE[e[5]]
             return f"{e[7] or e[5]}\n" + T("{0} 중 {1} 사용 가능").format(fmt_bytes(tot), fmt_bytes(free))
         elif role == Qt.ToolTipRole and c == 0 and e[5]:
+            if CONTENT_HITS and is_search(self.path):   # 0.9.145 내용 결과: 찾은 문장 조각
+                sn = content_snip(parse_search(self.path)[0], e)
+                if sn is not None:
+                    return e[5] + "\n\n" + (sn or T("(문서 내용에서 찾음)"))
             return e[5]
         return None
 
@@ -2284,6 +2325,7 @@ class DirModel(QtCore.QAbstractTableModel):
         """날짜별로 묶기 (v0.9.90): 묶음 제목 줄을 끼움. 묶음 안 순서는 지금 정렬 그대로.
         묶음 순서는 새것부터 — 수정한 날짜 오름차순 정렬일 때만 오래된 것부터"""
         self.n_groups = 0
+        self.n_folded = 0   # 0.9.145 검색 묶음도 접기 — 다른 경로에서 남은 값이 항목 수에 섞이지 않게
         if self.path == THIS_PC and self.group_on and rows:   # 0.9.124 탐색기처럼 (자세히 보기)
             order = [T("폴더"), T("장치 및 드라이브"), T("네트워크 위치"), T("휴대용 장치")]
             buckets = {}
@@ -2315,6 +2357,25 @@ class DirModel(QtCore.QAbstractTableModel):
                     self.n_groups += 1
             self.n_folded = hidden
             return out
+        if is_search(self.path) and rows and CONTENT_HITS:   # 0.9.145 이름에서 찾음 · 내용에서 찾음 (제목 누르면 접기)
+            q, folder = parse_search(self.path)
+            if not folder:
+                cont = [e for e in rows if content_snip(q, e) is not None]
+                if cont:
+                    name_part = [e for e in rows if content_snip(q, e) is None]
+                    out, hidden = [], 0
+                    for title, part in ((T("이름에서 찾음"), name_part), (T("내용에서 찾음 — 문서 안 글자 (윈도우 색인)"), cont)):
+                        if not part:
+                            continue
+                        shut = (GROUP_MARK + title) in self.folded
+                        out.append([GROUP_MARK + title, False, -1, 0, 0, "", 0, ("▸ " if shut else "▾ ") + f"{title}  ({len(part):,})"])
+                        if shut:
+                            hidden += len(part)
+                        else:
+                            out.extend(part)
+                        self.n_groups += 1
+                    self.n_folded = hidden
+                    return out
         by_type = OPTS["type_groups"]
         if not ((OPTS["date_groups"] or by_type) and self.group_on and rows and self.path and self.path != THIS_PC
                 and not is_search(self.path)):
@@ -2334,7 +2395,7 @@ class DirModel(QtCore.QAbstractTableModel):
 
     def count(self):
         """실제 항목 수 (묶음 제목 줄 뺌, 접은 묶음 안 것은 셈)"""
-        return len(self.rows) - self.n_groups + (self.n_folded if is_home(self.path) else 0)
+        return len(self.rows) - self.n_groups + (self.n_folded if is_home(self.path) or is_search(self.path) else 0)
 
     def toggle_fold(self, key):
         """0.9.134 빌드 7 홈 묶음 접기·펴기 (탭마다, 다시 읽어도 유지)"""
@@ -3091,7 +3152,8 @@ class ViewMixin(DragScrollMixin):
             pos = ev.position().toPoint()
             idx = self.indexAt(pos)
             m0 = self.model()
-            if idx.isValid() and is_home(getattr(m0, "path", "")) and idx.row() < len(m0.rows) and is_group(m0.rows[idx.row()]):
+            if (idx.isValid() and (is_home(getattr(m0, "path", "")) or is_search(getattr(m0, "path", "")))
+                    and idx.row() < len(m0.rows) and is_group(m0.rows[idx.row()])):   # 0.9.145 검색 묶음도
                 m0.toggle_fold(m0.rows[idx.row()][0])   # 0.9.134 빌드 7 홈 묶음 제목 누르면 접기·펴기 (탐색기처럼)
                 return
             sm = self.selectionModel()
@@ -5283,6 +5345,20 @@ class Page(QtWidgets.QWidget):
             out.append((ti(T("여러 파일 한 번에 인쇄…"), "print"), lambda: self.print_files(files)))
         return out
 
+    def content_search_here(self, q, paths=None):
+        """0.9.145: 전체 검색 글자로 '파일 내용 찾기'(문서 안까지) 열기 — 폴더는 고른 결과의 폴더, 없으면 이 탭에서 마지막으로 본 폴더"""
+        folder = os.path.dirname(paths[0]) if paths else ""
+        if not folder:
+            for p in reversed(getattr(self, "back", []) or []):
+                if p and not is_search(p) and p != THIS_PC and os.path.isdir(p):
+                    folder = p
+                    break
+        folder = folder or os.path.expanduser("~")
+        log.info("문서 내용까지 찾기 창 %r 폴더 %s (색인 범위 %s)", q, folder, winsearch.covered(folder))
+        m = main_of(self)
+        return open_tool(grepsearch.open_dialog, self.window(), folder,
+                         open_cb=(lambda p, line=None: m.open_loc(p, line)) if m else None, text=q, run=False)
+
     def grep_here(self, folder=None):
         folder = folder or self.path
         m = main_of(self)
@@ -5889,9 +5965,15 @@ class Page(QtWidgets.QWidget):
 
     def _search_menu(self, gp, x, y, paths):
         """검색 결과 우클릭: 맨 위 '폴더 위치 열기' + (같은 폴더 항목이면) 윈도우 메뉴"""
+        q0, folder0 = parse_search(self.path)
+        deep = None
+        if not folder0 and not is_home(self.path) and not tags.is_view(q0) and winsearch.terms_of(q0):   # 0.9.145
+            deep = (T("문서 내용까지 찾기 (폴더 골라서 직접 읽기)…"), lambda: self.content_search_here(q0, paths))
         if not paths:
             m = QtWidgets.QMenu(self)
             m.addAction(T("다시 검색"), lambda: self.reload("menu"))
+            if deep:
+                m.addAction(grepsearch.grep_icon(16), deep[0], deep[1])
             m.exec(gp)
             return
         first = paths[0]
@@ -5900,6 +5982,8 @@ class Page(QtWidgets.QWidget):
                   (T("새 탭에서 폴더 위치 열기"), lambda: self.openInNewTab.emit(loc))]
         if main_of(self) is not None:
             extras.append((mlabel(T("이름 일괄 변경…"), "rename" if len(paths) > 1 else None), lambda: main_of(self).open_batch_rename(self.selected_paths())))
+        if deep:
+            extras.append(deep)
         q = parse_search(self.path)[0]
         if q.startswith(tags.SET_Q):   # 0.9.109 묶음 보기: 진짜 파일은 그대로, 목록에서만 뺌
             extras.insert(0, (T("가상 그룹에서 빼기"), lambda: (TAGS.remove_from_set(q[len(tags.SET_Q):], paths), self.reload("set"))))
@@ -9279,6 +9363,7 @@ SHOW_OPTS = [("checkboxes", T("항목 확인란")), ("show_ext", T("파일 확�
              ("date_groups", T("날짜별로 묶기 (오늘·어제·이번 주…)")), ("type_groups", T("형식별로 묶기 (폴더·JPG·PNG…)"))]
 SET_TOGGLES = [("hide_single_tab", T("탭이 하나면 탭 줄 숨기기 (새 탭: Ctrl+T)")), ("empty_click_up", T("빈 곳을 더블클릭하면 상위 폴더로")),
                ("arc_browse", T("압축 파일(ZIP·7Z·RAR…)을 두 번 누르면 4Dir 안에서 폴더처럼 열기")),
+               ("content_search", T("전체 검색에 문서 내용 결과도 보이기 (윈도우 색인)")),
                ("folder_size", T("폴더 크기 계산 (크기 칸 — 네트워크 드라이브 제외)")), ("keep_favbar", T("메뉴줄을 접어도 즐겨찾기 줄은 보이기")),
                ("show_favbar", T("즐겨찾기 줄 보이기")),
                ("folder_view_memory", T("폴더마다 보기 기억")),
@@ -10402,6 +10487,7 @@ class SettingsDialog(QtWidgets.QDialog):
         lay.addSpacing(4)
         self._set(lay, "delete_confirm", T("삭제할 때 휴지통으로 버릴지 영구 삭제할지 묻기"))   # 0.9.138 빌드 4 받은 의견
         self._set(lay, "arc_browse", T("압축 파일(ZIP·7Z·RAR…)을 두 번 누르면 4Dir 안에서 폴더처럼 열기"))   # 빌드 20
+        self._set(lay, "content_search", T("전체 검색에 문서 내용 결과도 보이기 (윈도우 색인)"))   # 0.9.145
         # 0.9.134 (사용자 11/12): 4Dir 에서 열면 실행이 붙잡히는 파일 → 탐색기에게 넘겨 열 확장자 더하기 (빌드 없이)
         # 빌드 2 (사용자 '한 줄에 하나씩 목록, 입력칸 + 등록, 목록에서 골라 삭제')
         d = QtWidgets.QLabel("※ " + T("4Dir 에서 두 번 눌러도 안 열리거나 한참 뒤에 열리는 파일은 탐색기에게 넘겨서 엽니다. 확장자를 등록하세요."))

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""파일 내용 찾기 (GREPSEARCH_VER 1.0.0, 0.9.116 — 사용자 11/8 요청 '파일 내용 찾기(grep)')
+"""파일 내용 찾기 (GREPSEARCH_VER 1.1.0 — 문서 안까지, 1.0.0: 0.9.116 — 사용자 11/8 요청 '파일 내용 찾기(grep)')
 
 - open_dialog(parent, folder, open_cb=None) → 창: 찾을 글자 · [정규식] [대소문자 구분] [낱말 단위] · 파일 이름 거르기('*.py;*.txt', 빈칸=전부)
   · 하위 폴더 포함 · 건너뛸 폴더(기본 .git .svn .hg node_modules __pycache__ .vs .idea) · 큰 파일(기본 20MB 넘음) 건너뜀
@@ -22,7 +22,7 @@ from i18n import T
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-GREPSEARCH_VER = "1.0.0"
+GREPSEARCH_VER = "1.1.0"   # 1.1.0 (0.9.145): 문서 안까지(doctext)·폴더 바꾸기·글자 미리 채움
 log = logging.getLogger("QE.grep")
 DEFAULT_SKIP = ".git;.svn;.hg;node_modules;__pycache__;.vs;.idea"
 DEFAULT_MAX_MB = 20
@@ -57,17 +57,21 @@ def split_list(s):
 
 
 def search(folder, pattern, masks=None, recurse=True, skip_dirs=None, max_bytes=DEFAULT_MAX_MB * 1048576,
-           cancel=lambda: False, on_file=None, on_progress=None, max_hits=MAX_HITS):
+           cancel=lambda: False, on_file=None, on_progress=None, max_hits=MAX_HITS, docs=False, doc_max_bytes=None):
     """folder 안 파일 내용 찾기. on_file(path, [(줄번호, 줄, [(시작, 끝)])]) 은 찾은 파일마다.
-    반환 dict(files=훑은 파일 수, matched=찾은 파일 수, hits=곳 수, skipped_big, skipped_bin, errors, stopped)"""
+    1.1.0 docs=True: 엑셀·워드·파워포인트·한글·PDF 등은 doctext 로 글자를 꺼내 찾음 (크기 제한 doc_max_bytes, 기본 50MB)
+    반환 dict(files=훑은 파일 수, matched=찾은 파일 수, hits=곳 수, docs=읽은 문서 수, doc_fail, skipped_big, skipped_bin, errors, stopped)"""
     masks = [m.lower() for m in (masks or []) if m and m != "*" and m != "*.*"]
     skip = {d.lower() for d in (skip_dirs or [])}
-    st = dict(files=0, matched=0, hits=0, skipped_big=0, skipped_bin=0, errors=0, stopped=False)
+    st = dict(files=0, matched=0, hits=0, docs=0, doc_fail=0, skipped_big=0, skipped_bin=0, errors=0, stopped=False)
+    if docs:
+        import doctext
+        doc_max = doc_max_bytes or doctext.MAX_BYTES
     t0 = time.perf_counter()
     last = [0.0]
     stack = [folder]
-    log.info("내용 찾기 시작 %s 패턴=%r 거르기=%s 하위=%s 건너뛸 폴더=%s 크기제한=%d",
-             folder, pattern.pattern, masks, recurse, sorted(skip), max_bytes)
+    log.info("내용 찾기 시작 %s 패턴=%r 거르기=%s 하위=%s 건너뛸 폴더=%s 크기제한=%d 문서=%s",
+             folder, pattern.pattern, masks, recurse, sorted(skip), max_bytes, docs)
     while stack:
         if cancel():
             st["stopped"] = True
@@ -97,18 +101,29 @@ def search(folder, pattern, masks=None, recurse=True, skip_dirs=None, max_bytes=
             if masks and not any(fnmatch.fnmatchcase(nm, m) for m in masks):
                 continue
             st["files"] += 1
+            is_doc = docs and doctext.is_doc(e.path)
             try:
                 size = e.stat().st_size
-                if size > max_bytes:
+                if size > (doc_max if is_doc else max_bytes):
                     st["skipped_big"] += 1
                     continue
-                with open(e.path, "rb") as f:
-                    b = f.read()
+                if is_doc:
+                    b = None
+                else:
+                    with open(e.path, "rb") as f:
+                        b = f.read()
             except OSError as ex:
                 st["errors"] += 1
                 log.debug("파일 못 읽음 %s: %s", e.path, ex)
                 continue
-            text = decode_bytes(b)
+            if is_doc:
+                text = doctext.extract(e.path, cancel=cancel)
+                if text is None:
+                    st["doc_fail"] += 1
+                    continue
+                st["docs"] += 1
+            else:
+                text = decode_bytes(b)
             if text is None:
                 st["skipped_bin"] += 1
                 continue
@@ -194,7 +209,7 @@ class _Bridge(QtCore.QObject):
 
 
 class GrepDialog(QtWidgets.QDialog):
-    def __init__(self, parent, folder, open_cb=None):
+    def __init__(self, parent, folder, open_cb=None, text="", run=False):
         super().__init__(parent)
         self.setWindowFlags(Qt.Window)
         self.setAttribute(Qt.WA_DeleteOnClose)
@@ -221,7 +236,18 @@ class GrepDialog(QtWidgets.QDialog):
         for c in (self.c_regex, self.c_case, self.c_word):
             opt.addWidget(c)
         opt.addStretch(1)
+        # 1.1.0: 문서 안까지 (기본 켬)
+        self.c_docs = QtWidgets.QCheckBox(T("문서 안까지 (엑셀·워드·파워포인트·한글·PDF)"))
+        self.c_docs.setChecked(True)
+        opt.insertWidget(3, self.c_docs)
         form.addLayout(opt, 1, 1, 1, 3)
+        # 1.1.0: 찾을 폴더를 바꿀 수 있게 (전체 검색에서 열 때 등)
+        self.fold = QtWidgets.QLineEdit(folder)
+        b_browse = QtWidgets.QPushButton(T("찾아보기…"))
+        b_browse.clicked.connect(self._pick_folder)
+        form.addWidget(QtWidgets.QLabel(T("폴더")), 4, 0)
+        form.addWidget(self.fold, 4, 1, 1, 2)
+        form.addWidget(b_browse, 4, 3)
         self.mask = QtWidgets.QLineEdit()
         self.mask.setPlaceholderText(T("예: *.py;*.txt (빈칸 = 전부)"))
         form.addWidget(QtWidgets.QLabel(T("파일 이름")), 2, 0)
@@ -268,7 +294,16 @@ class GrepDialog(QtWidgets.QDialog):
         self.tree.itemDoubleClicked.connect(self._activate)
         self.tree.customContextMenuRequested.connect(self._menu)
         QtGui.QShortcut(QtGui.QKeySequence("Escape"), self, self._esc)
-        log.info("내용 찾기 창 열기 %s", folder)
+        log.info("내용 찾기 창 열기 %s 글자=%r 바로찾기=%s", folder, text, run)
+        if text:
+            self.q.setText(text)
+        if run and text and os.path.isdir(folder):
+            QtCore.QTimer.singleShot(0, self.start)
+
+    def _pick_folder(self):
+        d = QtWidgets.QFileDialog.getExistingDirectory(self, T("찾을 폴더"), self.fold.text() or self.folder)
+        if d:
+            self.fold.setText(os.path.normpath(d))
 
     def _hit_color(self):
         pal = self.palette()
@@ -288,6 +323,12 @@ class GrepDialog(QtWidgets.QDialog):
             self.status.setText(T("정규식이 잘못됨: {0}").format(e))
             log.info("정규식 오류 %r: %s", text, e)
             return
+        fold = os.path.normpath(self.fold.text().strip() or self.folder)
+        if not os.path.isdir(fold):
+            self.status.setText(T("폴더가 없습니다: {0}").format(fold))
+            return
+        self.folder = fold
+        self.setWindowTitle(T("파일 내용 찾기") + f" — {fold}")
         self.tree.clear()
         self._results = []
         self._col = self._hit_color()
@@ -296,7 +337,8 @@ class GrepDialog(QtWidgets.QDialog):
         self.b_stop.setEnabled(True)
         self.status.setText(T("찾는 중…"))
         args = dict(masks=split_list(self.mask.text()), recurse=self.c_sub.isChecked(),
-                    skip_dirs=split_list(self.skip.text()), max_bytes=self.max_mb.value() * 1048576)
+                    skip_dirs=split_list(self.skip.text()), max_bytes=self.max_mb.value() * 1048576,
+                    docs=self.c_docs.isChecked())
         br = self.bridge
 
         def run():
@@ -323,7 +365,10 @@ class GrepDialog(QtWidgets.QDialog):
 
     @staticmethod
     def _prog_text(st):
-        return T("파일 {0:,}개 중 {1:,}개에서 {2:,}곳").format(st["files"], st["matched"], st["hits"])
+        s = T("파일 {0:,}개 중 {1:,}개에서 {2:,}곳").format(st["files"], st["matched"], st["hits"])
+        if st.get("docs"):
+            s += " · " + T("문서 {0:,}개 읽음").format(st["docs"])
+        return s
 
     def _on_progress(self, st, path):
         self.status.setText(self._prog_text(st) + " — " + os.path.basename(path))
@@ -369,6 +414,8 @@ class GrepDialog(QtWidgets.QDialog):
             extra.append(T("이진 파일 {0:,}개 건너뜀").format(st["skipped_bin"]))
         if st["skipped_big"]:
             extra.append(T("큰 파일 {0:,}개 건너뜀").format(st["skipped_big"]))
+        if st.get("doc_fail"):
+            extra.append(T("못 읽은 문서 {0:,}개 (암호 등)").format(st["doc_fail"]))
         self.status.setText(" · ".join([s] + extra))
         self.last_stats = st
 
@@ -430,8 +477,8 @@ class GrepDialog(QtWidgets.QDialog):
         super().closeEvent(ev)
 
 
-def open_dialog(parent, folder, open_cb=None):
-    d = GrepDialog(parent, folder, open_cb)
+def open_dialog(parent, folder, open_cb=None, text="", run=False):
+    d = GrepDialog(parent, folder, open_cb, text=text, run=run)
     d.show()
     return d
 

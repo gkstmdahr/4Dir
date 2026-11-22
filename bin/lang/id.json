@@ -2405,5 +2405,18 @@
  "동기화 중": "Sinkronisasi tertunda",
  "압축에서 꺼내기를 취소했습니다": "Ekstraksi dari arsip dibatalkan",
  "압축에서 꺼내는 중…": "Mengekstrak dari arsip…",
- "취소하는 중…": "Membatalkan…"
+ "취소하는 중…": "Membatalkan…",
+ "내용 {0:,}개 (윈도우 색인)": "{0:,} di isi (indeks Windows)",
+ "내용 검색 안 됨 (윈도우 검색 서비스)": "Pencarian isi tidak tersedia (layanan Windows Search)",
+ "이름에서 찾음": "Cocok di nama",
+ "내용에서 찾음 — 문서 안 글자 (윈도우 색인)": "Ditemukan di isi — teks dalam dokumen (indeks Windows)",
+ "(문서 내용에서 찾음)": "(ditemukan di isi dokumen)",
+ "문서 내용까지 찾기 (폴더 골라서 직접 읽기)…": "Cari juga isi dokumen (pilih folder, baca langsung)…",
+ "전체 검색에 문서 내용 결과도 보이기 (윈도우 색인)": "Tampilkan hasil isi dokumen di pencarian global (indeks Windows)",
+ "문서 안까지 (엑셀·워드·파워포인트·한글·PDF)": "Di dalam dokumen (Excel, Word, PowerPoint, Hangul, PDF)",
+ "찾아보기…": "Telusuri…",
+ "찾을 폴더": "Folder yang dicari",
+ "폴더가 없습니다: {0}": "Folder tidak ditemukan: {0}",
+ "문서 {0:,}개 읽음": "{0:,} dokumen dibaca",
+ "못 읽은 문서 {0:,}개 (암호 등)": "{0:,} dokumen tidak dapat dibaca (kata sandi, dll.)"
 }

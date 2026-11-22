@@ -2405,5 +2405,18 @@
  "동기화 중": "Eşitleme bekliyor",
  "압축에서 꺼내기를 취소했습니다": "Arşivden çıkarma iptal edildi",
  "압축에서 꺼내는 중…": "Arşivden çıkarılıyor…",
- "취소하는 중…": "İptal ediliyor…"
+ "취소하는 중…": "İptal ediliyor…",
+ "내용 {0:,}개 (윈도우 색인)": "İçerikte {0:,} (Windows dizini)",
+ "내용 검색 안 됨 (윈도우 검색 서비스)": "İçerik araması kullanılamıyor (Windows Search hizmeti)",
+ "이름에서 찾음": "Adda eşleşenler",
+ "내용에서 찾음 — 문서 안 글자 (윈도우 색인)": "İçerikte bulundu — belgelerdeki metin (Windows dizini)",
+ "(문서 내용에서 찾음)": "(belge içeriğinde bulundu)",
+ "문서 내용까지 찾기 (폴더 골라서 직접 읽기)…": "Belge içeriklerinde de ara (klasör seç, doğrudan oku)…",
+ "전체 검색에 문서 내용 결과도 보이기 (윈도우 색인)": "Genel aramada belge içeriği sonuçlarını göster (Windows dizini)",
+ "문서 안까지 (엑셀·워드·파워포인트·한글·PDF)": "Belgelerin içinde (Excel, Word, PowerPoint, Hangul, PDF)",
+ "찾아보기…": "Gözat…",
+ "찾을 폴더": "Aranacak klasör",
+ "폴더가 없습니다: {0}": "Klasör bulunamadı: {0}",
+ "문서 {0:,}개 읽음": "{0:,} belge okundu",
+ "못 읽은 문서 {0:,}개 (암호 등)": "{0:,} belge okunamadı (parola vb.)"
 }

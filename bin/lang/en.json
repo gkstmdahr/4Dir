@@ -2405,5 +2405,18 @@
  "동기화 중": "Sync pending",
  "압축에서 꺼내기를 취소했습니다": "Extraction from archive canceled",
  "압축에서 꺼내는 중…": "Extracting from archive…",
- "취소하는 중…": "Canceling…"
+ "취소하는 중…": "Canceling…",
+ "내용 {0:,}개 (윈도우 색인)": "{0:,} in content (Windows index)",
+ "내용 검색 안 됨 (윈도우 검색 서비스)": "Content search unavailable (Windows Search service)",
+ "이름에서 찾음": "Name matches",
+ "내용에서 찾음 — 문서 안 글자 (윈도우 색인)": "Found in content — text inside documents (Windows index)",
+ "(문서 내용에서 찾음)": "(found in document content)",
+ "문서 내용까지 찾기 (폴더 골라서 직접 읽기)…": "Search document contents too (pick a folder, read directly)…",
+ "전체 검색에 문서 내용 결과도 보이기 (윈도우 색인)": "Show document content results in global search (Windows index)",
+ "문서 안까지 (엑셀·워드·파워포인트·한글·PDF)": "Inside documents (Excel, Word, PowerPoint, Hangul, PDF)",
+ "찾아보기…": "Browse…",
+ "찾을 폴더": "Folder to search",
+ "폴더가 없습니다: {0}": "Folder not found: {0}",
+ "문서 {0:,}개 읽음": "{0:,} documents read",
+ "못 읽은 문서 {0:,}개 (암호 등)": "{0:,} documents could not be read (password etc.)"
 }

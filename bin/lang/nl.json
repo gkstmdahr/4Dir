@@ -2405,5 +2405,18 @@
  "동기화 중": "Synchronisatie in behandeling",
  "압축에서 꺼내기를 취소했습니다": "Uitpakken uit archief geannuleerd",
  "압축에서 꺼내는 중…": "Uitpakken uit archief…",
- "취소하는 중…": "Annuleren…"
+ "취소하는 중…": "Annuleren…",
+ "내용 {0:,}개 (윈도우 색인)": "{0:,} in inhoud (Windows-index)",
+ "내용 검색 안 됨 (윈도우 검색 서비스)": "Inhoud zoeken niet beschikbaar (Windows Search-service)",
+ "이름에서 찾음": "Overeenkomsten in naam",
+ "내용에서 찾음 — 문서 안 글자 (윈도우 색인)": "Gevonden in inhoud — tekst in documenten (Windows-index)",
+ "(문서 내용에서 찾음)": "(gevonden in documentinhoud)",
+ "문서 내용까지 찾기 (폴더 골라서 직접 읽기)…": "Ook in documentinhoud zoeken (map kiezen, direct lezen)…",
+ "전체 검색에 문서 내용 결과도 보이기 (윈도우 색인)": "Resultaten uit documentinhoud tonen bij globaal zoeken (Windows-index)",
+ "문서 안까지 (엑셀·워드·파워포인트·한글·PDF)": "In documenten (Excel, Word, PowerPoint, Hangul, PDF)",
+ "찾아보기…": "Bladeren…",
+ "찾을 폴더": "Map om te doorzoeken",
+ "폴더가 없습니다: {0}": "Map niet gevonden: {0}",
+ "문서 {0:,}개 읽음": "{0:,} documenten gelezen",
+ "못 읽은 문서 {0:,}개 (암호 등)": "{0:,} documenten niet leesbaar (wachtwoord enz.)"
 }

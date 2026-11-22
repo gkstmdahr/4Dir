@@ -2405,5 +2405,18 @@
  "동기화 중": "Sincronizzazione in sospeso",
  "압축에서 꺼내기를 취소했습니다": "Estrazione dall'archivio annullata",
  "압축에서 꺼내는 중…": "Estrazione dall'archivio…",
- "취소하는 중…": "Annullamento…"
+ "취소하는 중…": "Annullamento…",
+ "내용 {0:,}개 (윈도우 색인)": "{0:,} nel contenuto (indice di Windows)",
+ "내용 검색 안 됨 (윈도우 검색 서비스)": "Ricerca nel contenuto non disponibile (servizio Windows Search)",
+ "이름에서 찾음": "Corrispondenze nel nome",
+ "내용에서 찾음 — 문서 안 글자 (윈도우 색인)": "Trovato nel contenuto — testo nei documenti (indice di Windows)",
+ "(문서 내용에서 찾음)": "(trovato nel contenuto del documento)",
+ "문서 내용까지 찾기 (폴더 골라서 직접 읽기)…": "Cerca anche nel contenuto dei documenti (scegli cartella, lettura diretta)…",
+ "전체 검색에 문서 내용 결과도 보이기 (윈도우 색인)": "Mostra i risultati del contenuto dei documenti nella ricerca globale (indice di Windows)",
+ "문서 안까지 (엑셀·워드·파워포인트·한글·PDF)": "Nei documenti (Excel, Word, PowerPoint, Hangul, PDF)",
+ "찾아보기…": "Sfoglia…",
+ "찾을 폴더": "Cartella in cui cercare",
+ "폴더가 없습니다: {0}": "Cartella non trovata: {0}",
+ "문서 {0:,}개 읽음": "{0:,} documenti letti",
+ "못 읽은 문서 {0:,}개 (암호 등)": "{0:,} documenti non leggibili (password ecc.)"
 }
