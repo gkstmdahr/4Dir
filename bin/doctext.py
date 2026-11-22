@@ -23,7 +23,7 @@ import struct
 import logging
 import zipfile
 
-DOCTEXT_VER = "1.0.0"
+DOCTEXT_VER = "1.0.1"   # 1.0.1 (0.9.146): hwpx 는 section 의 <hp:t> 글자만 (header.xml 의 '^1.^2.' 번호 형식이 섞여 나왔음)
 log = logging.getLogger("QE.doctext")
 
 MAX_BYTES = 50 * 1048576     # 이보다 큰 문서는 안 읽음
@@ -37,7 +37,7 @@ ZIP_PARTS = {
     ".xltx": (r"xl/sharedStrings\.xml$", r"xl/worksheets/sheet\d+\.xml$"),
     ".pptx": (r"ppt/slides/slide\d+\.xml$", r"ppt/notesSlides/notesSlide\d+\.xml$"),
     ".pptm": (r"ppt/slides/slide\d+\.xml$", r"ppt/notesSlides/notesSlide\d+\.xml$"),
-    ".hwpx": (r"Contents/section\d+\.xml$", r"Contents/header\.xml$"),
+    ".hwpx": (r"Contents/section\d+\.xml$",),   # 1.0.1: header.xml 은 번호 형식(^1.)·메타 글자뿐이라 뺌 (실제 한글 hwpx 실측)
     ".odt": (r"content\.xml$",), ".ods": (r"content\.xml$",), ".odp": (r"content\.xml$",),
 }
 HWP_EXT = {".hwp", ".hwt"}   # .hwt = 한글 서식 (같은 형식)
@@ -59,6 +59,9 @@ def _xml_text(data, part):
         return "\n".join(html.unescape(n) for n in _SHEET_NAME.findall(s))
     if "/worksheets/" in part:   # 시트: 칸 안 글자(inlineStr)만 — 공유 글자는 sharedStrings 에서
         s = "".join(re.findall(r"<is>.*?</is>", s, re.S))
+    elif part.startswith("Contents/section"):   # 1.0.1 hwpx: 본문 글자(<hp:t>)와 문단 끝만 — 쪽 설정 등 속성 글자는 버림
+        s = "".join(m.group(0) if m.group(0).startswith("</") else (m.group(1) or "")
+                    for m in re.finditer(r"<hp:t\b[^>]*>(.*?)</hp:t>|</hp:p>", s, re.S))
     s = _BREAK.sub("\n", s)
     s = _TAG.sub("", s)
     return html.unescape(s)

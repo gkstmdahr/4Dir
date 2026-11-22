@@ -15,7 +15,7 @@ import time
 import logging
 import threading
 
-WINSEARCH_VER = "1.0.0"
+WINSEARCH_VER = "1.0.2"   # 1.0.2: 끝 * 는 떼고 앞부분 맞추기 / 1.0.1 (0.9.146): 낱말 앞부분 맞추기
 log = logging.getLogger("QE.wsearch")
 
 _SQL_BAD = re.compile(r"[\"'\x00-\x1f]")
@@ -25,7 +25,8 @@ def terms_of(text):
     """검색 글자 → 내용에서 찾을 낱말들. 확장자(.xlsx)·경로(\\)·와일드카드 낱말은 이름 검색용이라 뺌"""
     out = []
     for t in (text or "").split():
-        if t.startswith(".") or "\\" in t or "/" in t or "*" in t or "?" in t or t.startswith("-"):
+        t = t.rstrip("*")   # 1.0.2: '테리테*' = 앞부분 맞추기와 같음 (사용자 11/22 — 전엔 * 든 낱말을 통째로 빼서 내용 질의를 안 했음)
+        if not t or t.startswith(".") or "\\" in t or "/" in t or "*" in t or "?" in t or t.startswith("-"):
             continue
         t = _SQL_BAD.sub("", t)
         if t:
@@ -56,7 +57,8 @@ def _run(terms, limit, box):
         import win32com.client
         pythoncom.CoInitialize()
         try:
-            cond = " AND ".join(f'"{t}"' for t in terms)
+            # 1.0.1: 낱말 앞부분 맞추기("테리테*") — 색인은 낱말 단위라 '테리테'만으론 '테리테리'가 안 나옴(사용자 11/22 실측). 낱말 가운데 글자는 색인으로 못 찾음
+            cond = " AND ".join(f'"{t}*"' for t in terms)
             # 실측: ItemPathDisplay 는 'C:\사용자\…' 처럼 화면용 이름 → 진짜 경로는 ItemUrl('file:C:/Users/…')에서
             sql = (f"SELECT TOP {int(limit)} System.ItemUrl, System.FileName, System.Size, System.DateModified "
                    f"FROM SYSTEMINDEX WHERE CONTAINS(*, '{cond}') AND System.ItemType <> 'Directory' "
