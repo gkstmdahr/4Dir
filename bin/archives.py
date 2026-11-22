@@ -20,7 +20,7 @@ import subprocess
 
 import ftpfs   # 1.1.0 FTP 를 폴더처럼 (열기·꺼내기·끌기는 압축 안과 같은 길)
 
-ARCHIVES_VER = "1.1.0"   # 1.1.0 (0.9.109 빌드 3): FTP 경로(::FTP:)도 같은 길 — ftpfs 로 넘김
+ARCHIVES_VER = "1.2.0"   # 1.2.0 (0.9.144 빌드 4): 대괄호 이름 풀기 실패 고침·취소·진행 크기 / 1.1.0 (0.9.109 빌드 3): FTP 경로(::FTP:)도 같은 길 — ftpfs 로 넘김
 log = logging.getLogger("QE.arc")
 PREFIX = "::ARC:"
 EXTS = (".zip", ".7z", ".rar", ".tar", ".tgz", ".tar.gz", ".tbz2", ".tar.bz2", ".txz", ".tar.xz", ".cab", ".iso")
@@ -221,8 +221,64 @@ def _new_tmp():
     return d
 
 
-def extract_temp(paths):
-    """압축 안 항목들 → 임시 폴더에 풀어 진짜 경로 목록 (폴더는 안쪽 전부). 복사·열기·끌기에 씀"""
+class Cancelled(OSError):
+    """1.2.0: 꺼내기를 사용자가 취소함"""
+
+
+def _tar_pat(name):
+    """1.2.0 (사용자 11/22 문제 보고): tar.exe 는 넘긴 이름을 글자 무늬로 읽음 → '[...]'·'*'·'?' 가 든 이름은
+    'Not found in archive' 로 실패하고 압축 전체를 풀었음(수십 GB 면 몇 분). 앞에 역슬래시를 붙여 글자 그대로 찾게 함 (실측: 그대로=실패, 역슬래시+[ =성공)"""
+    return re.sub(r"([\\*?\[\]])", r"\\\1", name)
+
+
+def _dir_bytes(d):
+    n = 0
+    for root, _ds, fs in os.walk(d):
+        for f in fs:
+            try:
+                n += os.path.getsize(os.path.join(root, f))
+            except OSError:
+                pass
+    return n
+
+
+def _all_out(dest, want, idx):
+    """고른 파일이 임시 폴더에 다 있고 크기도 목록과 같은가"""
+    for n in want:
+        if idx[n][0]:
+            continue
+        try:
+            if os.path.getsize(os.path.join(dest, *n.split("/"))) != idx[n][1]:
+                return False
+        except OSError:
+            return False
+    return True
+
+
+def _run_tar(args, dest, cancel, progress, total):
+    """tar.exe 를 돌리며 0.5초마다 취소 확인·푼 크기 기록 (꺼내는 동안만). 돌려줌 = (종료 코드, 오류 글)"""
+    with tempfile.TemporaryFile() as ef:
+        p = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=ef, creationflags=0x08000000)
+        t_end = time.time() + 3600
+        while True:
+            try:
+                rc = p.wait(timeout=0.5)
+                break
+            except subprocess.TimeoutExpired:
+                pass
+            if (cancel is not None and cancel.is_set()) or time.time() > t_end:
+                p.kill()
+                p.wait()
+                raise Cancelled("취소됨" if cancel is not None and cancel.is_set() else "시간 초과(1시간)")
+            if progress is not None:
+                progress["done"], progress["total"] = _dir_bytes(dest), total
+        ef.seek(0)
+        return rc, ef.read().decode("mbcs", "replace")
+
+
+def extract_temp(paths, cancel=None, progress=None):
+    """압축 안 항목들 → 임시 폴더에 풀어 진짜 경로 목록 (폴더는 안쪽 전부). 복사·열기·끌기에 씀
+    1.2.0: cancel(threading.Event)·progress(dict: done·total 바이트·name) — 4Dir 은 일꾼 스레드에서 부르고 화면엔 진행 창"""
     out = []
     if any(ftpfs.is_ftp(p) for p in paths):   # FTP 는 받아서
         out += ftpfs.extract_temp([p for p in paths if ftpfs.is_ftp(p)])
@@ -239,44 +295,66 @@ def extract_temp(paths):
         for inner in inners:
             pre = inner + "/"
             want += [n for n in idx if n == inner or n.startswith(pre)]
-        if arc.lower().endswith(".zip"):
-            with zipfile.ZipFile(arc) as z:
-                byname = {_zip_name(zi).replace("\\", "/").strip("/"): zi for zi in z.infolist()}
-                for n in want:
-                    isd = idx[n][0]
-                    tgt = os.path.join(dest, *n.split("/"))
-                    if isd:
-                        os.makedirs(tgt, exist_ok=True)
-                        continue
-                    zi = byname.get(n)
-                    if zi is None:
-                        continue
-                    os.makedirs(os.path.dirname(tgt), exist_ok=True)
-                    with z.open(zi) as src, open(tgt, "wb") as dst:
-                        shutil.copyfileobj(src, dst, 1048576)
-                    mt = idx[n][2]
-                    if mt:
-                        os.utime(tgt, (mt, mt))
-        else:
-            names = [idx[n][3] for n in want if idx[n][3] and not idx[n][0]]
-            ok = False
-            if names:
-                r = subprocess.run([TAR_EXE, "-xf", arc, "-C", dest] + names, capture_output=True, creationflags=0x08000000, timeout=3600)
-                ok = r.returncode == 0
+        total = sum(max(idx[n][1], 0) for n in want if not idx[n][0])
+        if progress is not None:
+            progress.update(done=0, total=total, name=os.path.basename(arc))
+        try:
+            if arc.lower().endswith(".zip"):
+                with zipfile.ZipFile(arc) as z:
+                    byname = {_zip_name(zi).replace("\\", "/").strip("/"): zi for zi in z.infolist()}
+                    done = 0
+                    for n in want:
+                        isd = idx[n][0]
+                        tgt = os.path.join(dest, *n.split("/"))
+                        if isd:
+                            os.makedirs(tgt, exist_ok=True)
+                            continue
+                        zi = byname.get(n)
+                        if zi is None:
+                            continue
+                        os.makedirs(os.path.dirname(tgt), exist_ok=True)
+                        with z.open(zi) as src, open(tgt, "wb") as dst:
+                            while True:
+                                if cancel is not None and cancel.is_set():
+                                    raise Cancelled("취소됨")
+                                b = src.read(1048576)
+                                if not b:
+                                    break
+                                dst.write(b)
+                                done += len(b)
+                                if progress is not None:
+                                    progress["done"] = done
+                        mt = idx[n][2]
+                        if mt:
+                            os.utime(tgt, (mt, mt))
+            else:
+                names = [_tar_pat(idx[n][3]) for n in want if idx[n][3] and not idx[n][0]]
+                ok = False
+                if names:
+                    rc, err = _run_tar([TAR_EXE, "-xf", arc, "-C", dest] + names, dest, cancel, progress, total)
+                    ok = rc == 0
+                    if not ok and _all_out(dest, want, idx):   # 1.2.0 실측: 'Truncated 7-Zip file body' 라며 1 을 돌려줘도 파일은 다 나옴
+                        log.info("tar.exe 오류(%d)지만 고른 파일 %d개 크기까지 다 나옴 → 그대로 씀: %s", rc, len(want), err.strip()[:200])
+                        ok = True
+                    if not ok:
+                        log.warning("고른 것만 풀기 실패 → 통째로 풀기 %s: %s", os.path.basename(arc), err[:300])
                 if not ok:
-                    log.warning("고른 것만 풀기 실패 → 통째로 풀기 %s: %s", os.path.basename(arc), r.stderr.decode("mbcs", "replace")[:200])
-            if not ok:
-                r = subprocess.run([TAR_EXE, "-xf", arc, "-C", dest], capture_output=True, creationflags=0x08000000, timeout=3600)
-                if r.returncode != 0:
-                    raise OSError(r.stderr.decode("mbcs", "replace").strip() or "tar.exe 풀기 실패")
-            for n in want:
-                if idx[n][0]:
-                    os.makedirs(os.path.join(dest, *n.split("/")), exist_ok=True)
+                    alls = sum(max(v[1], 0) for v in idx.values() if not v[0])
+                    rc, err = _run_tar([TAR_EXE, "-xf", arc, "-C", dest], dest, cancel, progress, alls)
+                    if rc != 0:
+                        raise OSError(err.strip() or "tar.exe 풀기 실패")
+                for n in want:
+                    if idx[n][0]:
+                        os.makedirs(os.path.join(dest, *n.split("/")), exist_ok=True)
+        except Cancelled:
+            log.info("압축에서 꺼내기 취소 %s (%.1f초) → 임시 폴더 지움", os.path.basename(arc), time.time() - t0)
+            shutil.rmtree(dest, ignore_errors=True)
+            raise
         for inner in inners:
             rp = os.path.join(dest, *inner.split("/")) if inner else dest
             if os.path.exists(rp):
                 out.append(rp)
-        log.info("압축에서 꺼냄 %s %d개 → %s %.1f초", os.path.basename(arc), len(want), dest, time.time() - t0)
+        log.info("압축에서 꺼냄 %s %d개 %.1fMB → %s %.1f초", os.path.basename(arc), len(want), total / 1048576, dest, time.time() - t0)
     return out
 
 

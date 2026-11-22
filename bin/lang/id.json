@@ -2402,5 +2402,8 @@
  "복사 중": "Menyalin",
  "'{0}' 받는 중": "Menerima '{0}'",
  "'{0}' 받는 중 ({1}/{2})": "Menerima '{0}' ({1}/{2})",
- "동기화 중": "Sinkronisasi tertunda"
+ "동기화 중": "Sinkronisasi tertunda",
+ "압축에서 꺼내기를 취소했습니다": "Ekstraksi dari arsip dibatalkan",
+ "압축에서 꺼내는 중…": "Mengekstrak dari arsip…",
+ "취소하는 중…": "Membatalkan…"
 }

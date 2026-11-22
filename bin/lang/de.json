@@ -2402,5 +2402,8 @@
  "복사 중": "Wird kopiert",
  "'{0}' 받는 중": "„{0}“ wird empfangen",
  "'{0}' 받는 중 ({1}/{2})": "„{0}“ wird empfangen ({1}/{2})",
- "동기화 중": "Synchronisierung ausstehend"
+ "동기화 중": "Synchronisierung ausstehend",
+ "압축에서 꺼내기를 취소했습니다": "Entpacken aus dem Archiv abgebrochen",
+ "압축에서 꺼내는 중…": "Wird aus dem Archiv entpackt…",
+ "취소하는 중…": "Wird abgebrochen…"
 }

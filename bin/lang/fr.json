@@ -2402,5 +2402,8 @@
  "복사 중": "Copie en cours",
  "'{0}' 받는 중": "Réception de « {0} »",
  "'{0}' 받는 중 ({1}/{2})": "Réception de « {0} » ({1}/{2})",
- "동기화 중": "Synchronisation en attente"
+ "동기화 중": "Synchronisation en attente",
+ "압축에서 꺼내기를 취소했습니다": "Extraction de l'archive annulée",
+ "압축에서 꺼내는 중…": "Extraction de l'archive…",
+ "취소하는 중…": "Annulation…"
 }

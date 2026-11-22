@@ -2402,5 +2402,8 @@
  "복사 중": "Kopyalanıyor",
  "'{0}' 받는 중": "'{0}' alınıyor",
  "'{0}' 받는 중 ({1}/{2})": "'{0}' alınıyor ({1}/{2})",
- "동기화 중": "Eşitleme bekliyor"
+ "동기화 중": "Eşitleme bekliyor",
+ "압축에서 꺼내기를 취소했습니다": "Arşivden çıkarma iptal edildi",
+ "압축에서 꺼내는 중…": "Arşivden çıkarılıyor…",
+ "취소하는 중…": "İptal ediliyor…"
 }

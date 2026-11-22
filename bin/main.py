@@ -11,7 +11,7 @@
 로그: bin\\log\\4Dir.log
 """
 QE_VERSION = "0.9.144"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 2             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_BUILD = 4             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -1660,8 +1660,154 @@ def this_pc_entries():
     return out
 
 
-POOL = QtCore.QThreadPool()
+class _PoolJob(QtCore.QRunnable):
+    """0.9.144 빌드 3 (사용자 11/22 '내 PC 10초'): 일꾼 작업 하나를 감싸 기다린 시간·걸린 시간을 잼.
+    로그(실측): 내 PC 읽기 자체는 0.06초인데 일꾼 차례를 35초 기다림 — 무엇이 일꾼 4개를 잡았는지 기록이 없었음."""
+
+    def __init__(self, job, pool):
+        super().__init__()
+        self.job, self.pool = job, pool
+        self.desc = pool._desc(job)
+        self.t_in = time.perf_counter()
+        self.started = False
+
+    def run(self):
+        pl = self.pool
+        t0 = time.perf_counter()
+        self.started = True
+        wait = t0 - self.t_in
+        key = id(self)
+        with pl._lk:
+            pl._run[key] = (self.desc, t0, threading.get_ident())
+        if wait >= 1.0:
+            log.warning("[일꾼] %s 차례를 %.1f초 기다렸다가 시작", self.desc, wait)
+        try:
+            self.job.run()
+        finally:
+            dur = time.perf_counter() - t0
+            with pl._lk:
+                pl._run.pop(key, None)
+            if dur >= 3.0:
+                log.warning("[일꾼] 오래 걸린 작업 %s %.1f초 (기다림 %.1f초)", self.desc, dur, wait)
+            self.job = None
+
+
+class _LoggedPool(QtCore.QThreadPool):
+    """QThreadPool + 기록. 일꾼이 다 차 있을 때 넣은 작업만 2초 뒤 한 번 확인(상시 감시 없음):
+    아직 못 시작했으면 그때 돌던 작업과 그 일꾼의 호출 위치를 남김(호출 위치는 10초에 한 번)"""
+
+    def __init__(self):
+        super().__init__()
+        self._lk = threading.Lock()
+        self._run = {}
+        self._last_dump = 0.0
+
+    @staticmethod
+    def _desc(job):
+        n = type(job).__name__
+        for a in ("path", "p"):
+            v = getattr(job, a, None)
+            if isinstance(v, str) and v:
+                return f"{n}({v})"
+        return n
+
+    def start(self, job, priority=0):
+        w = _PoolJob(job, self)
+        full = self.activeThreadCount() >= self.maxThreadCount()
+        super().start(w, priority)
+        if full:
+            t = threading.Timer(2.0, self._check, (w,))
+            t.daemon = True
+            t.start()
+
+    def _check(self, w):
+        if w.started:
+            return
+        try:
+            now = time.perf_counter()
+            with self._lk:
+                running = sorted(((now - t0, d, tid) for d, t0, tid in self._run.values()), reverse=True)
+            log.warning("[일꾼] %s 가 %.1f초째 차례 못 받음 · 일꾼 %d/%d 사용 중: %s", w.desc, now - w.t_in,
+                        self.activeThreadCount(), self.maxThreadCount(),
+                        ", ".join(f"{d} {el:.1f}초" for el, d, _ in running) or "없음")
+            if now - self._last_dump < 10:
+                return
+            self._last_dump = now
+            frames = sys._current_frames()
+            for el, d, tid in running:
+                if tid in frames:
+                    st = "".join(traceback.format_stack(frames[tid], limit=8))
+                    log.warning("[일꾼] 도는 중 %s (%.1f초) 호출 위치: %s", d, el, "\n" + st)
+        except Exception:
+            log.exception("[일꾼] 기다림 확인 실패")
+
+
+POOL = _LoggedPool()
 POOL.setMaxThreadCount(4)
+
+
+def _fmt_mb(n):
+    return f"{n / 1073741824:.1f} GB" if n >= 1073741824 else f"{n / 1048576:.0f} MB"
+
+
+def run_extract(parent, paths):
+    """0.9.144 빌드 4 (사용자 11/22 문제 보고 '압축 복사 먹통·python 응답 없음'): 압축 안 항목 꺼내기를 따로 스레드에서 돌리고
+    화면은 그동안 계속 그림. 0.4초 넘으면 진행 창(푼 크기 / 전체, 취소 단추). 꺼내는 동안만 0.3초마다 갱신. 결과 = 진짜 경로 목록
+    (실패는 예외 그대로, 취소는 archives.Cancelled)"""
+    cancel = threading.Event()
+    prog = {"done": 0, "total": 0, "name": ""}
+    box = {}
+
+    def work():
+        try:
+            box["r"] = archives.extract_temp(paths, cancel=cancel, progress=prog)
+        except BaseException as ex:   # noqa: BLE001 — 화면 스레드로 넘김
+            box["e"] = ex
+
+    th = threading.Thread(target=work, name="arc-extract", daemon=True)
+    t0 = time.perf_counter()
+    th.start()
+    th.join(0.4)   # 작은 것은 창 없이 끝
+    if th.is_alive():
+        top = parent.window() if parent is not None else None
+        dlg = QtWidgets.QProgressDialog(T("압축에서 꺼내는 중…"), T("취소"), 0, 0, top)
+        dlg.setWindowTitle("4Dir")
+        dlg.setWindowModality(Qt.WindowModal)
+        dlg.setMinimumDuration(0)
+        dlg.setAutoClose(False)
+        dlg.setAutoReset(False)
+        dlg.canceled.connect(cancel.set)
+        loop = QtCore.QEventLoop()
+        tm = QtCore.QTimer()
+        tm.setInterval(300)
+
+        def tick():
+            if not th.is_alive():
+                loop.quit()
+                return
+            d, tot = prog.get("done", 0), prog.get("total", 0)
+            if tot > 0:
+                dlg.setMaximum(1000)
+                dlg.setValue(min(999, int(d * 1000 / tot)))
+            el = time.perf_counter() - t0
+            dlg.setLabelText(T("압축에서 꺼내는 중: {0}").format(prog.get("name", "")) + "\n"
+                             + (f"{_fmt_mb(d)} / {_fmt_mb(tot)}" if tot > 0 else _fmt_mb(d)) + f" · {el:.0f}s"
+                             + ("\n" + T("취소하는 중…") if cancel.is_set() else ""))
+
+        tm.timeout.connect(tick)
+        tm.start()
+        dlg.show()
+        log.info("압축 꺼내기 진행 창 띄움 (%d개)", len(paths))
+        loop.exec()
+        tm.stop()
+        dlg.close()
+        dlg.deleteLater()
+    th.join()
+    log.info("압축 꺼내기 끝 %.1f초 %s", time.perf_counter() - t0,
+             "취소" if isinstance(box.get("e"), archives.Cancelled) else "실패" if "e" in box else f"{len(box.get('r') or [])}개")
+    if "e" in box:
+        raise box["e"]
+    return box.get("r") or []
 
 
 # ================================================================ 목록 모델
@@ -4351,15 +4497,7 @@ class Page(QtWidgets.QWidget):
             return
         if archives.is_arc(fp):   # 빌드 20 압축 안 파일: 임시 폴더에 풀어서 엶
             self.status.emit(T("압축에서 꺼내는 중: {0}").format(e[0]))
-            QtWidgets.QApplication.setOverrideCursor(Qt.WaitCursor)
-            try:
-                real = archives.extract_temp([fp])
-            except Exception as ex:
-                real = []
-                log.exception("압축 안 파일 열기 실패 %s", fp)
-                self.status.emit(f"⚠ {ex}")
-            finally:
-                QtWidgets.QApplication.restoreOverrideCursor()
+            real = self._arc_real([fp]) or []   # 0.9.144 빌드 4: 진행 창·취소 (화면 안 멈춤)
             if real:
                 log.info("압축 안 파일 열기 %s → %s", fp, real[0])
                 try:
@@ -4407,19 +4545,22 @@ class Page(QtWidgets.QWidget):
         return int(self.window().winId())
 
     def _arc_real(self, ps):
-        """압축 안 항목 → 임시 폴더에 푼 진짜 경로 (보통 경로는 그대로). 실패하면 None"""
+        """압축 안 항목 → 임시 폴더에 푼 진짜 경로 (보통 경로는 그대로). 실패·취소하면 None
+        0.9.144 빌드 4: 꺼내기는 일꾼 스레드 + 진행 창(취소) — 전엔 화면 스레드에서 풀어 큰 압축이면 '응답 없음'(사용자 11/22)"""
         if not any(archives.is_arc(p) for p in ps):
             return ps
         self.status.emit(T("압축에서 꺼내는 중… {0}개").format(len(ps)))
-        QtWidgets.QApplication.setOverrideCursor(Qt.WaitCursor)
+        arcs = [p for p in ps if archives.is_arc(p)]
         try:
-            real = archives.extract_temp([p for p in ps if archives.is_arc(p)]) + [p for p in ps if not archives.is_arc(p)]
+            real = run_extract(self, arcs) + [p for p in ps if not archives.is_arc(p)]
+        except archives.Cancelled as ex:
+            log.info("압축에서 꺼내기 멈춤: %s", ex)
+            self.status.emit(T("압축에서 꺼내기를 취소했습니다"))
+            return None
         except Exception as ex:
             log.exception("압축에서 꺼내기 실패")
             self.status.emit(f"⚠ {ex}")
             return None
-        finally:
-            QtWidgets.QApplication.restoreOverrideCursor()
         return real
 
     def do_copy(self, cut=False):

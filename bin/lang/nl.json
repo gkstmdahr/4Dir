@@ -2402,5 +2402,8 @@
  "복사 중": "Kopiëren",
  "'{0}' 받는 중": "'{0}' ontvangen",
  "'{0}' 받는 중 ({1}/{2})": "'{0}' ontvangen ({1}/{2})",
- "동기화 중": "Synchronisatie in behandeling"
+ "동기화 중": "Synchronisatie in behandeling",
+ "압축에서 꺼내기를 취소했습니다": "Uitpakken uit archief geannuleerd",
+ "압축에서 꺼내는 중…": "Uitpakken uit archief…",
+ "취소하는 중…": "Annuleren…"
 }

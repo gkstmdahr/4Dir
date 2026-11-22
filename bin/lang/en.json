@@ -2402,5 +2402,8 @@
  "복사 중": "Copying",
  "'{0}' 받는 중": "Receiving '{0}'",
  "'{0}' 받는 중 ({1}/{2})": "Receiving '{0}' ({1}/{2})",
- "동기화 중": "Sync pending"
+ "동기화 중": "Sync pending",
+ "압축에서 꺼내기를 취소했습니다": "Extraction from archive canceled",
+ "압축에서 꺼내는 중…": "Extracting from archive…",
+ "취소하는 중…": "Canceling…"
 }
