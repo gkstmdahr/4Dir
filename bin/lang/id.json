@@ -2380,7 +2380,7 @@
  "로그가 필요하면: 설정 → 정보 → 문제 보고용 로그 저장": "Jika perlu log: Pengaturan → Tentang → Simpan log untuk laporan masalah",
  "메일 보내기": "Kirim email",
  "사용법": "Cara pakai",
- "더블클릭하면 작업 관리자를 엽니다": "Klik dua kali untuk membuka Task Manager",
+ "누르면 작업 관리자를 엽니다": "Klik untuk membuka Task Manager",
  "작업 관리자를 열지 못했습니다: {0}  ✕": "Tidak dapat membuka Task Manager: {0}  ✕",
  "특성": "Atribut",
  "표시하고 다음 줄로": "Tandai lalu turun",

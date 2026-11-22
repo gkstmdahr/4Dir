@@ -2380,7 +2380,7 @@
  "로그가 필요하면: 설정 → 정보 → 문제 보고용 로그 저장": "Si des journaux sont nécessaires: Paramètres → À propos → Enregistrer le journal pour signaler un problème",
  "메일 보내기": "Envoyer un e-mail",
  "사용법": "Mode d'emploi",
- "더블클릭하면 작업 관리자를 엽니다": "Double-cliquez pour ouvrir le Gestionnaire des tâches",
+ "누르면 작업 관리자를 엽니다": "Cliquez pour ouvrir le Gestionnaire des tâches",
  "작업 관리자를 열지 못했습니다: {0}  ✕": "Impossible d'ouvrir le Gestionnaire des tâches : {0}  ✕",
  "특성": "Attributs",
  "표시하고 다음 줄로": "Marquer et descendre",

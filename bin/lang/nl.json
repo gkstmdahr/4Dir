@@ -2380,7 +2380,7 @@
  "로그가 필요하면: 설정 → 정보 → 문제 보고용 로그 저장": "Als er logboeken nodig zijn: Instellingen → Info → Log opslaan voor probleemrapport",
  "메일 보내기": "E-mail sturen",
  "사용법": "Handleiding",
- "더블클릭하면 작업 관리자를 엽니다": "Dubbelklik om Taakbeheer te openen",
+ "누르면 작업 관리자를 엽니다": "Klik om Taakbeheer te openen",
  "작업 관리자를 열지 못했습니다: {0}  ✕": "Kan Taakbeheer niet openen: {0}  ✕",
  "특성": "Kenmerken",
  "표시하고 다음 줄로": "Markeren en omlaag",

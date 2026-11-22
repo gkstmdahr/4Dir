@@ -2380,7 +2380,7 @@
  "로그가 필요하면: 설정 → 정보 → 문제 보고용 로그 저장": "Falls Protokolle nötig sind: Einstellungen → Info → Protokoll für Fehlerbericht speichern",
  "메일 보내기": "E-Mail senden",
  "사용법": "Anleitung",
- "더블클릭하면 작업 관리자를 엽니다": "Doppelklick öffnet den Task-Manager",
+ "누르면 작업 관리자를 엽니다": "Klicken öffnet den Task-Manager",
  "작업 관리자를 열지 못했습니다: {0}  ✕": "Task-Manager konnte nicht geöffnet werden: {0}  ✕",
  "특성": "Attribute",
  "표시하고 다음 줄로": "Markieren und weiter",

@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.143"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 1             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.144"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 2             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -10478,9 +10478,35 @@ class DblClickLabel(QtWidgets.QLabel):
     """더블클릭 신호가 있는 글자 칸 (0.9.138 빌드 3: CPU 사용량 → 작업 관리자)"""
     doubleClicked = QtCore.Signal()
 
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        # 0.9.144 빌드 1 (사용자 11/22): 마우스를 올려도 반응이 없어 누를 수 있는 줄 모름 → 손 모양 + 옅은 바탕
+        self.setCursor(Qt.PointingHandCursor)
+        self.setAttribute(Qt.WA_Hover, True)
+        self.setStyleSheet("QLabel{padding:1px 6px;border-radius:4px;}"
+                           "QLabel:hover{background:rgba(128,128,128,0.22);}")
+
+    # 0.9.144 빌드 2 (사용자 11/22 '눌렀는데 반응이 없냐'): 버튼처럼 보이니 한 번 눌러도 열림.
+    # 두 번 누르면 두 번째 누름은 건너뜀(두 번 열지 않게). 신호 이름은 그대로 둠.
+    def mousePressEvent(self, ev):
+        if ev.button() == Qt.LeftButton:
+            ev.accept()
+            return
+        super().mousePressEvent(ev)
+
+    def mouseReleaseEvent(self, ev):
+        if ev.button() == Qt.LeftButton:
+            ev.accept()
+            if getattr(self, "_skip_rel", False):
+                self._skip_rel = False
+            elif self.rect().contains(ev.position().toPoint()):
+                self.doubleClicked.emit()
+            return
+        super().mouseReleaseEvent(ev)
+
     def mouseDoubleClickEvent(self, ev):
         if ev.button() == Qt.LeftButton:
-            self.doubleClicked.emit()
+            self._skip_rel = True
             ev.accept()
             return
         super().mouseDoubleClickEvent(ev)
@@ -12136,7 +12162,7 @@ class Main(QtWidgets.QMainWindow):
         # CPU·GPU 사용량 (1초마다, 창 최소화·표시 끔이면 멈춤)
         self.mon_label = DblClickLabel()   # 0.9.138 빌드 3 사용자: 더블클릭 → 작업 관리자
         self.mon_label.setObjectName("sysmon")
-        self.mon_label.setToolTip(T("더블클릭하면 작업 관리자를 엽니다"))
+        self.mon_label.setToolTip(T("누르면 작업 관리자를 엽니다"))
         self.mon_label.doubleClicked.connect(self.open_taskmgr)
         self.mon_label.setTextFormat(Qt.RichText)
         self.mon_act = tb.addWidget(self.mon_label)
@@ -12843,7 +12869,7 @@ class Main(QtWidgets.QMainWindow):
     # ---------------------------------------------------------- CPU·GPU 사용량
     def open_taskmgr(self):
         """0.9.138 빌드 3: CPU·GPU 사용량 더블클릭 → 윈도우 작업 관리자 (ShellExecute — 관리자 권한 요구 프로그램이라 Popen 은 740 오류)"""
-        log.info("작업 관리자 열기 (사용량 더블클릭)")
+        log.info("작업 관리자 열기 (사용량 누름)")
         try:
             os.startfile("taskmgr.exe")
         except OSError as e:
@@ -12885,7 +12911,7 @@ class Main(QtWidgets.QMainWindow):
             parts.append(f"VRAM <b style='color:{col(used * 100 / total)}'>{used:.1f}</b>/{total:.0f}GB")
         self.mon_label.setText("&nbsp;&nbsp;".join(parts) + "&nbsp;&nbsp;")
         if self.mon.gpu_name:
-            self.mon_label.setToolTip(T('{0}\n1.5초마다 갱신 · 보기 메뉴에서 끄기').format(self.mon.gpu_name) + "\n" + T("더블클릭하면 작업 관리자를 엽니다"))
+            self.mon_label.setToolTip(T('{0}\n1.5초마다 갱신 · 보기 메뉴에서 끄기').format(self.mon.gpu_name) + "\n" + T("누르면 작업 관리자를 엽니다"))
         ms = (time.perf_counter() - t0) * 1000
         if ms > 20:
             log.warning("사용량 갱신 느림 %.1fms", ms)
