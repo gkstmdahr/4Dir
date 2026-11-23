@@ -2418,5 +2418,16 @@
  "찾을 폴더": "Map om te doorzoeken",
  "폴더가 없습니다: {0}": "Map niet gevonden: {0}",
  "문서 {0:,}개 읽음": "{0:,} documenten gelezen",
- "못 읽은 문서 {0:,}개 (암호 등)": "{0:,} documenten niet leesbaar (wachtwoord enz.)"
+ "못 읽은 문서 {0:,}개 (암호 등)": "{0:,} documenten niet leesbaar (wachtwoord enz.)",
+ "따로 창으로 떼기": "Losmaken naar apart venster",
+ "4Dir 창 오른쪽에 붙이기": "Rechts in het 4Dir-venster vastzetten",
+ "미리보기 닫기": "Voorbeeld sluiten",
+ "미리보기 창을 4Dir 창 오른쪽 칸에 붙이기 (끄면 따로 창)": "Voorbeeld rechts in het 4Dir-venster vastzetten (uit = apart venster)",
+ "파일 속성 열": "Kolommen met bestandseigenschappen",
+ "다른 열 더 고르기": "Meer kolommen kiezen",
+ "자세히 보기에 보일 열 고르기": "Kolommen voor Details kiezen",
+ "파일 속성(윈도우)에서 열로 보일 항목을 고르세요. 최대 {0}개": "Kies bestandseigenschappen (Windows) om als kolom te tonen. Maximaal {0}.",
+ "찾기 (예: 메모, 제목, 카메라)": "Zoeken (bijv. opmerkingen, titel, camera)",
+ "고른 열 {0}개": "{0} kolommen gekozen",
+ "최대 {0}개까지 고를 수 있습니다": "Je kunt er maximaal {0} kiezen"
 }

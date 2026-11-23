@@ -2418,5 +2418,16 @@
  "찾을 폴더": "Zu durchsuchender Ordner",
  "폴더가 없습니다: {0}": "Ordner nicht gefunden: {0}",
  "문서 {0:,}개 읽음": "{0:,} Dokumente gelesen",
- "못 읽은 문서 {0:,}개 (암호 등)": "{0:,} Dokumente nicht lesbar (Kennwort usw.)"
+ "못 읽은 문서 {0:,}개 (암호 등)": "{0:,} Dokumente nicht lesbar (Kennwort usw.)",
+ "따로 창으로 떼기": "In eigenes Fenster lösen",
+ "4Dir 창 오른쪽에 붙이기": "Rechts im 4Dir-Fenster andocken",
+ "미리보기 닫기": "Vorschau schließen",
+ "미리보기 창을 4Dir 창 오른쪽 칸에 붙이기 (끄면 따로 창)": "Vorschau rechts im 4Dir-Fenster andocken (aus = eigenes Fenster)",
+ "파일 속성 열": "Dateieigenschaften-Spalten",
+ "다른 열 더 고르기": "Weitere Spalten wählen",
+ "자세히 보기에 보일 열 고르기": "Spalten für die Detailansicht wählen",
+ "파일 속성(윈도우)에서 열로 보일 항목을 고르세요. 최대 {0}개": "Dateieigenschaften (Windows) als Spalten wählen. Bis zu {0}.",
+ "찾기 (예: 메모, 제목, 카메라)": "Suchen (z. B. Kommentare, Titel, Kamera)",
+ "고른 열 {0}개": "{0} Spalten gewählt",
+ "최대 {0}개까지 고를 수 있습니다": "Sie können bis zu {0} wählen"
 }

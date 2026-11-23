@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """4Dir 배포판 자동 생성 (MAKE_VER 1.8.0)
 
-결과: <4Dir>\\_release\\4Dir_v<버전>\\  +  4Dir_v<버전>.zip
+결과: <4Dir>\\01_배포판\\4Dir_v<버전>\\  +  4Dir_v<버전>.zip
 구성:
   4Dir.exe        실행기 (1.7.0, launcher\\4Dir_launcher.cs — runtime\\pythonw.exe 로 bin\\main.pyc 실행)
   4Dir.vbs        같은 일을 하는 예비 실행기 (exe 가 막힐 때)
@@ -10,7 +10,7 @@
   bin\\                   프로그램 (*.pyc 컴파일본만 — 원본 .py 는 넣지 않음, 탐색기 점검.vbs) — 개인 파일(상태·즐겨찾기·세션·로그·설정·백업) 제외
   licenses\\              함께 들어가는 파이썬·PySide6(Qt)·pywin32 라이선스 문서
 _release 에 함께 생기는 것: 4Dir_v<버전>.zip.sha256.txt (정품 확인용 지문), 웹게시_안내_v<버전>.txt
-백업: 이전 배포판 → _release\백업\배포판 (최근 10개), 버전마다 소스 → _release\백업\소스 (지우지 않음)
+백업: 이전 배포판 → 01_배포판\백업\배포판 (최근 10개), 버전마다 소스 → 01_배포판\백업\소스 (지우지 않음)
   runtime\\               python.org 공식 휴대용 파이썬(파이썬 재단 서명) + PySide6(필요한 Qt 만) + pywin32
 보안: exe 는 작은 실행기 하나뿐(원본 공개, 서명 신청 중), PowerShell 안 씀, 파이썬은 서명된 공식 실행 파일.
 로그: _build\\build_log.txt
@@ -29,7 +29,7 @@ import subprocess
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import usage_text   # 1.8.0: 언어별 사용법 글
 
-MAKE_VER = "1.9.12"   # 1.9.12: 꼭 필요한 PySide6 부품(QtPdf 등) 빠지면 중단 / 1.9.11: 사용법 2.0 장면 영상(bin\guide\demo) 넣음 / 1.9.10: 가져오기 확인에 pdfedit / 1.9.9: PDF 미리보기 부품(QtPdf·Qt6Pdf), 가져오기 확인에 pdfprev / 1.9.8: 편집용 ffmpeg.exe(runtime\ffmpeg)·라이선스 안내, 가져오기 확인에 calc·mediaedit / 1.9.7: 가져오기 확인에 새 모듈 9개·win32cred, 태그 파일(4Dir_tags.json) 빼기 / 1.9.6: 동영상 부품(QtMultimedia·FFmpeg·ffmpegmediaplugin) 넣음 / 1.9.5: 가져오기 확인에 dupes·archives / 1.9.4: changelog 에 아직 이번 공개 번호가 없으면(빌드 중) 바뀐 점만 생략하고 계속 / 1.9.3: 설정 가져오기 보관·준비 폴더(restore_backup·_restore_pending) 빼기 / 1.9.2: 색 라벨 파일(4Dir_labels.json, 개인 데이터) 빼기 / 1.9.1: carryover 가져오기 확인 / 1.9.0: 사용법 파일 맨 위에 이번 버전 바뀐 점(changelog) / 1.8.0: 사용법 10개 언어 파일(이름도 그 언어)·Guide\<언어> 그림 10개 언어, 한국어 사용법에서 영어 부분 뺌 / 1.7.0: 4Dir.exe 실행기 포함(사용법은 exe 우선, vbs 예비) / 1.6.0: 일본어 설명서 お読みください.txt (Vector 掲載基準) / 1.5.0: qwebp·qjpeg 포함, imgconvert 가져오기 확인 / 1.4.1: 프로그램 안 사용법 그림은 ko·en p1~p6 만 / 1.4.0: qgif.dll(GIF 재생) 포함 / 1.3.0: 회사 글자 목록 별도 파일(corp_words.txt, 비공개), 4Dir 본체 GPL-3.0 라이선스 포함, 패키지 정보 없을 때 버전·pywin32 라이선스 대체 / 1.2.5: 소스 백업에 _dev(시험·번역) 포함 / 1.2.4: overlays·overlayorder 가져오기 확인 / 1.2.3: thumbs 가져오기 확인 / 1.2.2: 사용법에 즐겨찾기 정리·탭 끌기·일괄 변경 / 1.2.1: favorg 가져오기 확인 / 1.2.0: 이전 배포판은 _release\백업\배포판 으로 옮김(최근 10개), 버전마다 소스 백업 _release\백업\소스 / 1.1.5: 사용법 그림(bin\guide, 사용법 그림\ko·en) / 1.1.4: batchrename 가져오기 확인 / 1.1.3: 회사 관련 글자 검사(있으면 배포 중단) / 1.1.1: 언어 파일(bin\lang) 포함·영어 안내 / 1.1.0: .pyc 배포, SHA256 지문 파일, 라이선스 문서, 사용법(차단 해제 안내) 갱신
+MAKE_VER = "1.9.12"   # 1.9.12: 꼭 필요한 PySide6 부품(QtPdf 등) 빠지면 중단 / 1.9.11: 사용법 2.0 장면 영상(bin\guide\demo) 넣음 / 1.9.10: 가져오기 확인에 pdfedit / 1.9.9: PDF 미리보기 부품(QtPdf·Qt6Pdf), 가져오기 확인에 pdfprev / 1.9.8: 편집용 ffmpeg.exe(runtime\ffmpeg)·라이선스 안내, 가져오기 확인에 calc·mediaedit / 1.9.7: 가져오기 확인에 새 모듈 9개·win32cred, 태그 파일(4Dir_tags.json) 빼기 / 1.9.6: 동영상 부품(QtMultimedia·FFmpeg·ffmpegmediaplugin) 넣음 / 1.9.5: 가져오기 확인에 dupes·archives / 1.9.4: changelog 에 아직 이번 공개 번호가 없으면(빌드 중) 바뀐 점만 생략하고 계속 / 1.9.3: 설정 가져오기 보관·준비 폴더(restore_backup·_restore_pending) 빼기 / 1.9.2: 색 라벨 파일(4Dir_labels.json, 개인 데이터) 빼기 / 1.9.1: carryover 가져오기 확인 / 1.9.0: 사용법 파일 맨 위에 이번 버전 바뀐 점(changelog) / 1.8.0: 사용법 10개 언어 파일(이름도 그 언어)·Guide\<언어> 그림 10개 언어, 한국어 사용법에서 영어 부분 뺌 / 1.7.0: 4Dir.exe 실행기 포함(사용법은 exe 우선, vbs 예비) / 1.6.0: 일본어 설명서 お読みください.txt (Vector 掲載基準) / 1.5.0: qwebp·qjpeg 포함, imgconvert 가져오기 확인 / 1.4.1: 프로그램 안 사용법 그림은 ko·en p1~p6 만 / 1.4.0: qgif.dll(GIF 재생) 포함 / 1.3.0: 회사 글자 목록 별도 파일(corp_words.txt, 비공개), 4Dir 본체 GPL-3.0 라이선스 포함, 패키지 정보 없을 때 버전·pywin32 라이선스 대체 / 1.2.5: 소스 백업에 _dev(시험·번역) 포함 / 1.2.4: overlays·overlayorder 가져오기 확인 / 1.2.3: thumbs 가져오기 확인 / 1.2.2: 사용법에 즐겨찾기 정리·탭 끌기·일괄 변경 / 1.2.1: favorg 가져오기 확인 / 1.2.0: 이전 배포판은 01_배포판\백업\배포판 으로 옮김(최근 10개), 버전마다 소스 백업 01_배포판\백업\소스 / 1.1.5: 사용법 그림(bin\guide, 사용법 그림\ko·en) / 1.1.4: batchrename 가져오기 확인 / 1.1.3: 회사 관련 글자 검사(있으면 배포 중단) / 1.1.1: 언어 파일(bin\lang) 포함·영어 안내 / 1.1.0: .pyc 배포, SHA256 지문 파일, 라이선스 문서, 사용법(차단 해제 안내) 갱신
 # PySide6·Qt 라이선스 원문 (LGPLv3 는 GPLv3 를 참조). gnu.org 는 이 네트워크에서 응답 없음(10/2 실측) → SPDX 공식 원문 저장소
 LICENSE_URLS = {"LGPL-3.0.txt": "https://raw.githubusercontent.com/spdx/license-list-data/main/text/LGPL-3.0-only.txt",
                 "GPL-3.0.txt": "https://raw.githubusercontent.com/spdx/license-list-data/main/text/GPL-3.0-only.txt"}
@@ -41,7 +41,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 BIN = os.path.join(ROOT, "bin")
 CACHE = os.path.join(HERE, "cache")
-REL = os.path.join(ROOT, "_release")
+REL = os.path.join(ROOT, "01_배포판")
 LOG = os.path.join(HERE, "build_log.txt")
 PYVER = "{}.{}.{}".format(*sys.version_info[:3])          # 개발 PC 파이썬과 같은 버전(패키지 호환)
 EMBED = f"python-{PYVER}-embed-amd64.zip"
@@ -67,7 +67,7 @@ _logf = None
 BACKUP = os.path.join(REL, "백업")
 KEEP_RELEASES = 10   # 배포판 zip 은 최근 10개만 (소스 백업은 지우지 않음)
 SRC_ROOT_FILES = ["4Dir.vbs", "_HANDOFF_4Dir.md"]
-SRC_DIRS = {"bin": BIN_SKIP_DIRS, "_build": {"cache", "__pycache__"}, "_maxtest": {"__pycache__"},
+SRC_DIRS = {"bin": BIN_SKIP_DIRS, "_build": {"cache", "__pycache__"},
             "_dev": {"__pycache__", "svnt", "old0926", "old0931"}}   # _dev = 시험 스크립트·번역 작업 파일 (배포판엔 안 들어감)
 
 
@@ -199,7 +199,7 @@ def copy_tree(src, dst, skip_dirs=(), skip_re=None):
 
 
 def backup_old_releases(ver):
-    """지금 만들 버전이 아닌 이전 배포판 zip·지문·웹게시 안내 → _release\백업\배포판 (풀린 폴더는 zip 에 다 있으니 지움).
+    """지금 만들 버전이 아닌 이전 배포판 zip·지문·웹게시 안내 → 01_배포판\백업\배포판 (풀린 폴더는 zip 에 다 있으니 지움).
     배포판 zip 은 최근 KEEP_RELEASES 개만 남김"""
     dst = os.path.join(BACKUP, "배포판")
     os.makedirs(dst, exist_ok=True)
@@ -227,7 +227,7 @@ def backup_old_releases(ver):
 
 
 def backup_source(ver):
-    """버전마다 소스 백업 → _release\백업\소스\4Dir_소스_v<버전>.zip (개인 데이터·색인·캐시 제외, 지우지 않음)"""
+    """버전마다 소스 백업 → 01_배포판\백업\소스\4Dir_소스_v<버전>.zip (개인 데이터·색인·캐시 제외, 지우지 않음)"""
     dst = os.path.join(BACKUP, "소스")
     os.makedirs(dst, exist_ok=True)
     zp = os.path.join(dst, f"4Dir_소스_v{ver}.zip")

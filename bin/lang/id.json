@@ -2418,5 +2418,16 @@
  "찾을 폴더": "Folder yang dicari",
  "폴더가 없습니다: {0}": "Folder tidak ditemukan: {0}",
  "문서 {0:,}개 읽음": "{0:,} dokumen dibaca",
- "못 읽은 문서 {0:,}개 (암호 등)": "{0:,} dokumen tidak dapat dibaca (kata sandi, dll.)"
+ "못 읽은 문서 {0:,}개 (암호 등)": "{0:,} dokumen tidak dapat dibaca (kata sandi, dll.)",
+ "따로 창으로 떼기": "Lepas ke jendela terpisah",
+ "4Dir 창 오른쪽에 붙이기": "Tempel di kanan jendela 4Dir",
+ "미리보기 닫기": "Tutup pratinjau",
+ "미리보기 창을 4Dir 창 오른쪽 칸에 붙이기 (끄면 따로 창)": "Tempel pratinjau di kanan jendela 4Dir (mati = jendela terpisah)",
+ "파일 속성 열": "Kolom properti file",
+ "다른 열 더 고르기": "Pilih kolom lain",
+ "자세히 보기에 보일 열 고르기": "Pilih kolom tampilan Detail",
+ "파일 속성(윈도우)에서 열로 보일 항목을 고르세요. 최대 {0}개": "Pilih properti file (Windows) untuk ditampilkan sebagai kolom. Maksimal {0}.",
+ "찾기 (예: 메모, 제목, 카메라)": "Cari (mis. komentar, judul, kamera)",
+ "고른 열 {0}개": "{0} kolom dipilih",
+ "최대 {0}개까지 고를 수 있습니다": "Anda dapat memilih hingga {0}"
 }

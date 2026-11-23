@@ -2418,5 +2418,16 @@
  "찾을 폴더": "Aranacak klasör",
  "폴더가 없습니다: {0}": "Klasör bulunamadı: {0}",
  "문서 {0:,}개 읽음": "{0:,} belge okundu",
- "못 읽은 문서 {0:,}개 (암호 등)": "{0:,} belge okunamadı (parola vb.)"
+ "못 읽은 문서 {0:,}개 (암호 등)": "{0:,} belge okunamadı (parola vb.)",
+ "따로 창으로 떼기": "Ayrı pencereye ayır",
+ "4Dir 창 오른쪽에 붙이기": "4Dir penceresinin sağına yerleştir",
+ "미리보기 닫기": "Önizlemeyi kapat",
+ "미리보기 창을 4Dir 창 오른쪽 칸에 붙이기 (끄면 따로 창)": "Önizlemeyi 4Dir penceresinin sağına yerleştir (kapalı = ayrı pencere)",
+ "파일 속성 열": "Dosya özelliği sütunları",
+ "다른 열 더 고르기": "Daha fazla sütun seç",
+ "자세히 보기에 보일 열 고르기": "Ayrıntılar görünümü sütunlarını seç",
+ "파일 속성(윈도우)에서 열로 보일 항목을 고르세요. 최대 {0}개": "Sütun olarak gösterilecek dosya özelliklerini (Windows) seçin. En fazla {0}.",
+ "찾기 (예: 메모, 제목, 카메라)": "Bul (ör. açıklamalar, başlık, kamera)",
+ "고른 열 {0}개": "{0} sütun seçildi",
+ "최대 {0}개까지 고를 수 있습니다": "En fazla {0} seçebilirsiniz"
 }

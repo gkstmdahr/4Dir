@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """winget(마이크로소프트 설치 목록) 등록 파일 만들기 (MAKE_WINGET_VER 1.0.1)
 
-결과: <4Dir>\\_release\\winget\\<버전>\\gkstmdahr.4Dir.yaml / .installer.yaml / .locale.en-US.yaml
-- 버전 = bin\\main.py 의 QE_VERSION, zip 지문 = _release\\4Dir_v<버전>.zip.sha256.txt (깃허브 릴리스에 올린 것과 같은 파일이어야 함)
+결과: <4Dir>\\01_배포판\\winget\\<버전>\\gkstmdahr.4Dir.yaml / .installer.yaml / .locale.en-US.yaml
+- 버전 = bin\\main.py 의 QE_VERSION, zip 지문 = 01_배포판\\4Dir_v<버전>.zip.sha256.txt (깃허브 릴리스에 올린 것과 같은 파일이어야 함)
 - 방식: zip 안의 4Dir_v<버전>\\4Dir.exe 를 휴대용(portable)으로 — winget 이 다른 폴더(Links)에 링크를 만들어 실행
   → 실행기 1.1.0 부터 링크를 따라가 진짜 폴더를 찾음 (1.0.0 은 '프로그램 파일을 찾을 수 없음', 11/3 재현)
 - 올리기: microsoft/winget-pkgs 의 manifests\\g\\gkstmdahr\\4Dir\\<버전>\\ 에 세 파일을 넣어 PR (사용자 확인 후)
@@ -34,14 +34,14 @@ def main():
     src = open(os.path.join(ROOT, "bin", "main.py"), encoding="utf-8").read()
     ver = re.search(r'QE_VERSION = "([^"]+)"', src).group(1)
     log(f"make_winget {MAKE_WINGET_VER}: 4Dir {ver}")
-    shaf = os.path.join(ROOT, "_release", f"4Dir_v{ver}.zip.sha256.txt")
+    shaf = os.path.join(ROOT, "01_배포판", f"4Dir_v{ver}.zip.sha256.txt")
     if not os.path.exists(shaf):
         raise SystemExit(f"지문 파일 없음 {shaf} — make_release.py 먼저")
     sha = open(shaf, encoding="utf-8").read().split()[0].upper()
     if not re.fullmatch(r"[0-9A-F]{64}", sha):
         raise SystemExit(f"지문 모양이 이상함: {sha}")
     log(f"zip 지문 {sha}")
-    out = os.path.join(ROOT, "_release", "winget", ver)
+    out = os.path.join(ROOT, "01_배포판", "winget", ver)
     os.makedirs(out, exist_ok=True)
     today = time.strftime("%Y-%m-%d")
     url = f"https://github.com/gkstmdahr/4Dir/releases/download/v{ver}/4Dir_v{ver}.zip"

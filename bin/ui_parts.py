@@ -63,6 +63,10 @@ class Settings:
                      "preview_w": 300,       # 미리보기 창 너비 (빌드 18 부터 따로 창 — 처음 크기로만 씀)
                      "preview_geo": "",      # 빌드 18 미리보기 따로 창 위치·크기
                      "preview_top": False,   # 빌드 18 미리보기 창 항상 위
+                     "preview_dock": True,   # 0.9.147 미리보기 = 4Dir 창 오른쪽 칸 (탐색기처럼, 끄면 따로 창)
+                     "preview_dock_w": 340,  # 0.9.147 오른쪽 칸 폭
+                     "prop_cols": [],        # 0.9.147 자세히 보기 윈도우 속성 열 (속성 이름 목록, 예 System.Comment) — main 연결은 아직
+                     "prop_col_w": {},       # 0.9.147 속성 열 폭 (속성 이름 → 폭)
                      "breadcrumb": True,     # 주소를 경로 버튼으로 (기본: 경로 버튼, 빈 곳 클릭하면 입력칸)
                      "batch_rename": {},     # 이름 일괄 변경 창의 마지막 입력값
                      "guide_shown": False,   # 처음 실행 때 사용법 창을 보여줬는지
@@ -122,7 +126,7 @@ class Settings:
                     self.data[tk].update({k: v for k, v in d.get(tk, {}).items() if k in THEME_KEYS})
                 if "theme_mode" not in d and d.get("dark"):   # 0.6.2 이전: 다크 모드 켜둔 사람은 '어둡게' 유지
                     self.data["theme_mode"] = "dark"
-                for k in ("theme_mode", "dark", "fav_expanded", "on_top", "allow_multi", "sysmon", "breadcrumb", "keys", "search_roots", "lang", "chrome_collapsed", "batch_rename", "guide_shown", "update_check", "update_last", "update_skip", "resume_after_reboot", "keep_favbar", "show_favbar", "preview_detail", "folder_view_memory", "hide_single_tab", "empty_click_up", "auto_refresh", "delete_confirm", "columns", "mouse", "folder_size", "select_pattern", "status_col", "ws_slots", "side_shared", "side_shared_w", "side_shared_hidden", "memo_on", "memo_side", "memo_w", "memo_geo", "memo_top", "preview_pane", "preview_w", "preview_geo", "preview_top", "tooltips", "arc_browse", "video_sound", "preview_autoplay", "user_buttons", "ftp_sites", "calc_geo", "calc_top", "calc_hist", "calc_tab", "calc_deg", "calc_mode", "calc_mem", "calc_fx", "calc_conv", "calc_graph", "gdrive_auto", "gdrive_last", "gdrive_last_name", "gdrive_asked", "private_mode", "rename_hide_ext", "side_favs", "tab_multirow", "tab_max_rows", "last_win_geo", "color_rules", "same_folder_current", "side_click_expand", "side_pin", "view_all", "top_hidden", "folder_prev", "ui_font", "ui_font_pt", "explorer_exts"):   # 0.9.122: rename_hide_ext 가 빠져 다시 켜면 늘 켜짐이던 것 고침
+                for k in ("theme_mode", "dark", "fav_expanded", "on_top", "allow_multi", "sysmon", "breadcrumb", "keys", "search_roots", "lang", "chrome_collapsed", "batch_rename", "guide_shown", "update_check", "update_last", "update_skip", "resume_after_reboot", "keep_favbar", "show_favbar", "preview_detail", "folder_view_memory", "hide_single_tab", "empty_click_up", "auto_refresh", "delete_confirm", "columns", "mouse", "folder_size", "select_pattern", "status_col", "ws_slots", "side_shared", "side_shared_w", "side_shared_hidden", "memo_on", "memo_side", "memo_w", "memo_geo", "memo_top", "preview_pane", "preview_w", "preview_geo", "preview_top", "preview_dock", "preview_dock_w", "prop_cols", "prop_col_w", "tooltips", "arc_browse", "video_sound", "preview_autoplay", "user_buttons", "ftp_sites", "calc_geo", "calc_top", "calc_hist", "calc_tab", "calc_deg", "calc_mode", "calc_mem", "calc_fx", "calc_conv", "calc_graph", "gdrive_auto", "gdrive_last", "gdrive_last_name", "gdrive_asked", "private_mode", "rename_hide_ext", "side_favs", "tab_multirow", "tab_max_rows", "last_win_geo", "color_rules", "same_folder_current", "side_click_expand", "side_pin", "view_all", "top_hidden", "folder_prev", "ui_font", "ui_font_pt", "explorer_exts"):   # 0.9.122: rename_hide_ext 가 빠져 다시 켜면 늘 켜짐이던 것 고침
                     if k in d:
                         self.data[k] = d[k]
             except Exception:

@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.146"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_VERSION = "0.9.147"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
 QE_BUILD = 2             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
@@ -580,6 +580,7 @@ import search_index  # noqa: E402
 import svnstat  # noqa: E402
 import thumbs  # noqa: E402
 import shellprops  # noqa: E402  (v0.9.75 정렬용 셸 속성)
+import propcols  # noqa: E402  (0.9.147 자세히 보기 윈도우 속성 열)
 import vfiles  # noqa: E402  (v0.9.75 아웃룩 첨부 등 가상 파일 끌어 놓기)
 import olehook  # noqa: E402  (v0.9.78 끌어 놓기 원래 데이터 직접 받기 — 웹 아웃룩 본문 이미지·여러 개)
 import overlays  # noqa: E402
@@ -795,6 +796,15 @@ shellops.on_queue_change[0] = QUEUE_SIG.changed.emit
 MEMOS = None   # memo.MemoStore — 첫 메모 창을 열 때 만듦 (모든 창 공용)
 MEMO_WIN = None   # 빌드 8: 메모 창은 4Dir 창 밖 따로 창 하나 (모든 창 공용)
 CALC_WIN = None   # 0.9.111 계산기 창 (모든 창 공용)
+def preview_showing():
+    """0.9.147: 미리보기가 지금 보이는가 (붙인 칸이든 따로 창이든)"""
+    if not SETTINGS["preview_pane"] or PREVIEW_WIN is None:
+        return False
+    if SETTINGS["preview_dock"]:
+        return PREVIEW_WIN.pane.isVisible()
+    return PREVIEW_WIN.isVisible()
+
+
 PREVIEW_WIN = None   # 빌드 18: 미리보기도 4Dir 창 밖 따로 창 하나 (모든 창 공용, 마지막으로 쓴 창의 고른 파일)
 
 
@@ -1853,6 +1863,21 @@ COLS = [T("이름"), T("수정한 날짜"), T("유형"), T("크기"), T("위치"
         T("상태"), T("태그"), T("별점"), T("쪽 수"), T("특성")]   # 특성 = 0.9.138 빌드 4 (A·R·H·S, 유형과 크기 사이)   # 별점 0.9.116 (처음 별점을 주면 저절로 보임)
 #   # 상태 v0.9.94 · 태그 0.9.109 (처음 태그를 붙이면 저절로 보임)   # v0.9.94: 원드라이브 등 동기화 폴더 상태 (탐색기처럼 이름 바로 오른쪽)
 COL_WIDTH = (322, 145, 120, 80, 320, 145, 80, 145, 145, 100, 46, 140, 84, 60, 56)
+PROP_BASE = len(COLS)   # 0.9.147 윈도우 속성 열 자리: 열 번호 PROP_BASE ~ PROP_BASE+propcols.MAX_COLS-1 (고른 순서대로, 안 쓰는 자리는 숨김)
+
+
+def prop_names():
+    """고른 윈도우 속성 이름 목록 (예 System.Comment)"""
+    return list(SETTINGS["prop_cols"] or [])[:propcols.MAX_COLS]
+
+
+def prop_of(c):
+    """열 번호 → 그 자리의 속성 이름 (없으면 None)"""
+    n = prop_names()
+    i = c - PROP_BASE
+    return n[i] if 0 <= i < len(n) else None
+
+
 ATTR_LETTERS = ((0x1, "R"), (0x2, "H"), (0x4, "S"), (0x20, "A"))   # 0.9.138 빌드 4 특성 열 — 탐색기와 같은 글자·순서
 
 
@@ -2085,7 +2110,7 @@ class DirModel(QtCore.QAbstractTableModel):
         return 0 if parent.isValid() else len(self.rows)
 
     def columnCount(self, parent=QtCore.QModelIndex()):
-        return 0 if parent.isValid() else len(COLS)
+        return 0 if parent.isValid() else len(COLS) + propcols.MAX_COLS   # 0.9.147 속성 열 자리 고정 (켜고 끌 때 모델 다시 안 만듦)
 
     PC_HEAD = {1: "종류" if i18n.lang == "ko" else T("유형"), 2: T("전체 크기"), 3: T("사용 가능한 공간")}   # 0.9.124 내 PC 자세히 = 탐색기와 같은 열 ('종류' 번역은 Category 라 다른 언어는 '유형')
 
@@ -2093,6 +2118,9 @@ class DirModel(QtCore.QAbstractTableModel):
         if o == Qt.Horizontal and role == Qt.DisplayRole:
             if self.path == THIS_PC and s in self.PC_HEAD:
                 return self.PC_HEAD[s]
+            if s >= PROP_BASE:   # 0.9.147 윈도우 속성 열 (4Dir 열과 이름 같으면 ' (Windows)')
+                nm = prop_of(s)
+                return propcols.label(nm, COLS) if nm else ""
             return COLS[s]
         return None
 
@@ -2102,6 +2130,8 @@ class DirModel(QtCore.QAbstractTableModel):
         e, c = self.rows[idx.row()], idx.column()
         if e[0][:1] == GROUP_MARK:   # 날짜 묶음 제목 줄 — 글자는 CheckDelegate.paint 가 그림
             return e[7] if role == Qt.DisplayRole and c == 0 else None
+        if c >= PROP_BASE and role in (Qt.DisplayRole, Qt.ToolTipRole):   # 0.9.147 윈도우 속성 열 (풍선 = 전체 글)
+            return self._pprop_text(e, c)
         if role == Qt.DisplayRole and self.path == THIS_PC and c in (1, 2, 3):   # 0.9.124 내 PC: 종류 · 전체 크기 · 사용 가능한 공간
             if c == 1:
                 return T(PC_INFO[e[5]][0]) if e[5] in PC_INFO else (T("파일 폴더") if e[1] and not e[0].endswith(":\\") else "")
@@ -2408,6 +2438,80 @@ class DirModel(QtCore.QAbstractTableModel):
         self.rows = self._grouped(self._filtered(self.all))
         self.endResetModel()
 
+    # ---- 0.9.147 윈도우 속성 열 (파일 속성 '설명'의 메모·제목 등, 탐색기 '세부 정보 선택'과 같은 목록)
+    ppropsLoaded = QtCore.Signal(str)
+
+    def _pprops_ok(self):
+        """읽어도 되는 폴더 — 내 PC·휴대폰·압축 안·FTP 는 안 읽음"""
+        p = self.path or ""
+        return bool(p) and p != THIS_PC and not is_home(p) and not devices.is_dev(p) and not archives.is_arc(p) and not ftpfs.is_ftp(p)
+
+    def _pprop_text(self, e, c):
+        nm = prop_of(c)
+        if not nm or e[1] or e[7] or not self._pprops_ok():
+            return ""
+        v = propcols.cached(self.full(e), e[3], nm)
+        if v is None:
+            self._want_pprops()
+            return ""
+        return v[0]
+
+    def _want_pprops(self):
+        """속성 열이 보이는데 아직 안 읽은 파일 → 이 폴더 파일을 한 번에 뒤에서 읽기 (열을 하나도 안 골랐으면 아무것도 안 읽음)"""
+        names = prop_names()
+        if not names or getattr(self, "_pprops_busy", None) == self.path or not self._pprops_ok():
+            return
+        items = [(self.full(e), e[3]) for e in self.all if not e[1] and not e[7]
+                 and any(propcols.cached(self.full(e), e[3], n) is None for n in names)]
+        if items:
+            self._load_pprops(items, names)
+
+    def _load_pprops(self, items, names):
+        if getattr(self, "_pprops_busy", None) == self.path:
+            return
+        self._pprops_busy = path = self.path
+        if not getattr(self, "_pprops_hooked", False):
+            self._pprops_hooked = True
+            self.ppropsLoaded.connect(self._pprops_done)
+        log.info("속성 열 뒤에서 읽기 시작 %s %d파일 %s", path, len(items), names)
+
+        def gone():
+            try:
+                return self.path != path
+            except RuntimeError:
+                return True
+
+        def prog():   # 0.4초마다 읽은 만큼 보이게
+            MAIN_CALL.call.emit(lambda: self._pprops_paint(path))
+
+        def work():
+            try:
+                propcols.prefetch(items, names, cancel=gone, progress=prog)
+            except Exception:
+                log.exception("속성 열 읽기 실패")
+            try:
+                self.ppropsLoaded.emit(path)
+            except RuntimeError:   # 탭이 닫혀 모델이 없어짐
+                pass
+        threading.Thread(target=work, daemon=True, name="propcols").start()
+
+    def _pprops_paint(self, path):
+        try:
+            if path == self.path and self.rows:
+                self.dataChanged.emit(self.index(0, PROP_BASE), self.index(len(self.rows) - 1, PROP_BASE + propcols.MAX_COLS - 1), [Qt.DisplayRole])
+        except RuntimeError:
+            pass
+
+    def _pprops_done(self, path):
+        self._pprops_busy = None
+        if path != self.path:
+            return
+        if self.sort_col >= PROP_BASE and prop_of(self.sort_col):
+            log.info("속성 열 다 읽음 → 다시 정렬 %s", path)
+            self.sort(self.sort_col, self.sort_order)
+        else:
+            self._pprops_paint(path)
+
     propsLoaded = QtCore.Signal(str, int)
 
     def _load_props(self, items):
@@ -2487,6 +2591,26 @@ class DirModel(QtCore.QAbstractTableModel):
         if self.path == THIS_PC or is_home(self.path):   # 홈: 탐색기와 같은 순서 그대로
             return list(rows)
         c, rev = self.sort_col, self.sort_order == Qt.DescendingOrder
+        if c >= PROP_BASE:   # 0.9.147 윈도우 속성 열: 읽어 둔 정렬 값, 없는 것은 오름·내림 모두 뒤, 폴더 먼저, 빠진 건 뒤에서 읽고 다시 정렬
+            nm = prop_of(c)
+            if not nm or not self._pprops_ok():
+                return sorted(rows, key=lambda e: (not e[1], shellops.natural_key(e[0])))
+            missing = []
+
+            def pkey(e):
+                v = None
+                if not e[1] and not e[7]:
+                    d = propcols.cached(self.full(e), e[3], nm)
+                    if d is None:
+                        missing.append((self.full(e), e[3]))
+                    else:
+                        v = d[1]
+                none = v is None
+                return ((none if not rev else not none), (isinstance(v, str), v if v is not None else 0), shellops.natural_key(e[0]))
+            out = sorted((e for e in rows if e[1]), key=lambda e: shellops.natural_key(e[0]), reverse=rev) + sorted((e for e in rows if not e[1]), key=pkey, reverse=rev)
+            if missing:
+                self._load_pprops(missing, prop_names())
+            return out
         if c in PROP_SORTS:   # v0.9.75: 날짜·길이·미디어 작성 날짜·사진 크기 — 읽어 둔 값으로 정렬, 없는 건 뒤에서 읽고 다시 정렬
             field, missing = PROP_SORTS[c], []
 
@@ -3405,6 +3529,45 @@ def toggle_column(c):
                 v.apply_columns()
 
 
+def apply_prop_cols(before=None):
+    """0.9.147 속성 열 바꿈 → 모든 창·칸·탭: 보일 자리·머리글·값. 정렬하던 속성이 빠지거나 자리가 바뀌면 이름순"""
+    for w in WINDOWS:
+        for p in w.panes:
+            for v in p.views():
+                try:
+                    m = v.model_
+                    if m.sort_col >= PROP_BASE and before is not None:
+                        old = before[m.sort_col - PROP_BASE] if m.sort_col - PROP_BASE < len(before) else None
+                        if old != prop_of(m.sort_col):
+                            v.set_sort(0, Qt.AscendingOrder)
+                    v.apply_columns()
+                    m.headerDataChanged.emit(Qt.Horizontal, PROP_BASE, PROP_BASE + propcols.MAX_COLS - 1)
+                    if m.rows:
+                        m.dataChanged.emit(m.index(0, PROP_BASE), m.index(len(m.rows) - 1, PROP_BASE + propcols.MAX_COLS - 1), [Qt.DisplayRole])
+                except RuntimeError:
+                    pass
+
+
+def toggle_prop_col(nm):
+    """머리글 우클릭에서 속성 열 하나 켜고 끄기"""
+    before = prop_names()
+    names = [x for x in before if x != nm] if nm in before else (before + [nm])[:propcols.MAX_COLS]
+    SETTINGS["prop_cols"] = names
+    log.info("속성 열 %s → %s", nm, names)
+    apply_prop_cols(before)
+
+
+def pick_prop_cols(view):
+    """'다른 열 더 고르기' → 전체 목록 창 (탐색기 '세부 정보 선택')"""
+    before = prop_names()
+    r = propcols.pick(view, before, COLS)
+    if r is None or r == before:
+        return
+    SETTINGS["prop_cols"] = r[:propcols.MAX_COLS]
+    log.info("속성 열 고름 → %s", SETTINGS["prop_cols"])
+    apply_prop_cols(before)
+
+
 def _in_active_pane(w):
     while w is not None and not isinstance(w, Pane):
         w = w.parentWidget()
@@ -3826,6 +3989,7 @@ class Page(QtWidgets.QWidget):
             h.resizeSection(c, w)
         h.setContextMenuPolicy(Qt.CustomContextMenu)   # v0.9.76: 머리글 우클릭 = 보일 열 고르기 (탐색기와 같게)
         h.customContextMenuRequested.connect(self._header_menu)
+        h.sectionResized.connect(self._prop_resized)   # 0.9.147
         if not SETTINGS["dark"]:   # 머리줄 글자 = 탐색기와 같은 파란 회색 (실측 #4c607a)
             pal = h.palette()
             for role in (QtGui.QPalette.ButtonText, QtGui.QPalette.WindowText, QtGui.QPalette.Text):
@@ -4011,6 +4175,31 @@ class Page(QtWidgets.QWidget):
         self.tree.setColumnHidden(4, not is_search(getattr(self, "path", "")))
         # 상태 열: 동기화 폴더(원드라이브 등) 안에서만, 설정 status_col 켬일 때 (탐색기와 같게 그 폴더에서만 보임)
         self.tree.setColumnHidden(10, not (SETTINGS["status_col"] and self.model_.cloud))
+        # 0.9.147 윈도우 속성 열: 고른 수만큼 자리 보이기, 자리에 든 속성이 바뀌면 그 속성의 기억한 폭
+        names = prop_names()
+        slot = self.__dict__.setdefault("_prop_slot", {})
+        h = self.tree.header()
+        self._prop_resizing = True
+        try:
+            for i in range(propcols.MAX_COLS):
+                c = PROP_BASE + i
+                self.tree.setColumnHidden(c, i >= len(names))
+                if i < len(names) and slot.get(i) != names[i]:
+                    h.resizeSection(c, int((SETTINGS["prop_col_w"] or {}).get(names[i], 160)))
+                    slot[i] = names[i]
+        finally:
+            self._prop_resizing = False
+
+    def _prop_resized(self, c, _old, new):
+        """속성 열 폭을 바꾸면 그 속성 이름으로 기억 (모든 탭·칸이 같은 폭)"""
+        if c < PROP_BASE or getattr(self, "_prop_resizing", False) or new <= 10:
+            return
+        nm = prop_of(c)
+        if nm:
+            d = dict(SETTINGS["prop_col_w"] or {})
+            if d.get(nm) != new:
+                d[nm] = new
+                SETTINGS["prop_col_w"] = d
 
     def _header_menu(self, pos):
         self.header_menu().exec(self.tree.header().mapToGlobal(pos))
@@ -4028,6 +4217,14 @@ class Page(QtWidgets.QWidget):
         a.setChecked(True)
         a.setEnabled(False)
         m.insertAction(m.actions()[0], a)
+        # 0.9.147 윈도우 속성 열: 설명 묶음(메모·제목·주제·태그·만든 이) + 고른 다른 것 + 전체 목록에서 고르기
+        m.addSection(T("파일 속성 열"))
+        chosen = prop_names()
+        for nm in propcols.COMMON + [x for x in chosen if x not in propcols.COMMON]:
+            a = m.addAction(propcols.label(nm, COLS), lambda nm=nm: toggle_prop_col(nm))
+            a.setCheckable(True)
+            a.setChecked(nm in chosen)
+        m.addAction(T("다른 열 더 고르기"), lambda: pick_prop_cols(self))
         m.addSeparator()   # 0.9.124
         mw = main_of(self)
         if mw is not None:
@@ -4059,12 +4256,16 @@ class Page(QtWidgets.QWidget):
             old_default = {0: 280, 1: 125, 3: 85}    # v0.9.30 까지 기본 폭 → 손대지 않은 열이면 탐색기 기본 폭으로 (날짜가 길어져 잘리지 않게)
             new_default = {0: 322, 1: 145, 3: 80}
             for c, w in enumerate(vs.get("cols") or []):
+                if c >= PROP_BASE:   # 0.9.147 속성 열 폭은 속성 이름으로 따로 기억 (prop_col_w)
+                    break
                 if c < h.count() and w > 10:
                     if old_default.get(c) == int(w):
                         w = new_default[c]
                     h.resizeSection(c, int(w))
             col, order = vs.get("sort") or [0, 0]
             col = OLD_SORT.get(int(col), int(col))   # 0.9.75 저장 번호 10~14 → 열 5~9
+            if col >= PROP_BASE and not prop_of(col):   # 0.9.147 빈 속성 열 자리로 정렬돼 있었으면 이름순
+                col, order = 0, 0
             if 0 <= col < h.count():
                 self._vm_quiet = True
                 try:
@@ -5232,7 +5433,7 @@ class Page(QtWidgets.QWidget):
         elif act == "quick_preview":   # 빌드 20 스페이스: 미리보기 창 켜기/끄기 (고른 파일)
             m = main_of(self)
             if m is not None:
-                m.set_preview(not (SETTINGS["preview_pane"] and PREVIEW_WIN is not None and PREVIEW_WIN.isVisible()))
+                m.set_preview(not preview_showing())
         elif act == "mark_toggle":   # 0.9.138 빌드 4 (받은 의견): Insert = 표시하고 다음 줄로
             self.mark_toggle()
         elif act == "flat_view":
@@ -9364,6 +9565,7 @@ SHOW_OPTS = [("checkboxes", T("항목 확인란")), ("show_ext", T("파일 확�
 SET_TOGGLES = [("hide_single_tab", T("탭이 하나면 탭 줄 숨기기 (새 탭: Ctrl+T)")), ("empty_click_up", T("빈 곳을 더블클릭하면 상위 폴더로")),
                ("arc_browse", T("압축 파일(ZIP·7Z·RAR…)을 두 번 누르면 4Dir 안에서 폴더처럼 열기")),
                ("content_search", T("전체 검색에 문서 내용 결과도 보이기 (윈도우 색인)")),
+               ("preview_dock", T("미리보기 창을 4Dir 창 오른쪽 칸에 붙이기 (끄면 따로 창)")),   # 0.9.147
                ("folder_size", T("폴더 크기 계산 (크기 칸 — 네트워크 드라이브 제외)")), ("keep_favbar", T("메뉴줄을 접어도 즐겨찾기 줄은 보이기")),
                ("show_favbar", T("즐겨찾기 줄 보이기")),
                ("folder_view_memory", T("폴더마다 보기 기억")),
@@ -9821,12 +10023,7 @@ class PreviewWindow(QtWidgets.QWidget):
         self.activateWindow()
 
     def contextMenuEvent(self, ev):
-        m = QtWidgets.QMenu(self)
-        a = m.addAction(T("항상 위에 표시"), lambda: self._toggle_top(not SETTINGS["preview_top"]))
-        a.setCheckable(True)
-        a.setChecked(bool(SETTINGS["preview_top"]))
-        m.addAction(T("미리보기 창 닫기") + "\tAlt+P", self.close)
-        m.exec(ev.globalPos())
+        self.pane.contextMenuEvent(ev)
 
     def _toggle_top(self, on):
         SETTINGS["preview_top"] = bool(on)
@@ -10464,6 +10661,8 @@ class SettingsDialog(QtWidgets.QDialog):
         self._opt(lay, "show_hidden", T("숨긴 항목"))
         self._opt(lay, "checkboxes", T("항목 확인란"))
         self._opt(lay, "thumbnails", T("그림 미리보기 (아이콘 보기)"))
+        self._check(lay, "preview_dock", T("미리보기 창을 4Dir 창 오른쪽 칸에 붙이기 (끄면 따로 창)"), lambda: SETTINGS["preview_dock"],
+                    lambda: self.main.set_preview_dock(not SETTINGS["preview_dock"]))   # 0.9.147
         self._check(lay, "breadcrumb", T("경로를 버튼으로 (브레드크럼)"), lambda: SETTINGS["breadcrumb"], self.main.toggle_breadcrumb)
         self._sub(lay, T("정렬·묶기"))
         self._opt(lay, "date_folders_first", T("날짜 정렬 때 폴더를 위로 모으기"))
@@ -10902,6 +11101,23 @@ class PreviewPane(QtWidgets.QFrame):
         self.timer.setSingleShot(True)
         self.timer.setInterval(120)
         self.timer.timeout.connect(self.refresh)
+
+    def contextMenuEvent(self, ev):
+        """0.9.147: 붙인 칸·따로 창 같은 메뉴 — 따로 창으로 떼기 / 4Dir 창에 붙이기, 항상 위(따로 창일 때), 닫기"""
+        m = QtWidgets.QMenu(self)
+        main = self.main if self.main in WINDOWS else next(iter(WINDOWS), None)
+        if main is None:
+            return
+        if SETTINGS["preview_dock"]:
+            m.addAction(T("따로 창으로 떼기"), lambda: main.set_preview_dock(False))
+        else:
+            m.addAction(T("4Dir 창 오른쪽에 붙이기"), lambda: main.set_preview_dock(True))
+            a = m.addAction(T("항상 위에 표시"), lambda: PREVIEW_WIN._toggle_top(not SETTINGS["preview_top"]))
+            a.setCheckable(True)
+            a.setChecked(bool(SETTINGS["preview_top"]))
+        m.addSeparator()
+        m.addAction(T("미리보기 닫기") + "\tAlt+P", lambda: main.set_preview(False))
+        m.exec(ev.globalPos())
 
     def schedule(self, main=None):
         try:   # 0.9.118 빌드 3: 누가 다시 그리라고 했는지 (반복될 때 로그에 남김)
@@ -11968,7 +12184,16 @@ class Main(QtWidgets.QMainWindow):
             PREVIEW_WIN = PreviewWindow(self)
         self.preview = PREVIEW_WIN.pane
         self.hsplit.addWidget(self.vert)
-        if SETTINGS["preview_pane"] and not PREVIEW_WIN.isVisible():
+        # 0.9.147 (사용자 11/23 '탐색기처럼 오른쪽 끝에 붙기, 떼는 건 옵션'): 미리보기 칸 자리 — 칸은 앱에 하나라 지금 쓰는 창으로 옮겨 붙임
+        self.prev_host = QtWidgets.QWidget()
+        self.prev_host.setObjectName("previewDockHost")
+        QtWidgets.QVBoxLayout(self.prev_host).setContentsMargins(0, 0, 0, 0)
+        self.prev_host.setVisible(False)
+        self.hsplit.addWidget(self.prev_host)
+        self.hsplit.setStretchFactor(0, 1)
+        self.hsplit.setStretchFactor(1, 0)
+        self.hsplit.splitterMoved.connect(self._prev_moved)
+        if SETTINGS["preview_pane"] and not preview_showing():
             QtCore.QTimer.singleShot(0, lambda: self.set_preview(True))
         # v0.9.100 이슈 #3: 창 왼쪽 전체 높이 공용 탐색 창 | (칸들 | 미리보기)
         self.lsplit = QtWidgets.QSplitter(Qt.Horizontal)
@@ -12494,20 +12719,70 @@ class Main(QtWidgets.QMainWindow):
     def set_preview(self, on):
         """미리보기 창 켜기/끄기 — 빌드 18 (사용자 11/5): 메모 창처럼 4Dir 창 밖 따로 창, 켜도 칸 크기 그대로. 위치·크기 기억"""
         on = bool(on)
+        dock = bool(SETTINGS["preview_dock"])
         if PREVIEW_WIN is not None:
+            pane = PREVIEW_WIN.pane
             if on:
-                PREVIEW_WIN.setStyleSheet(self.styleSheet())
                 self.preview.main = self
-                PREVIEW_WIN.show_near(self)
+                if dock:   # 0.9.147 오른쪽 칸
+                    if PREVIEW_WIN.isVisible():
+                        PREVIEW_WIN.save_geo()
+                        PREVIEW_WIN.hide()
+                    self._dock_preview()
+                else:
+                    for w in WINDOWS:
+                        w.prev_host.setVisible(False)
+                    if pane.parent() is not PREVIEW_WIN:
+                        PREVIEW_WIN.layout().addWidget(pane)
+                        pane.show()
+                    PREVIEW_WIN.setStyleSheet(self.styleSheet())
+                    PREVIEW_WIN.show_near(self)
                 self.preview.schedule(self)
             else:
                 PREVIEW_WIN.save_geo()
                 PREVIEW_WIN.hide()
+                for w in WINDOWS + ([self] if self not in WINDOWS else []):
+                    w.prev_host.setVisible(False)
+                pane._stop_movie()
         SETTINGS["preview_pane"] = on
         for w in list(WINDOWS) + ([self] if self not in WINDOWS else []):
             if getattr(w, "act_preview", None) is not None:
                 w.act_preview.setChecked(on)   # 메뉴·Alt+P 로 바꿔도 버튼 눌림 표시 맞춤
-        log.info("미리보기 창 %s", "켬" if on else "끔")
+        log.info("미리보기 %s (%s)", "켬" if on else "끔", "오른쪽 칸" if dock else "따로 창")
+
+    def _dock_preview(self):
+        """0.9.147: 미리보기 칸을 이 창 오른쪽 자리로 옮겨 붙임 (다른 창 자리는 숨김)"""
+        pane = PREVIEW_WIN.pane
+        moved = pane.parent() is not self.prev_host
+        if moved:
+            self.prev_host.layout().addWidget(pane)
+            pane.show()
+        for w in WINDOWS:
+            if w is not self:
+                w.prev_host.setVisible(False)
+        self.prev_host.setVisible(True)
+        self._apply_prev_w()
+        if moved:
+            log.info("미리보기 칸 붙임 → 창 %s (폭 %s)", WINDOWS.index(self) if self in WINDOWS else "-", SETTINGS["preview_dock_w"])
+
+    def _apply_prev_w(self):
+        w = max(180, int(SETTINGS["preview_dock_w"] or 340))
+        total = sum(self.hsplit.sizes()) or max(self.width(), 1000)
+        w = min(w, max(180, total - 300))
+        self.hsplit.setSizes([max(total - w, 300), w])
+
+    def _prev_moved(self, *_):
+        if self.prev_host.isVisible():
+            SETTINGS["preview_dock_w"] = self.hsplit.sizes()[1]
+            self.save_timer.start()
+
+    def set_preview_dock(self, dock):
+        """0.9.147: 오른쪽 칸 ↔ 따로 창 (미리보기 우클릭·설정 창)"""
+        SETTINGS["preview_dock"] = bool(dock)
+        log.info("미리보기 붙이기 %s", "오른쪽 칸" if dock else "따로 창")
+        if SETTINGS["preview_pane"]:
+            self.set_preview(True)
+        self.save_timer.start()
 
     def _queue_ui(self):
         q = shellops.QUEUE
@@ -12824,13 +13099,13 @@ class Main(QtWidgets.QMainWindow):
 
     def toggle_preview(self):
         """미리보기 버튼·Alt+P (메모와 같게): 꺼져 있으면 켬, 다른 창 뒤에 숨어 있으면 앞으로, 보고 있던 중이면 끔"""
-        if SETTINGS["preview_pane"] and PREVIEW_WIN is not None and PREVIEW_WIN.isVisible() and not PREVIEW_WIN.was_front():
+        if SETTINGS["preview_pane"] and not SETTINGS["preview_dock"] and PREVIEW_WIN is not None and PREVIEW_WIN.isVisible() and not PREVIEW_WIN.was_front():
             PREVIEW_WIN.bring_front()
             if getattr(self, "act_preview", None) is not None:
                 self.act_preview.setChecked(True)
             log.info("미리보기 창 앞으로")
             return
-        self.set_preview(not (SETTINGS["preview_pane"] and PREVIEW_WIN is not None and PREVIEW_WIN.isVisible()))
+        self.set_preview(not preview_showing())
 
     # ---------------------------------------------------------- 메모 창 (v0.9.108)
     def folder_memo_check(self, path):
@@ -13146,6 +13421,8 @@ class Main(QtWidgets.QMainWindow):
     def changeEvent(self, ev):
         # 최소화하면 사용량 갱신·GIF 재생 멈춤 (보이지 않는데 돌 필요 없음)
         if ev.type() == QtCore.QEvent.ActivationChange and self.isActiveWindow() and getattr(self, "preview", None) is not None:
+            if SETTINGS["preview_pane"] and SETTINGS["preview_dock"] and PREVIEW_WIN is not None and self.preview.parent() is not self.prev_host:
+                self._dock_preview()   # 0.9.147 붙인 칸은 지금 쓰는 창으로
             self.preview.schedule(self)   # 빌드 18: 다른 4Dir 창을 쓰면 미리보기도 그 창의 고른 파일로
         if ev.type() == QtCore.QEvent.WindowStateChange and hasattr(self, "mon_timer"):
             if self.isMinimized():
@@ -14865,6 +15142,9 @@ eports.
         elif key in ("keep_favbar", "show_favbar"):
             for w in WINDOWS or [self]:
                 w.set_chrome_collapsed(bool(SETTINGS["chrome_collapsed"]), save=False)
+        elif key == "preview_dock":   # 0.9.147 (기능 검색에서 바꿈)
+            if SETTINGS["preview_pane"]:
+                self.set_preview(True)
 
     def toggle_opt(self, key):
         OPTS[key] = not OPTS[key]
@@ -15130,11 +15410,18 @@ eports.
             CALC_WIN.close()
         if PREVIEW_WIN is not None:   # 빌드 18 미리보기 따로 창도 같게
             PREVIEW_WIN.save_geo()
+            pane = PREVIEW_WIN.pane
+            if pane.parent() is self.prev_host:   # 0.9.147 붙인 칸은 창과 같이 지워지지 않게 먼저 빼 둠
+                pane._stop_movie()
+                PREVIEW_WIN.layout().addWidget(pane)
             if last:
-                PREVIEW_WIN.pane._stop_movie()
+                pane._stop_movie()
                 PREVIEW_WIN.hide()
-            elif PREVIEW_WIN.pane.main is self:
-                PREVIEW_WIN.pane.main = next(w for w in WINDOWS if w is not self)
+            elif pane.main is self:
+                other = next(w for w in WINDOWS if w is not self)
+                pane.main = other
+                if SETTINGS["preview_pane"] and SETTINGS["preview_dock"]:
+                    QtCore.QTimer.singleShot(0, other._dock_preview)
         st = self.collect_state()
         now = time.time()
         if SESSION_END["on"]:

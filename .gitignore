@@ -12,7 +12,7 @@ __pycache__/
 *.pyc
 # build outputs
 runtime/
-_release/
+01_배포판/
 _build/cache/
 _build/*_log.txt
 _build/corp_words.txt
