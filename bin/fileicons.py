@@ -17,7 +17,7 @@ from ctypes import wintypes
 from PySide6 import QtCore
 
 log = logging.getLogger("QE.ficon")
-FILEICONS_VER = "1.0.0"
+FILEICONS_VER = "1.1.0"   # 1.1.0 (0.9.149 토론 #15): desktop.ini 로 아이콘을 바꾼 폴더도
 OWN_EXT = {".exe", ".ico", ".cur", ".ani", ".cpl", ".scr", ".msc", ".url", ".appref-ms"}
 
 shell32 = ctypes.windll.shell32
@@ -33,8 +33,14 @@ class _FI(ctypes.Structure):
                 ("name", wintypes.WCHAR * 260), ("type", wintypes.WCHAR * 80)]
 
 
-def wants(name, is_dir):
-    return not is_dir and os.path.splitext(name)[1].lower() in OWN_EXT
+FOLDER_CUSTOM_ATTR = 0x1 | 0x4   # 1.1.0: 윈도우는 읽기 전용·시스템 특성이 붙은 폴더에서만 desktop.ini 아이콘을 씀 (토론 #15)
+
+
+def wants(name, is_dir, attrs=0):
+    """그 파일·폴더 자신의 아이콘을 물어볼 가치가 있나 — exe 등 확장자, 또는 desktop.ini 를 쓸 수 있는 폴더(특성만 봄, 디스크 안 읽음)"""
+    if is_dir:
+        return bool((attrs or 0) & FOLDER_CUSTOM_ATTR)
+    return os.path.splitext(name)[1].lower() in OWN_EXT
 
 
 def sys_index(path):

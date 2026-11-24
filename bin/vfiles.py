@@ -17,7 +17,8 @@ import olehook
 
 log = logging.getLogger("QE")
 
-VFILES_VER = "1.4.0"   # 1.4.0 (0.9.141): 비동기 받기용 — prepare(이름 먼저) + fetch(뒤 스레드, 진행 알림)
+VFILES_VER = "1.5.0"   # 1.5.0 (0.9.149): 크롬 지메일 첨부 — 이름표는 링크 바로가기(.url), 진짜 파일은 놓을 때 받는 경로(CF_HDROP) → 그것부터 (탐색기와 같음)
+# 1.4.0 (0.9.141): 비동기 받기용 — prepare(이름 먼저) + fetch(뒤 스레드, 진행 알림)
 # 1.3.1 — 1.3.1 (0.9.140): 같은 이름 반복은 한 번만 받기 (TortoiseSVN)
 # VFILES 1.3.0   # 1.3.0 (0.9.138): 붙여넣기도 — save(obj=클립보드 IDataObject)
 FMT_FGD = 'application/x-qt-windows-mime;value="FileGroupDescriptorW"'
@@ -217,6 +218,46 @@ def prepare(md, folder, obj):
     return items, (_hints(md, items) if items else None)
 
 
+def _hdrop_paths(obj):
+    """1.5.0: 놓을 때서야 주는 진짜 파일 경로(CF_HDROP, 크롬 DownloadURL 은 이때 내려받아 임시 파일 경로를 줌) → [경로] (없으면 [])"""
+    import pythoncom
+    try:
+        med = obj.GetData((15, None, pythoncom.DVASPECT_CONTENT, -1, pythoncom.TYMED_HGLOBAL))   # 15 = CF_HDROP
+    except Exception as ex:
+        log.info("진짜 파일 경로(CF_HDROP) 없음: %s", ex)
+        return []
+    b = bytes(med.data or b"")
+    if len(b) < 20:
+        log.info("진짜 파일 경로(CF_HDROP) 비어 있음 %d바이트", len(b))
+        return []
+    off, = struct.unpack_from("<I", b, 0)
+    wide, = struct.unpack_from("<I", b, 16)
+    body = b[off:].decode("utf-16-le" if wide else "mbcs", "replace")
+    paths = [x for x in body.split(chr(0) * 2)[0].split(chr(0)) if x]   # 두 번 연속 0 = 목록 끝 (뒤는 한 덩어리 여분 쓰레기)
+    log.info("진짜 파일 경로(CF_HDROP) %d개 %s", len(paths), paths[:5])
+    return [x for x in paths if os.path.isfile(x)]
+
+
+def _save_hdrop(obj, folder, progress=None):
+    """1.5.0: CF_HDROP 경로 파일을 folder 로 복사 → 저장한 경로들 (못 받으면 [])"""
+    import shutil
+    srcs = _hdrop_paths(obj)
+    out = []
+    for k, src in enumerate(srcs, 1):
+        if progress:
+            progress(k, len(srcs), os.path.basename(src))
+        dst = _unique(folder, _safe(os.path.basename(src)))
+        shutil.copy2(src, dst)
+        out.append(dst)
+        log.info("진짜 파일 복사 %s → %s (%d바이트)", src, dst, os.path.getsize(dst))
+    return out
+
+
+def _link_only(items):
+    """이름표가 링크 바로가기(.url) 하나뿐인가 — 크롬 지메일 첨부·웹 링크"""
+    return len(items) == 1 and not items[0][2] and items[0][0].lower().endswith(".url")
+
+
 def fetch(stream, items, folder, hints, progress=None):
     """1.4.0: 뒤 스레드에서 내용 받기. stream = CoMarshalInterThreadInterfaceInStream 한 IDataObject → (저장한 경로들, 안내)"""
     import pythoncom
@@ -224,6 +265,10 @@ def fetch(stream, items, folder, hints, progress=None):
     try:
         obj = pythoncom.CoGetInterfaceAndReleaseStream(stream, pythoncom.IID_IDataObject)
         try:
+            if _link_only(items):   # 1.5.0: 진짜 파일(지메일 첨부)을 주면 그것, 없으면 예전처럼 .url
+                got = _save_hdrop(obj, folder, progress)
+                if got:
+                    return got, None
             return _save_direct(obj, items, folder, hints, progress)
         finally:
             obj = None
@@ -240,6 +285,10 @@ def save(md, folder, obj=None):
     if not items:
         return [], None
     if obj is not None:
+        if _link_only(items):   # 1.5.0
+            got = _save_hdrop(obj, folder)
+            if got:
+                return got, None
         return _save_direct(obj, items, folder, hints)
     files = [it for it in items if not it[2]]
     if len(files) != 1 or len(items) != 1:

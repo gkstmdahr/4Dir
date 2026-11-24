@@ -845,7 +845,7 @@ class ShellMenu:
     ALT_BASE = 0x6000    # 0.9.109 빈 곳 메뉴의 빈 하위 메뉴를 채울 '폴더 자체' 메뉴 id (빈 곳 셸 항목은 1~0x5FFF)
     current = None
 
-    def __init__(self, hwnd, folder, names, extras=(), extended=False, tail=(), newfolder=None, id_first=1, id_last=None):
+    def __init__(self, hwnd, folder, names, extras=(), extended=False, tail=(), newfolder=None, id_first=1, id_last=None, after_open=False):
         self.cm = None
         self.id_first = id_first
         self.alt = None        # 빈 곳 메뉴: 하위 메뉴가 비면 '폴더 자체' 우클릭 메뉴의 같은 이름 하위 메뉴로 채움 (handle)
@@ -926,8 +926,14 @@ class ShellMenu:
                     v = self.verb(idc - 1)
                     if v:
                         shell_verbs.add(v.lower())
-            win32gui.InsertMenu(self.hmenu, 0, win32con.MF_BYPOSITION | win32con.MF_SEPARATOR, 0, None)
-            pos = -1
+            base = 0
+            if after_open:   # 0.9.149 (사용자 11/24 '탐색기와 비슷한 위치'): 파일 메뉴는 윈도우 '열기' 묶음(첫 구분선) 아래에 4Dir 항목
+                for i in range(win32gui.GetMenuItemCount(self.hmenu)):
+                    if ctypes.windll.user32.GetMenuState(self.hmenu, i, win32con.MF_BYPOSITION) & win32con.MF_SEPARATOR:
+                        base = i + 1
+                        break
+            win32gui.InsertMenu(self.hmenu, base, win32con.MF_BYPOSITION | win32con.MF_SEPARATOR, 0, None)
+            pos = base - 1
             for ex in extras:
                 pos += 1
                 ex = _menu_spec(ex)
@@ -1127,11 +1133,11 @@ class ShellMenu:
 
     # ------------------------------------------------------------ 메인창에서 부르는 진입점
     @staticmethod
-    def show(hwnd, folder, names, x, y, extras=(), extended=False, tail=(), newfolder=None, openwith=None):
+    def show(hwnd, folder, names, x, y, extras=(), extended=False, tail=(), newfolder=None, openwith=None, after_open=False):
         """반환: ('extra', 번호) | ('rename', None) | ('invoked', verb) | None(취소)
         openwith(앱 글자) → True 면 '연결 프로그램 ▸ 앱' 을 부른 쪽이 대신 엶 (0.9.131 사진 앱 폴더 전체)"""
         log.info("셸메뉴 folder=%s names=%s", folder, names[:5])
-        m = ShellMenu(hwnd, folder, names, extras, extended, tail, newfolder)
+        m = ShellMenu(hwnd, folder, names, extras, extended, tail, newfolder, after_open=after_open)
         ShellMenu.current = m
         try:
             cmd = win32gui.TrackPopupMenu(m.hmenu, win32con.TPM_RETURNCMD | win32con.TPM_RIGHTBUTTON,

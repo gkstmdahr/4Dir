@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.148"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 2             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.149"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 7             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -882,6 +882,7 @@ OPTS = {"show_hidden": False, "show_ext": True, "checkboxes": False,
 NPANES = 6   # 처음 만들어 두는 칸 수 (위 줄 0,1,4 / 아래 줄 2,3,5). 직접 지정(가로x세로)이면 필요할 때 더 만듦
 MAX_COLS, MAX_ROWS = 5, 4   # 직접 지정 최대 가로 5 x 세로 4 = 20칸
 # 칸별 보기 방식
+LIST_MAX_W = 360   # 0.9.149 토론 #13: 목록 보기 한 칸 최대 폭 (더 긴 이름은 … — 탐색기도 아주 긴 이름은 줄임)
 VIEW_MODES = [("details", T("자세히"), 16), ("list", T("목록"), 16), ("small", T("작은 아이콘"), 16),
               ("medium", T("보통 아이콘"), 48), ("large", T("큰 아이콘"), 96), ("xlarge", T("아주 큰 아이콘"), 256)]
 MODE_PX = {k: px for k, _, px in VIEW_MODES}
@@ -2191,6 +2192,12 @@ class DirModel(QtCore.QAbstractTableModel):
             st = self._cstate(e)
             return cloud.icon(st, self.icon_px if self.icon_px <= 20 else 16) if role == Qt.DecorationRole else cloud.STATES[st][1]
         elif role == Qt.DecorationRole and c == 0:
+            if e[1] and e[6] is None and fileicons.wants(e[0], True, e[4]):   # 0.9.149 토론 #15: desktop.ini 로 바꾼 폴더 아이콘 (표지보다 먼저 — 탐색기와 같게)
+                fp = self.full(e)
+                if not (devices.is_dev(fp) or archives.is_arc(fp) or ftpfs.is_url(fp)):
+                    idx = ficon_service().get(fp, e[3])
+                    if idx is not None and idx >= 0 and idx != shellops.ext_index(e[0], True):
+                        return shellops.icon_for(e[0], e[1], self.icon_px, idx)
             if self.thumbs_on and not e[1] and thumbs.has_preview(e[0]) and not devices.is_dev(self.full(e)) and not archives.is_arc(self.full(e)):   # 휴대폰 사진 미리보기는 2차 · 0.9.121 PDF 첫 쪽
                 pm = thumbs_service().get(self.full(e), e[3], self.thumb_px)
                 if pm is not None:
@@ -2798,6 +2805,9 @@ class CheckDelegate(QtWidgets.QStyledItemDelegate):
         sz = super().sizeHint(opt, idx)
         if isinstance(opt.widget, QtWidgets.QTreeView):
             sz.setHeight(max(sz.height(), opt.fontMetrics.height() + 5))
+        elif (isinstance(opt.widget, QtWidgets.QListView) and opt.widget.viewMode() == QtWidgets.QListView.ListMode
+              and opt.widget.flow() == QtWidgets.QListView.TopToBottom and opt.widget.isWrapping()):   # 0.9.149 토론 #13 목록 보기
+            sz.setWidth(min(sz.width(), LIST_MAX_W))
         elif isinstance(opt.widget, QtWidgets.QListView) and opt.widget.viewMode() == QtWidgets.QListView.IconMode:
             # v0.9.96: 아이콘 보기는 모든 칸 같은 크기(uniformItemSizes) → 칸 크기를 격자에 맞춤. 전엔 Qt 가 고른 한 항목의 크기를 다 같이 써서
             # 그 항목이 낮으면(예: K:\ 의 .psd 43px) 모든 이름이 잘림 (11/5 사용자 제보 '외장하드 최상위 보통 아이콘', 재현 rect 90x43)
@@ -4091,6 +4101,9 @@ class Page(QtWidgets.QWidget):
                 v.setWrapping(True)
                 v.setGridSize(QtCore.QSize())
                 v.setSpacing(1)
+                # 0.9.149 토론 #13: 같은 크기(uniformItemSizes)는 Qt 가 고른 한 항목(첫 이름)의 폭을 모두에 써서 긴 이름이 잘림
+                # → 항목마다 크기, 세로 줄마다 그 줄에서 가장 긴 이름 폭 (탐색기 '목록'과 같게, 너무 긴 이름은 LIST_MAX_W 에서 … )
+                v.setUniformItemSizes(False)
             elif mode == "small":
                 v.setViewMode(QtWidgets.QListView.ListMode)
                 v.setFlow(QtWidgets.QListView.LeftToRight)
@@ -6099,12 +6112,10 @@ class Page(QtWidgets.QWidget):
             extras = [fav_entry] + ([(QE_FAV_ADD, lambda: [FAV.add(p) for p in dirs] + [FAV.add(p, file=True) for p in files])]
                                     if dirs or files else []) + sorted(extras, key=rank)
         else:
-            # 빈 곳: 윈도우 탐색기 빈 곳 메뉴 순서 (10/8 사용자 확정) — 새 폴더 · 보기 · 정렬 기준 · 새로 고침 · ★4Dir 즐겨찾기
-            # ─ 붙여넣기(복사한 것 없으면 흐림) ─ 윈도우 항목들(윈도우 '새 폴더' 자리에 되돌리기) … 속성
+            # 빈 곳: 윈도우 탐색기 빈 곳 메뉴 순서 (0.9.149 토론 #14 + 사용자 11/24 '웬만한 건 탐색기와 비슷한 위치')
+            # 보기 · 정렬 기준 · 새로 고침 ─ 붙여넣기 · 되돌리기(=실행 취소) ─ 4Dir 항목 ─ 윈도우 항목들(추가 프로그램 · 새 폴더 · 새로 만들기 ▸ · 속성)
+            # 4Dir '새 폴더'(만들고 바로 이름 편집)는 윈도우 '새 폴더' 자리에 (전: 맨 위 — 10/8 순서)
             v = self
-            if pane and not pane.tabrow.isVisibleTo(pane):   # v0.9.78: 탭 줄을 숨겨 + 버튼이 없을 때만 (마우스로도 새 탭)
-                extras.append((mlabel(T("새 탭"), "new_tab"), lambda: pane.add_tab(self.path, focus=True)))
-            extras.append((mlabel(T("새 폴더"), "new_folder", "N"), self.do_new_folder))
             if pane:
                 extras.append((mlabel(T("보기"), None, "V"), [({"t": lbl, "chk": pane.mode == k}, (lambda k=k: pane.set_mode(k))) for k, lbl, _ in VIEW_MODES]))
             srt = [({"t": lbl, "chk": c == v.model_.sort_col}, (lambda c=c: v.set_sort(c, v.model_.sort_order))) for c, lbl in SORT_COLS]
@@ -6112,6 +6123,15 @@ class Page(QtWidgets.QWidget):
                                     for o, lbl in ((Qt.AscendingOrder, T("오름차순")), (Qt.DescendingOrder, T("내림차순")))]
             extras.append((mlabel(T("정렬 기준"), None, "O"), srt))
             extras.append((mlabel(T("새로 고침"), "refresh", "E"), lambda: self.reload("menu")))
+            extras.append(("-", None))
+            extras.append(({"t": mlabel(T("붙여넣기"), "paste", "P"), "off": not shellops.get_clipboard()[0] and not QtWidgets.QApplication.clipboard().mimeData().hasImage()}, self.do_paste))
+            main = main_of(self)
+            undo_t = mlabel(T("되돌리기"), None, "U") + (" — " + UNDO[-1][2].replace("&", "&&") if UNDO else "")
+            undo_t += ("\t" + key_text("undo")) if key_text("undo") else ""
+            extras.append(({"t": undo_t, "off": not UNDO}, lambda: main.undo(self) if main is not None else None))
+            extras.append(("-", None))
+            if pane and not pane.tabrow.isVisibleTo(pane):   # v0.9.78: 탭 줄을 숨겨 + 버튼이 없을 때만 (마우스로도 새 탭)
+                extras.append((mlabel(T("새 탭"), "new_tab"), lambda: pane.add_tab(self.path, focus=True)))
             tools = [(ti(mlabel(T("패턴으로 고르기…"), "select_pattern"), "pattern"), self.select_pattern),   # 0.9.109 빌드 5: 빈 곳도 '4Dir 도구 ▸' 하나로
                      (ti(mlabel(T("하위 폴더 펼쳐 보기"), "flat_view"), "flat"), self.flat_view)]
             if main_of(self) is not None:
@@ -6124,14 +6144,9 @@ class Page(QtWidgets.QWidget):
             extras.append((T("터미널에서 열기"), lambda: shellops.open_terminal(self.path)))   # 윈도우 11 빈 곳 메뉴처럼 (v0.9.54)
             extras.append((ti(T("파일 목록 내보내기"), "export"), self.export_menu_items()))   # 0.9.116 #23
             extras.append(fav_entry)
-            extras.append(("-", None))
-            extras.append(({"t": mlabel(T("붙여넣기"), "paste", "P"), "off": not shellops.get_clipboard()[0] and not QtWidgets.QApplication.clipboard().mimeData().hasImage()}, self.do_paste))
-            main = main_of(self)
-            undo_t = mlabel(T("되돌리기"), None, "U") + (" — " + UNDO[-1][2].replace("&", "&&") if UNDO else "")
-            undo_t += ("\t" + key_text("undo")) if key_text("undo") else ""
-            newfolder = ({"t": undo_t, "off": not UNDO},
-                         {T("새 폴더"), "새 폴더", "new folder"},   # 윈도우 '새 폴더' 항목 글자 (윈도우 언어)
-                         lambda: main.undo(self) if main is not None else None)
+            newfolder = (mlabel(T("새 폴더"), "new_folder", "N"),
+                         {T("새 폴더"), "새 폴더", "new folder"},   # 윈도우 '새 폴더' 항목 글자 (윈도우 언어) → 그 자리에 4Dir 새 폴더
+                         self.do_new_folder)
 
         spec, calls = [], []
         for label, cb in extras:
@@ -6150,7 +6165,7 @@ class Page(QtWidgets.QWidget):
         log.info("우클릭 4Dir 항목 준비 %.0fms (고른 것 %d개)", (time.perf_counter() - _t0) * 1000, len(paths))
         try:
             r = shellops.ShellMenu.show(self.hwnd(), folder, items, x, y, extras=spec,
-                                        newfolder=newfolder[:2] if newfolder else None,
+                                        newfolder=newfolder[:2] if newfolder else None, after_open=bool(paths),   # 0.9.149 파일 메뉴 = '열기' 묶음 아래
                                         extended=bool(QtWidgets.QApplication.keyboardModifiers() & Qt.ShiftModifier),
                                         openwith=(lambda app, ps=list(paths): open_with_handoff(ps, app)) if paths else None)
         except Exception:
@@ -7227,7 +7242,8 @@ class Sidebar(DragScrollMixin, QtWidgets.QTreeWidget):
 
 
 # ================================================================ 경로 버튼 (브레드크럼, 옵션)
-CRUMB_ROOM = 40   # 경로 버튼 줄 오른쪽에 늘 비워 둘 폭(px) — 클릭해서 주소 입력·복사할 자리
+CRUMB_ROOM = 8    # 0.9.149 빌드 4: 40→24→12→8 (사용자 11/24 "10픽셀도 충분, 8픽셀이어도 상관없을듯") · 경로 버튼 줄 오른쪽에 늘 비워 둘 폭(px) — 클릭해서 주소 입력·복사할 자리
+CRUMB_LEFT = 10   # 0.9.149: 경로 버튼 줄 왼쪽 빈 곳(px) — 앞쪽에서도 클릭해 입력칸 (사용자 11/24 '앞뒤로 여유')
 
 
 class Crumbs(QtWidgets.QFrame):
@@ -7241,7 +7257,7 @@ class Crumbs(QtWidgets.QFrame):
         self.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.setCursor(Qt.IBeamCursor)
         self.lay = QtWidgets.QHBoxLayout(self)
-        self.lay.setContentsMargins(2, 0, 2, 0)
+        self.lay.setContentsMargins(CRUMB_LEFT, 0, 2, 0)   # 0.9.149 왼쪽 2→CRUMB_LEFT: 앞쪽도 빈 곳 클릭 자리
         self.lay.setSpacing(0)
         self.path = ""
 
@@ -7304,13 +7320,29 @@ class Crumbs(QtWidgets.QFrame):
         for b in btns:
             b.ensurePolished()
         widths = [b.sizeHint().width() + sep_w for b in btns]
-        avail = max(self.width() - CRUMB_ROOM - 30, 80)   # 30 = 앞쪽 '…' 버튼 자리
+        # 0.9.149 빌드 3 (사용자 11/24 '아직 넓다'): 오른쪽 빈 곳 = 늘 CRUMB_ROOM 하나로, 마지막 이름은 남은 폭을 꽉 채우게 줄임
+        inner = self.width() - CRUMB_LEFT - 2 - CRUMB_ROOM   # 칩이 쓸 수 있는 폭 (2 = 오른쪽 테두리 여백)
+        tiny = self.width() < 160   # 아주 좁은 칸: 앞쪽 '…' 단추를 빼고 그 자리를 이름에
+        more_w = 0 if tiny else 30
         start = 0
-        while start < len(segs) - 1 and sum(widths[start:]) > avail:
-            start += 1
+        if sum(widths) - sep_w > inner:
+            while start < len(segs) - 1 and more_w + sum(widths[start:]) - (sep_w if tiny else 0) > inner:
+                start += 1
+        lead = more_w if start else 0   # 앞쪽 '…' 폭
+        lim = inner - lead - sum(widths[start:-1]) - (sep_w if (lead or len(segs) - start > 1) else 0)
+        b = btns[-1]
+        if b.sizeHint().width() > lim:   # 마지막 이름이 남은 폭보다 길면 가운데를 줄여 딱 맞춤
+            full, fm = b.text(), b.fontMetrics()
+            pad = b.sizeHint().width() - fm.horizontalAdvance(full)
+            tw = max(12, lim - pad + 16)   # 조금 크게 시작해 1px 씩 줄여 들어가는 가장 긴 글자로 (글자 단위라 몇 px 차이는 남음)
+            b.setText(fm.elidedText(full, Qt.ElideMiddle, tw))
+            while tw > 12 and b.sizeHint().width() > lim:
+                tw -= 1
+                b.setText(fm.elidedText(full, Qt.ElideMiddle, tw))
+            log.debug("경로 칩 마지막 이름 줄임 → %d (남은 폭 %d)", b.sizeHint().width(), lim)
         for b in btns[:start]:
             b.deleteLater()
-        if start:
+        if start and more_w:
             more = QtWidgets.QToolButton()
             more.setText("…")
             more.setAutoRaise(True)
@@ -7322,7 +7354,7 @@ class Crumbs(QtWidgets.QFrame):
             more.setPopupMode(QtWidgets.QToolButton.InstantPopup)
             self.lay.addWidget(more)
         for k, b in enumerate(btns[start:]):
-            if k or start:
+            if k or (start and more_w):
                 sep = QtWidgets.QLabel("›")
                 sep.setStyleSheet("color:#8a939c; padding:0 1px;")
                 self.lay.addWidget(sep)
