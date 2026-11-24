@@ -2429,5 +2429,6 @@
  "파일 속성(윈도우)에서 열로 보일 항목을 고르세요. 최대 {0}개": "Wybierz właściwości pliku (Windows) do pokazania jako kolumny. Do {0}.",
  "찾기 (예: 메모, 제목, 카메라)": "Znajdź (np. komentarze, tytuł, aparat)",
  "고른 열 {0}개": "Wybrane kolumny: {0}",
- "최대 {0}개까지 고를 수 있습니다": "Możesz wybrać do {0}"
+ "최대 {0}개까지 고를 수 있습니다": "Możesz wybrać do {0}",
+ "GitHub 별을 눌러 주시면 힘이 됩니다": "Gwiazdka na GitHubie bardzo nam pomoże"
 }

@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.147"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_VERSION = "0.9.148"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
 QE_BUILD = 2             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
@@ -370,8 +370,9 @@ def show_update_notice(w, new, notes, page):
         log.info("새 버전 알림: v%s 건너뛰기", new)
         SETTINGS["update_skip"] = new
     text = T("새 버전 4Dir v{0} 이 나왔습니다 (지금 v{1})").format(new, QE_VERSION)
-    if notes:
-        text += " — " + notes
+    text += "  ★ " + T("GitHub 별을 눌러 주시면 힘이 됩니다")   # 0.9.148 (사용자 11/24: SignPath 심사용 별)
+    # 0.9.148 빌드 2 (사용자 11/24 '빼라'): 바뀐 점은 알림 줄에 안 붙임 — 길어서 잘림, 받으러 가기 사이트에 있음
+    log.info("새 버전 알림: 바뀐 점(알림 줄엔 안 보임) %r", notes[:200])
     w.show_notice(text + "  ✕", sticky=True, action=(T("받으러 가기"), get) if page else None,
                   action2=(T("이 버전 건너뛰기"), skip))
 
