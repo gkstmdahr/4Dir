@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.149"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 7             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.150"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 10             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -392,6 +392,37 @@ def _undo_signal():
                         next(w for w in WINDOWS if w.isVisible()).show_notice(msg))
         _UNDO_SIG.append(sg)
     return _UNDO_SIG[0]
+
+
+def real_path(p):
+    """0.9.150 빌드 2: 파일의 실제 경로 (스토어판은 %LOCALAPPDATA% 쓰기를 윈도우가 Packages\\<앱>\\LocalCache 로 돌림 —
+    4Dir 안에서 보이는 경로를 탐색기에 주면 탐색기에는 없는 경로라 '문서' 폴더가 열렸음). 못 구하면 그대로"""
+    try:
+        import ctypes
+        from ctypes import wintypes as W
+        k = ctypes.windll.kernel32
+        k.CreateFileW.restype = W.HANDLE
+        h = k.CreateFileW(str(p), 0, 7, None, 3, 0x02000000, None)   # 읽기 권한 없이 열기 · 공유 전부 · OPEN_EXISTING · BACKUP_SEMANTICS
+        if not h or h == W.HANDLE(-1).value:
+            return p
+        try:
+            buf = ctypes.create_unicode_buffer(1024)
+            n = k.GetFinalPathNameByHandleW(W.HANDLE(h), buf, 1024, 0)
+        finally:
+            k.CloseHandle(W.HANDLE(h))
+        if not n or n >= 1024:
+            return p
+        r = buf.value
+        if r.startswith("\\\\?\\UNC\\"):
+            r = "\\\\" + r[8:]
+        elif r.startswith("\\\\?\\"):
+            r = r[4:]
+        if os.path.normcase(r) != os.path.normcase(str(p)):
+            log.info("실제 경로 %s → %s", p, r)
+        return r
+    except Exception:
+        log.exception("실제 경로 못 구함 %s", p)
+        return p
 
 
 def report_dir():
@@ -1149,11 +1180,24 @@ def is_search(p):
 FLAT_Q = "⤵*"   # 빌드 20: 하위 폴더 펼쳐 보기 = 그 폴더 아래 모든 파일 (폴더 아래 찾기와 같은 길, 파일만)
 HOME_Q = "⌂home"   # 0.9.134 홈 = 윈도우 탐색기 홈(즐겨찾기 + 최근 항목). 태그 보기처럼 검색 결과 길(전체 경로·위치 열)을 씀
 WIN_HOME = "shell:::{f874310e-b6b7-47dc-bc84-b9e6b38f5903}"   # 윈도우 11 탐색기 '홈' (고정·자주 쓰는 폴더 + 최근 파일, 탐색기와 같은 순서)
-HOME_INDENT = 16   # 빌드 8 홈 묶음 안 항목 들여쓰기 (px)
+WIN_HOME_10 = "shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}"   # 0.9.150 빌드 3: 윈도우 10 탐색기 첫 화면 '즐겨찾기'(자주 쓰는 폴더 + 최근 파일)
+HOME_INDENT = 16  # 빌드 8 홈 묶음 안 항목 들여쓰기 (px)
 HOME_WAIT = 2.0   # 끊긴 네트워크 폴더가 고정돼 있으면 셸이 멈춤 → 이 초 넘으면 포기 (화면은 안 멈춤: 읽기는 작업 스레드)
 CONTENT_HITS = {}   # 0.9.145 전체 검색의 '내용에서 찾음' 결과: (검색 글자, normcase 경로) → 찾은 문장 조각 (없으면 "")
 CONTENT_SNIP_N = 40     # 조각을 미리 읽어 둘 결과 수 (뒤 스레드, 시간 제한 CONTENT_SNIP_SEC)
 CONTENT_SNIP_SEC = 1.5
+
+
+def winidx_add_with_junk(paths, skip_junk=True, metas=()):
+    """0.9.150 빌드 6: 윈도우 색인에 넣기 + (옵션) 그 아래 쓸모없는 폴더 빼기 → winsearch.add_scopes 결과. 뒤 스레드에서
+    빌드 9: metas = 다시 넣는 작업 폴더 안 .svn·.git (늘 뺌)"""
+    ex = winsearch.sys_excludes(paths) + list(metas)   # 빌드 7: C:\ 통째로 넣을 때 Program Files 두 개는 늘 뺌 (옵션과 상관없이)
+    if skip_junk and SEARCH is not None:
+        try:
+            ex += [p for p, _n in winsearch.junk_folders(SEARCH.base, paths)]
+        except Exception:
+            log.warning("뺄 폴더 찾기 실패 — 빼기 없이 넣음", exc_info=True)
+    return winsearch.add_scopes(paths, excludes=ex)
 
 
 def content_snip(q, e):
@@ -1182,7 +1226,13 @@ def home_entries(timeout=HOME_WAIT):
             sh = win32com.client.Dispatch("Shell.Application")
             qa = sh.NameSpace(favorites.QUICK_ACCESS)   # 즐겨찾기 묶음 = 이 목록에 있는 것 (홈은 최근 항목이 먼저, 폴더·파일로는 못 가름)
             box["fav"] = {os.path.normcase(x.Path) for x in (qa.Items() if qa else []) if x.Path}
-            ns = sh.NameSpace(WIN_HOME)
+            try:
+                ns = sh.NameSpace(WIN_HOME)
+            except Exception:
+                ns = None
+            if ns is None:   # 0.9.150 빌드 3: 윈도우 10 엔 '홈'이 없음(0x80070490) → 탐색기 10 의 첫 화면 '즐겨찾기'(자주 쓰는 폴더 + 최근 파일) — 집 PC 실측 28개(폴더 8 · 파일 20)
+                log.info("홈 없음(윈도우 10) → 탐색기 즐겨찾기 목록으로")
+                ns = sh.NameSpace(WIN_HOME_10)
             for it in (ns.Items() if ns else []):
                 try:
                     pth = it.Path or ""
@@ -1563,10 +1613,10 @@ class ScanJob(QtCore.QRunnable):
                     if SETTINGS["content_search"] and winsearch.terms_of(q):
                         wth = threading.Thread(target=lambda: wbox.update(r=winsearch.query(q)), name="winsearch-q", daemon=True)
                         wth.start()
-                    res, total, ms = SEARCH.search(q)
+                    res, total, ms, more = SEARCH.search(q, cancel=self.cancel, stop=True)   # 0.9.150 빌드 2: 5,000개 찾으면 멈춤 · 새 글자 치면 끊음
                     entries = rows(res)
                     note = "" if SEARCH.state == "ready" else T(" (색인 만드는 중 — 결과가 덜 나올 수 있음)")
-                    msg = T('{0:,}개').format(total) + (T(' (앞 {0:,}개만 표시)').format(len(res)) if total > len(res) else "") + f" · {ms:.0f}ms" + note
+                    msg = T('{0:,}개').format(total) + ("+" if more else "") + f" · {ms:.0f}ms" + note
                     if wth is not None:
                         wth.join(3.5)
                         crows, cms, cerr = wbox.get("r", ([], 0.0, "timeout"))
@@ -2897,8 +2947,8 @@ class CheckDelegate(QtWidgets.QStyledItemDelegate):
         info = PC_INFO.get(e[5])
         dark = bool(SETTINGS["dark"])
         sel = bool(opt.state & QtWidgets.QStyle.State_Selected)
-        fg = opt.palette.color(QtGui.QPalette.HighlightedText) if sel else QtGui.QColor(LIST_TEXT[dark][0])
-        sub = opt.palette.color(QtGui.QPalette.HighlightedText) if sel else QtGui.QColor(LIST_TEXT[dark][1])
+        fg = QtGui.QColor(LIST_TEXT[dark][0])   # 0.9.150 사용자 11/25: 골라도 글자색 그대로 (탐색기처럼 연한 파랑 배경 + 검은 글자, 흰 글자는 안 보였음)
+        sub = QtGui.QColor(LIST_TEXT[dark][1])
         name = idx.data(Qt.DisplayRole) or ""
         content = w.viewMode() == QtWidgets.QListView.ListMode
         isz = 32 if content else 48
@@ -4517,7 +4567,17 @@ class Page(QtWidgets.QWidget):
                 # 빠른 검색 0개: 네트워크·구글드라이브 등은 처음엔 검색 범위 밖이라 '고장'처럼 보임 → 이유와 범위 설정 안내 (v0.9.68, 10/29)
                 main = main_of(self)
                 log.info("전체 검색 0개 '%s' → 범위 안내", parse_search(path)[0])
-                if main is not None:
+                miss = []
+                try:
+                    miss = winsearch.missing(main.search_roots_enabled()) if main is not None else []
+                except Exception:
+                    log.debug("윈도우 색인 빠진 곳 확인 실패", exc_info=True)
+                if main is not None and miss:   # 0.9.150 빌드 4: 내용 검색이 안 되는 드라이브가 있으면 그걸 먼저 알림 (사용자 11/25 G: 메모장 내용 못 찾음)
+                    log.info("  내용 검색 안 되는 곳(윈도우 색인 없음) %s → 안내", miss)
+                    main.show_notice(T("'{0}' 을(를) 찾지 못했습니다. 파일 내용 검색이 안 되는 곳이 있습니다 (윈도우 색인에 없음): {1}  ✕")
+                                     .format(parse_search(path)[0], "  ".join(m.rstrip("\\") for m in miss)), sticky=False, ms=12000,
+                                     action=(T("내용 검색에도 넣기…"), main.open_search_roots))
+                elif main is not None:
                     main.show_notice(T("'{0}' 을(를) 찾지 못했습니다. 네트워크·구글드라이브 같은 곳은 처음엔 검색 범위에 없습니다  ✕")
                                      .format(parse_search(path)[0]), sticky=False, ms=12000,
                                      action=(T("검색 범위 설정…"), main.open_search_roots))
@@ -10867,7 +10927,8 @@ class SettingsDialog(QtWidgets.QDialog):
 
     def _p_about(self, lay):
         m = self.main
-        v = QtWidgets.QLabel(f"4Dir v{QE_VERSION}  " + T("(빌드 {0})").format(QE_BUILD))
+        v = QtWidgets.QLabel(f"4Dir v{QE_VERSION}  " + T("(빌드 {0})").format(QE_BUILD) + "  ·  "
+                             + (T("Microsoft Store 판") if datadir.PACKAGED else T("웹 다운로드(zip) 판")))   # 0.9.150 빌드 2 사용자 11/25
         vf = v.font()
         vf.setPointSizeF(vf.pointSizeF() + 2)
         v.setFont(vf)
@@ -12391,6 +12452,22 @@ class Main(QtWidgets.QMainWindow):
         self.gsearch.setFocus()
         self.gsearch.selectAll()
 
+    def winidx_check_once(self):
+        """0.9.150 빌드 6 (사용자 11/25 '다른 사람들이 툴을 열었을 때 파일(내용) 검색이 안 되는 게 문제'): 처음 켤 때 한 번,
+        검색 범위로 체크한 곳이 윈도우 색인에 없으면 알림 + '내용 검색에도 넣기…'. 같은 빠진 곳으로는 다시 안 물음"""
+        try:
+            miss = winsearch.missing(self.search_roots_enabled())
+        except Exception:
+            log.debug("윈도우 색인 확인 실패", exc_info=True)
+            return
+        key = sorted(m.lower() for m in miss)
+        log.info("윈도우 색인 빠진 곳 %s (전에 알린 것 %s)", miss, SETTINGS["winidx_asked"])
+        if not miss or key == SETTINGS["winidx_asked"]:
+            return
+        SETTINGS["winidx_asked"] = key
+        self.show_notice(T("이 드라이브는 파일 내용 검색이 안 됩니다 (윈도우 색인에 없음): {0}  ✕").format("  ".join(m.rstrip("\\") for m in miss)),
+                         sticky=False, ms=20000, action=(T("내용 검색에도 넣기…"), self.open_search_roots))
+
     def open_search_roots(self):
         return self.open_settings("search")   # v0.9.105 설정 창 안에서
 
@@ -12440,6 +12517,160 @@ class Main(QtWidgets.QMainWindow):
         info = QtWidgets.QLabel(T("지금 색인: {0:,}개 · 실시간 변경 알림 {1:,}건 · 저장 위치 bin\\index").format(SEARCH.count(), SEARCH.events) if SEARCH else "")
         info.setStyleSheet("color:#888;")
         lay.addWidget(info)
+        # 0.9.150 빌드 4: 파일 내용 검색 = 윈도우 색인. 체크한 곳이 윈도우 색인에 없으면 내용이 안 찾아짐 → 알려 주고 넣기 (사용자 11/25)
+        wrow = QtWidgets.QHBoxLayout()
+        wlbl = QtWidgets.QLabel()
+        wlbl.setWordWrap(True)
+        wbtn = QtWidgets.QPushButton(T("내용 검색에도 넣기"))
+        wbtn.setToolTip(T("윈도우 색인(Windows Search)에 넣어 파일 내용으로도 찾게 합니다. 관리자 허락 창이 한 번 뜹니다. 처음 색인은 몇 시간 걸릴 수 있습니다."))
+        wrow.addWidget(wlbl, 1)
+        wrow.addWidget(wbtn)
+        lay.addLayout(wrow)
+        # 0.9.150 빌드 10 (사용자 11/26 '몇 퍼센트 남았는지'): 윈도우 색인 진행률 — 설정 창이 보일 때만 3초마다 (6ms, 관리자 권한 불필요)
+        plbl = QtWidgets.QLabel()
+        plbl.setStyleSheet("color:#888;")
+        lay.addWidget(plbl)
+        ptm = QtCore.QTimer(dlg)
+
+        def refresh_p():
+            if not plbl.isVisible() and ptm.isActive() and plbl.text():
+                return
+            try:
+                import winindex_add
+                done_n, left = winindex_add.progress()
+            except Exception as ex:
+                plbl.setText(T("윈도우 색인 진행을 읽지 못했습니다: {0}").format(ex))
+                ptm.stop()
+                return
+            if left <= 0:
+                plbl.setText(T("윈도우 색인: 다 읽음 ({0:,}개)").format(done_n))
+            else:
+                pct = int(done_n * 100 / max(1, done_n + left))
+                plbl.setText(T("윈도우 색인 진행: {0}% (읽음 {1:,} · 남음 {2:,}) — 처음엔 파일을 찾는 동안 남은 수가 늘어날 수 있음").format(pct, done_n, left))
+            if not box.get("p_logged"):
+                box["p_logged"] = True
+                log.info("윈도우 색인 진행 읽음 %d · 남음 %d", done_n, left)
+        ptm.timeout.connect(refresh_p)
+        ptm.start(3000)
+        wjunk =QtWidgets.QCheckBox(T("넣을 때 내용 검색에 쓸모없는 폴더는 빼기 (유니티 Library · .svn · .git · venv · node_modules 등 — 처음 색인이 빨라짐)"))
+        wjunk.setChecked(bool(SETTINGS["winidx_skip_junk"]))
+        wjunk.toggled.connect(lambda on: SETTINGS.__setitem__("winidx_skip_junk", bool(on)))
+        lay.addWidget(wjunk)
+        # 0.9.150 빌드 8 (사용자 11/26 '제외하는 폴더 정보가 없음'): 내용 검색에서 빠지는 폴더 수 + 목록 창
+        xrow = QtWidgets.QHBoxLayout()
+        xlbl = QtWidgets.QLabel()
+        xlbl.setStyleSheet("color:#888;")
+        xbtn = QtWidgets.QPushButton(T("뺀 폴더 보기…"))
+        xrow.addWidget(xlbl, 1)
+        xrow.addWidget(xbtn)
+        lay.addLayout(xrow)
+
+        def refresh_x():
+            user, dflt = winsearch.excluded()
+            ours = winsearch.ours_excluded()
+            n4 = sum(1 for p in user if p.lower() in ours)
+            xlbl.setText(T("내용 검색에서 빠지는 폴더: 4Dir 가 뺀 것 {0}개 · 그 밖에 뺀 것 {1}개 · 윈도우 기본 {2}개").format(n4, len(user) - n4, len(dflt)))
+            log.info("윈도우 색인 뺀 폴더: 4Dir %d · 그 밖 %d · 기본 %d", n4, len(user) - n4, len(dflt))
+            return user, dflt, ours
+
+        def show_x():
+            user, dflt, ours = refresh_x()
+            d = QtWidgets.QDialog(dlg)
+            d.setWindowTitle(T("내용 검색에서 빠지는 폴더"))
+            d.resize(720, 520)
+            v = QtWidgets.QVBoxLayout(d)
+            v.addWidget(QtWidgets.QLabel(T("이 폴더 안 파일은 이름으로는 찾아지지만 내용으로는 안 찾아집니다. 바꾸려면 윈도우 '색인 옵션'에서 고칩니다.")))
+            tr = QtWidgets.QTreeWidget()
+            tr.setHeaderHidden(True)
+            groups = [(T("4Dir 가 뺀 것"), [p for p in user if p.lower() in ours]),
+                      (T("그 밖에 뺀 것 (윈도우·다른 프로그램·사용자)"), [p for p in user if p.lower() not in ours]),
+                      (T("윈도우 기본"), dflt)]
+            for title, items in groups:
+                g = QtWidgets.QTreeWidgetItem([f"{title}  ({len(items)})"])
+                f = g.font(0); f.setBold(True); g.setFont(0, f)
+                for p in items:
+                    g.addChild(QtWidgets.QTreeWidgetItem([p]))
+                tr.addTopLevelItem(g)
+                g.setExpanded(len(items) <= 50)
+            v.addWidget(tr, 1)
+            hb = QtWidgets.QHBoxLayout()
+            bopt = QtWidgets.QPushButton(T("윈도우 색인 옵션 열기"))
+            bopt.clicked.connect(lambda: subprocess.Popen(["control.exe", "srchadmin.dll"]))
+            bcopy = QtWidgets.QPushButton(T("목록 복사"))
+            bcopy.clicked.connect(lambda: QtWidgets.QApplication.clipboard().setText(
+                "\r\n".join(f"[{t}]\r\n" + "\r\n".join(it) for t, it in groups)))
+            bclose = QtWidgets.QPushButton(T("닫기"))
+            bclose.clicked.connect(d.accept)
+            for b in (bopt, bcopy):
+                hb.addWidget(b)
+            hb.addStretch(1)
+            hb.addWidget(bclose)
+            v.addLayout(hb)
+            d.exec()
+        xbtn.clicked.connect(show_x)
+        refresh_x()
+
+        box = {}
+
+        def checked_paths():
+            return [lst.item(i).data(Qt.UserRole) for i in range(lst.count()) if lst.item(i).checkState() == Qt.Checked]
+
+        def refresh_w():
+            miss = winsearch.missing(checked_paths())
+            # 빌드 9 (사용자 11/26 '.svn 은 빼도 svn 자체를 빼면 작업 데이터 검색이 안 되잖아'): 통째로 빠진 SVN·git 작업 폴더
+            repos = []
+            try:
+                repos = winsearch.excluded_repos(checked_paths())
+            except Exception:
+                log.debug("빠진 작업 폴더 찾기 실패", exc_info=True)
+            box["metas"] = [m for _p, ms in repos for m in ms]
+            if miss:
+                wlbl.setText(T("파일 내용 검색이 안 되는 곳 (윈도우 색인에 없음): {0}").format("  ".join(m.rstrip("\\") for m in miss)))
+                wlbl.setStyleSheet("color:#c0392b;")
+            elif repos:
+                wlbl.setText(T("SVN·git 작업 폴더 {0}개가 내용 검색에서 통째로 빠져 있음 — 넣으면 .svn·.git 만 빼고 넣음").format(len(repos)))
+                wlbl.setStyleSheet("color:#c0392b;")
+            else:
+                wlbl.setText(T("파일 내용 검색: 체크한 곳 모두 윈도우 색인에 들어 있음"))
+                wlbl.setStyleSheet("color:#2e7d32;")
+            wbtn.setVisible(bool(miss or repos))
+            log.info("내용 검색 빠진 곳 %d · 통째로 빠진 작업 폴더 %d", len(miss), len(repos))
+            return miss + [p for p, _ms in repos]
+
+        def add_w():
+            miss = refresh_w()
+            if not miss or box.get("busy"):
+                return
+            box["busy"] = True
+            wbtn.setEnabled(False)
+            wbtn.setText(T("넣는 중…"))
+            skip = wjunk.isChecked()
+            metas = list(box.get("metas") or [])
+            threading.Thread(target=lambda: box.__setitem__("r", winidx_add_with_junk(miss, skip, metas)), daemon=True, name="winidx-add").start()
+            tm = QtCore.QTimer(dlg)
+
+            def poll():
+                if "r" not in box:
+                    return
+                tm.stop()
+                ok, msg = box.pop("r")
+                box["busy"] = False
+                wbtn.setEnabled(True)
+                wbtn.setText(T("내용 검색에도 넣기"))
+                left = refresh_w()
+                refresh_x()
+                if msg == "cancel":
+                    self.show_notice(T("관리자 허락을 하지 않아 윈도우 색인에 넣지 않았습니다  ✕"), ms=5000)
+                elif not left:
+                    self.show_notice(T("윈도우 색인에 넣었습니다. 처음 색인은 몇 시간 걸릴 수 있습니다  ✕"), ms=8000)
+                else:
+                    self.show_notice(T("윈도우 색인에 넣지 못했습니다: {0}  ✕").format(msg), ms=8000)
+            tm.timeout.connect(poll)
+            tm.start(300)
+        wbtn.clicked.connect(add_w)
+        lst.itemChanged.connect(lambda _it: refresh_w())
+        refresh_w()
+        refresh_p()
         bb = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
         bb.button(QtWidgets.QDialogButtonBox.Ok).setText(T("적용"))
         bb.button(QtWidgets.QDialogButtonBox.Cancel).setText(T("되돌리기"))
@@ -14937,6 +15168,7 @@ eports.
                 if os.path.exists(STATE_FILE):
                     z.write(STATE_FILE, "4Dir_state.json")
             log.info("문제 보고용 로그 저장 %s (로그 %d개, %.0fKB)", out, n, os.path.getsize(out) / 1024)
+            out = real_path(out)   # 0.9.150 빌드 2 (사용자 11/25 받은 의견 '탐색기가 문서 폴더로 열림'): 스토어판 실제 위치
         except Exception as e:
             log.exception("문제 보고용 로그 저장 실패")
             QtWidgets.QMessageBox.warning(self, T("문제 보고용 로그 저장"), T('저장하지 못했습니다:\n{0}').format(e))
@@ -15863,6 +16095,7 @@ def main():
     if os.path.exists(os.path.join(DATA_DIR, memo.FILE)):   # 빌드 13: 메모 알림은 메모 창을 안 열어도 울림
         QtCore.QTimer.singleShot(3000, memo_store)
     QtCore.QTimer.singleShot(10000, lambda: WINDOWS and start_update_check(WINDOWS[0]))   # 새 버전 확인 (하루 한 번, 뒤에서)
+    QtCore.QTimer.singleShot(15000, lambda: WINDOWS and WINDOWS[0].winidx_check_once())   # 0.9.150 빌드 6: 체크한 드라이브가 윈도우 색인에 없으면 한 번 알림 (내용 검색)
     first_run = not SETTINGS["guide_shown"]
     # 0.9.115 (사용자 11/7): 처음 한 번 '구글 드라이브에 백업할까요?' 권유 (필수 아님, 나중에 = 설정 → 백업). 사용법 창이 뜨는 첫 실행이면 그 뒤에
     if not SETTINGS["gdrive_asked"] and not os.environ.get("QE_NO_PROMPT"):

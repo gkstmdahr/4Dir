@@ -500,12 +500,17 @@ class SearchIndex:
     def count(self):
         return len(self.base) + len(self.added)
 
-    def search(self, text, limit=5000):
-        """반환 (결과[(경로, 이름, 폴더여부, 크기, 날짜)], 전체 일치 수, ms)"""
+    def search(self, text, limit=5000, cancel=None, stop=False):
+        """반환 (결과[(경로, 이름, 폴더여부, 크기, 날짜)], 전체 일치 수, ms)
+        stop=True (0.9.150 빌드 2, 사용자 11/25 '숫자 한 글자 검색에 1분 멈춤'): limit 개 찾으면 더 세지 않고 멈춤 → 반환 끝에 more(더 있음) 하나 더.
+          한 글자 검색은 수십만~백만 개를 끝까지 세느라 3~5초 (233만 개 색인 실측 '1' 95만 개 3.0초, 'a' 153만 개 5.1초) — 그동안 화면도 굳었음.
+        cancel: 부르면 True 인 함수 — 새 글자를 치면 앞 검색을 중간에 끊음"""
         t0 = time.perf_counter()
         q = Query(text)
         if q.empty():
-            return [], 0, 0.0
+            return ([], 0, 0.0, False) if stop else ([], 0, 0.0)
+        more = False
+        cancelled = False
         base = self.base
         with self.lock:
             added = dict(self.added)
@@ -519,7 +524,12 @@ class SearchIndex:
         if q.seed is not None and len(base):
             last = -1
             offs = base.offs
+            step = 0
             for m in q.seed.finditer(base.lblob):
+                step += 1
+                if cancel is not None and step % 20000 == 0 and cancel():
+                    cancelled = True
+                    break
                 i = bisect.bisect_right(offs, m.start()) - 1
                 if i == last or i < 0:
                     continue
@@ -532,28 +542,43 @@ class SearchIndex:
                     continue
                 if (removed or added or rpfx) and gone(full.lower()):
                     continue
+                if stop and len(out) >= limit:
+                    more = True
+                    break
                 total += 1
                 if len(out) < limit:
                     out.append((full, name, bool(base.isdir[i]), base.size[i], base.mtime[i]))
         elif q.path_terms and len(base):    # 경로 조각만 있는 검색: 폴더 경로에서 찾기
             hit_dirs = {k for k, d in enumerate(base.dirs) if all(p in d.lower() + "\\" for p in q.path_terms)}
             for i in range(len(base)):
+                if cancel is not None and i % 50000 == 0 and cancel():
+                    cancelled = True
+                    break
                 if base.par[i] in hit_dirs:
                     name = base.name(i)
                     full = os.path.join(base.dirs[base.par[i]], name)
                     if (removed or added or rpfx) and gone(full.lower()):
                         continue
+                    if stop and len(out) >= limit:
+                        more = True
+                        break
                     total += 1
                     if len(out) < limit:
                         out.append((full, name, bool(base.isdir[i]), base.size[i], base.mtime[i]))
         for key, (name, dd, size, mt, full, _t) in added.items():
+            if more or cancelled:
+                break
             if q.match(name, full):
+                if stop and len(out) >= limit:
+                    more = True
+                    break
                 total += 1
                 if len(out) < limit:
                     out.append((full, name, dd, size, mt))
         ms = (time.perf_counter() - t0) * 1000
-        log.info("검색 '%s' → %s개 (표시 %d) %.0fms", text, f"{total:,}", len(out), ms)
-        return out, total, ms
+        log.info("검색 '%s' → %s개%s (표시 %d) %.0fms%s", text, f"{total:,}", " 이상(여기서 멈춤)" if more else "", len(out), ms,
+                 " — 취소됨(새 검색어)" if cancelled else "")
+        return (out, total, ms, more) if stop else (out, total, ms)
 
 
 def folder_search(root, text, cancel, batch_cb, limit=5000, files_only=False):

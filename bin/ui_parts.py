@@ -63,6 +63,8 @@ class Settings:
                      "preview_w": 300,       # 미리보기 창 너비 (빌드 18 부터 따로 창 — 처음 크기로만 씀)
                      "preview_geo": "",      # 빌드 18 미리보기 따로 창 위치·크기
                      "preview_top": False,   # 빌드 18 미리보기 창 항상 위
+                     "winidx_skip_junk": True,   # 0.9.150 빌드 6 윈도우 색인에 넣을 때 쓸모없는 폴더(Library·.svn·venv…) 빼기
+                     "winidx_asked": None,   # 0.9.150 빌드 6 처음 켤 때 '내용 검색 안 되는 곳' 알린 목록 (같으면 다시 안 물음)
                      "preview_dock": True,   # 0.9.147 미리보기 = 4Dir 창 오른쪽 칸 (탐색기처럼, 끄면 따로 창)
                      "preview_dock_w": 340,  # 0.9.147 오른쪽 칸 폭
                      "prop_cols": [],        # 0.9.147 자세히 보기 윈도우 속성 열 (속성 이름 목록, 예 System.Comment) — main 연결은 아직
