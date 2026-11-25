@@ -25,7 +25,7 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.19.0"   # 1.19.0: 한국어 페이지 후원 = 페어리(fairy.hada.io, 국내 카드) — Ko-fi(PayPal)는 한국 계정끼리 결제 막힘 (사용자 11/25) / 1.18.3: 후원 칸 위아래 여백 줄임 (사용자 11/25) / 1.18.2: 후원 문구 첫 문장 뒤 줄바꿈 (사용자 11/25) / 1.18.1: 머리줄 후원 버튼 뺌, 원래 후원 칸을 별 부탁 바로 밑으로 (사용자 11/25) / 1.18.0: 후원 = 머리줄 just downloader 옆 버튼(아래 후원 칸 뺌), 별 부탁 = 받기 안내 줄 바로 밑 (사용자 11/25 스샷) / 1.17.0: code-signing.html 을 SignPath 재신청용으로 되돌림(서명 문구·역할·MFA, 스토어판은 MS 서명 안내 — 사용자 11/20 "진행해") / 1.16.2: 오탐 안내 줄바꿈(\n → <br>, 사용자 11/18) / 1.16.1: 오탐 안내 빨간 굵은 글씨 (사용자 11/18) / 1.16.0: 첫 화면 스토어 안내 밑에 백신 오탐 안내 한 줄(실행기 소스 링크, 사용자 11/18) / 1.15.2: 스토어 안내에서 업데이트 문구 뺌 (사용자 11/15) / 1.15.1: 첫 화면 정리(사용법 버튼 뺌·언어 지원 글자 링크·별 부탁 한 줄) / 1.15.0: 첫 화면 깃허브 별 부탁 칸 / 1.14.4: 첫 화면 언어 버튼 이름 = 언어 지원 / 1.14.3: 첫 화면 사용법 버튼 옆 언어 버튼 / 1.14.2: 언어 선택 상자 맨 아래 '🌐 언어 · 16 →' = languages.html / 1.14.1: _site\root 의 파일을 사이트 맨 위에 복사(검색 엔진 소유 확인 파일) / 1.14.0: 지원 언어 페이지(languages.html, 앱 16개·사이트 10개) + 바닥글 링크, 앱만 지원하는 6개 언어로 온 사람에게 영어 첫 화면에 그 언어로 한 줄 안내 (사용자 11/14 '최소') / 1.13.1: 받기·스토어 버튼 같은 너비 (사용자 11/13) / 1.13.0: 다운로드 버튼 옆 Microsoft Store 받기 + 안내 한 줄 (사용자 11/13) / 1.12.1: 위쪽 just downloader 버튼 = PC판 페이지로 바로 (💻, 사용자 11/11 'PC판이 먼저 보이면') / 1.12.0: 사용법 페이지 = 앱 사용법 2.0 과 같은 21개 주제 + 움직이는 장면 영상(img/demo, 보이는 것만 재생) · 문구는 앱 번역(bin/lang) / 1.11.1: 후원 버튼 새 창(target=_blank) / 1.11.0: 개인정보처리방침 privacy.html (구글 드라이브 백업 — 구글 앱 등록에 필요) / 1.10.0: 1.10.0: 받기를 누르면 다운로드는 바로 시작 + 후원 안내 창(막지 않음, 닫기 가능 — 사용자 11/6 PureRef 처럼) / 1.9.3: 1.9.3: support 메일 링크에 제목 말머리 [4Dir] / 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
+MAKE_SITE_VER = "1.20.1"   # 1.20.1: 후원자 = 점 목록 가로 4 × 세로 5(20명까지, 폰은 가로 2), 남긴 말은 안 보임 (사용자 11/25) / 1.20.0: 후원 칸 밑에 고마운 후원자 한 줄(site_config.json supporters, 이름은 줄임 — 메일 등 개인 정보 안 씀, 사용자 11/25) / 1.19.0: 한국어 페이지 후원 = 페어리(fairy.hada.io, 국내 카드) — Ko-fi(PayPal)는 한국 계정끼리 결제 막힘 (사용자 11/25) / 1.18.3: 후원 칸 위아래 여백 줄임 (사용자 11/25) / 1.18.2: 후원 문구 첫 문장 뒤 줄바꿈 (사용자 11/25) / 1.18.1: 머리줄 후원 버튼 뺌, 원래 후원 칸을 별 부탁 바로 밑으로 (사용자 11/25) / 1.18.0: 후원 = 머리줄 just downloader 옆 버튼(아래 후원 칸 뺌), 별 부탁 = 받기 안내 줄 바로 밑 (사용자 11/25 스샷) / 1.17.0: code-signing.html 을 SignPath 재신청용으로 되돌림(서명 문구·역할·MFA, 스토어판은 MS 서명 안내 — 사용자 11/20 "진행해") / 1.16.2: 오탐 안내 줄바꿈(\n → <br>, 사용자 11/18) / 1.16.1: 오탐 안내 빨간 굵은 글씨 (사용자 11/18) / 1.16.0: 첫 화면 스토어 안내 밑에 백신 오탐 안내 한 줄(실행기 소스 링크, 사용자 11/18) / 1.15.2: 스토어 안내에서 업데이트 문구 뺌 (사용자 11/15) / 1.15.1: 첫 화면 정리(사용법 버튼 뺌·언어 지원 글자 링크·별 부탁 한 줄) / 1.15.0: 첫 화면 깃허브 별 부탁 칸 / 1.14.4: 첫 화면 언어 버튼 이름 = 언어 지원 / 1.14.3: 첫 화면 사용법 버튼 옆 언어 버튼 / 1.14.2: 언어 선택 상자 맨 아래 '🌐 언어 · 16 →' = languages.html / 1.14.1: _site\root 의 파일을 사이트 맨 위에 복사(검색 엔진 소유 확인 파일) / 1.14.0: 지원 언어 페이지(languages.html, 앱 16개·사이트 10개) + 바닥글 링크, 앱만 지원하는 6개 언어로 온 사람에게 영어 첫 화면에 그 언어로 한 줄 안내 (사용자 11/14 '최소') / 1.13.1: 받기·스토어 버튼 같은 너비 (사용자 11/13) / 1.13.0: 다운로드 버튼 옆 Microsoft Store 받기 + 안내 한 줄 (사용자 11/13) / 1.12.1: 위쪽 just downloader 버튼 = PC판 페이지로 바로 (💻, 사용자 11/11 'PC판이 먼저 보이면') / 1.12.0: 사용법 페이지 = 앱 사용법 2.0 과 같은 21개 주제 + 움직이는 장면 영상(img/demo, 보이는 것만 재생) · 문구는 앱 번역(bin/lang) / 1.11.1: 후원 버튼 새 창(target=_blank) / 1.11.0: 개인정보처리방침 privacy.html (구글 드라이브 백업 — 구글 앱 등록에 필요) / 1.10.0: 1.10.0: 받기를 누르면 다운로드는 바로 시작 + 후원 안내 창(막지 않음, 닫기 가능 — 사용자 11/6 PureRef 처럼) / 1.9.3: 1.9.3: support 메일 링크에 제목 말머리 [4Dir] / 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
 SUPPORT = "support@4dir.net"   # 문제 보고 메일 (1.1.1)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -72,6 +72,20 @@ def latest_release():
     z = os.path.join(REL, f"4Dir_v{ver}.zip")
     sha = open(z + ".sha256.txt", encoding="utf-8-sig").read().split()[0].lower()
     return ver, z, os.path.getsize(z), sha, time.strftime("%Y-%m-%d", time.localtime(os.path.getmtime(z)))
+
+
+SUP_H = {"en": "Thank you, supporters", "ko": "고마운 후원자", "zh-CN": "感谢支持者", "zh-TW": "感謝支持者", "ja": "ご支援ありがとうございます",
+         "es": "Gracias, donantes", "de": "Danke an die Unterstützer", "fr": "Merci aux donateurs", "pt-BR": "Obrigado, apoiadores", "ru": "Спасибо за поддержку"}
+
+
+def supporters_line(lang, cfg):
+    """1.20.1 후원 칸 밑 고마운 후원자 — 가로 4 × 세로 5 = 20명까지 목록 (사용자 11/25)"""
+    sup = (cfg.get("supporters") or [])[:20]
+    if not sup:
+        return ""
+    e = html.escape
+    items = "".join(f'<li>{e(x["name"])}</li>' for x in sup)
+    return f'<div class="sups"><b>{e(SUP_H.get(lang, SUP_H["en"]))} ♥</b><ul>{items}</ul></div>'
 
 
 THX = {   # 1.10.0 받기 뒤 후원 안내 (제목, 본문, 나중에)
@@ -138,7 +152,7 @@ def page(lang, cfg, rel):
         btns.append(f'<a class="btn don" href="https://github.com/sponsors/{e(owner)}" rel="noopener">♥ GitHub Sponsors</a>')
     don_nav = (f'<a class="nav don" href="https://ko-fi.com/{e(cfg["kofi"])}" rel="noopener" target="_blank">♥ {e(t["don_h"])}</a>'
                if cfg["kofi"] else "")   # 1.18.0 사용자 11/25: 후원 = 머리줄 just downloader 옆
-    donate = (f'<section id="donate"><h2>{e(t["don_h"])}</h2><p>{re.sub(r"([.。])\s*", r"\1<br>", e(t["don"]), count=1)}</p><p class="btns">{"".join(btns)}</p></section>'
+    donate = (f'<section id="donate"><h2>{e(t["don_h"])}</h2><p>{re.sub(r"([.。])\s*", r"\1<br>", e(t["don"]), count=1)}</p><p class="btns">{"".join(btns)}</p>{supporters_line(lang, cfg)}</section>'
               if btns else "")
     redirect = ""
     if lang == "en":   # 맨 위 주소로 처음 온 사람만 브라우저 언어 페이지로 (직접 고른 언어는 기억)
@@ -653,7 +667,7 @@ ol li{margin:6px 0}.tip{background:var(--card);border-left:4px solid var(--acc);
 code{background:var(--code);padding:2px 6px;border-radius:4px;font-family:Consolas,monospace;font-size:14px;word-break:break-all}
 code.sha{display:inline-block;max-width:100%}
 details{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:8px 0}summary{cursor:pointer;font-weight:600}
-#donate{margin:16px auto 8px;max-width:720px;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}#donate h2{margin:0 0 6px}#donate p{margin:0 0 10px}#donate p.btns{margin:0}
+#donate{margin:16px auto 8px;max-width:720px;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}#donate h2{margin:0 0 6px}#donate p{margin:0 0 10px}#donate p.btns{margin:0}#donate .sups{margin:12px 0 0;font-size:.9em}#donate .sups ul{display:grid;grid-template-columns:repeat(4,1fr);gap:4px 12px;margin:6px 0 0;padding:0;text-align:left}#donate .sups li{list-style:disc inside;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}@media(max-width:480px){#donate .sups ul{grid-template-columns:repeat(2,1fr)}}
 .applang{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:16px 0 0}table.langs{border-collapse:collapse;margin:16px 0}table.langs th,table.langs td{border-bottom:1px solid var(--line);padding:6px 16px 6px 0;text-align:left}
 footer{border-top:1px solid var(--line);padding:24px 0;color:var(--mut);font-size:14px;text-align:center}
 .news{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin:8px 0 24px}.news h2{font-size:20px;margin:0 0 8px}.news ul{margin:0 0 8px;padding-left:20px}.news p{margin:0}
