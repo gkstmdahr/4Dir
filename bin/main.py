@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.153"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 4              #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.154"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 2              #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -8534,16 +8534,25 @@ class Pane(QtWidgets.QFrame):
         sl = QtWidgets.QVBoxLayout(self.prev_slot)
         sl.setContentsMargins(0, 0, 0, 0)
         sl.setSpacing(0)
-        sh = QtWidgets.QHBoxLayout()
+        self.slot_hdr = QtWidgets.QWidget()   # 0.9.154 빌드 2 (사용자 11/26 '저 위에는 남겨야지'): '내용만 보기' 여도 머리줄은 그대로
+        sh = QtWidgets.QHBoxLayout(self.slot_hdr)
         sh.setContentsMargins(8, 3, 4, 3)
         sh.addWidget(QtWidgets.QLabel(T("미리보기")))
         sh.addStretch(1)
+        self.bare_btn = QtWidgets.QToolButton()   # 빌드 2: 켜는 곳을 찾기 쉽게 머리줄에도 (우클릭 메뉴와 같은 것)
+        self.bare_btn.setText(T("내용만 보기"))
+        self.bare_btn.setToolTip(T("내용만 보기 (도구·정보 숨김)"))
+        self.bare_btn.setCheckable(True)
+        self.bare_btn.setAutoRaise(True)
+        self.bare_btn.setChecked(bool(SETTINGS["preview_bare"]))
+        self.bare_btn.toggled.connect(lambda on: PREVIEW_WIN is not None and PREVIEW_WIN.pane.set_bare(on))
+        sh.addWidget(self.bare_btn)
         back = QtWidgets.QToolButton()
         back.setText(T("✕ 파일 목록으로"))
         back.setAutoRaise(True)
         back.clicked.connect(lambda *_: main_of(self) and main_of(self).set_preview_slot(None))
         sh.addWidget(back)
-        sl.addLayout(sh)
+        sl.addWidget(self.slot_hdr)
         self.prev_slot.setVisible(False)
         lay.addWidget(self.prev_slot, 1)
         self.is_preview_slot = False
@@ -11328,6 +11337,11 @@ class PreviewPane(QtWidgets.QFrame):
         self.timer.setSingleShot(True)
         self.timer.setInterval(120)
         self.timer.timeout.connect(self.refresh)
+        self._bare_ws = (self.sep, self.info, self.zbar, self.gifbar, self.film, self.btn_inspect, self.btn_seq)   # 0.9.154 '내용만 보기' 때 숨길 것
+        for w in self._bare_ws:
+            w.installEventFilter(self)
+        if SETTINGS["preview_bare"]:
+            QtCore.QTimer.singleShot(0, self._apply_bare)
 
     def contextMenuEvent(self, ev):
         """0.9.147: 붙인 칸·따로 창 같은 메뉴 — 따로 창으로 떼기 / 4Dir 창에 붙이기, 항상 위(따로 창일 때), 닫기"""
@@ -11343,8 +11357,57 @@ class PreviewPane(QtWidgets.QFrame):
             a.setCheckable(True)
             a.setChecked(bool(SETTINGS["preview_top"]))
         m.addSeparator()
+        a = m.addAction(T("내용만 보기 (도구·정보 숨김)"), lambda: self.set_bare(not SETTINGS["preview_bare"]))   # 0.9.154 빌드 1
+        a.setCheckable(True)
+        a.setChecked(bool(SETTINGS["preview_bare"]))
+        m.addSeparator()
         m.addAction(T("미리보기 닫기") + "\tAlt+P", lambda: main.set_preview(False))
         m.exec(ev.globalPos())
+
+    def set_bare(self, on, save=True):
+        """0.9.154 빌드 1 (사용자 11/26 '실제 내용만 보이고 나머지 다 숨기는 옵션'): 그림·글 내용만 — 아래 정보 줄·확대 줄·재생 줄·
+        썸네일 줄·형식별 도구(그림 도구·찾기 칸) 숨김, ◀ ▶ 는 마우스가 미리보기 위에 있을 때만. 칸 미리보기 머리줄은 남김(빌드 2)"""
+        on = bool(on)
+        if save:
+            SETTINGS["preview_bare"] = on
+        log.info("미리보기 내용만 보기 %s", "켬" if on else "끔")
+        self._apply_bare()
+        if not on:   # 형식마다 보일 것(확대 줄·재생 줄·정보)을 다시 정하게
+            self.cur = None
+            self.refresh()
+        for w in WINDOWS:
+            for p in getattr(w, "panes", []):
+                b = getattr(p, "bare_btn", None)
+                if b is not None and b.isChecked() != on:
+                    b.blockSignals(True)
+                    b.setChecked(on)
+                    b.blockSignals(False)
+
+    def _apply_bare(self):
+        on = bool(SETTINGS["preview_bare"])
+        self.setAttribute(Qt.WA_Hover, True)
+        for w in (self.sep, self.info):
+            w.setVisible(not on)
+        if on:
+            for w in (self.zbar, self.gifbar, self.film, self.btn_inspect, self.btn_seq):
+                w.setVisible(False)
+        if self.extra is not None and hasattr(self.extra, "set_bare"):
+            try:
+                self.extra.set_bare(on)
+            except Exception:
+                log.exception("형식별 미리보기 내용만 보기 실패")
+        self._upd_nav()
+
+    def enterEvent(self, ev):
+        super().enterEvent(ev)
+        if SETTINGS["preview_bare"]:
+            self._upd_nav()
+
+    def leaveEvent(self, ev):
+        super().leaveEvent(ev)
+        if SETTINGS["preview_bare"]:
+            self.f_prev.setVisible(False)
+            self.f_next.setVisible(False)
 
     def schedule(self, main=None):
         try:   # 0.9.118 빌드 3: 누가 다시 그리라고 했는지 (반복될 때 로그에 남김)
@@ -11437,6 +11500,8 @@ class PreviewPane(QtWidgets.QFrame):
             log.info("미리보기 %s %s (%.0fms)", name, os.path.basename(path), (time.time() - t0) * 1000)
             self.extra = w
             self.extra_lay.addWidget(w)
+            if SETTINGS["preview_bare"] and hasattr(w, "set_bare"):   # 0.9.154 '내용만 보기'
+                w.set_bare(True)
             keep = name in self.KEEP_PIC
             self.pic.setVisible(keep)
             lay = self.center
@@ -11514,8 +11579,9 @@ class PreviewPane(QtWidgets.QFrame):
     def _upd_nav(self):
         """창 양끝 ◀ ▶ (모든 형식 같은 자리, 0.9.129 빌드 4). 맨 앞·맨 뒤면 그쪽 단추 숨김"""
         r = self._nav_any(0)
-        self.f_prev.setVisible(bool(r) and r[0] > 0)
-        self.f_next.setVisible(bool(r) and r[0] < r[1] - 1)
+        hover_ok = not SETTINGS["preview_bare"] or self.underMouse()   # 0.9.154 '내용만 보기' = 마우스 올렸을 때만
+        self.f_prev.setVisible(hover_ok and bool(r) and r[0] > 0)
+        self.f_next.setVisible(hover_ok and bool(r) and r[0] < r[1] - 1)
         self._place_nav()
 
     def _place_nav(self):
@@ -11774,6 +11840,8 @@ class PreviewPane(QtWidgets.QFrame):
         return False
 
     def eventFilter(self, obj, ev):
+        if ev.type() == QtCore.QEvent.Show and SETTINGS["preview_bare"] and obj in getattr(self, "_bare_ws", ()):
+            QtCore.QTimer.singleShot(0, obj.hide)   # 0.9.154 '내용만 보기': 형식마다 다시 보이게 하는 곳이 많아 보일 때 바로 숨김
         if ev.type() == QtCore.QEvent.KeyPress and self.movie is not None and obj in (getattr(self, "gif_strip", None), getattr(self, "gif_slider", None)):
             k = ev.key()   # 빌드 23: 띠·막대에서 ← → = 한 장면 (화면·막대·띠 같이), 스페이스 = 재생/멈춤
             if k in (Qt.Key_Left, Qt.Key_Right) and not ev.modifiers():

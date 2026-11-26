@@ -2468,5 +2468,7 @@
  "이 칸을 미리보기로 (다른 칸에서 고른 파일)": "Dùng ngăn này để xem trước (tệp chọn ở ngăn khác)",
  "✕ 파일 목록으로": "✕ Về danh sách tệp",
  "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Hiện công cụ màu và thanh thu phóng (đang thu gọn vì vùng xem trước nhỏ)",
- "해상도": "Độ phân giải"
+ "해상도": "Độ phân giải",
+ "내용만 보기 (도구·정보 숨김)": "Chỉ nội dung (ẩn công cụ và thông tin)",
+ "내용만 보기": "Chỉ nội dung"
 }

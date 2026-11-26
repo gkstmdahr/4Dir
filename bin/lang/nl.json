@@ -2468,5 +2468,7 @@
  "이 칸을 미리보기로 (다른 칸에서 고른 파일)": "Dit deelvenster als voorbeeld gebruiken (bestand gekozen in een ander deelvenster)",
  "✕ 파일 목록으로": "✕ Terug naar bestandslijst",
  "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Kleurhulpmiddelen en zoombalk tonen (ingeklapt omdat het voorbeeld klein is)",
- "해상도": "Resolutie"
+ "해상도": "Resolutie",
+ "내용만 보기 (도구·정보 숨김)": "Alleen inhoud (hulpmiddelen en info verbergen)",
+ "내용만 보기": "Alleen inhoud"
 }

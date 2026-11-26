@@ -2468,5 +2468,7 @@
  "이 칸을 미리보기로 (다른 칸에서 고른 파일)": "Bruk denne ruten som forhåndsvisning (fil valgt i en annen rute)",
  "✕ 파일 목록으로": "✕ Tilbake til fillisten",
  "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Vis fargeverktøy og zoomlinje (slått sammen fordi forhåndsvisningen er liten)",
- "해상도": "Oppløsning"
+ "해상도": "Oppløsning",
+ "내용만 보기 (도구·정보 숨김)": "Bare innhold (skjul verktøy og info)",
+ "내용만 보기": "Bare innhold"
 }

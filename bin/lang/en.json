@@ -2468,5 +2468,7 @@
  "이 칸을 미리보기로 (다른 칸에서 고른 파일)": "Use this pane as preview (file selected in another pane)",
  "✕ 파일 목록으로": "✕ Back to file list",
  "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Show color tools and zoom bar (folded because the preview is small)",
- "해상도": "Resolution"
+ "해상도": "Resolution",
+ "내용만 보기 (도구·정보 숨김)": "Content only (hide tools and info)",
+ "내용만 보기": "Content only"
 }

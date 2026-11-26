@@ -2468,5 +2468,7 @@
  "이 칸을 미리보기로 (다른 칸에서 고른 파일)": "Ez a panel legyen az előnézet (másik panelen kijelölt fájl)",
  "✕ 파일 목록으로": "✕ Vissza a fájllistához",
  "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Színeszközök és nagyítósáv megjelenítése (összecsukva, mert kicsi az előnézet)",
- "해상도": "Felbontás"
+ "해상도": "Felbontás",
+ "내용만 보기 (도구·정보 숨김)": "Csak a tartalom (eszközök és adatok elrejtése)",
+ "내용만 보기": "Csak tartalom"
 }

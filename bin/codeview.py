@@ -22,7 +22,7 @@ from i18n import T
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-CODEVIEW_VER = "1.0.0"
+CODEVIEW_VER = "1.1.0"   # 1.1.0 (4Dir 0.9.154 빌드 1): set_bare(on) — '내용만 보기' 면 찾기 줄·형식 단추·줄 수 글자 숨김
 log = logging.getLogger("QE.codeview")
 TEXT_MAX = 2 * 1048576       # 앞 2MB 만 보임
 JSON_TREE_MAX = 5 * 1048576  # 이보다 큰 json 은 원문만
@@ -599,6 +599,12 @@ class CodeView(QtWidgets.QWidget):
         _run_bg(self, lambda: read_text(path), self._on_text, self.cancel)
 
     # ---- 읽기 결과
+    def set_bare(self, on):
+        """'내용만 보기' (사용자 11/26): 켜면 글 내용만 — 찾기 칸·줄 바꿈·형식 단추·줄 수 글자 숨김 (Ctrl+F 는 그대로 칸을 다시 보임)"""
+        self.bare = bool(on)
+        for w in [self.find, self.wrap, self.note] + list(self.mode_btns):
+            w.setVisible(not self.bare)
+
     def _on_text(self, r):
         if isinstance(r, Exception):
             self.note.setText(T("읽을 수 없음: {0}").format(r))
@@ -719,6 +725,7 @@ class CodeView(QtWidgets.QWidget):
 
     # ---- 찾기
     def focus_find(self):
+        self.find.setVisible(True)   # 1.1.0 '내용만 보기' 에서도 Ctrl+F 로 찾기 칸은 꺼낼 수 있게
         self.find.setFocus()
         self.find.selectAll()
 

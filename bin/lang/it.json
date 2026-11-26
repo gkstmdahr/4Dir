@@ -2468,5 +2468,7 @@
  "이 칸을 미리보기로 (다른 칸에서 고른 파일)": "Usa questo riquadro come anteprima (file scelto in un altro riquadro)",
  "✕ 파일 목록으로": "✕ Torna all'elenco file",
  "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Mostra strumenti colore e barra zoom (compressi perché l'anteprima è piccola)",
- "해상도": "Risoluzione"
+ "해상도": "Risoluzione",
+ "내용만 보기 (도구·정보 숨김)": "Solo contenuto (nascondi strumenti e info)",
+ "내용만 보기": "Solo contenuto"
 }

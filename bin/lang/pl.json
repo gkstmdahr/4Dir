@@ -2468,5 +2468,7 @@
  "이 칸을 미리보기로 (다른 칸에서 고른 파일)": "Użyj tego panelu jako podglądu (plik wybrany w innym panelu)",
  "✕ 파일 목록으로": "✕ Wróć do listy plików",
  "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Pokaż narzędzia kolorów i pasek powiększenia (zwinięte, bo podgląd jest mały)",
- "해상도": "Rozdzielczość"
+ "해상도": "Rozdzielczość",
+ "내용만 보기 (도구·정보 숨김)": "Tylko zawartość (ukryj narzędzia i informacje)",
+ "내용만 보기": "Tylko zawartość"
 }

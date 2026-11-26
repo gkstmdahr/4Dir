@@ -2468,5 +2468,7 @@
  "이 칸을 미리보기로 (다른 칸에서 고른 파일)": "Folosește acest panou ca previzualizare (fișierul ales în alt panou)",
  "✕ 파일 목록으로": "✕ Înapoi la lista de fișiere",
  "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Afișează instrumentele de culoare și bara de zoom (pliate, previzualizarea e mică)",
- "해상도": "Rezoluție"
+ "해상도": "Rezoluție",
+ "내용만 보기 (도구·정보 숨김)": "Doar conținutul (ascunde instrumentele și informațiile)",
+ "내용만 보기": "Doar conținut"
 }

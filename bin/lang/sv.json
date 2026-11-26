@@ -2468,5 +2468,7 @@
  "이 칸을 미리보기로 (다른 칸에서 고른 파일)": "Använd den här rutan som förhandsgranskning (fil vald i en annan ruta)",
  "✕ 파일 목록으로": "✕ Tillbaka till fillistan",
  "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Visa färgverktyg och zoomrad (hopfällda eftersom förhandsgranskningen är liten)",
- "해상도": "Upplösning"
+ "해상도": "Upplösning",
+ "내용만 보기 (도구·정보 숨김)": "Bara innehåll (dölj verktyg och info)",
+ "내용만 보기": "Bara innehåll"
 }

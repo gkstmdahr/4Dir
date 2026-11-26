@@ -2468,5 +2468,7 @@
  "이 칸을 미리보기로 (다른 칸에서 고른 파일)": "Bu bölmeyi önizleme yap (başka bölmede seçilen dosya)",
  "✕ 파일 목록으로": "✕ Dosya listesine dön",
  "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Renk araçlarını ve yakınlaştırma çubuğunu göster (önizleme küçük olduğu için katlandı)",
- "해상도": "Çözünürlük"
+ "해상도": "Çözünürlük",
+ "내용만 보기 (도구·정보 숨김)": "Yalnızca içerik (araçları ve bilgileri gizle)",
+ "내용만 보기": "Yalnızca içerik"
 }

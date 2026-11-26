@@ -38,7 +38,7 @@ from i18n import T
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-IMGINSPECT_VER = "1.8.0"   # 1.8.0 (0.9.153 빌드 4, 사용자 11/26 '이 정보 지우고 맨밑에 용량 옆에 해상도만'): 미리보기 칸(own_nav=False)에선 그림 아래 정보 줄(순번·해상도·비트·용량·스포이트 좌표) 숨김, 해상도는 size_cb 로 미리보기 칸 아래 정보 줄에, 복사 알림은 마우스 옆 풍선 / 1.7.1 (0.9.153 빌드 4): ◀ ▶ 단추 작게 22x64→16x40, 글자 15→11px / 1.7.0 (0.9.153 빌드 3, 사용자 11/26 '펼쳤을때 이미지 영역이 너무 좁아'): 색상 도구 5줄 → 2줄 (채널=맨 위 줄, 고른 색 한 줄, 최근·주요 색 한 줄) / 1.6.0 (0.9.153 빌드 2, 사용자 11/26): 미리보기가 좁아 도구가 그림을 가리면(도구를 다 펴면 그림 칸이 절반도 안 됨) 자동으로 접음 — [✎ 편집] + [▾ 도구] 만, ▾ 로 그때만 펼침 / 1.5.1: own_nav=False 면 자기 ◀ ▶ 숨김(미리보기 창 양끝 공용 단추 하나로) / 1.5.0 (0.9.129 사용자 11/10 미리보기 통일): − / + 단추, Canvas.set_pixmap(GIF·동영상 장면), zoom_buttons 공용 줄, ◀ ▶ = 폴더의 모든 파일
+IMGINSPECT_VER = "1.9.0"   # 1.9.0 (0.9.154 빌드 1): set_bare(on) — '내용만 보기' 면 도구·정보 줄 전부 숨기고 그림만 / 1.8.0 (0.9.153 빌드 4, 사용자 11/26 '이 정보 지우고 맨밑에 용량 옆에 해상도만'): 미리보기 칸(own_nav=False)에선 그림 아래 정보 줄(순번·해상도·비트·용량·스포이트 좌표) 숨김, 해상도는 size_cb 로 미리보기 칸 아래 정보 줄에, 복사 알림은 마우스 옆 풍선 / 1.7.1 (0.9.153 빌드 4): ◀ ▶ 단추 작게 22x64→16x40, 글자 15→11px / 1.7.0 (0.9.153 빌드 3, 사용자 11/26 '펼쳤을때 이미지 영역이 너무 좁아'): 색상 도구 5줄 → 2줄 (채널=맨 위 줄, 고른 색 한 줄, 최근·주요 색 한 줄) / 1.6.0 (0.9.153 빌드 2, 사용자 11/26): 미리보기가 좁아 도구가 그림을 가리면(도구를 다 펴면 그림 칸이 절반도 안 됨) 자동으로 접음 — [✎ 편집] + [▾ 도구] 만, ▾ 로 그때만 펼침 / 1.5.1: own_nav=False 면 자기 ◀ ▶ 숨김(미리보기 창 양끝 공용 단추 하나로) / 1.5.0 (0.9.129 사용자 11/10 미리보기 통일): − / + 단추, Canvas.set_pixmap(GIF·동영상 장면), zoom_buttons 공용 줄, ◀ ▶ = 폴더의 모든 파일
 log = logging.getLogger("QE.imginspect")
 P = QtCore.QPointF
 R = QtCore.QRectF
@@ -1685,6 +1685,10 @@ class PreviewWidget(QtWidgets.QWidget):
 
     def _apply_compact(self):
         """1.6.0: 도구를 다 펴면 그림 칸이 높이의 절반도 안 되면 접음 → [▾ 도구] [✎ 편집] 만 (▾ 누르면 그때만 펼침)"""
+        if getattr(self, "bare", False):   # 1.9.0 '내용만 보기' — 도구 전부 숨김 (그림만)
+            for w in (self.b_more, self.b_detail, self.detail, self.ch_w, self.bot_w, self.b_edit):
+                w.setVisible(False)
+            return
         H = self.height()
         compact = H > 0 and (H - self._tools_h()) < H * 0.5
         if compact != self._compact:
@@ -1697,6 +1701,14 @@ class PreviewWidget(QtWidgets.QWidget):
         self.detail.setVisible(show and self.b_detail.isChecked())
         self.ch_w.setVisible(show and self.b_detail.isChecked())
         self.bot_w.setVisible(show)
+
+    def set_bare(self, on):
+        """1.9.0 (4Dir 0.9.154, 사용자 11/26 '실제 내용만 보이고 나머지 다 숨기는 옵션'): 켜면 그림만 — 끄면 원래대로"""
+        self.bare = bool(on)
+        if not self.bare:
+            self.b_edit.setVisible(self.edit is not None)
+        self._apply_compact()
+        QtCore.QTimer.singleShot(0, self.fit)
 
     def _on_more(self, on):
         _PSTATE["unfold"] = bool(on)

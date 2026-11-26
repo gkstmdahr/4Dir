@@ -2468,5 +2468,7 @@
  "이 칸을 미리보기로 (다른 칸에서 고른 파일)": "Brug denne rude som eksempel (fil valgt i en anden rude)",
  "✕ 파일 목록으로": "✕ Tilbage til fillisten",
  "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Vis farveværktøjer og zoomlinje (foldet sammen, fordi eksemplet er lille)",
- "해상도": "Opløsning"
+ "해상도": "Opløsning",
+ "내용만 보기 (도구·정보 숨김)": "Kun indhold (skjul værktøjer og info)",
+ "내용만 보기": "Kun indhold"
 }
