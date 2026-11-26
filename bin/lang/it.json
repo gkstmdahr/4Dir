@@ -2464,5 +2464,9 @@
  "깃허브 안내 열기": "Apri la guida su GitHub",
  "탭 복제": "Duplica scheda",
  "탭 복제 (바로 오른쪽에)": "Duplica scheda (subito a destra)",
- "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Scorrimento fluido — ogni scatto della rotella scorre di una riga"
+ "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Scorrimento fluido — ogni scatto della rotella scorre di una riga",
+ "이 칸을 미리보기로 (다른 칸에서 고른 파일)": "Usa questo riquadro come anteprima (file scelto in un altro riquadro)",
+ "✕ 파일 목록으로": "✕ Torna all'elenco file",
+ "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Mostra strumenti colore e barra zoom (compressi perché l'anteprima è piccola)",
+ "해상도": "Risoluzione"
 }

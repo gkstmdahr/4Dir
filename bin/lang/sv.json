@@ -2464,5 +2464,9 @@
  "깃허브 안내 열기": "Öppna guiden på GitHub",
  "탭 복제": "Duplicera flik",
  "탭 복제 (바로 오른쪽에)": "Duplicera flik (direkt till höger)",
- "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Mjuk rullning — varje hjulsteg glider en rad"
+ "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Mjuk rullning — varje hjulsteg glider en rad",
+ "이 칸을 미리보기로 (다른 칸에서 고른 파일)": "Använd den här rutan som förhandsgranskning (fil vald i en annan ruta)",
+ "✕ 파일 목록으로": "✕ Tillbaka till fillistan",
+ "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Visa färgverktyg och zoomrad (hopfällda eftersom förhandsgranskningen är liten)",
+ "해상도": "Upplösning"
 }

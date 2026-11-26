@@ -38,7 +38,7 @@ from i18n import T
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-IMGINSPECT_VER = "1.5.1"   # 1.5.1: own_nav=False 면 자기 ◀ ▶ 숨김(미리보기 창 양끝 공용 단추 하나로) / 1.5.0 (0.9.129 사용자 11/10 미리보기 통일): − / + 단추, Canvas.set_pixmap(GIF·동영상 장면), zoom_buttons 공용 줄, ◀ ▶ = 폴더의 모든 파일
+IMGINSPECT_VER = "1.8.0"   # 1.8.0 (0.9.153 빌드 4, 사용자 11/26 '이 정보 지우고 맨밑에 용량 옆에 해상도만'): 미리보기 칸(own_nav=False)에선 그림 아래 정보 줄(순번·해상도·비트·용량·스포이트 좌표) 숨김, 해상도는 size_cb 로 미리보기 칸 아래 정보 줄에, 복사 알림은 마우스 옆 풍선 / 1.7.1 (0.9.153 빌드 4): ◀ ▶ 단추 작게 22x64→16x40, 글자 15→11px / 1.7.0 (0.9.153 빌드 3, 사용자 11/26 '펼쳤을때 이미지 영역이 너무 좁아'): 색상 도구 5줄 → 2줄 (채널=맨 위 줄, 고른 색 한 줄, 최근·주요 색 한 줄) / 1.6.0 (0.9.153 빌드 2, 사용자 11/26): 미리보기가 좁아 도구가 그림을 가리면(도구를 다 펴면 그림 칸이 절반도 안 됨) 자동으로 접음 — [✎ 편집] + [▾ 도구] 만, ▾ 로 그때만 펼침 / 1.5.1: own_nav=False 면 자기 ◀ ▶ 숨김(미리보기 창 양끝 공용 단추 하나로) / 1.5.0 (0.9.129 사용자 11/10 미리보기 통일): − / + 단추, Canvas.set_pixmap(GIF·동영상 장면), zoom_buttons 공용 줄, ◀ ▶ = 폴더의 모든 파일
 log = logging.getLogger("QE.imginspect")
 P = QtCore.QPointF
 R = QtCore.QRectF
@@ -1437,9 +1437,12 @@ def can_handle(path):
     return sz.isValid() and 0 < sz.width() * sz.height() <= PREVIEW_MAX_PX
 
 
-def make_widget(path, parent=None, nav=None, edit=None, seq=None, own_nav=True):
+def make_widget(path, parent=None, nav=None, edit=None, seq=None, own_nav=True, size_cb=None):
     w = PreviewWidget(path, parent, nav, edit, seq)
     w.own_nav = own_nav
+    w.size_cb = size_cb   # 1.8.0 size_cb(가로, 세로): 그림 읽으면 해상도 알림
+    if not own_nav:   # 1.8.0 미리보기 칸: 그림 아래 정보 줄 없음
+        w.lb_st.setVisible(False)
     if not own_nav:   # 1.5.1 미리보기 창 양끝 공용 ◀ ▶ 를 씀 — 자기 단추는 자리도 안 차지
         for b in (w.b_prev, w.b_next):
             sp = b.sizePolicy(); sp.setRetainSizeWhenHidden(False); b.setSizePolicy(sp)
@@ -1450,7 +1453,7 @@ def make_widget(path, parent=None, nav=None, edit=None, seq=None, own_nav=True):
 # 다음 그림으로 넘어가도 이어지는 것 (미리보기 위젯은 파일마다 새로 만듦)
 _PSTATE = {"chan": "RGBA", "dark": False, "grid": True, "recent": [], "picked": None, "focus": False, "detail": False}
 PREVIEW_STYLE = BTN_STYLE + ("QToolButton#imgTb{padding:2px 6px;}"
-                             "QToolButton#navBtn{background:rgba(0,0,0,70); color:white; border:none; border-radius:5px; font-size:15px;}"
+                             "QToolButton#navBtn{background:rgba(0,0,0,70); color:white; border:none; border-radius:4px; font-size:11px; padding:0px;}"
                              "QToolButton#navBtn:hover{background:rgba(0,0,0,150);}")
 PREF_GET = None   # main 이 설정 읽기·쓰기를 넣어 줌 (상세보기 열림 상태를 껐다 켜도 기억)
 PREF_SET = None
@@ -1486,16 +1489,24 @@ class PreviewWidget(QtWidgets.QWidget):
         self.b_detail = _tb(T("색상 도구"), T("채널·고른 색·최근 색·주요 색·팔레트 저장"), True)
         self.b_detail.setChecked(bool(_pref("preview_detail", False)))
         self.b_detail.toggled.connect(self._on_detail)
-        top.addWidget(self.b_detail); top.addStretch(1)
+        top.addWidget(self.b_detail)
+        self.ch_w = QtWidgets.QWidget()   # 1.7.0 채널 단추는 맨 위 줄에
+        top.addWidget(self.ch_w); top.addStretch(1)
         self.b_edit = _tb("✎ " + T("편집"), T("그림 편집 창 (자르기·글자·화살표·모자이크·밝기 등)"))   # 아래 줄은 좁아 위로
         self.b_edit.clicked.connect(lambda: self.edit and self.edit(self.path))
         self.b_edit.setVisible(edit is not None)
+        self.b_more = _tb("▾ " + T("도구"), T("색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)"), True)   # 1.6.0
+        self.b_more.setChecked(bool(_PSTATE.get("unfold", False)))
+        self.b_more.toggled.connect(self._on_more)
+        self.b_more.setVisible(False)
+        top.addWidget(self.b_more)
         top.addWidget(self.b_edit)
+        self._compact = False
 
         # 상세 칸: 채널 / 고른 색 / 최근 / 주요 색
         self.detail = QtWidgets.QWidget()
         dl = QtWidgets.QVBoxLayout(self.detail); dl.setContentsMargins(0, 0, 0, 0); dl.setSpacing(4)
-        r2 = QtWidgets.QHBoxLayout(); r2.setSpacing(3)
+        r2 = QtWidgets.QHBoxLayout(self.ch_w); r2.setSpacing(3); r2.setContentsMargins(6, 0, 0, 0)
         self.ch_btns = {}
         grp = QtWidgets.QButtonGroup(self); grp.setExclusive(True)
         for ch in ("RGBA", "R", "G", "B", "A"):
@@ -1503,28 +1514,26 @@ class PreviewWidget(QtWidgets.QWidget):
             b.clicked.connect(lambda _=False, ch=ch: self.set_channel(ch))
             grp.addButton(b); r2.addWidget(b); self.ch_btns[ch] = b
         self.ch_btns[_PSTATE["chan"]].setChecked(True)
-        r2.addStretch(1)
-        r3 = QtWidgets.QGridLayout(); r3.setHorizontalSpacing(6); r3.setVerticalSpacing(3)
-        r3.addWidget(QtWidgets.QLabel(T("고른 색")), 0, 0)
+        r3 = QtWidgets.QHBoxLayout(); r3.setSpacing(6)   # 1.7.0 고른 색 한 줄: 고른 색 ■ HEX  RGB  [HEX 복사][RGB 복사]
+        r3.addWidget(QtWidgets.QLabel(T("고른 색")))
         self.sw_pick = Swatch(22); self.sw_pick.clicked.connect(self.copy_hex)
-        r3.addWidget(self.sw_pick, 0, 1, 2, 1, Qt.AlignVCenter)
+        r3.addWidget(self.sw_pick, 0, Qt.AlignVCenter)
         self.lb_pick = QtWidgets.QLabel("HEX —"); self.lb_pick.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.lb_rgb = QtWidgets.QLabel("R —, G —, B —"); self.lb_rgb.setTextInteractionFlags(Qt.TextSelectableByMouse)
         for lb in (self.lb_pick, self.lb_rgb):
             lb.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Preferred)
         self.b_hex = _tb(T("HEX 복사"), T("#791110 같은 글자로 복사")); self.b_hex.clicked.connect(self.copy_hex)
         self.b_rgb = _tb(T("RGB 복사"), T("121, 17, 16 같은 숫자로 복사")); self.b_rgb.clicked.connect(self.copy_rgb)
-        r3.addWidget(self.lb_pick, 0, 2); r3.addWidget(self.b_hex, 0, 3)
-        r3.addWidget(self.lb_rgb, 1, 2); r3.addWidget(self.b_rgb, 1, 3)
-        r3.setColumnStretch(2, 1)
+        r3.addWidget(self.lb_pick, 2); r3.addWidget(self.lb_rgb, 3)
+        r3.addWidget(self.b_hex); r3.addWidget(self.b_rgb)
         r4 = QtWidgets.QHBoxLayout(); r4.setSpacing(3)
         r4.addWidget(QtWidgets.QLabel(T("최근")))
         self.sw_recent = []
         for i in range(8):
             sw = Swatch(20); sw.clicked.connect(lambda _=False, i=i: self._recopy(self.sw_recent[i]))
             r4.addWidget(sw); self.sw_recent.append(sw)
-        r4.addStretch(1)
-        r5 = QtWidgets.QHBoxLayout(); r5.setSpacing(3)
+        r4.addSpacing(10)
+        r5 = r4   # 1.7.0 최근 색 · 주요 색 한 줄
         self.b_main = _tb(T("주요 색 뽑기"), T("그림에서 많이 쓰인 색 6개")); self.b_main.clicked.connect(self.extract_main)
         r5.addWidget(self.b_main)
         self.sw_main = []
@@ -1535,7 +1544,7 @@ class PreviewWidget(QtWidgets.QWidget):
         self.b_pal = _tb(T("팔레트 PNG 저장"), T("주요 색을 가로 띠 그림으로 같은 폴더에 저장"))
         self.b_pal.clicked.connect(self.save_palette); self.b_pal.setEnabled(False)
         r5.addWidget(self.b_pal)
-        for r in (r2, r3, r4, r5):
+        for r in (r3, r4):
             dl.addLayout(r)
         self.b_seq = _tb("▶ " + T("연번 그림 재생"), T("이름에 번호가 이어진 그림들을 영상처럼 재생"))
         self.b_seq.clicked.connect(lambda: self.seq and self.seq())
@@ -1543,6 +1552,7 @@ class PreviewWidget(QtWidgets.QWidget):
         r6 = QtWidgets.QHBoxLayout(); r6.addWidget(self.b_seq); r6.addStretch(1)
         dl.addLayout(r6)
         self.detail.setVisible(self.b_detail.isChecked())
+        self.ch_w.setVisible(self.b_detail.isChecked())
 
         # 그림 + 양옆 ◀ ▶ (그림 위에 겹침)
         self.canvas = Canvas(self.view)
@@ -1555,7 +1565,7 @@ class PreviewWidget(QtWidgets.QWidget):
         self.b_prev = QtWidgets.QToolButton(); self.b_prev.setObjectName("navBtn"); self.b_prev.setText("◀")
         self.b_next = QtWidgets.QToolButton(); self.b_next.setObjectName("navBtn"); self.b_next.setText("▶")
         for b, tip, d in ((self.b_prev, T("이전 파일 (←)"), -1), (self.b_next, T("다음 파일 (→)"), 1)):   # 1.5.0 폴더의 모든 파일   # 1.4.0: 그림 밖 양옆 (그림을 가리지 않음)
-            b.setToolTip(tip); b.setFixedSize(22, 64); b.setFocusPolicy(Qt.NoFocus); b.setCursor(Qt.PointingHandCursor)
+            b.setToolTip(tip); b.setFixedSize(16, 40); b.setFocusPolicy(Qt.NoFocus); b.setCursor(Qt.PointingHandCursor)
             b.clicked.connect(lambda _=False, d=d: self.go(d))
             sp = b.sizePolicy(); sp.setRetainSizeWhenHidden(True); b.setSizePolicy(sp)   # 끝 그림에서 숨어도 자리는 그대로 (그림이 들썩이지 않게)
         mid = QtWidgets.QHBoxLayout(); mid.setSpacing(3)
@@ -1598,7 +1608,10 @@ class PreviewWidget(QtWidgets.QWidget):
         lay.addWidget(self.detail)
         lay.addLayout(mid, 1)
         lay.addWidget(self.lb_st)
-        lay.addLayout(bot)
+        self.bot_w = QtWidgets.QWidget()   # 1.6.0 접을 수 있게 확대 줄을 위젯으로
+        bot.setContentsMargins(0, 0, 0, 0)
+        self.bot_w.setLayout(bot)
+        lay.addWidget(self.bot_w)
         fm = self.fontMetrics()   # 좁은 창에서 한글 단추 글자가 '배…게' 처럼 잘리던 것 — 글자 폭만큼은 늘 확보
         for b in self.findChildren(QtWidgets.QToolButton):
             if b.objectName() == "imgTb" and b.text() and not isinstance(b, (Swatch, _ZoomButton)):
@@ -1612,6 +1625,7 @@ class PreviewWidget(QtWidgets.QWidget):
             self._show_picked(_PSTATE["picked"])
         self._update_pos()
         log.info("미리보기 창 그림 %s 채널 %s", path, _PSTATE["chan"])
+        QtCore.QTimer.singleShot(0, self._apply_compact)
         self.worker.run("pload", lambda: load_image(path), self._loaded)
 
     # --- 읽기
@@ -1630,6 +1644,11 @@ class PreviewWidget(QtWidgets.QWidget):
         except OSError:
             fsz = 0
         self.info_img = f"{img.width()} x {img.height()} · {depth_text(src)} · {_size_text(fsz)}"
+        if getattr(self, "size_cb", None):
+            try:
+                self.size_cb(img.width(), img.height())
+            except Exception:
+                log.exception("해상도 알림 실패")
         self.info = (self.pos_text + "   " if self.pos_text else "") + self.info_img
         self._set_msg("")
         self.canvas.message = ""
@@ -1657,15 +1676,47 @@ class PreviewWidget(QtWidgets.QWidget):
         own = getattr(self, "own_nav", True)
         self.b_prev.setVisible(own and i > 0); self.b_next.setVisible(own and i < n - 1)
 
+    def _tools_h(self):
+        """도구(색상 도구 펼침·확대 줄·정보 줄·맨 위 줄)를 다 보일 때 차지하는 높이"""
+        h = self.b_detail.sizeHint().height() + (self.lb_st.sizeHint().height() if getattr(self, "own_nav", True) else 0) + self.bot_w.sizeHint().height() + 16
+        if self.b_detail.isChecked():
+            h += self.detail.sizeHint().height() + 4
+        return h
+
+    def _apply_compact(self):
+        """1.6.0: 도구를 다 펴면 그림 칸이 높이의 절반도 안 되면 접음 → [▾ 도구] [✎ 편집] 만 (▾ 누르면 그때만 펼침)"""
+        H = self.height()
+        compact = H > 0 and (H - self._tools_h()) < H * 0.5
+        if compact != self._compact:
+            self._compact = compact
+            log.info("그림 미리보기 도구 %s (높이 %d, 도구 %d)", "접음" if compact else "펼침", H, self._tools_h())
+        show = not compact or self.b_more.isChecked()
+        self.b_more.setVisible(compact)
+        self.b_more.setText(("▴ " if self.b_more.isChecked() else "▾ ") + T("도구"))
+        self.b_detail.setVisible(show)
+        self.detail.setVisible(show and self.b_detail.isChecked())
+        self.ch_w.setVisible(show and self.b_detail.isChecked())
+        self.bot_w.setVisible(show)
+
+    def _on_more(self, on):
+        _PSTATE["unfold"] = bool(on)
+        self._apply_compact()
+
+    def resizeEvent(self, ev):
+        super().resizeEvent(ev)
+        self._apply_compact()
+
     def _on_detail(self, on):
         """상세보기 열고 닫기 — 상태 기억"""
         self.detail.setVisible(on)
+        self.ch_w.setVisible(on)
         _PSTATE["detail"] = on
         try:
             if PREF_SET:
                 PREF_SET("preview_detail", bool(on))
         except Exception:
             log.exception("상세보기 상태 저장 실패")
+        self._apply_compact()   # 1.6.0 펼친 높이가 바뀜
         log.info("미리보기 상세보기 %s", "열기" if on else "닫기")
         QtCore.QTimer.singleShot(0, self.fit)
 
@@ -1748,6 +1799,8 @@ class PreviewWidget(QtWidgets.QWidget):
     # --- 아래 줄
     def _set_msg(self, t):
         self._msg = t
+        if t and not getattr(self, "own_nav", True):   # 1.8.0 정보 줄이 없으니 마우스 옆 풍선으로
+            QtWidgets.QToolTip.showText(QtGui.QCursor.pos(), t, self)
         self.lb_st.setStyleSheet("QLabel{color:#1a7f37; font-weight:bold;}" if t else "")
         self.lb_st.setText(t or self.info)
 

@@ -2464,5 +2464,9 @@
  "깃허브 안내 열기": "Mở hướng dẫn trên GitHub",
  "탭 복제": "Nhân bản tab",
  "탭 복제 (바로 오른쪽에)": "Nhân bản tab (ngay bên phải)",
- "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Cuộn mượt — mỗi nấc con lăn trượt một dòng"
+ "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Cuộn mượt — mỗi nấc con lăn trượt một dòng",
+ "이 칸을 미리보기로 (다른 칸에서 고른 파일)": "Dùng ngăn này để xem trước (tệp chọn ở ngăn khác)",
+ "✕ 파일 목록으로": "✕ Về danh sách tệp",
+ "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Hiện công cụ màu và thanh thu phóng (đang thu gọn vì vùng xem trước nhỏ)",
+ "해상도": "Độ phân giải"
 }

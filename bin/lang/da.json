@@ -2464,5 +2464,9 @@
  "깃허브 안내 열기": "Åbn vejledning på GitHub",
  "탭 복제": "Dupliker fane",
  "탭 복제 (바로 오른쪽에)": "Dupliker fane (lige til højre)",
- "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Blød rulning — hvert hjulhak glider én række"
+ "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Blød rulning — hvert hjulhak glider én række",
+ "이 칸을 미리보기로 (다른 칸에서 고른 파일)": "Brug denne rude som eksempel (fil valgt i en anden rude)",
+ "✕ 파일 목록으로": "✕ Tilbage til fillisten",
+ "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Vis farveværktøjer og zoomlinje (foldet sammen, fordi eksemplet er lille)",
+ "해상도": "Opløsning"
 }

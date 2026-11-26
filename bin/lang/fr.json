@@ -2464,5 +2464,9 @@
  "깃허브 안내 열기": "Ouvrir le guide GitHub",
  "탭 복제": "Dupliquer l'onglet",
  "탭 복제 (바로 오른쪽에)": "Dupliquer l'onglet (juste à droite)",
- "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Défilement fluide — chaque cran de molette glisse d'une ligne"
+ "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Défilement fluide — chaque cran de molette glisse d'une ligne",
+ "이 칸을 미리보기로 (다른 칸에서 고른 파일)": "Utiliser ce volet comme aperçu (fichier choisi dans un autre volet)",
+ "✕ 파일 목록으로": "✕ Revenir à la liste des fichiers",
+ "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Afficher les outils de couleur et la barre de zoom (repliés car l'aperçu est petit)",
+ "해상도": "Résolution"
 }

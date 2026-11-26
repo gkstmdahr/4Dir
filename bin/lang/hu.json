@@ -2464,5 +2464,9 @@
  "깃허브 안내 열기": "GitHub-útmutató megnyitása",
  "탭 복제": "Lap duplikálása",
  "탭 복제 (바로 오른쪽에)": "Lap duplikálása (közvetlenül jobbra)",
- "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Sima görgetés — a görgő minden kattanása egy sort csúsztat"
+ "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Sima görgetés — a görgő minden kattanása egy sort csúsztat",
+ "이 칸을 미리보기로 (다른 칸에서 고른 파일)": "Ez a panel legyen az előnézet (másik panelen kijelölt fájl)",
+ "✕ 파일 목록으로": "✕ Vissza a fájllistához",
+ "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Színeszközök és nagyítósáv megjelenítése (összecsukva, mert kicsi az előnézet)",
+ "해상도": "Felbontás"
 }

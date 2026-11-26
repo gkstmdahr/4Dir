@@ -2464,5 +2464,9 @@
  "깃허브 안내 열기": "Open GitHub guide",
  "탭 복제": "Duplicate tab",
  "탭 복제 (바로 오른쪽에)": "Duplicate tab (right next to it)",
- "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Smooth scrolling — each wheel notch glides one row"
+ "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Smooth scrolling — each wheel notch glides one row",
+ "이 칸을 미리보기로 (다른 칸에서 고른 파일)": "Use this pane as preview (file selected in another pane)",
+ "✕ 파일 목록으로": "✕ Back to file list",
+ "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Show color tools and zoom bar (folded because the preview is small)",
+ "해상도": "Resolution"
 }

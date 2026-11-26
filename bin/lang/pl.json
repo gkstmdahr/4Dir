@@ -2464,5 +2464,9 @@
  "깃허브 안내 열기": "Otwórz instrukcję na GitHub",
  "탭 복제": "Duplikuj kartę",
  "탭 복제 (바로 오른쪽에)": "Duplikuj kartę (tuż po prawej)",
- "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Płynne przewijanie — każdy skok kółka płynnie przesuwa o jeden wiersz"
+ "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Płynne przewijanie — każdy skok kółka płynnie przesuwa o jeden wiersz",
+ "이 칸을 미리보기로 (다른 칸에서 고른 파일)": "Użyj tego panelu jako podglądu (plik wybrany w innym panelu)",
+ "✕ 파일 목록으로": "✕ Wróć do listy plików",
+ "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Pokaż narzędzia kolorów i pasek powiększenia (zwinięte, bo podgląd jest mały)",
+ "해상도": "Rozdzielczość"
 }

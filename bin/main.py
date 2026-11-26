@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.152"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 3              #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.153"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 4              #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -8529,6 +8529,25 @@ class Pane(QtWidgets.QFrame):
         self.stat.setObjectName("paneStatus")
         self.stat.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Preferred)   # 긴 상태 글자가 창 축소를 막지 않게
         lay.addWidget(self.stat)
+        # 0.9.153 토론 #17: 이 칸을 미리보기로 쓸 때의 자리 (머리줄 '미리보기 [✕ 파일 목록으로]' + 미리보기)
+        self.prev_slot = QtWidgets.QWidget()
+        sl = QtWidgets.QVBoxLayout(self.prev_slot)
+        sl.setContentsMargins(0, 0, 0, 0)
+        sl.setSpacing(0)
+        sh = QtWidgets.QHBoxLayout()
+        sh.setContentsMargins(8, 3, 4, 3)
+        sh.addWidget(QtWidgets.QLabel(T("미리보기")))
+        sh.addStretch(1)
+        back = QtWidgets.QToolButton()
+        back.setText(T("✕ 파일 목록으로"))
+        back.setAutoRaise(True)
+        back.clicked.connect(lambda *_: main_of(self) and main_of(self).set_preview_slot(None))
+        sh.addWidget(back)
+        sl.addLayout(sh)
+        self.prev_slot.setVisible(False)
+        lay.addWidget(self.prev_slot, 1)
+        self.is_preview_slot = False
+        self._slot_hidden = []
         self._prev = None
         self.set_sidebar(False, save=False)
         self.set_breadcrumb(SETTINGS["breadcrumb"])
@@ -9179,8 +9198,37 @@ class Pane(QtWidgets.QFrame):
         if m is not None and getattr(m, "preview", None) is not None and m.active_pane is self:
             m.preview.schedule(m)
 
+    def show_preview_slot(self, widget):
+        """0.9.153 토론 #17: widget(미리보기)을 이 칸 자리에 — None 이면 원래 파일 목록으로"""
+        lay = self.layout()
+        if widget is not None:
+            if not self.is_preview_slot:
+                self._slot_hidden = []
+                for i in range(lay.count()):
+                    w = lay.itemAt(i).widget()
+                    if w is not None and w is not self.prev_slot and not w.isHidden():
+                        w.setVisible(False)
+                        self._slot_hidden.append(w)
+            if widget.parent() is not self.prev_slot:
+                self.prev_slot.layout().addWidget(widget, 1)
+                widget.show()
+            self.prev_slot.setVisible(True)
+            self.is_preview_slot = True
+            log.info("칸 %d = 미리보기", self.idx)
+        elif self.is_preview_slot:
+            self.prev_slot.setVisible(False)
+            for w in self._slot_hidden:
+                w.setVisible(True)
+            self._slot_hidden = []
+            self.is_preview_slot = False
+            log.info("칸 %d = 파일 목록으로", self.idx)
+
     def fill_view_menu(self, m):
         m.clear()
+        mw = main_of(self)   # 0.9.153 토론 #17
+        if mw is not None and len([p for p in mw.panes if not p.isHidden()]) > 1:
+            a = m.addAction(T("이 칸을 미리보기로 (다른 칸에서 고른 파일)"), lambda: mw.set_preview_slot(self))
+            m.addSeparator()
         g = QtGui.QActionGroup(m)
         for k, lbl, _ in VIEW_MODES:
             a = m.addAction(lbl, lambda k=k: self.set_mode(k))
@@ -11201,7 +11249,7 @@ class PreviewPane(QtWidgets.QFrame):
             b.setObjectName("navBtn")
             b.setText(txt)
             b.setToolTip(tip)
-            b.setFixedSize(22, 64)
+            b.setFixedSize(16, 40)   # 0.9.153 빌드 4 (사용자 11/26 '버튼 사이즈 작게'): 22x64 → 16x40
             b.setFocusPolicy(Qt.NoFocus)
             b.setCursor(Qt.PointingHandCursor)
             b.setStyleSheet(imginspect.PREVIEW_STYLE)
@@ -11262,6 +11310,7 @@ class PreviewPane(QtWidgets.QFrame):
         lay.addWidget(self.film)   # 0.9.129 그림 화면 아래
         lay.addWidget(self.sep)
         lay.addWidget(self.name)
+        self.name.setVisible(False)   # 0.9.153 빌드 3 (사용자 11/26 '밑에 부분 한줄로'): 이름은 정보 줄 맨 앞에 굵게 — 따로 줄 안 씀
         lay.addWidget(self.info)
         self.btn_inspect = QtWidgets.QPushButton(T("🔍 그림 자세히 보기 (확대·스포이트)"))   # 0.9.116 #1 #2
         self.btn_inspect.setVisible(False)
@@ -11361,7 +11410,7 @@ class PreviewPane(QtWidgets.QFrame):
                     pv = self.main.pane().view() if self.main.pane() else None
                     sq = (lambda p=path: open_tool(sequence.open_player, self.window(), os.path.dirname(p), p)) \
                         if pv is not None and seq_in_view(pv, path) is not None else None
-                    w = mod.make_widget(path, self, nav=self._nav_any, own_nav=False, seq=sq,
+                    w = mod.make_widget(path, self, nav=self._nav_any, own_nav=False, seq=sq, size_cb=self._img_size,   # 0.9.153 빌드 4 해상도 → 아래 정보 줄
                                         edit=(lambda p: open_img_edit(p, self.window())) if imgedit.can_edit(path) else None)
                     self.btn_seq.setVisible(False)   # 0.9.118 빌드 2: 연번 재생은 색상 도구 칸 안으로
                 elif name == "folderprev":
@@ -11405,7 +11454,20 @@ class PreviewPane(QtWidgets.QFrame):
         dim = QtGui.QColor((t.red() + bg.red()) // 2, (t.green() + bg.green()) // 2, (t.blue() + bg.blue()) // 2).name()
         trs = "".join(f'<tr><td style="color:{dim}; padding:1px 12px 1px 0; white-space:nowrap;">{_h.escape(k)}</td>'
                       f'<td style="padding:1px 0;">{_h.escape(v)}</td></tr>' for k, v in self._rows)
-        self.info.setText(f'<table cellspacing="0" cellpadding="0">{trs}</table>' if trs else "")
+        # 0.9.153 빌드 3: 한 줄 = 굵은 이름 + 회색 '종류 · 크기 · 날짜' (뜻이 뻔한 칸은 이름표 없이 값만, 좁으면 자연히 줄바꿈)
+        bare = {T("종류"), T("크기"), T("해상도"), T("수정한 날짜"), T("전체 크기")}
+        vals = " · ".join(_h.escape(v if k in bare else f"{k} {v}") for k, v in self._rows)
+        nm = _h.escape(self.name.text())
+        line = (f"<b>{nm}</b>" if nm else "") + ("&nbsp;&nbsp;" if nm and vals else "") + (f'<span style="color:{dim};">{vals}</span>' if vals else "")
+        self.info.setText(line)
+        self.info.setToolTip(f'<table cellspacing="0" cellpadding="0">{trs}</table>' if trs else "")   # 이름표 붙은 표는 마우스 올리면
+
+    def _img_size(self, w, h):
+        """0.9.153 빌드 4 (사용자 11/26 '맨밑에 용량 옆에 해상도만'): 그림 미리보기가 읽은 해상도 → 정보 줄 크기 바로 뒤"""
+        rows = [(k, v) for k, v in self._rows if k != T("해상도")]
+        i = next((n + 1 for n, (k, _v) in enumerate(rows) if k == T("크기")), len(rows))
+        rows.insert(i, (T("해상도"), f"{w} x {h}"))
+        self._set_rows(rows)
 
     def _set_row(self, key, val):
         rows = list(self._rows)
@@ -11447,7 +11509,7 @@ class PreviewPane(QtWidgets.QFrame):
         r = self._nav_any(d)
         log.info("미리보기 %s 파일 → %s", "다음" if d > 0 else "이전", r)
 
-    NAV_W = 24   # ◀ ▶ 단추 자리 (그림 칸 양옆)
+    NAV_W = 18   # 0.9.153 빌드 4: 24 → 18 / ◀ ▶ 단추 자리 (그림 칸 양옆)
 
     def _upd_nav(self):
         """창 양끝 ◀ ▶ (모든 형식 같은 자리, 0.9.129 빌드 4). 맨 앞·맨 뒤면 그쪽 단추 숨김"""
@@ -12190,6 +12252,7 @@ class PreviewPane(QtWidgets.QFrame):
                 self.name.setText("")
                 self._rows = []
                 self.info.setText(T("파일을 고르면 여기에 미리보기가 나옵니다"))
+                self.info.setToolTip("")
             return
         e = v.model_.rows[rows[0]]
         path = v.model_.full(e)
@@ -13069,11 +13132,27 @@ class Main(QtWidgets.QMainWindow):
         """미리보기 창 켜기/끄기 — 빌드 18 (사용자 11/5): 메모 창처럼 4Dir 창 밖 따로 창, 켜도 칸 크기 그대로. 위치·크기 기억"""
         on = bool(on)
         dock = bool(SETTINGS["preview_dock"])
+        slot = self._slot_pane()   # 0.9.153 토론 #17 칸 하나를 미리보기로
+        for p in self.panes:
+            if p.is_preview_slot and (not on or p is not slot):
+                p.show_preview_slot(None)
         if PREVIEW_WIN is not None:
             pane = PREVIEW_WIN.pane
             if on:
                 self.preview.main = self
-                if dock:   # 0.9.147 오른쪽 칸
+                if slot is not None:
+                    if PREVIEW_WIN.isVisible():
+                        PREVIEW_WIN.save_geo()
+                        PREVIEW_WIN.hide()
+                    for w in WINDOWS + ([self] if self not in WINDOWS else []):
+                        w.prev_host.setVisible(False)
+                    slot.show_preview_slot(pane)
+                    if self.active_pane is slot:   # 미리보기 칸은 '지금 칸'이 되지 않음 — 고른 파일은 다른 칸에서
+                        o = self.other_pane(slot)
+                        if o is not None:
+                            self.active_pane = o
+                            self._paint_active()
+                elif dock:   # 0.9.147 오른쪽 칸
                     if PREVIEW_WIN.isVisible():
                         PREVIEW_WIN.save_geo()
                         PREVIEW_WIN.hide()
@@ -13097,7 +13176,29 @@ class Main(QtWidgets.QMainWindow):
         for w in list(WINDOWS) + ([self] if self not in WINDOWS else []):
             if getattr(w, "act_preview", None) is not None:
                 w.act_preview.setChecked(on)   # 메뉴·Alt+P 로 바꿔도 버튼 눌림 표시 맞춤
-        log.info("미리보기 %s (%s)", "켬" if on else "끔", "오른쪽 칸" if dock else "따로 창")
+        log.info("미리보기 %s (%s)", "켬" if on else "끔", f"칸 {slot.idx}" if slot is not None else ("오른쪽 칸" if dock else "따로 창"))
+
+    def _slot_pane(self):
+        """0.9.153: 미리보기를 놓을 칸 (설정 preview_slot, 숨은 칸·칸 하나뿐이면 None → 오른쪽 칸/따로 창)"""
+        k = SETTINGS["preview_slot"]
+        if k is None or not isinstance(k, int) or not (0 <= k < len(self.panes)):
+            return None
+        p = self.panes[k]
+        if p.isHidden() or len([q for q in self.panes if not q.isHidden()]) < 2:
+            return None
+        return p
+
+    def set_preview_slot(self, pane):
+        """0.9.153 토론 #17: 칸 하나를 미리보기로 (pane=None 이면 그 칸을 파일 목록으로 되돌리고 미리보기 끔)"""
+        if pane is None:
+            SETTINGS["preview_slot"] = None
+            log.info("미리보기 칸 해제")
+            self.set_preview(False)
+        else:
+            SETTINGS["preview_slot"] = self.panes.index(pane)
+            log.info("미리보기 칸 = %d", SETTINGS["preview_slot"])
+            self.set_preview(True)
+        self.save_timer.start()
 
     def _dock_preview(self):
         """0.9.147: 미리보기 칸을 이 창 오른쪽 자리로 옮겨 붙임 (다른 창 자리는 숨김)"""
@@ -13770,8 +13871,9 @@ class Main(QtWidgets.QMainWindow):
     def changeEvent(self, ev):
         # 최소화하면 사용량 갱신·GIF 재생 멈춤 (보이지 않는데 돌 필요 없음)
         if ev.type() == QtCore.QEvent.ActivationChange and self.isActiveWindow() and getattr(self, "preview", None) is not None:
-            if SETTINGS["preview_pane"] and SETTINGS["preview_dock"] and PREVIEW_WIN is not None and self.preview.parent() is not self.prev_host:
-                self._dock_preview()   # 0.9.147 붙인 칸은 지금 쓰는 창으로
+            if (SETTINGS["preview_pane"] and PREVIEW_WIN is not None and self.preview.window() is not self
+                    and (SETTINGS["preview_dock"] or self._slot_pane() is not None)):
+                self.set_preview(True)   # 0.9.147 붙인 칸은 지금 쓰는 창으로 · 0.9.153 빌드 2: 미리보기 칸에 둔 것은 빼 가지 않음(전엔 오른쪽 칸으로 옮김)
             self.preview.schedule(self)   # 빌드 18: 다른 4Dir 창을 쓰면 미리보기도 그 창의 고른 파일로
         if ev.type() == QtCore.QEvent.WindowStateChange and hasattr(self, "mon_timer"):
             if self.isMinimized():
@@ -15378,6 +15480,8 @@ eports.
         w = new
         while w is not None and not isinstance(w, Pane):
             w = w.parentWidget()
+        if w is not None and getattr(w, "is_preview_slot", False):   # 0.9.153 미리보기 칸 눌러도 고른 파일은 원래 칸 그대로
+            return
         if w is not None and w is not self.active_pane and w.window() is self:
             self.prev_pane = self.active_pane   # F6 '다른 칸으로' 대상
             self.active_pane = w
@@ -15489,6 +15593,8 @@ eports.
                 if not p.isHidden() and p.view() is not None:
                     self.global_chips.apply_to(p.view())
             QtCore.QTimer.singleShot(0, self.global_chips, self.global_chips.refresh_all)   # 0.9.137 빌드 4
+        if SETTINGS["preview_pane"] and SETTINGS["preview_slot"] is not None and getattr(self, "preview", None) is not None:
+            self.set_preview(True)   # 0.9.153: 미리보기 칸이 숨겨지면 오른쪽 칸/따로 창으로, 다시 보이면 그 칸으로
         log.info("레이아웃 %s", key)
         self.save_timer.start()
 

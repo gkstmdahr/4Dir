@@ -2464,5 +2464,9 @@
  "깃허브 안내 열기": "Deschide ghidul GitHub",
  "탭 복제": "Duplicați fila",
  "탭 복제 (바로 오른쪽에)": "Duplicați fila (imediat la dreapta)",
- "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Derulare lină — fiecare pas al rotiței glisează un rând"
+ "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Derulare lină — fiecare pas al rotiței glisează un rând",
+ "이 칸을 미리보기로 (다른 칸에서 고른 파일)": "Folosește acest panou ca previzualizare (fișierul ales în alt panou)",
+ "✕ 파일 목록으로": "✕ Înapoi la lista de fișiere",
+ "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Afișează instrumentele de culoare și bara de zoom (pliate, previzualizarea e mică)",
+ "해상도": "Rezoluție"
 }

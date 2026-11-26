@@ -2464,5 +2464,9 @@
  "깃허브 안내 열기": "Otevřít návod na GitHubu",
  "탭 복제": "Duplikovat kartu",
  "탭 복제 (바로 오른쪽에)": "Duplikovat kartu (hned vpravo)",
- "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Plynulé posouvání — každý krok kolečka plynule posune o jeden řádek"
+ "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Plynulé posouvání — každý krok kolečka plynule posune o jeden řádek",
+ "이 칸을 미리보기로 (다른 칸에서 고른 파일)": "Použít tento panel jako náhled (soubor vybraný v jiném panelu)",
+ "✕ 파일 목록으로": "✕ Zpět na seznam souborů",
+ "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Zobrazit nástroje barev a lištu přiblížení (sbaleno, náhled je malý)",
+ "해상도": "Rozlišení"
 }

@@ -2464,5 +2464,9 @@
  "깃허브 안내 열기": "Avaa GitHub-ohje",
  "탭 복제": "Monista välilehti",
  "탭 복제 (바로 오른쪽에)": "Monista välilehti (heti oikealle)",
- "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Pehmeä vieritys — jokainen rullan napsautus liukuu yhden rivin"
+ "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Pehmeä vieritys — jokainen rullan napsautus liukuu yhden rivin",
+ "이 칸을 미리보기로 (다른 칸에서 고른 파일)": "Käytä tätä ruutua esikatseluna (toisessa ruudussa valittu tiedosto)",
+ "✕ 파일 목록으로": "✕ Takaisin tiedostoluetteloon",
+ "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Näytä värityökalut ja zoomauspalkki (taitettu, koska esikatselu on pieni)",
+ "해상도": "Resoluutio"
 }

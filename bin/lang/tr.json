@@ -2464,5 +2464,9 @@
  "깃허브 안내 열기": "GitHub kılavuzunu aç",
  "탭 복제": "Sekmeyi çoğalt",
  "탭 복제 (바로 오른쪽에)": "Sekmeyi çoğalt (hemen sağına)",
- "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Yumuşak kaydırma — tekerleğin her adımı bir satır kayar"
+ "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Yumuşak kaydırma — tekerleğin her adımı bir satır kayar",
+ "이 칸을 미리보기로 (다른 칸에서 고른 파일)": "Bu bölmeyi önizleme yap (başka bölmede seçilen dosya)",
+ "✕ 파일 목록으로": "✕ Dosya listesine dön",
+ "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Renk araçlarını ve yakınlaştırma çubuğunu göster (önizleme küçük olduğu için katlandı)",
+ "해상도": "Çözünürlük"
 }

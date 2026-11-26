@@ -2464,5 +2464,9 @@
  "깃허브 안내 열기": "GitHub-Anleitung öffnen",
  "탭 복제": "Tab duplizieren",
  "탭 복제 (바로 오른쪽에)": "Tab duplizieren (direkt rechts daneben)",
- "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Weiches Scrollen — jede Mausrad-Raste gleitet eine Zeile"
+ "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Weiches Scrollen — jede Mausrad-Raste gleitet eine Zeile",
+ "이 칸을 미리보기로 (다른 칸에서 고른 파일)": "Diesen Bereich als Vorschau verwenden (in einem anderen Bereich gewählte Datei)",
+ "✕ 파일 목록으로": "✕ Zurück zur Dateiliste",
+ "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Farbwerkzeuge und Zoomleiste anzeigen (eingeklappt, weil die Vorschau klein ist)",
+ "해상도": "Auflösung"
 }
