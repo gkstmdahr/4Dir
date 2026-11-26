@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.150"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 10             #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.151"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 1              #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -423,6 +423,17 @@ def real_path(p):
     except Exception:
         log.exception("실제 경로 못 구함 %s", p)
         return p
+
+
+def open_data_dir(p):
+    """0.9.151 빌드 1 (이슈 #16 '자동 기록 폴더 열기 → 빈 창이 뜨고 안 사라짐'): 4Dir 데이터 폴더(로그·자동 기록)를 탐색기로 —
+    스토어판은 4Dir 안에서 보이는 경로가 실제 위치(Packages 밑 LocalCache)와 달라 탐색기가 빈 창이 됐음 → real_path"""
+    r = real_path(p)
+    log.info("데이터 폴더 열기 %s%s", p, "" if r == p else f" → 실제 {r}")
+    try:
+        os.startfile(r)
+    except Exception:
+        log.exception("데이터 폴더 열기 실패 %s", r)
 
 
 def report_dir():
@@ -10987,7 +10998,7 @@ class SettingsDialog(QtWidgets.QDialog):
         self._sub(lay, T("문제가 있을 때"))
         if SUPPORT_EMAIL:
             self._btn(lay, T("메일 보내기"), m.mail_support)
-        self._btn(lay, T("로그 폴더 열기"), lambda: os.startfile(LOG_DIR))
+        self._btn(lay, T("로그 폴더 열기"), lambda: open_data_dir(LOG_DIR))
         self._btn(lay, T("문제 보고용 로그 저장"), m.save_report)   # 0.9.138 빌드 2 사용자: 정보 페이지 단추 글자 간단히 (… · 괄호 설명 뺌)
 
 
@@ -13626,7 +13637,7 @@ class Main(QtWidgets.QMainWindow):
         m.addSeparator()   # v0.9.104 정보 (메뉴줄엔 안 보이지만 명령 찾기가 이 목록을 씀)
         m.addAction(T("사용법…"), self.open_guide)
         m.addAction(T("새 버전 확인"), lambda: start_update_check(self, manual=True))
-        m.addAction(T("로그 폴더 열기"), lambda: os.startfile(LOG_DIR))
+        m.addAction(T("로그 폴더 열기"), lambda: open_data_dir(LOG_DIR))
         m.addAction(T("문제 보고용 로그 저장… (4Dir 폴더의 reports 에 zip)"), self.save_report)
         if SUPPORT_EMAIL:
             m.addAction(T("메일 보내기"), self.mail_support)
@@ -14297,7 +14308,7 @@ class Main(QtWidgets.QMainWindow):
         acts["import_settings"] = lambda: self.import_settings()
         acts["guide"] = lambda: self.open_guide()
         acts["check_update"] = lambda: start_update_check(self, manual=True)
-        acts["open_logs"] = lambda: os.startfile(LOG_DIR)
+        acts["open_logs"] = lambda: open_data_dir(LOG_DIR)
         acts["save_report"] = lambda: self.save_report()
         acts["mail_support"] = lambda: self.mail_support()
         return acts
@@ -14929,7 +14940,7 @@ class Main(QtWidgets.QMainWindow):
         for label, path in snaps:
             auto.addAction(label, lambda p=path: self.restore_session(p))
         auto.addSeparator()
-        auto.addAction(T("자동 기록 폴더 열기"), lambda: os.startfile(session.SESS_DIR))
+        auto.addAction(T("자동 기록 폴더 열기"), lambda: open_data_dir(session.SESS_DIR))
 
     def _fill_tool_menu(self, m):
         m.clear()
