@@ -16,7 +16,7 @@ import time
 import shutil
 import subprocess
 
-MAKE_PUBLIC_VER = "1.1.1"   # 1.1.1: README 별 부탁·16개 언어·4Dir.exe / 1.1.0: 태그·가상 그룹 파일(4Dir_tags.json, 개인 데이터) 빼기 / 1.0.9: restore_backup·_restore_pending 빼기 / 1.0.8: 색 라벨 파일(4Dir_labels.json) 빼기
+MAKE_PUBLIC_VER = "1.2.0"   # 1.2.0: TRANSLATING.md(번역 고치기 안내)·lang_user 빼기 / 1.1.1: README 별 부탁·16개 언어·4Dir.exe / 1.1.0: 태그·가상 그룹 파일(4Dir_tags.json, 개인 데이터) 빼기 / 1.0.9: restore_backup·_restore_pending 빼기 / 1.0.8: 색 라벨 파일(4Dir_labels.json) 빼기
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 BIN = os.path.join(ROOT, "bin")
@@ -24,7 +24,7 @@ OUT = os.path.join(ROOT, "_public")
 LOGF = os.path.join(HERE, "make_public_log.txt")
 sys.path.insert(0, HERE)
 
-BIN_SKIP_DIRS = {"__pycache__", "log", "sessions", "workspaces", "index", "restore_backup", "_restore_pending"}
+BIN_SKIP_DIRS = {"__pycache__", "log", "sessions", "workspaces", "index", "restore_backup", "_restore_pending", "lang_user"}   # lang_user = 사용자 번역(0.9.152)
 BIN_SKIP_FILES = re.compile(r"(4Dir_(state|favorites|settings|labels|memos|tags|ratings|frecent|viewmem).*|.*\.running|.*\.tmp|.*백업.*|gdrive_client.json)$", re.I)
 # 0.9.115: gdrive_client.json(구글 연결 정보)은 공개 소스에서 뺌 — 깃허브 비밀 검사가 막음. 내려받는 zip 에는 들어감
 BUILD_FILES = ["make_release.py", "make_release.bat", "make_guide.py", "make_shots.py", "make_site.py", "site_text.py", "changelog.py",
@@ -153,7 +153,7 @@ README_EN = """# 4Dir
 - **Instant search** — its own file-name index with real-time updates, no admin rights.
 - **SVN status** — badges read straight from `.svn`; Git / Perforce through Windows overlays.
 - **Feels like Explorer** — same shortcuts, full Windows context menu, drag & drop.
-- **Portable** — settings stay in the folder. Light/dark theme, 16 languages.
+- **Portable** — settings stay in the folder. Light/dark theme, 26 languages.
 
 ## Install
 
@@ -181,6 +181,43 @@ In 4Dir: **Tools → Save log for problem report → Send by email**, or email t
 GPL-3.0 — see [LICENSE](LICENSE). The name "4Dir" and its icon identify the original project; please use a different name for forks.
 """
 
+# 1.2.0 (0.9.152): 번역 고치기 안내 — 앱 설정 ▸ 일반 ▸ [번역 고치기…] → 깃허브 안내 열기
+TRANSLATING = """# Fix or improve a 4Dir translation
+
+4Dir's translations were made with machine translation, so some words may sound unnatural.
+If you speak one of the languages, you can fix it — no programming needed.
+
+## 1. Try your fix in 4Dir first
+
+1. Open **Settings ▸ General** and click **Fix translation…** next to the language list.
+2. 4Dir copies the current language file (for example `de.json`) into your own translation folder and opens it.
+3. Open that file in Notepad and change only the text on the **right** side of each line.
+   ```
+   "이름": "Name",
+   ```
+   The left side is the Korean original (the key) — don't change it.
+4. Save (UTF-8) and restart 4Dir. Your text is used right away and stays after updates.
+
+Rules: keep `{{0}}`, `{{1}}`, `%s`, `<b>…</b>` and `\\n` (line break) exactly as they are.
+
+## 2. Send it to us
+
+Pick whichever is easier:
+
+- **Issue (easiest):** [open an issue]({repo}/issues/new) titled `Translation: <language>` and attach your edited `.json` file (or paste the lines you changed).
+- **Pull request:** edit the file in [`bin/lang`]({repo}/tree/main/bin/lang) on GitHub and open a pull request.
+
+Your fix will be included in the next version, and you'll be thanked in the release notes (if you like).
+
+---
+
+## 번역 고치기 (한국어 요약)
+
+1. 설정 ▸ 일반 ▸ 언어 옆 **번역 고치기…** → 내 번역 폴더에 지금 언어 파일이 복사되고 폴더가 열림
+2. 메모장으로 오른쪽 글자만 고치고(왼쪽 한국어 원문은 그대로) 저장 → 4Dir 다시 시작하면 바로 적용 (업데이트해도 남음)
+3. 고친 파일을 [이슈]({repo}/issues/new)에 첨부하거나 [`bin/lang`]({repo}/tree/main/bin/lang) 에 PR 로 보내 주시면 다음 버전에 넣습니다.
+"""
+
 README_KO = """# 4Dir
 
 **윈도우용 여러 칸 분할 + 탭 파일 관리자 — 무료, 설치 없음, PC 를 무겁게 하지 않음.**
@@ -199,7 +236,7 @@ README_KO = """# 4Dir
 - **바로 찾는 검색** — 자체 파일 이름 색인, 실시간 갱신, 관리자 권한 필요 없음.
 - **SVN 상태** — `.svn` 을 직접 읽어 표시. Git·Perforce 는 윈도우 겹침 아이콘.
 - **탐색기와 같은 손맛** — 같은 단축키, 윈도우 우클릭 메뉴, 끌어다 놓기.
-- **휴대용** — 설정은 폴더 안에만. 밝게/어둡게, 16개 언어.
+- **휴대용** — 설정은 폴더 안에만. 밝게/어둡게, 26개 언어.
 
 ## 설치
 
@@ -301,6 +338,7 @@ def main():
     open(os.path.join(OUT, ".gitignore"), "w", encoding="utf-8", newline="\n").write(GITIGNORE)
     open(os.path.join(OUT, "README.md"), "w", encoding="utf-8", newline="\n").write(README_EN.format(site=site, repo=repo))
     open(os.path.join(OUT, "README.ko.md"), "w", encoding="utf-8", newline="\n").write(README_KO.format(site=site, repo=repo))
+    open(os.path.join(OUT, "TRANSLATING.md"), "w", encoding="utf-8", newline="\n").write(TRANSLATING.format(repo=repo))   # 1.2.0
     # 깃허브 문제 보고 양식 (1.0.3) — 버전·증상·로그 zip 칸 + 깃허브 계정 없으면 메일 안내
     tdir = os.path.join(OUT, ".github", "ISSUE_TEMPLATE")
     os.makedirs(tdir, exist_ok=True)

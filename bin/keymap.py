@@ -49,6 +49,7 @@ ACTIONS = [
     ("new_window", T("새 창"), "Ctrl+N", "window"),
     ("new_tab", T("새 탭"), "Ctrl+T", "window"),
     ("close_tab", T("탭 닫기"), "Ctrl+W", "window"),
+    ("dup_tab", T("탭 복제 (바로 오른쪽에)"), "Ctrl+Shift+K", "window"),   # 0.9.152 빌드 3 토론 #19 (Edge 와 같은 키)
     ("lock_tab", T("탭 잠금/잠금 해제"), "", "window"),
     ("toggle_chips", T("형식 단추 줄 보이기/숨기기"), "", "window"),   # 빌드 27 위쪽 단추와 같음   # v0.9.95 (기본 키 없음 — 단축키 설정에서)
     ("reopen_tab", T("닫은 탭·창 다시 열기 (가장 나중에 닫은 것부터)"), "Ctrl+Shift+T", "window"),   # 0.9.135 창도

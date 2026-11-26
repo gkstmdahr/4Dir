@@ -2457,5 +2457,12 @@
  "SVN·git 작업 폴더 {0}개가 내용 검색에서 통째로 빠져 있음 — 넣으면 .svn·.git 만 빼고 넣음": "{0} SVN/git working folders are entirely excluded from content search — adding them excludes only .svn/.git",
  "윈도우 색인 진행을 읽지 못했습니다: {0}": "Could not read Windows index progress: {0}",
  "윈도우 색인: 다 읽음 ({0:,}개)": "Windows index: done ({0:,} items)",
- "윈도우 색인 진행: {0}% (읽음 {1:,} · 남음 {2:,}) — 처음엔 파일을 찾는 동안 남은 수가 늘어날 수 있음": "Windows index progress: {0}% (done {1:,} · left {2:,}) — at first the remaining count can grow while files are being found"
+ "윈도우 색인 진행: {0}% (읽음 {1:,} · 남음 {2:,}) — 처음엔 파일을 찾는 동안 남은 수가 늘어날 수 있음": "Windows index progress: {0}% (done {1:,} · left {2:,}) — at first the remaining count can grow while files are being found",
+ "번역 고치기…": "Fix translation…",
+ "번역 고치기": "Fix translation",
+ "방금 연 폴더의 {0} 파일을 메모장으로 고친 뒤 4Dir 를 다시 시작하면 고친 번역이 쓰입니다.\n업데이트해도 그대로 남습니다.\n\n고친 파일을 깃허브로 보내 주시면 다음 버전에 넣겠습니다.": "Edit {0} in the folder that just opened (Notepad is fine), then restart 4Dir to use your translation.\nIt stays after updates.\n\nSend us your edited file on GitHub and we'll include it in the next version.",
+ "깃허브 안내 열기": "Open GitHub guide",
+ "탭 복제": "Duplicate tab",
+ "탭 복제 (바로 오른쪽에)": "Duplicate tab (right next to it)",
+ "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Smooth scrolling — each wheel notch glides one row"
 }

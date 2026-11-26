@@ -2457,5 +2457,12 @@
  "SVN·git 작업 폴더 {0}개가 내용 검색에서 통째로 빠져 있음 — 넣으면 .svn·.git 만 빼고 넣음": "{0} folder kerja SVN/git sepenuhnya dikecualikan dari pencarian isi — saat ditambahkan hanya .svn/.git yang dikecualikan",
  "윈도우 색인 진행을 읽지 못했습니다: {0}": "Gagal membaca kemajuan indeks Windows: {0}",
  "윈도우 색인: 다 읽음 ({0:,}개)": "Indeks Windows: selesai ({0:,} item)",
- "윈도우 색인 진행: {0}% (읽음 {1:,} · 남음 {2:,}) — 처음엔 파일을 찾는 동안 남은 수가 늘어날 수 있음": "Kemajuan indeks Windows: {0}% (selesai {1:,} · sisa {2:,}) — di awal sisanya bisa bertambah saat file sedang ditemukan"
+ "윈도우 색인 진행: {0}% (읽음 {1:,} · 남음 {2:,}) — 처음엔 파일을 찾는 동안 남은 수가 늘어날 수 있음": "Kemajuan indeks Windows: {0}% (selesai {1:,} · sisa {2:,}) — di awal sisanya bisa bertambah saat file sedang ditemukan",
+ "번역 고치기…": "Perbaiki terjemahan…",
+ "번역 고치기": "Perbaiki terjemahan",
+ "방금 연 폴더의 {0} 파일을 메모장으로 고친 뒤 4Dir 를 다시 시작하면 고친 번역이 쓰입니다.\n업데이트해도 그대로 남습니다.\n\n고친 파일을 깃허브로 보내 주시면 다음 버전에 넣겠습니다.": "Edit {0} di folder yang baru dibuka (dengan Notepad), lalu mulai ulang 4Dir untuk memakai terjemahan Anda.\nTetap ada setelah pembaruan.\n\nKirim file yang sudah diedit lewat GitHub dan kami akan memasukkannya ke versi berikutnya.",
+ "깃허브 안내 열기": "Buka panduan GitHub",
+ "탭 복제": "Duplikat tab",
+ "탭 복제 (바로 오른쪽에)": "Duplikat tab (tepat di sebelah kanan)",
+ "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Gulir halus — setiap putaran roda bergeser satu baris"
 }

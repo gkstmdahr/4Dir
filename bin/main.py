@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.151"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 1              #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.152"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 3              #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -228,6 +228,7 @@ def size_short(b):
 # ★공개 사이트 주소 (v0.9.48) — 비어 있으면 홈페이지·후원 메뉴를 숨기고 새 버전 확인도 안 함
 SITE_URL = "https://4dir.net/"   # 공개 사이트 (10/22 개인 도메인, 깃허브 무료 페이지). 끝에 / 붙일 것. 옛 gkstmdahr.github.io/4Dir/ 는 깃허브가 여기로 넘김
 DONATE_URL = "https://ko-fi.com/4dirofficial"   # 후원 페이지 (10/21 개설). 비어 있으면 사이트의 후원 칸(#donate)
+TRANSLATE_URL = "https://github.com/gkstmdahr/4Dir/blob/main/TRANSLATING.md"   # 0.9.152: 번역 고치기 안내 (공개 저장소, make_public 이 씀)
 SUPPORT_EMAIL = "support@4dir.net"   # 문제 보고 받는 주소 (10/22, 클라우드플레어 메일 전달 → 개발자 지메일)
 UPDATE_URL = SITE_URL + "version.json" if SITE_URL else ""
 
@@ -392,6 +393,26 @@ def _undo_signal():
                         next(w for w in WINDOWS if w.isVisible()).show_notice(msg))
         _UNDO_SIG.append(sg)
     return _UNDO_SIG[0]
+
+
+def scroll_by(view, sb, delta):
+    """0.9.152 빌드 3 (토론 #18 'Smooth scrolling in Panels'): 휠로 delta 만큼 — 설정 smooth_scroll 이면 미끄러지듯(0.16초).
+    휠을 연달아 굴리면 가던 목표에 이어 더함 (한 칸 = 한 줄은 그대로)"""
+    if not SETTINGS["smooth_scroll"] or view.verticalScrollMode() != QtWidgets.QAbstractItemView.ScrollPerPixel:
+        sb.setValue(sb.value() + delta)
+        return
+    an = getattr(view, "_smooth_an", None)
+    if an is None or an.targetObject() is not sb:
+        an = QtCore.QPropertyAnimation(sb, b"value", view)
+        an.setEasingCurve(QtCore.QEasingCurve.OutCubic)
+        view._smooth_an = an
+    base = an.endValue() if an.state() == QtCore.QAbstractAnimation.Running else sb.value()
+    tgt = max(sb.minimum(), min(sb.maximum(), int(base) + delta))
+    an.stop()
+    an.setStartValue(sb.value())
+    an.setEndValue(tgt)
+    an.setDuration(160)
+    an.start()
 
 
 def real_path(p):
@@ -3707,6 +3728,23 @@ class DetailView(ViewMixin, QtWidgets.QTreeView):
     # 탐색기처럼 목록 왼쪽·머리줄 아래에 빈 띠 → 파일이 꽉 차도 빈 곳을 눌러 폴더 메뉴(커밋 등)·선택 해제 가능 (10/6 사용자 요청)
     # v0.9.89 사용자: 열이 스크롤바까지 차면 오른쪽 빈 곳이 없음 → 오른쪽에도 같은 띠 (빈 곳 더블클릭 = 상위 폴더)
     GUTTER_L, GUTTER_T, GUTTER_R = 14, 6, 14
+    _wacc = 0
+
+    def wheelEvent(self, ev):
+        """0.9.152 빌드 1 (사용자 11/26 '자세히 보기 휠 2줄씩 — 한 줄씩 고쳐라'): 휠 한 칸(120) = 한 줄.
+        전엔 윈도우 휠 설정(보통 3줄)을 그대로 썼음. 고운 휠은 모아서, Ctrl+휠(보기 크기)·Shift+휠·터치패드는 그대로"""
+        dy = ev.angleDelta().y()
+        if not (ev.modifiers() & (Qt.ControlModifier | Qt.ShiftModifier)) and dy and ev.pixelDelta().isNull():
+            self._wacc += dy
+            n = int(self._wacc / 120)
+            if n:
+                self._wacc -= n * 120
+                sb = self.verticalScrollBar()
+                step = 1 if self.verticalScrollMode() == QtWidgets.QAbstractItemView.ScrollPerItem else max(1, self.sizeHintForRow(0))
+                scroll_by(self, sb, -n * step)   # 0.9.152 빌드 3 부드러운 스크롤
+            ev.accept()
+            return
+        super().wheelEvent(ev)
 
     def updateGeometries(self):
         super().updateGeometries()
@@ -3956,7 +3994,7 @@ class IconView(ViewMixin, QtWidgets.QListView):
             if n:
                 self._wacc -= n * 120
                 sb = self.verticalScrollBar()
-                sb.setValue(sb.value() - n * self._row_step())
+                scroll_by(self, sb, -n * self._row_step())   # 0.9.152 빌드 3 부드러운 스크롤
             ev.accept()
             return
         super().wheelEvent(ev)
@@ -4318,6 +4356,13 @@ class Page(QtWidgets.QWidget):
             self.locked = on
             log.info("탭 %s %s", "잠금" if on else "잠금 해제", self.path)
             self.lockChanged.emit()
+
+    def apply_scroll_mode(self):
+        """0.9.152 빌드 3: 부드러운 스크롤이 켜지면 줄 단위 스크롤(자세히·작은 아이콘)을 픽셀 단위로 — 끄면 원래대로"""
+        for w in (self.tree, self.icons):
+            if not hasattr(w, "_scroll_default"):
+                w._scroll_default = w.verticalScrollMode()
+            w.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel if SETTINGS["smooth_scroll"] else w._scroll_default)
 
     def apply_view_state(self, vs):
         if not vs:
@@ -8568,6 +8613,7 @@ class Pane(QtWidgets.QFrame):
         m = QtWidgets.QMenu(self)
         m.addAction(mlabel(T("새 탭"), "new_tab"), lambda: self.add_tab(self.view().path if self.view() else THIS_PC))
         if i >= 0:
+            m.addAction(mlabel(T("탭 복제"), "dup_tab"), lambda: self.dup_tab(i))   # 0.9.152 빌드 3 토론 #19
             m.addAction(mlabel(T("이 탭 닫기"), "close_tab"), lambda: self.close_tab(i))
 
             def close_others():
@@ -8636,6 +8682,7 @@ class Pane(QtWidgets.QFrame):
 
     def add_tab(self, path, activate=True, focus=False):
         v = Page(path, self.base_mode)
+        v.apply_scroll_mode()   # 0.9.152 빌드 3
         key = id(v)
         self.pages[key] = v
         v.pathChanged.connect(lambda p, v=v: self._on_path(v, p))
@@ -8679,6 +8726,25 @@ class Pane(QtWidgets.QFrame):
         nv.tree.setFocus(Qt.OtherFocusReason)
         nv.from_locked = True
         self.stat.setText(T("🔒 잠긴 탭이라 새 탭으로 열었습니다"))
+
+    def dup_tab(self, i=None):
+        """0.9.152 빌드 3 (토론 #19 'Duplicate Tab'): 탭 복제 — 바로 오른쪽에 같은 폴더 + 뒤로/앞으로 기록·정렬·열 너비·탭 색 (잠금은 안 따라감)"""
+        i = self.bar.currentIndex() if i is None else i
+        v = self.pages.get(self.bar.tabData(i))
+        if v is None:
+            return None
+        nv = self.add_tab(v.path, activate=True)
+        vs = dict(v.view_state())
+        vs["locked"] = False
+        nv.apply_view_state(vs)
+        nv.back, nv.fwd = list(v.back), list(v.fwd)
+        j = self.bar.count() - 1
+        if i + 1 < j:
+            self.bar.moveTab(j, i + 1)
+        nv.tree.setFocus(Qt.OtherFocusReason)
+        log.info("탭 복제 pane=%d %s → 자리 %d (기록 뒤 %d·앞 %d)", self.idx, v.path, i + 1, len(nv.back), len(nv.fwd))
+        self.changed.emit()
+        return nv
 
     def toggle_lock(self, i=None):
         i = self.bar.currentIndex() if i is None else i
@@ -10536,7 +10602,13 @@ class SettingsDialog(QtWidgets.QDialog):
             self.lang.addItem(name, code)
         self.lang.setCurrentIndex(max(0, self.lang.findData(SETTINGS["lang"])))
         self.lang.currentIndexChanged.connect(lambda i: m.set_language(self.lang.itemData(i)))
-        form.addRow(T("언어 (Language)"), self.lang)
+        lr = QtWidgets.QHBoxLayout()   # 0.9.152 (사용자 11/26): 언어 옆 [번역 고치기…] — 사용자 번역 폴더(lang_user)
+        lr.addWidget(self.lang)
+        fixb = QtWidgets.QPushButton(T("번역 고치기…"))
+        fixb.clicked.connect(lambda *_: m.open_translation_fix(self))
+        lr.addWidget(fixb)
+        lr.addStretch(1)
+        form.addRow(T("언어 (Language)"), lr)
         self.theme = QtWidgets.QComboBox()
         for mode, label in (("system", T("시스템 설정 따름")), ("light", T("밝게 (Light)")), ("dark", T("어둡게 (Dark)"))):
             self.theme.addItem(label, mode)
@@ -10781,6 +10853,7 @@ class SettingsDialog(QtWidgets.QDialog):
         self._sub(lay, T("동작"))
         self._set(lay, "folder_size", T("폴더 크기 계산 (크기 칸 — 네트워크 드라이브 제외)"))
         self._set(lay, "empty_click_up", T("빈 곳을 더블클릭하면 상위 폴더로"))
+        self._set(lay, "smooth_scroll", T("부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임"))   # 0.9.152 빌드 3 토론 #18
         rf = QtWidgets.QLabel(T("목록 새로 고침 — 4Dir 에서 한 복사·삭제·이름 바꾸기는 언제나 바로 보입니다"))   # 0.9.139 빌드 2 사용자: 두 설정을 묶고 설명은 위에 한 줄
         rf.setWordWrap(True)
         lay.addSpacing(4)
@@ -12344,6 +12417,7 @@ class Main(QtWidgets.QMainWindow):
             "new_tab": lambda: self.pane().add_tab(self.pane().view().path, focus=True),
             "new_window": lambda: self.open_window(self.pane().view().path if self.pane().view() else THIS_PC),
             "close_tab": lambda: self.pane().close_tab(self.pane().bar.currentIndex()),
+            "dup_tab": lambda: self.pane().dup_tab(),   # 0.9.152 빌드 3
             "lock_tab": lambda: self.pane().toggle_lock(),
             "toggle_chips": lambda: self.toggle_opt("type_chips"),   # 빌드 27
             "sync_browse": lambda: self.toggle_sync_browse(),   # 0.9.127 빌드 5
@@ -14638,6 +14712,35 @@ class Main(QtWidgets.QMainWindow):
             msg = ko if new == "ko" else (i18n._load(new).get(ko) or i18n._load("en").get(ko) or T(ko))
             self.show_notice(msg, sticky=True)   # 다시 시작해야 하는 안내 — 남겨 둠
 
+    def open_translation_fix(self, parent=None):
+        """0.9.152 (사용자 11/26 '유저가 언어 팩 고쳐 올리기'): 사용자 번역 폴더(i18n.USER_LANG_DIR)에 지금 언어 파일을 복사해 두고
+        폴더를 열어 줌 → 메모장으로 고치고 다시 시작하면 그 문구가 이김(i18n._load). 깃허브 안내(TRANSLATE_URL)로 보내 달라고 안내"""
+        parent = parent or self
+        code = i18n.lang
+        if code == "ko":
+            QtWidgets.QMessageBox.information(parent, T("번역 고치기"), T("한국어는 원문이라 고칠 번역 파일이 없습니다.\n다른 언어를 고르면 그 언어의 번역을 고칠 수 있습니다."))
+            return
+        dst = os.path.join(i18n.USER_LANG_DIR, code + ".json")
+        try:
+            os.makedirs(i18n.USER_LANG_DIR, exist_ok=True)
+            if not os.path.exists(dst):
+                shutil.copy2(os.path.join(i18n.LANG_DIR, code + ".json"), dst)
+                log.info("번역 고치기: %s 복사", dst)
+            else:
+                log.info("번역 고치기: 이미 있음 %s", dst)
+        except Exception as e:
+            log.exception("번역 고치기 준비 실패")
+            QtWidgets.QMessageBox.warning(parent, T("번역 고치기"), T('저장하지 못했습니다:\n{0}').format(e))
+            return
+        open_data_dir(i18n.USER_LANG_DIR)
+        box = QtWidgets.QMessageBox(QtWidgets.QMessageBox.Information, T("번역 고치기"),
+                                    T("방금 연 폴더의 {0} 파일을 메모장으로 고친 뒤 4Dir 를 다시 시작하면 고친 번역이 쓰입니다.\n업데이트해도 그대로 남습니다.\n\n고친 파일을 깃허브로 보내 주시면 다음 버전에 넣겠습니다.").format(code + ".json"),
+                                    QtWidgets.QMessageBox.Close, parent)
+        gh = box.addButton(T("깃허브 안내 열기"), QtWidgets.QMessageBox.ActionRole)
+        box.exec()
+        if box.clickedButton() is gh:
+            QtGui.QDesktopServices.openUrl(QtCore.QUrl(TRANSLATE_URL))
+
     def toggle_dark(self):
         self.set_theme_mode("light" if SETTINGS["dark"] else "dark")
 
@@ -15407,6 +15510,10 @@ eports.
         if key == "hide_single_tab":
             for p in self.all_panes():
                 p.update_tabrow()
+        elif key == "smooth_scroll":   # 0.9.152 빌드 3
+            for p in self.all_panes():
+                for v in p.views():
+                    v.apply_scroll_mode()
         elif key == "tab_multirow":   # 0.9.123
             for p in self.all_panes():
                 p.bar.set_multi(SETTINGS["tab_multirow"])

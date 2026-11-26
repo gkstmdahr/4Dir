@@ -16,7 +16,7 @@
 - **Instant search** — its own file-name index with real-time updates, no admin rights.
 - **SVN status** — badges read straight from `.svn`; Git / Perforce through Windows overlays.
 - **Feels like Explorer** — same shortcuts, full Windows context menu, drag & drop.
-- **Portable** — settings stay in the folder. Light/dark theme, 16 languages.
+- **Portable** — settings stay in the folder. Light/dark theme, 26 languages.
 
 ## Install
 

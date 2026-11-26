@@ -16,14 +16,20 @@ BIN_DIR = os.path.dirname(os.path.abspath(__file__))
 LANG_DIR = os.path.join(BIN_DIR, "lang")
 from datadir import DATA_DIR  # 0.9.114 스토어판이면 사용자 폴더
 SETTINGS_FILE = os.path.join(DATA_DIR, "4Dir_settings.json")
+# 0.9.152 (사용자 11/26 '유저가 언어 팩 고치기'): 사용자 번역 폴더 — 같은 이름 파일이 있으면 그 문구만 덮어씀.
+#   압축판 = bin\lang_user (배포판·공개 소스에 안 들어감, 업데이트해도 남음) · 스토어판 = %LOCALAPPDATA%\4Dir\lang_user
+USER_LANG_DIR = os.path.join(DATA_DIR, "lang_user")
 
 # (코드, 그 언어로 쓴 이름) — 메뉴에 이 순서로 나옴
 LANGS = [("ko", "한국어"), ("en", "English"), ("zh_CN", "简体中文"), ("zh_TW", "繁體中文"), ("ja", "日本語"),
          ("es", "Español"), ("de", "Deutsch"), ("fr", "Français"), ("pt_BR", "Português (Brasil)"), ("ru", "Русский"),
          # 0.9.137 빌드 9: 6개 언어 추가 (사용자 11/13 확정)
-         ("it", "Italiano"), ("pl", "Polski"), ("nl", "Nederlands"), ("tr", "Türkçe"), ("uk", "Українська"), ("id", "Bahasa Indonesia")]
+         ("it", "Italiano"), ("pl", "Polski"), ("nl", "Nederlands"), ("tr", "Türkçe"), ("uk", "Українська"), ("id", "Bahasa Indonesia"),
+         # 0.9.152: 10개 언어 추가 (사용자 11/26)
+         ("cs", "Čeština"), ("hu", "Magyar"), ("el", "Ελληνικά"), ("ro", "Română"), ("sv", "Svenska"), ("da", "Dansk"),
+         ("fi", "Suomi"), ("nb", "Norsk (bokmål)"), ("vi", "Tiếng Việt"), ("th", "ไทย")]
 # 언어별 화면 글꼴 (윈도우 기본 탑재)
-FONTS = {"ko": "Malgun Gothic", "ja": "Yu Gothic UI", "zh_CN": "Microsoft YaHei UI", "zh_TW": "Microsoft JhengHei UI"}
+FONTS = {"ko": "Malgun Gothic", "ja": "Yu Gothic UI", "zh_CN": "Microsoft YaHei UI", "zh_TW": "Microsoft JhengHei UI", "th": "Leelawadee UI"}
 DEFAULT_FONT = "Segoe UI"
 
 lang = "ko"
@@ -41,7 +47,8 @@ def windows_lang():
     if prim == 0x04:   # 중국어: 대만(1)·홍콩(3)·마카오(5) = 번체, 나머지 = 간체
         return "zh_TW" if sub in (1, 3, 5) else "zh_CN"
     return {0x12: "ko", 0x09: "en", 0x11: "ja", 0x0A: "es", 0x07: "de", 0x0C: "fr", 0x16: "pt_BR",
-            0x19: "ru", 0x10: "it", 0x15: "pl", 0x13: "nl", 0x1F: "tr", 0x22: "uk", 0x21: "id"}.get(prim, "en")
+            0x19: "ru", 0x10: "it", 0x15: "pl", 0x13: "nl", 0x1F: "tr", 0x22: "uk", 0x21: "id",
+            0x05: "cs", 0x0E: "hu", 0x08: "el", 0x18: "ro", 0x1D: "sv", 0x06: "da", 0x0B: "fi", 0x14: "nb", 0x2A: "vi", 0x1E: "th"}.get(prim, "en")
 
 
 def chosen_setting():
@@ -54,17 +61,26 @@ def chosen_setting():
         return None
 
 
-def _load(code):
-    p = os.path.join(LANG_DIR, code + ".json")
+def _read(p):
     if not os.path.exists(p):
         return {}
     try:
-        with open(p, encoding="utf-8") as f:
+        with open(p, encoding="utf-8-sig") as f:   # 메모장이 BOM 을 붙여도 읽게
             d = json.load(f)
         return {k: v for k, v in d.items() if isinstance(v, str) and v and not k.startswith("_")}
     except Exception:
         log.exception("언어 파일 읽기 실패 %s", p)
         return {}
+
+
+def _load(code):
+    d = _read(os.path.join(LANG_DIR, code + ".json"))
+    u = _read(os.path.join(USER_LANG_DIR, code + ".json"))   # 0.9.152: 사용자가 고친 번역이 이김
+    if u:
+        n = sum(1 for k, v in u.items() if d.get(k) != v)
+        d.update(u)
+        log.info("사용자 번역 %s: %d개 중 %d개가 기본과 다름", os.path.join(USER_LANG_DIR, code + ".json"), len(u), n)
+    return d
 
 
 def init(code=None):

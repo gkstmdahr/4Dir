@@ -2457,5 +2457,12 @@
  "SVN·git 작업 폴더 {0}개가 내용 검색에서 통째로 빠져 있음 — 넣으면 .svn·.git 만 빼고 넣음": "{0} SVN/git-Arbeitsordner sind komplett von der Inhaltssuche ausgeschlossen — beim Hinzufügen werden nur .svn/.git ausgelassen",
  "윈도우 색인 진행을 읽지 못했습니다: {0}": "Fortschritt des Windows-Index nicht lesbar: {0}",
  "윈도우 색인: 다 읽음 ({0:,}개)": "Windows-Index: fertig ({0:,} Elemente)",
- "윈도우 색인 진행: {0}% (읽음 {1:,} · 남음 {2:,}) — 처음엔 파일을 찾는 동안 남은 수가 늘어날 수 있음": "Windows-Index-Fortschritt: {0}% (fertig {1:,} · übrig {2:,}) — anfangs kann die Restzahl beim Finden der Dateien steigen"
+ "윈도우 색인 진행: {0}% (읽음 {1:,} · 남음 {2:,}) — 처음엔 파일을 찾는 동안 남은 수가 늘어날 수 있음": "Windows-Index-Fortschritt: {0}% (fertig {1:,} · übrig {2:,}) — anfangs kann die Restzahl beim Finden der Dateien steigen",
+ "번역 고치기…": "Übersetzung korrigieren…",
+ "번역 고치기": "Übersetzung korrigieren",
+ "방금 연 폴더의 {0} 파일을 메모장으로 고친 뒤 4Dir 를 다시 시작하면 고친 번역이 쓰입니다.\n업데이트해도 그대로 남습니다.\n\n고친 파일을 깃허브로 보내 주시면 다음 버전에 넣겠습니다.": "Bearbeite {0} im gerade geöffneten Ordner (z. B. mit dem Editor) und starte 4Dir neu, um deine Übersetzung zu verwenden.\nSie bleibt auch nach Updates erhalten.\n\nSchick uns die bearbeitete Datei über GitHub, dann kommt sie in die nächste Version.",
+ "깃허브 안내 열기": "GitHub-Anleitung öffnen",
+ "탭 복제": "Tab duplizieren",
+ "탭 복제 (바로 오른쪽에)": "Tab duplizieren (direkt rechts daneben)",
+ "부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임": "Weiches Scrollen — jede Mausrad-Raste gleitet eine Zeile"
 }
