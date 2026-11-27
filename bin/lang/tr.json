@@ -2470,5 +2470,9 @@
  "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Renk araçlarını ve yakınlaştırma çubuğunu göster (önizleme küçük olduğu için katlandı)",
  "해상도": "Çözünürlük",
  "내용만 보기 (도구·정보 숨김)": "Yalnızca içerik (araçları ve bilgileri gizle)",
- "내용만 보기": "Yalnızca içerik"
+ "내용만 보기": "Yalnızca içerik",
+ "휠 한 칸에 움직일 줄 수": "Tekerlek adımı başına satır",
+ "목록 보기에서는 세로 줄 수 (옆으로 넘김)": "Liste görünümünde: sütun sayısı (yana kayar)",
+ "안에 바뀐 것만": "içinde değişenler",
+ "넘게 지난 것만": "daha eski olanlar"
 }

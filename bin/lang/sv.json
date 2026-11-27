@@ -2470,5 +2470,9 @@
  "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Visa färgverktyg och zoomrad (hopfällda eftersom förhandsgranskningen är liten)",
  "해상도": "Upplösning",
  "내용만 보기 (도구·정보 숨김)": "Bara innehåll (dölj verktyg och info)",
- "내용만 보기": "Bara innehåll"
+ "내용만 보기": "Bara innehåll",
+ "휠 한 칸에 움직일 줄 수": "Rader per hjulsteg",
+ "목록 보기에서는 세로 줄 수 (옆으로 넘김)": "I listvyn: antal kolumner (rullar i sidled)",
+ "안에 바뀐 것만": "ändrade inom",
+ "넘게 지난 것만": "äldre än"
 }

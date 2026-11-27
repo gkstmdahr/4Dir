@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-"""파일 색 규칙 (COLORRULES_VER 1.0.0, 0.9.127 빌드 5 — 사용자 11/10 토탈 커맨더 '파일 종류별 색' 참고)
+"""파일 색 규칙 (COLORRULES_VER 1.1.0 — 0.9.155 빌드 1 받은 메일 '10일 지난 파일은 회색': 날짜 조건 [N일 안에 바뀐 것만 / N일 넘게 지난 것만] · 1.0.0 0.9.127 빌드 5 — 사용자 11/10 토탈 커맨더 '파일 종류별 색' 참고)
 
 - 규칙 = 이름 패턴(* ? , 여러 개는 ;) + 대상(파일/폴더/모두) + 최근 N일 안에 바뀐 것만(0 = 상관없음) + 글자색
 - 위에 있는 규칙부터 보고 처음 맞는 것의 색. 맞는 게 없으면 원래 색
 - 목록 그릴 때마다 불리므로 (이름, 폴더?, 수정 시각) → 색 을 기억해 둠 (규칙이 바뀌거나 1시간 지나면 비움)
-설정: SETTINGS["color_rules"] = [{"on", "pat", "target", "days", "color"}]
+설정: SETTINGS["color_rules"] = [{"on", "pat", "target", "days", "age"(new|old, 1.1.0), "color"}]
 로그: bin\\log\\4Dir.log [QE.colors]
 """
 import time
@@ -15,14 +15,15 @@ from i18n import T
 from PySide6 import QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-COLORRULES_VER = "1.0.0"
+COLORRULES_VER = "1.1.0"
+AGES = (("new", "안에 바뀐 것만"), ("old", "넘게 지난 것만"))   # 1.1.0 수정한 날짜 기준
 log = logging.getLogger("QE.colors")
 TARGETS = (("file", "파일"), ("dir", "폴더"), ("all", "파일·폴더"))
 
 
 class Rules:
     def __init__(self):
-        self.rules = []     # [(패턴들, 대상, 초, QColor)]
+        self.rules = []     # [(패턴들, 대상, 초, 지난 것?, QColor)]
         self._cache = {}
         self._hour = 0
 
@@ -37,12 +38,12 @@ class Rules:
                 c = QtGui.QColor(r.get("color") or "")
                 if not c.isValid():
                     continue
-                out.append((pats, r.get("target") or "file", max(0, int(r.get("days") or 0)) * 86400, c))
+                out.append((pats, r.get("target") or "file", max(0, int(r.get("days") or 0)) * 86400, r.get("age") == "old", c))
             except Exception:
                 log.exception("색 규칙 읽기 실패 %r", r)
         self.rules = out
         self._cache = {}
-        log.info("파일 색 규칙 %d개 켬", len(out))
+        log.info("파일 색 규칙 %d개 켬 %s", len(out), [(p[:2], t, s // 86400, "지난" if o else "안에", c.name()) for p, t, s, o, c in out])
 
     def color(self, name, is_dir, mtime):
         """맞는 규칙의 색 (없으면 None)"""
@@ -53,10 +54,12 @@ class Rules:
         if k in self._cache:
             return self._cache[k]
         low, now, res = name.lower(), time.time(), None
-        for pats, tgt, secs, c in self.rules:
+        for pats, tgt, secs, old, c in self.rules:
             if (tgt == "file" and is_dir) or (tgt == "dir" and not is_dir):
                 continue
-            if secs and (not mtime or now - mtime > secs):
+            if secs and not old and (not mtime or now - mtime > secs):
+                continue
+            if secs and old and (not mtime or now - mtime <= secs):   # 1.1.0 N일 넘게 지난 것만
                 continue
             if any(fnmatch.fnmatch(low, p) for p in pats):
                 res = c
@@ -68,19 +71,19 @@ class Rules:
 
 
 class RulesDialog(QtWidgets.QDialog):
-    """규칙 표 편집: 사용 · 이름 패턴 · 대상 · 최근 N일 · 색"""
+    """규칙 표 편집: 사용 · 이름 패턴 · 대상 · 수정한 날짜(N일 안에/넘게 지난) · 색"""
 
     def __init__(self, parent, data):
         super().__init__(parent)
         self.setWindowTitle(T("파일 색 규칙"))
-        self.resize(640, 380)
+        self.resize(720, 380)
         lay = QtWidgets.QVBoxLayout(self)
         tip = QtWidgets.QLabel(T("이름 패턴에 맞는 파일·폴더의 글자색을 바꿉니다. 위에 있는 규칙이 먼저 적용됩니다.\n"
                                  "패턴 예:  *.max      *.psd; *.png      *_final*      (비워 두면 전부)"))
         tip.setWordWrap(True)
         lay.addWidget(tip)
         self.tbl = QtWidgets.QTableWidget(0, 5)
-        self.tbl.setHorizontalHeaderLabels([T("사용"), T("이름 패턴"), T("적용 대상"), T("최근 며칠 안에 바뀐 것만"), T("색")])
+        self.tbl.setHorizontalHeaderLabels([T("사용"), T("이름 패턴"), T("적용 대상"), T("수정한 날짜"), T("색")])
         hh = self.tbl.horizontalHeader()
         hh.setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
         for c in (0, 2, 3, 4):
@@ -140,18 +143,32 @@ class RulesDialog(QtWidgets.QDialog):
             cb.addItem(T(lbl), k)
         cb.setCurrentIndex(max(0, [k for k, _ in TARGETS].index(r.get("target", "file")) if r.get("target", "file") in [k for k, _ in TARGETS] else 0))
         self.tbl.setCellWidget(i, 2, cb)
+        cell = QtWidgets.QWidget()   # 1.1.0 [10 일][안에 바뀐 것만 ▾ / 넘게 지난 것만]
+        cl = QtWidgets.QHBoxLayout(cell)
+        cl.setContentsMargins(2, 0, 2, 0)
+        cl.setSpacing(3)
         sp = QtWidgets.QSpinBox()
         sp.setRange(0, 3650)
         sp.setSpecialValueText(T("상관없음"))
         sp.setSuffix(" " + T("일"))
         sp.setValue(int(r.get("days") or 0))
-        self.tbl.setCellWidget(i, 3, sp)
+        ag = QtWidgets.QComboBox()
+        for k, lbl in AGES:
+            ag.addItem(T(lbl), k)
+        ag.setCurrentIndex(1 if r.get("age") == "old" else 0)
+        ag.setEnabled(sp.value() > 0)
+        sp.valueChanged.connect(lambda v, ag=ag: ag.setEnabled(v > 0))
+        cl.addWidget(sp)
+        cl.addWidget(ag)
+        cell.days, cell.age = sp, ag
+        self.tbl.setCellWidget(i, 3, cell)
         self.tbl.setCellWidget(i, 4, self._color_btn(r.get("color") or "#1f6fd0"))
 
     def row_data(self, i):
         it = self.tbl.item(i, 1)
         return {"on": self.tbl.item(i, 0).checkState() == Qt.Checked, "pat": it.text().strip() if it else "",
-                "target": self.tbl.cellWidget(i, 2).currentData(), "days": self.tbl.cellWidget(i, 3).value(),
+                "target": self.tbl.cellWidget(i, 2).currentData(), "days": self.tbl.cellWidget(i, 3).days.value(),
+                "age": self.tbl.cellWidget(i, 3).age.currentData(),
                 "color": self.tbl.cellWidget(i, 4).property("color")}
 
     def del_row(self):

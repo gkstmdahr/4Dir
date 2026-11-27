@@ -2470,5 +2470,9 @@
  "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Vis farveværktøjer og zoomlinje (foldet sammen, fordi eksemplet er lille)",
  "해상도": "Opløsning",
  "내용만 보기 (도구·정보 숨김)": "Kun indhold (skjul værktøjer og info)",
- "내용만 보기": "Kun indhold"
+ "내용만 보기": "Kun indhold",
+ "휠 한 칸에 움직일 줄 수": "Rækker pr. hjulhak",
+ "목록 보기에서는 세로 줄 수 (옆으로 넘김)": "I listevisning: antal kolonner (ruller til siden)",
+ "안에 바뀐 것만": "ændret inden for",
+ "넘게 지난 것만": "ældre end"
 }

@@ -2470,5 +2470,9 @@
  "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Színeszközök és nagyítósáv megjelenítése (összecsukva, mert kicsi az előnézet)",
  "해상도": "Felbontás",
  "내용만 보기 (도구·정보 숨김)": "Csak a tartalom (eszközök és adatok elrejtése)",
- "내용만 보기": "Csak tartalom"
+ "내용만 보기": "Csak tartalom",
+ "휠 한 칸에 움직일 줄 수": "Sor görgőkattanásonként",
+ "목록 보기에서는 세로 줄 수 (옆으로 넘김)": "Lista nézetben: oszlopok száma (oldalra görget)",
+ "안에 바뀐 것만": "belül módosult",
+ "넘게 지난 것만": "régebbiek, mint"
 }

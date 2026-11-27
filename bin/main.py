@@ -10,7 +10,7 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.154"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_VERSION = "0.9.155"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
 QE_BUILD = 2              #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
@@ -398,7 +398,8 @@ def _undo_signal():
 def scroll_by(view, sb, delta):
     """0.9.152 빌드 3 (토론 #18 'Smooth scrolling in Panels'): 휠로 delta 만큼 — 설정 smooth_scroll 이면 미끄러지듯(0.16초).
     휠을 연달아 굴리면 가던 목표에 이어 더함 (한 칸 = 한 줄은 그대로)"""
-    if not SETTINGS["smooth_scroll"] or view.verticalScrollMode() != QtWidgets.QAbstractItemView.ScrollPerPixel:
+    mode = view.horizontalScrollMode() if sb is view.horizontalScrollBar() else view.verticalScrollMode()   # 0.9.155 목록 보기 = 가로
+    if not SETTINGS["smooth_scroll"] or mode != QtWidgets.QAbstractItemView.ScrollPerPixel:
         sb.setValue(sb.value() + delta)
         return
     an = getattr(view, "_smooth_an", None)
@@ -413,6 +414,22 @@ def scroll_by(view, sb, delta):
     an.setEndValue(tgt)
     an.setDuration(160)
     an.start()
+
+
+def scroll_base(view, sb):
+    """0.9.155: 휠을 연달아 굴릴 때 기준 = 미끄러지는 중이면 가던 목표, 아니면 지금 값 (scroll_by 와 같은 기준)"""
+    an = getattr(view, "_smooth_an", None)
+    if an is not None and an.targetObject() is sb and an.state() == QtCore.QAbstractAnimation.Running:
+        return int(an.endValue())
+    return sb.value()
+
+
+def wheel_rows():
+    """0.9.155 토론 #18: 설정 '휠 한 칸에 움직일 줄 수' (1~10)"""
+    try:
+        return max(1, min(10, int(SETTINGS["wheel_rows"] or 1)))
+    except Exception:
+        return 1
 
 
 def real_path(p):
@@ -3741,7 +3758,7 @@ class DetailView(ViewMixin, QtWidgets.QTreeView):
                 self._wacc -= n * 120
                 sb = self.verticalScrollBar()
                 step = 1 if self.verticalScrollMode() == QtWidgets.QAbstractItemView.ScrollPerItem else max(1, self.sizeHintForRow(0))
-                scroll_by(self, sb, -n * step)   # 0.9.152 빌드 3 부드러운 스크롤
+                scroll_by(self, sb, -n * step * wheel_rows())   # 0.9.152 빌드 3 부드러운 스크롤 · 0.9.155 줄 수 설정
             ev.accept()
             return
         super().wheelEvent(ev)
@@ -3994,10 +4011,59 @@ class IconView(ViewMixin, QtWidgets.QListView):
             if n:
                 self._wacc -= n * 120
                 sb = self.verticalScrollBar()
-                scroll_by(self, sb, -n * self._row_step())   # 0.9.152 빌드 3 부드러운 스크롤
+                scroll_by(self, sb, -n * self._row_step() * wheel_rows())   # 0.9.152 빌드 3 부드러운 스크롤 · 0.9.155 줄 수 설정
+            ev.accept()
+            return
+        if (not (ev.modifiers() & (Qt.ControlModifier | Qt.ShiftModifier)) and dy and ev.pixelDelta().isNull()
+                and self.flow() == QtWidgets.QListView.TopToBottom and self.isWrapping()):   # 0.9.155 토론 #18: 목록 보기 = 옆으로 세로 줄 단위
+            self._wacc += dy
+            n = int(self._wacc / 120)
+            if n:
+                self._wacc -= n * 120
+                self._wheel_cols(-n * wheel_rows())
             ev.accept()
             return
         super().wheelEvent(ev)
+
+    def _col_lefts(self):
+        """목록 보기 세로 줄들의 왼쪽 x (내용 기준). 위→아래로 채워 옆으로 넘어가므로 항목 왼쪽 x 는 순서대로 커짐 → 줄마다 이분 탐색"""
+        m = self.model()
+        n = m.rowCount() if m is not None else 0
+        off = self.horizontalScrollBar().value()
+        left = lambda i: self.visualRect(m.index(i, 0)).left() + off
+        cols, i = [], 0
+        while i < n and len(cols) < 5000:
+            L = left(i)
+            cols.append(L)
+            lo, hi = i + 1, n
+            while lo < hi:
+                mid = (lo + hi) // 2
+                if left(mid) > L:
+                    hi = mid
+                else:
+                    lo = mid + 1
+            i = lo
+        return cols
+
+    def _wheel_cols(self, k):
+        """목록 보기: k 세로 줄 (+ = 오른쪽). 줄 폭이 이름마다 달라 실제 줄 경계로 맞춤"""
+        sb = self.horizontalScrollBar()
+        if self.horizontalScrollMode() == QtWidgets.QAbstractItemView.ScrollPerItem:
+            scroll_by(self, sb, k)   # 막대 값 = 줄 번호
+            return
+        base = scroll_base(self, sb)
+        cols = self._col_lefts()
+        if not cols:
+            return
+        if k > 0:
+            nxt = [c for c in cols if c > base + 1]
+            tgt = nxt[min(k, len(nxt)) - 1] if nxt else sb.maximum()
+        else:
+            prv = [c for c in cols if c < base - 1]
+            tgt = prv[max(0, len(prv) + k)] if prv else 0
+        tgt = max(sb.minimum(), min(sb.maximum(), tgt))
+        log.debug("목록 보기 휠 %+d줄 %d → %d (줄 %d개)", k, base, tgt, len(cols))
+        scroll_by(self, sb, tgt - base)
 
     def paintEvent(self, ev):
         super().paintEvent(ev)
@@ -4363,6 +4429,9 @@ class Page(QtWidgets.QWidget):
             if not hasattr(w, "_scroll_default"):
                 w._scroll_default = w.verticalScrollMode()
             w.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel if SETTINGS["smooth_scroll"] else w._scroll_default)
+            if not hasattr(w, "_hscroll_default"):   # 0.9.155 목록 보기(옆으로 넘김)도
+                w._hscroll_default = w.horizontalScrollMode()
+            w.setHorizontalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel if SETTINGS["smooth_scroll"] else w._hscroll_default)
 
     def apply_view_state(self, vs):
         if not vs:
@@ -10907,10 +10976,34 @@ class SettingsDialog(QtWidgets.QDialog):
         self._opt(lay, "chip_counts", T("  형식 단추에 개수 표시"))
         self._opt(lay, "type_badges", T("그림 미리보기에 형식 딱지 (PSD·PNG·GIF…)"), T("보통 아이콘 이상에서"))
         self._opt(lay, "folder_covers", T("폴더 표지 — 폴더 안 첫 그림을 겹쳐 보기"), T("아이콘 보기에서, 네트워크 드라이브 제외"))
+        cd = QtWidgets.QLabel(T("*.max 는 파랑, 오늘 바뀐 파일은 빨강처럼 규칙에 맞는 파일 글자색을 바꿉니다"))   # 0.9.155 빌드 2 (사용자 11/27): 도구 메뉴에만 있던 것 설정에도 — 설명 위, 단추 아래
+        cd.setWordWrap(True)
+        lay.addSpacing(4)
+        lay.addWidget(cd)
+        crow = QtWidgets.QHBoxLayout()
+        crow.setContentsMargins(0, 0, 0, 0)
+        cb_ = QtWidgets.QPushButton(T("파일 색 규칙…"))
+        cb_.clicked.connect(lambda: self.main.edit_color_rules(self))
+        crow.addWidget(cb_)
+        crow.addStretch(1)
+        lay.addLayout(crow)
+        self.color_rules_btn = cb_
         self._sub(lay, T("동작"))
         self._set(lay, "folder_size", T("폴더 크기 계산 (크기 칸 — 네트워크 드라이브 제외)"))
         self._set(lay, "empty_click_up", T("빈 곳을 더블클릭하면 상위 폴더로"))
         self._set(lay, "smooth_scroll", T("부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임"))   # 0.9.152 빌드 3 토론 #18
+        row = QtWidgets.QHBoxLayout()   # 0.9.155 토론 #18 '휠 한 칸에 몇 줄'
+        row.setContentsMargins(0, 0, 0, 0)
+        row.addWidget(QtWidgets.QLabel(T("휠 한 칸에 움직일 줄 수")))
+        sp = QtWidgets.QSpinBox()
+        sp.setRange(1, 10)
+        sp.setValue(wheel_rows())
+        sp.setToolTip(T("목록 보기에서는 세로 줄 수 (옆으로 넘김)"))
+        sp.valueChanged.connect(lambda v: (SETTINGS.__setitem__("wheel_rows", int(v)), log.info("설정 wheel_rows=%s", v)))
+        row.addWidget(sp)
+        row.addStretch(1)
+        lay.addLayout(row)
+        self.wheel_sp = sp
         rf = QtWidgets.QLabel(T("목록 새로 고침 — 4Dir 에서 한 복사·삭제·이름 바꾸기는 언제나 바로 보입니다"))   # 0.9.139 빌드 2 사용자: 두 설정을 묶고 설명은 위에 한 줄
         rf.setWordWrap(True)
         lay.addSpacing(4)
@@ -14760,9 +14853,10 @@ class Main(QtWidgets.QMainWindow):
         finally:
             self._sync_busy = False
 
-    def edit_color_rules(self):
-        """파일 색 규칙 편집 (0.9.127 빌드 5) → 저장하고 열린 목록 모두 다시 그림"""
-        d = colorrules.RulesDialog(self, SETTINGS["color_rules"])
+    def edit_color_rules(self, parent=None):
+        """파일 색 규칙 편집 (0.9.127 빌드 5) → 저장하고 열린 목록 모두 다시 그림. parent = 설정 창에서 열면 그 위에 (0.9.155 빌드 2)"""
+        log.info("파일 색 규칙 창 열기 (%s)", "설정 창" if isinstance(parent, QtWidgets.QWidget) else "도구 메뉴")
+        d = colorrules.RulesDialog(parent if isinstance(parent, QtWidgets.QWidget) else self, SETTINGS["color_rules"])
         if d.exec() != QtWidgets.QDialog.Accepted:
             return
         SETTINGS["color_rules"] = d.result_rules()

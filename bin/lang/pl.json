@@ -2470,5 +2470,9 @@
  "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Pokaż narzędzia kolorów i pasek powiększenia (zwinięte, bo podgląd jest mały)",
  "해상도": "Rozdzielczość",
  "내용만 보기 (도구·정보 숨김)": "Tylko zawartość (ukryj narzędzia i informacje)",
- "내용만 보기": "Tylko zawartość"
+ "내용만 보기": "Tylko zawartość",
+ "휠 한 칸에 움직일 줄 수": "Wierszy na skok kółka",
+ "목록 보기에서는 세로 줄 수 (옆으로 넘김)": "W widoku Lista: liczba kolumn (przewija w bok)",
+ "안에 바뀐 것만": "zmienione w ciągu",
+ "넘게 지난 것만": "starsze niż"
 }

@@ -2470,5 +2470,9 @@
  "색상 도구·확대 줄 펼치기 (미리보기가 좁아 접어 둠)": "Kleurhulpmiddelen en zoombalk tonen (ingeklapt omdat het voorbeeld klein is)",
  "해상도": "Resolutie",
  "내용만 보기 (도구·정보 숨김)": "Alleen inhoud (hulpmiddelen en info verbergen)",
- "내용만 보기": "Alleen inhoud"
+ "내용만 보기": "Alleen inhoud",
+ "휠 한 칸에 움직일 줄 수": "Rijen per wielklik",
+ "목록 보기에서는 세로 줄 수 (옆으로 넘김)": "In lijstweergave: aantal kolommen (schuift opzij)",
+ "안에 바뀐 것만": "gewijzigd binnen",
+ "넘게 지난 것만": "ouder dan"
 }
