@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.156"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 5              #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.157"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 1              #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -19,6 +19,7 @@ import json
 import glob   # 0.9.115 기록 지우기
 import re
 import time
+import bisect   # 0.9.157 목록 보기 줄 경계
 import stat
 import logging
 import logging.handlers
@@ -3987,6 +3988,31 @@ class DetailView(ViewMixin, QtWidgets.QTreeView):
             painter.restore()
 
 
+class _ColLefts:
+    """목록 보기 세로 줄 왼쪽 x 목록(필요한 칸만 읽고 기억). c 번째 줄 = c*per 번째 항목. 읽을 때 앞 항목과 같은 줄이면 broken"""
+    def __init__(self, left, n, per):
+        self.left, self.n, self.per, self.memo, self.broken = left, n, per, {}, False
+
+    def __len__(self):
+        return -(-self.n // self.per) if self.per else 0
+
+    def __getitem__(self, c):
+        if isinstance(c, slice):
+            return [self[i] for i in range(*c.indices(len(self)))]
+        if c < 0:
+            c += len(self)
+        if not 0 <= c < len(self):
+            raise IndexError(c)
+        v = self.memo.get(c)
+        if v is None:
+            i = c * self.per
+            v = self.left(i)
+            if c and self.left(i - 1) >= v:   # 앞 항목이 같은 줄 → 줄당 개수가 다름
+                self.broken = True
+            self.memo[c] = v
+        return v
+
+
 class IconView(ViewMixin, QtWidgets.QListView):
     _wacc = 0
 
@@ -4026,7 +4052,37 @@ class IconView(ViewMixin, QtWidgets.QListView):
         super().wheelEvent(ev)
 
     def _col_lefts(self):
-        """목록 보기 세로 줄들의 왼쪽 x (내용 기준). 위→아래로 채워 옆으로 넘어가므로 항목 왼쪽 x 는 순서대로 커짐 → 줄마다 이분 탐색"""
+        """목록 보기 세로 줄들의 왼쪽 x (내용 기준, 차례로 커짐). 0.9.157 토론 #18 (System32 4,666개 휠 한 칸 2초 멈춤):
+        이름마다 폭이 다른 목록 보기는 visualRect 한 번이 느림(약 0.4ms) → 전엔 휠마다 모든 줄을 이분 탐색(5천 번 넘게).
+        이제 세로 줄마다 항목 수가 같다는 점(줄 높이 같음)을 써서, 필요한 줄만 그때 읽는 목록(_ColLefts)을 돌려줌.
+        배치가 바뀌면(항목 수·막대 최대·창 크기·아이콘·글꼴) 새로 만듦. 줄당 개수가 안 맞으면 예전처럼 전부 계산."""
+        m = self.model()
+        n = m.rowCount() if m is not None else 0
+        sb = self.horizontalScrollBar()
+        key = (id(m), n, sb.maximum(), self.viewport().width(), self.viewport().height(),
+               self.iconSize().width(), self.spacing(), self.font().key())
+        c = getattr(self, "_cols_cache", None)
+        if c is not None and self._cols_key == key and not c.broken:
+            return c
+        left = lambda i: self.visualRect(m.index(i, 0)).left() + sb.value()
+        t0 = time.perf_counter()
+        per = 0
+        if n:
+            L, lo, hi = left(0), 1, n
+            while lo < hi:
+                mid = (lo + hi) // 2
+                if left(mid) > L:
+                    hi = mid
+                else:
+                    lo = mid + 1
+            per = lo
+        c = _ColLefts(left, n, per)
+        self._cols_key, self._cols_cache = key, c
+        log.debug("목록 보기 줄 경계 준비: 항목 %d · 줄당 %d · 세로 줄 %d · %.1fms", n, per, len(c), (time.perf_counter() - t0) * 1000)
+        return c
+
+    def _col_lefts_full(self):
+        """줄당 개수가 고르지 않을 때(예외) 쓰는 예전 방식 — 모든 줄 이분 탐색"""
         m = self.model()
         n = m.rowCount() if m is not None else 0
         off = self.horizontalScrollBar().value()
@@ -4052,17 +4108,23 @@ class IconView(ViewMixin, QtWidgets.QListView):
             scroll_by(self, sb, k)   # 막대 값 = 줄 번호
             return
         base = scroll_base(self, sb)
+        t0 = time.perf_counter()
         cols = self._col_lefts()
-        if not cols:
+        if not len(cols):
             return
-        if k > 0:
-            nxt = [c for c in cols if c > base + 1]
-            tgt = nxt[min(k, len(nxt)) - 1] if nxt else sb.maximum()
-        else:
-            prv = [c for c in cols if c < base - 1]
-            tgt = prv[max(0, len(prv) + k)] if prv else 0
+        def pick(cols):
+            if k > 0:
+                a = bisect.bisect_right(cols, base + 1)          # 처음으로 base+1 보다 큰 줄
+                return cols[min(a + k, len(cols)) - 1] if a < len(cols) else sb.maximum()
+            a = bisect.bisect_left(cols, base - 1)               # base-1 보다 작은 줄 개수
+            return cols[max(0, a + k)] if a else 0
+        tgt = pick(cols)
+        if cols.broken:   # 줄당 개수가 안 맞음 → 예전 방식
+            log.debug("목록 보기 줄당 개수 고르지 않음 → 전부 계산")
+            cols = self._col_lefts_full()
+            tgt = pick(cols)
         tgt = max(sb.minimum(), min(sb.maximum(), tgt))
-        log.debug("목록 보기 휠 %+d줄 %d → %d (줄 %d개)", k, base, tgt, len(cols))
+        log.debug("목록 보기 휠 %+d줄 %d → %d (줄 %d개, %.1fms)", k, base, tgt, len(cols), (time.perf_counter() - t0) * 1000)
         scroll_by(self, sb, tgt - base)
 
     def paintEvent(self, ev):
