@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.155"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 2              #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.156"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 5              #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -10405,7 +10405,8 @@ def apply_ui_font(app):
 class SettingsDialog(QtWidgets.QDialog):
     """설정 창 (v0.9.104 사용자 11/5: 설정은 팝업 창에 카테고리로) — 왼쪽 카테고리 · 오른쪽 내용. 바꾸면 바로 적용(메뉴와 같은 함수 호출)"""
 
-    PAGES = ("general", "list", "nav", "vcs", "keys", "colors", "search", "backup", "about")
+    PAGES = ("general", "list", "action", "nav",   # 0.9.156 빌드 2 action(동작) — 아래 페이지 목록과 순서 같게
+             "vcs", "keys", "colors", "search", "backup", "about")
 
     def __init__(self, main):
         super().__init__(main)
@@ -10464,6 +10465,7 @@ class SettingsDialog(QtWidgets.QDialog):
         outer.addLayout(right, 1)
         self.checks = {}
         for key, title, build in (("general", T("일반"), self._p_general), ("list", T("파일 목록"), self._p_list),
+                                  ("action", T("동작"), self._p_action),   # 0.9.156 빌드 2 파일 목록에서 나눔
                                   ("nav", T("탐색 창"), self._p_nav), ("vcs", T("버전 관리"), self._p_vcs),
                                   ("keys", T("단축키·마우스"), self._p_keys), ("colors", T("색상"), self._p_colors),
                                   ("search", T("검색"), self._p_search), ("backup", T("백업"), self._p_backup),
@@ -10959,7 +10961,6 @@ class SettingsDialog(QtWidgets.QDialog):
     def _p_list(self, lay):
         self._sub(lay, T("표시"))
         self._opt(lay, "show_ext", T("파일 확장명"))
-        self._set(lay, "rename_hide_ext", T("이름 바꾸기(F2) 때 확장명 숨기기 — 이름만 고치고 확장명은 그대로"))
         self._opt(lay, "show_hidden", T("숨긴 항목"))
         self._opt(lay, "checkboxes", T("항목 확인란"))
         self._opt(lay, "thumbnails", T("그림 미리보기 (아이콘 보기)"))
@@ -10983,13 +10984,21 @@ class SettingsDialog(QtWidgets.QDialog):
         crow = QtWidgets.QHBoxLayout()
         crow.setContentsMargins(0, 0, 0, 0)
         cb_ = QtWidgets.QPushButton(T("파일 색 규칙…"))
+        cb_.setMinimumWidth(220)   # 0.9.156 빌드 1 (사용자 11/27 '눈에 잘 안 띔 — 테두리 칠하고 길게')
+        cb_.setStyleSheet("QPushButton{border:2px solid palette(highlight); border-radius:5px; padding:5px 18px; font-weight:bold;}"
+                          "QPushButton:hover{background:palette(highlight); color:palette(highlighted-text);}")
         cb_.clicked.connect(lambda: self.main.edit_color_rules(self))
         crow.addWidget(cb_)
         crow.addStretch(1)
         lay.addLayout(crow)
         self.color_rules_btn = cb_
-        self._sub(lay, T("동작"))
+        lay.addSpacing(4)
         self._set(lay, "folder_size", T("폴더 크기 계산 (크기 칸 — 네트워크 드라이브 제외)"))
+        return False
+
+    def _p_action(self, lay):
+        """0.9.156 빌드 2 (사용자 11/27 '파일 목록쪽 복잡 — 카테고리 하나 더'): 누르고 굴리고 열 때 — 파일 목록에서 옮김"""
+        self._sub(lay, T("마우스"))
         self._set(lay, "empty_click_up", T("빈 곳을 더블클릭하면 상위 폴더로"))
         self._set(lay, "smooth_scroll", T("부드러운 스크롤 — 휠 한 칸에 한 줄씩 미끄러지듯 움직임"))   # 0.9.152 빌드 3 토론 #18
         row = QtWidgets.QHBoxLayout()   # 0.9.155 토론 #18 '휠 한 칸에 몇 줄'
@@ -11004,16 +11013,8 @@ class SettingsDialog(QtWidgets.QDialog):
         row.addStretch(1)
         lay.addLayout(row)
         self.wheel_sp = sp
-        rf = QtWidgets.QLabel(T("목록 새로 고침 — 4Dir 에서 한 복사·삭제·이름 바꾸기는 언제나 바로 보입니다"))   # 0.9.139 빌드 2 사용자: 두 설정을 묶고 설명은 위에 한 줄
-        rf.setWordWrap(True)
-        lay.addSpacing(4)
-        lay.addWidget(rf)
-        self._set(lay, "auto_refresh", "  " + T("탐색기 등 다른 프로그램에서 바뀐 것도 보이기"))   # 0.9.137 빌드 2 받은 의견 · 0.9.139 이슈 11
-        self._set(lay, "auto_resort", "  " + T("바뀌면 다시 정렬 (윈도우 기본, 끄면 새 파일은 맨 아래, F5 로 정렬)"))   # 0.9.139 이슈 11
-        lay.addSpacing(4)
-        self._set(lay, "delete_confirm", T("삭제할 때 휴지통으로 버릴지 영구 삭제할지 묻기"))   # 0.9.138 빌드 4 받은 의견
+        self._sub(lay, T("열기"))
         self._set(lay, "arc_browse", T("압축 파일(ZIP·7Z·RAR…)을 두 번 누르면 4Dir 안에서 폴더처럼 열기"))   # 빌드 20
-        self._set(lay, "content_search", T("전체 검색에 문서 내용 결과도 보이기 (윈도우 색인)"))   # 0.9.145
         # 0.9.134 (사용자 11/12): 4Dir 에서 열면 실행이 붙잡히는 파일 → 탐색기에게 넘겨 열 확장자 더하기 (빌드 없이)
         # 빌드 2 (사용자 '한 줄에 하나씩 목록, 입력칸 + 등록, 목록에서 골라 삭제')
         d = QtWidgets.QLabel("※ " + T("4Dir 에서 두 번 눌러도 안 열리거나 한참 뒤에 열리는 파일은 탐색기에게 넘겨서 엽니다. 확장자를 등록하세요."))
@@ -11044,6 +11045,16 @@ class SettingsDialog(QtWidgets.QDialog):
         sc.activated.connect(self._exp_del)
         self.exp_list.itemSelectionChanged.connect(self._exp_sync_btn)
         self._exp_fill()
+        self._sub(lay, T("파일 작업"))
+        self._set(lay, "rename_hide_ext", T("이름 바꾸기(F2) 때 확장명 숨기기 — 이름만 고치고 확장명은 그대로"))
+        self._set(lay, "delete_confirm", T("삭제할 때 휴지통으로 버릴지 영구 삭제할지 묻기"))   # 0.9.138 빌드 4 받은 의견
+        self._sub(lay, T("새로 고침"))
+        rf = QtWidgets.QLabel(T("목록 새로 고침 — 4Dir 에서 한 복사·삭제·이름 바꾸기는 언제나 바로 보입니다"))   # 0.9.139 빌드 2 사용자: 두 설정을 묶고 설명은 위에 한 줄
+        rf.setWordWrap(True)
+        lay.addWidget(rf)
+        self._set(lay, "auto_refresh", "  " + T("탐색기 등 다른 프로그램에서 바뀐 것도 보이기"))   # 0.9.137 빌드 2 받은 의견 · 0.9.139 이슈 11
+        self._set(lay, "auto_resort", "  " + T("바뀌면 다시 정렬 (윈도우 기본, 끄면 새 파일은 맨 아래, F5 로 정렬)"))   # 0.9.139 이슈 11
+        return False
 
     def _p_nav(self, lay):
         m = self.main
@@ -11091,6 +11102,7 @@ class SettingsDialog(QtWidgets.QDialog):
         return self._embed(lay, self.main.colors_panel)
 
     def _p_search(self, lay):
+        self._set(lay, "content_search", T("전체 검색에 문서 내용 결과도 보이기 (윈도우 색인)"))   # 0.9.145 · 0.9.156 빌드 2 파일 목록에서 옮김
         return self._embed(lay, self.main.search_panel)
 
     def _p_backup(self, lay):
@@ -11430,10 +11442,12 @@ class PreviewPane(QtWidgets.QFrame):
         self.timer.setSingleShot(True)
         self.timer.setInterval(120)
         self.timer.timeout.connect(self.refresh)
-        self._bare_ws = (self.sep, self.info, self.zbar, self.gifbar, self.film, self.btn_inspect, self.btn_seq)   # 0.9.154 '내용만 보기' 때 숨길 것
+        # 0.9.154 '내용만 보기' 때 숨길 것 — 0.9.156 빌드 4 (사용자 11/27 '영상·GIF 는 슬라이드 바가 있어야, 확장자마다 정해야 되냐'):
+        #   재생 줄(▶·막대·편집)은 '재생 중인 것'이면 형식 상관없이 남기고, 장면 띠·장면 글자·용량 경고만 숨김
+        self._bare_ws = (self.sep, self.info, self.zbar, self.gif_strip, self.gif_lbl, self.gif_warn, self.film, self.btn_inspect, self.btn_seq)
         for w in self._bare_ws:
             w.installEventFilter(self)
-        if SETTINGS["preview_bare"]:
+        if self.bare():
             QtCore.QTimer.singleShot(0, self._apply_bare)
 
     def contextMenuEvent(self, ev):
@@ -11450,25 +11464,45 @@ class PreviewPane(QtWidgets.QFrame):
             a.setCheckable(True)
             a.setChecked(bool(SETTINGS["preview_top"]))
         m.addSeparator()
-        a = m.addAction(T("내용만 보기 (도구·정보 숨김)"), lambda: self.set_bare(not SETTINGS["preview_bare"]))   # 0.9.154 빌드 1
+        a = m.addAction(T("내용만 보기 (도구·정보 숨김)"), lambda: self.set_bare(not self.bare()))   # 0.9.154 빌드 1
         a.setCheckable(True)
-        a.setChecked(bool(SETTINGS["preview_bare"]))
+        a.setChecked(bool(self.bare()))
         m.addSeparator()
         m.addAction(T("미리보기 닫기") + "\tAlt+P", lambda: main.set_preview(False))
         m.exec(ev.globalPos())
+
+    def _bare_key(self):
+        """0.9.156 빌드 5: 칸 미리보기면 preview_bare(머리줄 단추), 따로 창·오른쪽 칸이면 preview_bare_win(우클릭) — 서로 따로 기억"""
+        a = self.parentWidget()
+        while a is not None:
+            if getattr(a, "is_preview_slot", False):
+                return "preview_bare"
+            a = a.parentWidget()
+        return "preview_bare_win"
+
+    def bare(self):
+        return bool(SETTINGS[self._bare_key()])
 
     def set_bare(self, on, save=True):
         """0.9.154 빌드 1 (사용자 11/26 '실제 내용만 보이고 나머지 다 숨기는 옵션'): 그림·글 내용만 — 아래 정보 줄·확대 줄·재생 줄·
         썸네일 줄·형식별 도구(그림 도구·찾기 칸) 숨김, ◀ ▶ 는 마우스가 미리보기 위에 있을 때만. 칸 미리보기 머리줄은 남김(빌드 2)"""
         on = bool(on)
         if save:
-            SETTINGS["preview_bare"] = on
+            SETTINGS[self._bare_key()] = on   # 0.9.156 빌드 5 칸 / 따로 창 따로
         log.info("미리보기 내용만 보기 %s", "켬" if on else "끔")
         self._apply_bare()
         if not on:   # 형식마다 보일 것(확대 줄·재생 줄·정보)을 다시 정하게
             self.cur = None
             self.refresh()
-        for w in WINDOWS:
+            if self.movie is not None:   # 0.9.156 빌드 4: 재생 중이면 refresh 가 바로 끝나 숨긴 줄이 안 돌아오던 것
+                self.gifbar.setVisible(True)
+                self.gif_lbl.setVisible(True)
+                self.gif_strip.setVisible(self.gif_strip.count() > 0)
+                self.gif_warn.setVisible(not getattr(self, "gif_seekable", True))
+                if self.zcanvas.isVisible():
+                    self.zbar.setVisible(True)
+                log.info("내용만 보기 끔 — 재생 중이라 재생 줄·확대 줄 되돌림 (장면 띠 %d장)", self.gif_strip.count())
+        for w in WINDOWS if self._bare_key() == "preview_bare" else ():   # 칸 머리줄 단추는 칸 미리보기 설정만
             for p in getattr(w, "panes", []):
                 b = getattr(p, "bare_btn", None)
                 if b is not None and b.isChecked() != on:
@@ -11477,12 +11511,13 @@ class PreviewPane(QtWidgets.QFrame):
                     b.blockSignals(False)
 
     def _apply_bare(self):
-        on = bool(SETTINGS["preview_bare"])
+        on = self.bare()
+        self._bare_shown = on
         self.setAttribute(Qt.WA_Hover, True)
         for w in (self.sep, self.info):
             w.setVisible(not on)
-        if on:
-            for w in (self.zbar, self.gifbar, self.film, self.btn_inspect, self.btn_seq):
+        if on:   # 0.9.156 빌드 4: 재생 줄(gifbar)은 남김 — 안의 장면 띠·글자만
+            for w in (self.zbar, self.gif_strip, self.gif_lbl, self.gif_warn, self.film, self.btn_inspect, self.btn_seq):
                 w.setVisible(False)
         if self.extra is not None and hasattr(self.extra, "set_bare"):
             try:
@@ -11493,12 +11528,12 @@ class PreviewPane(QtWidgets.QFrame):
 
     def enterEvent(self, ev):
         super().enterEvent(ev)
-        if SETTINGS["preview_bare"]:
+        if self.bare():
             self._upd_nav()
 
     def leaveEvent(self, ev):
         super().leaveEvent(ev)
-        if SETTINGS["preview_bare"]:
+        if self.bare():
             self.f_prev.setVisible(False)
             self.f_next.setVisible(False)
 
@@ -11593,7 +11628,7 @@ class PreviewPane(QtWidgets.QFrame):
             log.info("미리보기 %s %s (%.0fms)", name, os.path.basename(path), (time.time() - t0) * 1000)
             self.extra = w
             self.extra_lay.addWidget(w)
-            if SETTINGS["preview_bare"] and hasattr(w, "set_bare"):   # 0.9.154 '내용만 보기'
+            if self.bare() and hasattr(w, "set_bare"):   # 0.9.154 '내용만 보기'
                 w.set_bare(True)
             keep = name in self.KEEP_PIC
             self.pic.setVisible(keep)
@@ -11672,7 +11707,7 @@ class PreviewPane(QtWidgets.QFrame):
     def _upd_nav(self):
         """창 양끝 ◀ ▶ (모든 형식 같은 자리, 0.9.129 빌드 4). 맨 앞·맨 뒤면 그쪽 단추 숨김"""
         r = self._nav_any(0)
-        hover_ok = not SETTINGS["preview_bare"] or self.underMouse()   # 0.9.154 '내용만 보기' = 마우스 올렸을 때만
+        hover_ok = not self.bare() or self.underMouse()   # 0.9.154 '내용만 보기' = 마우스 올렸을 때만
         self.f_prev.setVisible(hover_ok and bool(r) and r[0] > 0)
         self.f_next.setVisible(hover_ok and bool(r) and r[0] < r[1] - 1)
         self._place_nav()
@@ -11775,7 +11810,19 @@ class PreviewPane(QtWidgets.QFrame):
         self.gif_slider.setToolTip(T("장면 고르기 (끌면 그 장면에서 멈춤)"))
         self.gif_slider.valueChanged.connect(lambda n: self._gif_seek(n))   # 빌드 22: 끌기뿐 아니라 누르기·화살표 키도 (_gif_ui 가 고칠 땐 신호 막음)
         self.gif_slider.installEventFilter(self)   # 빌드 22: 막대 아무 데나 누르면 그 자리로 (기본은 한 칸씩만)
+        self.gif_slider.setMinimumWidth(60)   # 0.9.156 빌드 4·5(80→60, 좁은 따로 창에서 1x 를 덮음): 배속 단추가 생겨도 막대가 너무 좁아지지 않게
         row.addWidget(self.gif_slider, 1)
+        self._speed = 1.0   # 0.9.156 빌드 4 (사용자 11/27 '영상에 배속 재생') — 다음 파일에도 이어짐
+        self.gif_speed = QtWidgets.QToolButton()
+        self.gif_speed.setText("1x")
+        self.gif_speed.setToolTip(T("속도"))
+        self.gif_speed.setAutoRaise(True)
+        self.gif_speed.setPopupMode(QtWidgets.QToolButton.InstantPopup)
+        sm = QtWidgets.QMenu(self.gif_speed)
+        for r in (0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0):
+            sm.addAction(f"{r:g}x", lambda r=r: self.set_speed(r))
+        self.gif_speed.setMenu(sm)
+        row.addWidget(self.gif_speed)
         ap = b("", T("자동 재생 — 켜면 GIF·동영상을 고르자마자 재생, 끄면 첫 장면에서 멈춘 채"), self._toggle_autoplay)   # 빌드 28 (사용자 11/6 '유저가 선택')
         ap.setIcon(gif_icon("autoplay", self._gif_fg()))
         ap.setIconSize(QtCore.QSize(20, 20))
@@ -11822,6 +11869,24 @@ class PreviewPane(QtWidgets.QFrame):
         v.addWidget(self.gif_strip)
         w.setVisible(False)
         return w
+
+    def set_speed(self, r):
+        """0.9.156 빌드 4: 재생 속도 (동영상 = 재생 속도, GIF = 장면 속도 %) — 다음 파일에도 이어짐"""
+        self._speed = float(r)
+        self.gif_speed.setText(f"{self._speed:g}x")
+        self._apply_speed()
+        log.info("미리보기 재생 속도 %gx", self._speed)
+
+    def _apply_speed(self):
+        m = self.movie
+        r = getattr(self, "_speed", 1.0)
+        try:
+            if isinstance(m, QtGui.QMovie):
+                m.setSpeed(int(round(r * 100)))
+            elif m is not None and hasattr(m, "pl"):
+                m.pl.setPlaybackRate(r)
+        except Exception:
+            log.exception("재생 속도 바꾸기 실패")
 
     def _gif_seek(self, n):
         m = self.movie
@@ -11933,7 +11998,7 @@ class PreviewPane(QtWidgets.QFrame):
         return False
 
     def eventFilter(self, obj, ev):
-        if ev.type() == QtCore.QEvent.Show and SETTINGS["preview_bare"] and obj in getattr(self, "_bare_ws", ()):
+        if ev.type() == QtCore.QEvent.Show and self.bare() and obj in getattr(self, "_bare_ws", ()):
             QtCore.QTimer.singleShot(0, obj.hide)   # 0.9.154 '내용만 보기': 형식마다 다시 보이게 하는 곳이 많아 보일 때 바로 숨김
         if ev.type() == QtCore.QEvent.KeyPress and self.movie is not None and obj in (getattr(self, "gif_strip", None), getattr(self, "gif_slider", None)):
             k = ev.key()   # 빌드 23: 띠·막대에서 ← → = 한 장면 (화면·막대·띠 같이), 스페이스 = 재생/멈춤
@@ -12059,6 +12124,8 @@ class PreviewPane(QtWidgets.QFrame):
             it.setData(Qt.UserRole, i)
             self.gif_strip.addItem(it)
         self.gif_strip.setEnabled(True)   # 0.9.118: 큰 GIF 도 장면 띠로 이동 (느린 이동, 사용자 '하단 슬라이드 선택이 안 됨')
+        if self.gif_strip.count() and not self.bare():
+            self.gif_strip.setVisible(True)   # 0.9.156 빌드 4: 장면이 들어오기 전엔 숨겨 둠 (빈 흰 칸이 그림 자리를 먹던 것)
 
     def _stop_movie(self):
         if hasattr(self, "zcanvas"):   # 0.9.129 확대 캔버스 정리 (다음 GIF 는 다시 맞춤부터)
@@ -12103,7 +12170,9 @@ class PreviewPane(QtWidgets.QFrame):
         if pm is not None:
             self._set_pic(pm)
         self.gif_strip.clear()
+        self.gif_strip.setVisible(False)   # 0.9.156 빌드 4 장면 오면 _on_strip 이 보임
         self.gifbar.setVisible(True)
+        self._apply_speed()   # 0.9.156 빌드 4 배속
         if SETTINGS["preview_autoplay"]:
             m.start()
         else:   # 빌드 28: 첫 장면에서 멈춘 채 (▶ 로 재생)
@@ -12162,7 +12231,10 @@ class PreviewPane(QtWidgets.QFrame):
             self._strip_sig_obj = _S()
             self._strip_sig = self._strip_sig_obj.done
             self._strip_sig.connect(self._on_strip)
+        self.gif_strip.clear()
+        self.gif_strip.setVisible(False)   # 0.9.156 빌드 4 장면 오면 _on_strip 이 보임
         self.gifbar.setVisible(True)
+        self._apply_speed()   # 0.9.156 빌드 4 배속
         self._gif_strip_fill(path)
         self._gif_ui()
         log.info("미리보기 GIF 재생 %s (장면 %d, %s, 장면 이동 %s)", path, m.frameCount(), size_short(size), self.gif_seekable)
@@ -12504,6 +12576,7 @@ class Main(QtWidgets.QMainWindow):
         """open_path 가 있으면 '새 창으로 열기' — 저장 상태 대신 칸 1개 + 그 폴더로 시작 (src = 연 창, 위치 기준)
         open_state 가 있으면 그 기록(자동 기록 복구·지난번 함께 열려 있던 창)으로 새 창. restore_geometry = 그때 위치·크기"""
         super().__init__()
+        self._is_new_win = src is not None and not restore_geometry   # 0.9.156 빌드 3: Win+E·새 창으로 연 창만 닫을 때 자리 기억
         _ORDER[0] += 1
         self.order = _ORDER[0]
         self.setAttribute(Qt.WA_DeleteOnClose)   # 창이 여러 개일 때 닫은 창 메모리 반환
@@ -13326,6 +13399,9 @@ class Main(QtWidgets.QMainWindow):
                         pane.show()
                     PREVIEW_WIN.setStyleSheet(self.styleSheet())
                     PREVIEW_WIN.show_near(self)
+                if getattr(pane, "_bare_shown", None) != pane.bare():   # 0.9.156 빌드 5: 자리마다 따로 기억한 '내용만 보기'
+                    pane._bare_shown = pane.bare()
+                    pane.set_bare(pane._bare_shown, save=False)
                 self.preview.schedule(self)
             else:
                 PREVIEW_WIN.save_geo()
@@ -16040,11 +16116,16 @@ eports.
 
     def closeEvent(self, ev):
         last = not [w for w in WINDOWS if w is not self]
-        if not self.isMinimized() and not SESSION_END["on"]:   # 0.9.137 빌드 3: 새 창이 이 자리에 (탐색기처럼 마지막에 닫은 창)
+        # 0.9.137 빌드 3: 새 창이 이 자리에 (탐색기처럼 마지막에 닫은 창)
+        # 0.9.156 빌드 3 (사용자 11/27 'Win+E 새 창 위치가 자꾸 초기화'): 메인 창(처음 뜬 창)을 닫을 때는 안 덮어씀 — 업데이트·하루 끝에 메인 창이 닫히면
+        #   메인 창 자리가 기억돼 다음 Win+E 창이 메인 창 옆(+32)에 떴음(로그 11/27 14:25). 메인 창 자리는 세션 저장이 따로 복원
+        if not self.isMinimized() and not SESSION_END["on"] and getattr(self, "_is_new_win", False):
             g = self.normalGeometry() if self.isMaximized() else self.geometry()
             if g.width() > 0 and g.height() > 0:
                 SETTINGS["last_win_geo"] = [g.x(), g.y(), g.width(), g.height(), bool(self.isMaximized())]
                 log.info("닫은 창 자리 기억 %s", SETTINGS["last_win_geo"])
+        elif not getattr(self, "_is_new_win", False):
+            log.info("메인 창 닫음 — 새 창 자리는 그대로 %s", SETTINGS["last_win_geo"])
         if MEMOS is not None:   # v0.9.108 메모는 닫을 때 바로 저장 (0.6초 기다리지 않음)
             MEMOS.save_now()
         if last:   # 빌드 20: 압축에서 꺼낸 임시 폴더 정리 (이 프로그램 것만)
