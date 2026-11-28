@@ -19,7 +19,7 @@ from ctypes import wintypes
 from PySide6 import QtCore, QtGui
 
 log = logging.getLogger("QE.ovl")
-VERSION = "1.0.1"
+VERSION = "1.1.0"   # 1.1.0 (0.9.158 빌드 4): 가볍게 쓰기 보관 상한(set_lite)·stats
 
 shell32 = ctypes.windll.shell32
 ole = ctypes.windll.ole32
@@ -103,6 +103,7 @@ class Overlays(QtCore.QObject):
     def __init__(self):
         super().__init__()
         self.cache = OrderedDict()   # (경로 소문자, mtime, px) → QImage | False
+        self.max_n = 20000           # 1.1.0 가볍게 쓰기면 2000
         self.pix = {}
         self.want = OrderedDict()
         self.lock = threading.Lock()
@@ -144,6 +145,22 @@ class Overlays(QtCore.QObject):
             for k in [k for k, p in self.want.items() if os.path.normcase(os.path.dirname(p)) == f]:
                 del self.want[k]
 
+    def stats(self):
+        """1.1.0 보관 크기 보고"""
+        with self.lock:
+            imgs = [v for v in self.cache.values() if v]
+        b = sum(v.sizeInBytes() for v in imgs)
+        return {"n": len(self.cache), "img_mb": round(b / 1048576, 1), "pix_n": len(getattr(self, "pix", {}))}
+
+    def set_lite(self, on):
+        """1.1.0 가볍게 쓰기: 보관 2000개 (보통 20000). 줄일 때 오래된 것부터 버림"""
+        self.max_n = 2000 if on else 20000
+        with self.lock:
+            while len(self.cache) > self.max_n:
+                k, _ = self.cache.popitem(last=False)
+                self.pix.pop(k, None)
+        log.info("겹침 아이콘 보관 상한 %d개 → %s", self.max_n, self.stats())
+
     def stop(self):
         self.alive = False
         self.ev.set()
@@ -174,7 +191,7 @@ class Overlays(QtCore.QObject):
                 self.done_n += 1
                 with self.lock:
                     self.cache[key] = img if img is not None else False
-                    while len(self.cache) > 20000:
+                    while len(self.cache) > self.max_n:
                         self.cache.popitem(last=False)
                 if img is not None:
                     found += 1

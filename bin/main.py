@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.157"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 1              #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.158"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 6              #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -1094,6 +1094,8 @@ def thumbs_service():
     if THUMBS is None:
         THUMBS = thumbs.Thumbs()
         THUMBS.ready.connect(_thumb_ready)
+        if not SETTINGS["search_index"]:
+            THUMBS.set_lite(True)   # 0.9.158 빌드 4 가볍게 쓰기 보관 상한
         try:   # 빌드 6: 폴더 표지 바탕 = 윈도우 폴더 아이콘 (탐색기처럼) — 화면 스레드에서 한 번
             thumbs.set_folder_base(shellops.icon_for("folder", True, 256).pixmap(256, 256).toImage())
         except Exception:
@@ -1109,7 +1111,45 @@ def overlay_service():
     if OVL is None:
         OVL = overlays.Overlays()
         OVL.ready.connect(_ovl_ready)
+        if not SETTINGS["search_index"]:
+            OVL.set_lite(True)
     return OVL
+
+
+def apply_lite_caches(on):
+    """0.9.158 빌드 4 (사용자 11/28 '가볍게 198MB 더 줄이기' → 2): 그림 미리보기·겹침 아이콘 보관 상한을 가볍게/보통으로, 줄일 땐 바로 비움"""
+    thumbs.set_limits(on)
+    if THUMBS is not None:
+        THUMBS.set_lite(on)
+    if OVL is not None:
+        OVL.set_lite(on)
+    mem_report("가볍게 쓰기 " + ("켬" if on else "끔"))
+
+
+def mem_report(why=""):
+    """0.9.158 빌드 4: 메모리 쓰는 곳 보고(로그) — 전용 메모리·미리보기 보관·겹침 아이콘·열린 탭·항목 수"""
+    try:
+        import ctypes.wintypes as wt
+
+        class PMC(ctypes.Structure):
+            _fields_ = [("cb", wt.DWORD), ("a", wt.DWORD)] + [(f"s{i}", ctypes.c_size_t) for i in range(9)]
+        c = PMC(); c.cb = ctypes.sizeof(c)
+        k = ctypes.windll.kernel32; k.GetCurrentProcess.restype = ctypes.c_void_p
+        ctypes.windll.psapi.GetProcessMemoryInfo.argtypes = [ctypes.c_void_p, ctypes.c_void_p, wt.DWORD]
+        ctypes.windll.psapi.GetProcessMemoryInfo(k.GetCurrentProcess(), ctypes.byref(c), c.cb)
+        priv, ws = c.s8 / 1048576, c.s1 / 1048576
+    except Exception:
+        priv = ws = -1
+    tabs = rows = 0
+    for w in list(WINDOWS):
+        for p in getattr(w, "panes", []):
+            for v in p.views():
+                tabs += 1
+                rows += len(getattr(v.model_, "all", []) or [])
+    info = {"전용MB": round(priv), "작업집합MB": round(ws), "미리보기": THUMBS.stats() if THUMBS else None,
+            "겹침": OVL.stats() if OVL else None, "탭": tabs, "탭 항목": rows, "색인": SEARCH.count() if SEARCH else 0}
+    log.info("메모리 보고 %s %s", why, info)
+    return info
 
 
 FICON = None          # 0.9.112 exe 등 파일마다 다른 아이콘 fileicons.FileIcons
@@ -1657,6 +1697,24 @@ class ScanJob(QtCore.QRunnable):
                         folder, "*" if flat else q, self.cancel, lambda b: self.sig.partial.emit(self.gen, rows(b)),
                         limit=50000 if flat else 5000, files_only=flat)
                     self.sig.info.emit(self.gen, T('{0:,}개 찾음 (훑은 항목 {1:,}개)').format(total, scanned) + (T(" — 취소됨") if self.cancel() else ""))
+                elif not SETTINGS["search_index"]:   # 0.9.158 색인 꺼짐(가볍게) → 검색 범위를 바로 훑음 (느림, 메모리 안 씀)
+                    total = scanned = 0
+                    t0 = time.perf_counter()
+                    roots = [r["path"] for r in (SETTINGS["search_roots"] or []) if r.get("on")]
+
+                    def got(b):   # 중간 결과를 바로 보여 주고, 끝에 전부를 목록으로 (전체 검색 탭은 끝날 때 목록을 통째로 바꿈)
+                        rr = rows(b)
+                        entries.extend(rr)
+                        self.sig.partial.emit(self.gen, rr)
+                    for rt in roots:
+                        if self.cancel() or total >= 5000:
+                            break
+                        n, sc = search_index.folder_search(rt, q, self.cancel, got, limit=5000 - total)
+                        total += n
+                        scanned += sc
+                    log.info("전체 검색(색인 꺼짐) %r: %d개 · 훑은 %d개 · %.1f초 · 범위 %s", q, total, scanned, time.perf_counter() - t0, roots)
+                    self.sig.info.emit(self.gen, T('{0:,}개 찾음 (색인 꺼짐 — 직접 훑은 항목 {1:,}개)').format(total, scanned)
+                                       + (T(" — 취소됨") if self.cancel() else ""))
                 elif SEARCH is not None:
                     # 0.9.145 (사용자 11/22 '내용까지 검색'): 이름 색인 검색과 동시에 윈도우 색인으로 문서 내용 질의
                     wbox, wth = {}, None
@@ -10849,6 +10907,12 @@ class SettingsDialog(QtWidgets.QDialog):
         fdef.clicked.connect(lambda *_: (self._set_font(""), self._set_font_pt(0)))
         form.addRow(T("글꼴"), fr)
         lay.addLayout(form)
+        # 0.9.158 빌드 2~5 (사용자 11/28 '가벼운 모드 찾기 쉽게' → '맨 위로 올리고 따로 구분' → 빌드 5 '언어·테마·글꼴 아래로'):
+        # 설정 ▸ 검색 '빠른 검색 색인 사용' 의 반대값
+        c = self._card(lay, T("가볍게 쓰기"))
+        self._check(c, "lite_mode", T("가볍게 쓰기 — 빠른 검색 색인을 끄고 메모리를 덜 씀 (전체 검색은 느려짐)"),
+                    lambda: not SETTINGS["search_index"], lambda: m.set_search_index(not SETTINGS["search_index"]),
+                    T("색인은 항목 100만 개에 메모리 약 110MB 입니다. 끄면 전체 검색이 그때그때 검색 범위를 직접 훑습니다. 다시 켜면 저장된 색인을 바로 불러오고 뒤에서 새로 훑습니다."))
         # 0.9.126 사용자 '정리해 달라 — Ctrl+= 밑 두 개만 해당되는데 다음 줄과 안 나뉘어 헷갈림': 주제별 상자로 묶음
         c = self._card(lay, T("창"))
         self._check(c, "allow_multi", T("창 여러 개 열기 허용"), lambda: SETTINGS["allow_multi"], m.toggle_multi,
@@ -11356,6 +11420,20 @@ def drive_list():
         on = t == 3 and ok and fs.value.upper() in ("NTFS", "REFS")
         out.append((d, f"{d}  {vol.value}  [{kinds.get(t, '?')}{(' ' + fs.value) if fs.value else ''}]", bool(on)))
     return out
+
+
+def default_search_roots():
+    """0.9.158 (사용자 11/28 '라이트 — 기본 색인 범위 좁히기', 실측 736만 개 색인 = 메모리 약 805MB):
+    처음 쓰는 사람 = 사용자 폴더(바탕 화면·문서·다운로드 등)만 켬, 드라이브는 목록에만(꺼짐).
+    이미 색인 저장본이 있는 사람(전부터 쓰던 사람) = 예전 기본(로컬 NTFS 드라이브 켬) — 업데이트로 검색 범위가 줄지 않게"""
+    old_user = os.path.exists(os.path.join(DATA_DIR, "index", "index.bin"))
+    drives = [{"path": d, "on": bool(default_on and old_user)} for d, _label, default_on in drive_list()]
+    if old_user:
+        log.info("검색 범위 기본: 전부터 쓰던 사람 → 로컬 드라이브 %s", [r["path"] for r in drives if r["on"]])
+        return drives
+    home = os.path.normpath(os.path.expanduser("~"))
+    log.info("검색 범위 기본: 처음 → 사용자 폴더만 %s (드라이브는 꺼 둠)", home)
+    return [{"path": home, "on": True}] + drives
 
 
 # ================================================================ 메인 창
@@ -12841,7 +12919,7 @@ class Main(QtWidgets.QMainWindow):
         if SEARCH is None:   # 첫 창만 색인을 만듦, 다음 창들은 같이 씀
             SEARCH = search_index.SearchIndex(os.path.join(DATA_DIR, "index"),
                                               notify=lambda k, i: SSIG.ev.emit(k, i))
-            QtCore.QTimer.singleShot(2000, lambda: SEARCH and SEARCH.start(self.search_roots_enabled()))
+            QtCore.QTimer.singleShot(2000, lambda: SEARCH and SEARCH.start(self.index_roots()))
         elif SEARCH.state == "ready":
             self._on_index_event("ready", None)
         WINDOWS.append(self)
@@ -12851,11 +12929,39 @@ class Main(QtWidgets.QMainWindow):
     def search_roots_enabled(self):
         return [r["path"] for r in self.search_roots() if r.get("on")]
 
+    def index_roots(self):
+        """0.9.158 빠른 검색 색인을 만들 범위 — 색인을 꺼 두면(가볍게) 없음"""
+        return self.search_roots_enabled() if SETTINGS["search_index"] else []
+
+    def set_search_index(self, on):
+        """0.9.158 빌드 2 가볍게 쓰기 켜고 끄기 (설정 ▸ 일반) — 바로 적용"""
+        on = bool(on)
+        if on == bool(SETTINGS["search_index"]):
+            return
+        SETTINGS["search_index"] = on
+        log.info("빠른 검색 색인 %s (설정 ▸ 일반)", "켬" if on else "끔 (가볍게)")
+        # 빌드 4 (사용자 11/28 '198MB 더 줄이기' → 1): 가볍게 쓰기 = CPU·GPU 표시도 끔(실측 17MB), 되돌리면 전 상태로
+        if not on:
+            SETTINGS["cpu_before_lite"] = bool(SETTINGS["sysmon"])
+            for w in list(WINDOWS):
+                w.set_sysmon(False)
+                w.drop_sysmon()
+        elif SETTINGS["cpu_before_lite"]:
+            for w in list(WINDOWS):
+                w.set_sysmon(True)
+        if on:
+            SETTINGS["cpu_before_lite"] = None
+        apply_lite_caches(not on)
+        if SEARCH is not None:
+            self.idx_btn.setText(T("색인 만드는 중") if on else T("색인 꺼짐"))
+            SEARCH.set_roots(self.index_roots())
+
     def search_roots(self):
         """[{path, on}] — 설정에 없으면 기본: 로컬 NTFS 드라이브 켬, 나머지(구글드라이브·네트워크·이동식) 끔"""
         roots = SETTINGS["search_roots"]
         if roots is None:
-            roots = [{"path": d, "on": default_on} for d, _label, default_on in drive_list()]
+            roots = default_search_roots()
+            SETTINGS["search_roots"] = roots   # 0.9.158 처음 정한 기본을 저장 (나중에 색인이 생겨도 기본이 바뀌지 않게)
         return roots
 
     def _on_index_event(self, kind, info):
@@ -12868,7 +12974,10 @@ class Main(QtWidgets.QMainWindow):
             else:
                 self.idx_btn.setText(T("색인 만드는 중"))
         elif kind == "ready":
-            self.idx_btn.setText(T('색인 {0:,}').format(SEARCH.count()) if SEARCH else T("색인"))
+            if not SETTINGS["search_index"]:   # 0.9.158
+                self.idx_btn.setText(T("색인 꺼짐"))
+            else:
+                self.idx_btn.setText(T('색인 {0:,}').format(SEARCH.count()) if SEARCH else T("색인"))
             # 이미 열린 전체 검색 탭은 새 색인으로 다시 검색
             for p in self.panes:
                 for v in p.views():
@@ -12923,6 +13032,12 @@ class Main(QtWidgets.QMainWindow):
         lay = QtWidgets.QVBoxLayout(dlg)
         lay.addWidget(QtWidgets.QLabel(T("체크한 드라이브·폴더의 파일 이름을 색인합니다 (내용은 안 읽음). 관리자 권한 없이 실시간 반영.\n"
                                        "구글드라이브·네트워크 드라이브는 느리거나 연결이 끊기면 오래 걸릴 수 있어 기본 꺼짐.")))
+        # 0.9.158 (사용자 11/28 '라이트 버전' — 실측 736만 개 색인 = 메모리 약 805MB): 색인 끄기 = 가볍게
+        idx_chk = QtWidgets.QCheckBox(T("빠른 검색 색인 사용 (끄면 메모리를 덜 씀 — 대신 전체 검색은 아래 범위를 그때그때 직접 훑어 느림)"))
+        idx_chk.setChecked(bool(SETTINGS["search_index"]))
+        idx_first = idx_chk.isChecked()   # 빌드 2: 이 창에서 바꾼 경우만 적용 (설정 ▸ 일반 '가볍게 쓰기'로 바꾼 값을 되돌리지 않게)
+        idx_chk.setToolTip(T("색인 크기는 항목 100만 개에 메모리 약 110MB 입니다. 범위를 사용자 폴더처럼 좁혀도 줄어듭니다."))
+        lay.addWidget(idx_chk)
         lst = QtWidgets.QListWidget()
         labels = {d: lbl for d, lbl, _on in drive_list()}
         for r in self.search_roots():
@@ -13126,9 +13241,13 @@ class Main(QtWidgets.QMainWindow):
             if not r:
                 return
             roots = [{"path": lst.item(i).data(Qt.UserRole), "on": lst.item(i).checkState() == Qt.Checked} for i in range(lst.count())]
-            old = self.search_roots_enabled()
+            old = self.index_roots()
             SETTINGS["search_roots"] = roots
-            new = self.search_roots_enabled()
+            if idx_chk.isChecked() != idx_first and bool(idx_chk.isChecked()) != bool(SETTINGS["search_index"]):
+                self.set_search_index(idx_chk.isChecked())   # 빌드 4: CPU 표시도 같이 (가볍게 쓰기와 같은 길)
+                self.show_notice(T("검색 범위를 저장했습니다  ✕"), ms=1500)
+                return
+            new = self.index_roots()
             log.info("검색 범위 %s → %s", old, new)
             if [x.lower() for x in old] != [x.lower() for x in new]:
                 self.idx_btn.setText(T("색인 만드는 중"))
@@ -14141,6 +14260,16 @@ class Main(QtWidgets.QMainWindow):
         if save:
             SETTINGS["sysmon"] = on
             log.info("사용량 표시 %s", on)
+
+    def drop_sysmon(self):
+        """빌드 4 가볍게 쓰기: 사용량 측정기(PDH·GPU 질의)를 놓음 — 다시 켜면 set_sysmon 이 새로 만듦"""
+        mon, self.mon = self.mon, None
+        if mon is not None:
+            try:
+                getattr(mon, "close", lambda: None)()
+            except Exception:
+                log.debug("사용량 측정기 닫기 실패", exc_info=True)
+            log.info("사용량 측정기 놓음")
 
     def _update_mon(self):
         if not self.mon:
@@ -16258,8 +16387,9 @@ eports.
                 if tw.__class__.__name__ in ("BatchRename", "GuideWindow", "FavOrganizer", "OverlayOrder") and tw.isVisible():
                     tw.close()
             global SEARCH
+            mem_report("종료")   # 0.9.158 빌드 4
             if SEARCH:
-                SEARCH.stop()
+                SEARCH.stop(keep=True)   # 0.9.158 변경분 저장 → 다음에 켤 때 다시 훑지 않음
                 SEARCH = None   # 같은 프로그램에서 창을 다시 만들면 새로 시작
             svnstat.stop_all()
             log.info("종료 (마지막 창)")

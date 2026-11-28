@@ -2474,5 +2474,12 @@
  "휠 한 칸에 움직일 줄 수": "Righe per scatto della rotella",
  "목록 보기에서는 세로 줄 수 (옆으로 넘김)": "Nella vista Elenco: numero di colonne (scorre di lato)",
  "안에 바뀐 것만": "modificati negli ultimi",
- "넘게 지난 것만": "più vecchi di"
+ "넘게 지난 것만": "più vecchi di",
+ "색인 꺼짐": "Indice disattivato",
+ "빠른 검색 색인 사용 (끄면 메모리를 덜 씀 — 대신 전체 검색은 아래 범위를 그때그때 직접 훑어 느림)": "Usa l'indice di ricerca rapida (disattivalo per usare meno memoria: la ricerca globale analizzerà ogni volta i percorsi qui sotto, più lentamente)",
+ "색인 크기는 항목 100만 개에 메모리 약 110MB 입니다. 범위를 사용자 폴더처럼 좁혀도 줄어듭니다.": "L'indice usa circa 110 MB di memoria per milione di elementi. Ridurre i percorsi (ad es. alla cartella utente) lo riduce anche.",
+ "{0:,}개 찾음 (색인 꺼짐 — 직접 훑은 항목 {1:,}개)": "{0:,} trovati (indice disattivato — {1:,} elementi analizzati)",
+ "가볍게 쓰기 — 빠른 검색 색인을 끄고 메모리를 덜 씀 (전체 검색은 느려짐)": "Modalità leggera — disattiva l'indice di ricerca rapida per usare meno memoria (la ricerca globale diventa più lenta)",
+ "색인은 항목 100만 개에 메모리 약 110MB 입니다. 끄면 전체 검색이 그때그때 검색 범위를 직접 훑습니다. 다시 켜면 저장된 색인을 바로 불러오고 뒤에서 새로 훑습니다.": "L'indice usa circa 110 MB di memoria per milione di elementi. Se disattivato, la ricerca globale analizza ogni volta i percorsi. Riattivandolo, l'indice salvato viene caricato subito e rigenerato in background.",
+ "가볍게 쓰기": "Modalità leggera"
 }

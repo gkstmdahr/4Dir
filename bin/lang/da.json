@@ -2474,5 +2474,12 @@
  "휠 한 칸에 움직일 줄 수": "Rækker pr. hjulhak",
  "목록 보기에서는 세로 줄 수 (옆으로 넘김)": "I listevisning: antal kolonner (ruller til siden)",
  "안에 바뀐 것만": "ændret inden for",
- "넘게 지난 것만": "ældre end"
+ "넘게 지난 것만": "ældre end",
+ "색인 꺼짐": "Indeks slået fra",
+ "빠른 검색 색인 사용 (끄면 메모리를 덜 씀 — 대신 전체 검색은 아래 범위를 그때그때 직접 훑어 느림)": "Brug hurtigsøgningsindeks (slået fra = mindre hukommelse; global søgning gennemgår så stederne nedenfor hver gang, langsommere)",
+ "색인 크기는 항목 100만 개에 메모리 약 110MB 입니다. 범위를 사용자 폴더처럼 좁혀도 줄어듭니다.": "Indekset bruger ca. 110 MB hukommelse pr. million elementer. Færre steder (fx kun brugermappen) mindsker det også.",
+ "{0:,}개 찾음 (색인 꺼짐 — 직접 훑은 항목 {1:,}개)": "{0:,} fundet (indeks slået fra — {1:,} elementer gennemgået)",
+ "가볍게 쓰기 — 빠른 검색 색인을 끄고 메모리를 덜 씀 (전체 검색은 느려짐)": "Let tilstand — slå hurtigsøgningsindekset fra for mindre hukommelse (global søgning bliver langsommere)",
+ "색인은 항목 100만 개에 메모리 약 110MB 입니다. 끄면 전체 검색이 그때그때 검색 범위를 직접 훑습니다. 다시 켜면 저장된 색인을 바로 불러오고 뒤에서 새로 훑습니다.": "Indekset bruger ca. 110 MB hukommelse pr. million elementer. Når det er slået fra, gennemgår global søgning stederne hver gang. Slås det til igen, indlæses det gemte indeks straks og genopbygges i baggrunden.",
+ "가볍게 쓰기": "Let tilstand"
 }

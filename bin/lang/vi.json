@@ -2474,5 +2474,12 @@
  "휠 한 칸에 움직일 줄 수": "Số dòng mỗi nấc cuộn",
  "목록 보기에서는 세로 줄 수 (옆으로 넘김)": "Ở dạng Danh sách: số cột (cuộn ngang)",
  "안에 바뀐 것만": "đổi trong vòng",
- "넘게 지난 것만": "cũ hơn"
+ "넘게 지난 것만": "cũ hơn",
+ "색인 꺼짐": "Đã tắt chỉ mục",
+ "빠른 검색 색인 사용 (끄면 메모리를 덜 씀 — 대신 전체 검색은 아래 범위를 그때그때 직접 훑어 느림)": "Dùng chỉ mục tìm kiếm nhanh (tắt để dùng ít bộ nhớ hơn — khi đó tìm kiếm toàn bộ sẽ quét trực tiếp các vị trí bên dưới mỗi lần, chậm hơn)",
+ "색인 크기는 항목 100만 개에 메모리 약 110MB 입니다. 범위를 사용자 폴더처럼 좁혀도 줄어듭니다.": "Chỉ mục dùng khoảng 110 MB bộ nhớ cho mỗi triệu mục. Thu hẹp vị trí (ví dụ chỉ thư mục người dùng) cũng giảm mức này.",
+ "{0:,}개 찾음 (색인 꺼짐 — 직접 훑은 항목 {1:,}개)": "Tìm thấy {0:,} (đã tắt chỉ mục — đã quét {1:,} mục)",
+ "가볍게 쓰기 — 빠른 검색 색인을 끄고 메모리를 덜 씀 (전체 검색은 느려짐)": "Chế độ nhẹ — tắt chỉ mục tìm kiếm nhanh để dùng ít bộ nhớ (tìm kiếm toàn bộ sẽ chậm hơn)",
+ "색인은 항목 100만 개에 메모리 약 110MB 입니다. 끄면 전체 검색이 그때그때 검색 범위를 직접 훑습니다. 다시 켜면 저장된 색인을 바로 불러오고 뒤에서 새로 훑습니다.": "Chỉ mục dùng khoảng 110 MB bộ nhớ cho mỗi triệu mục. Khi tắt, tìm kiếm toàn bộ sẽ quét các vị trí mỗi lần. Bật lại thì chỉ mục đã lưu được tải ngay và quét lại ở nền.",
+ "가볍게 쓰기": "Chế độ nhẹ"
 }

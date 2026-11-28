@@ -16,7 +16,8 @@ import time
 import shutil
 import subprocess
 
-MAKE_PUBLIC_VER = "1.2.0"   # 1.2.0: TRANSLATING.md(번역 고치기 안내)·lang_user 빼기 / 1.1.1: README 별 부탁·16개 언어·4Dir.exe / 1.1.0: 태그·가상 그룹 파일(4Dir_tags.json, 개인 데이터) 빼기 / 1.0.9: restore_backup·_restore_pending 빼기 / 1.0.8: 색 라벨 파일(4Dir_labels.json) 빼기
+FUNDING = "github: gkstmdahr\nko_fi: 4dirofficial\n"
+MAKE_PUBLIC_VER = "1.3.0"   # 1.3.0: 후원 단추(.github/FUNDING.yml — GitHub Sponsors·Ko-fi, 11/28 Sponsors 승인) /1.2.0: TRANSLATING.md(번역 고치기 안내)·lang_user 빼기 / 1.1.1: README 별 부탁·16개 언어·4Dir.exe / 1.1.0: 태그·가상 그룹 파일(4Dir_tags.json, 개인 데이터) 빼기 / 1.0.9: restore_backup·_restore_pending 빼기 / 1.0.8: 색 라벨 파일(4Dir_labels.json) 빼기
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 BIN = os.path.join(ROOT, "bin")
@@ -344,6 +345,7 @@ def main():
     os.makedirs(tdir, exist_ok=True)
     open(os.path.join(tdir, "bug_report.yml"), "w", encoding="utf-8", newline="\n").write(ISSUE_TEMPLATE)
     open(os.path.join(tdir, "config.yml"), "w", encoding="utf-8", newline="\n").write(ISSUE_CONFIG)
+    open(os.path.join(OUT, ".github", "FUNDING.yml"), "w", encoding="utf-8", newline="\n").write(FUNDING)   # 1.3.0 저장소 위 후원 단추
 
     hits = scan(OUT)
     n = sum(len(fs) for a, _, fs in os.walk(OUT) if ".git" not in a.split(os.sep))

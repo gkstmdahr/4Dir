@@ -2474,5 +2474,12 @@
  "휠 한 칸에 움직일 줄 수": "Zeilen pro Mausrad-Raste",
  "목록 보기에서는 세로 줄 수 (옆으로 넘김)": "In der Listenansicht: Anzahl Spalten (seitlich blättern)",
  "안에 바뀐 것만": "innerhalb geändert",
- "넘게 지난 것만": "älter als"
+ "넘게 지난 것만": "älter als",
+ "색인 꺼짐": "Index aus",
+ "빠른 검색 색인 사용 (끄면 메모리를 덜 씀 — 대신 전체 검색은 아래 범위를 그때그때 직접 훑어 느림)": "Schnellsuchindex verwenden (aus = weniger Speicher; die globale Suche durchsucht dann jedes Mal die Orte unten und ist langsamer)",
+ "색인 크기는 항목 100만 개에 메모리 약 110MB 입니다. 범위를 사용자 폴더처럼 좁혀도 줄어듭니다.": "Der Index braucht etwa 110 MB Speicher pro Million Einträge. Weniger Orte (z. B. nur der Benutzerordner) verringern ihn ebenfalls.",
+ "{0:,}개 찾음 (색인 꺼짐 — 직접 훑은 항목 {1:,}개)": "{0:,} gefunden (Index aus — {1:,} Einträge durchsucht)",
+ "가볍게 쓰기 — 빠른 검색 색인을 끄고 메모리를 덜 씀 (전체 검색은 느려짐)": "Sparmodus — Schnellsuchindex aus, weniger Speicher (globale Suche wird langsamer)",
+ "색인은 항목 100만 개에 메모리 약 110MB 입니다. 끄면 전체 검색이 그때그때 검색 범위를 직접 훑습니다. 다시 켜면 저장된 색인을 바로 불러오고 뒤에서 새로 훑습니다.": "Der Index braucht etwa 110 MB Speicher pro Million Einträge. Ist er aus, durchsucht die globale Suche die Orte jedes Mal direkt. Beim Wiedereinschalten wird der gespeicherte Index sofort geladen und im Hintergrund neu erstellt.",
+ "가볍게 쓰기": "Sparmodus"
 }

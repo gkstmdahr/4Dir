@@ -31,7 +31,7 @@ from ctypes import wintypes
 from PySide6 import QtCore, QtGui
 
 log = logging.getLogger("QE.thumb")
-VERSION = "1.5.0"
+VERSION = "1.6.1"   # 1.6.1: 가볍게 쓰기 화면용 그림도 MB 상한(실측 300개 = 41MB) / 1.6.0 (0.9.158 빌드 4): 가볍게 쓰기 — 보관 상한 줄이기(set_lite)·크기 보고(stats)
 BADGES = True    # 형식 딱지 (main 이 OPTS 로 정함)
 COVERS = True    # 폴더 표지
 BADGE_COLORS = {".pdf": "#c62828", ".psd": "#1f6fd1", ".png": "#2e9d4f", ".jpg": "#e07b00", ".jpeg": "#e07b00", ".gif": "#8e44ad", ".max": "#0f8b8d",
@@ -39,6 +39,10 @@ BADGE_COLORS = {".pdf": "#c62828", ".psd": "#1f6fd1", ".png": "#2e9d4f", ".jpg":
                 ".exr": "#37474f", ".hdr": "#37474f", ".ico": "#7cb342"}
 IMAGE_EXT = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tga", ".psd", ".dds", ".tif", ".tiff", ".webp", ".ico", ".exr", ".hdr", ".max"}
 CACHE_BYTES = 120 * 1024 * 1024
+PIX_MAX = 1500                 # 화면용 QPixmap 보관 개수 (넘으면 비움)
+PIX_BYTES = 0                  # 1.6.1 화면용 MB 상한 (0 = 없음, 개수만)
+LITE_BYTES, LITE_PIX, LITE_PIX_BYTES = 16 * 1024 * 1024, 1500, 16 * 1024 * 1024   # 1.6.1 가볍게 쓰기 (실측: 보통은 그림 300장 아주 큰 아이콘에 원본 48MB + 화면용 48MB)
+NORMAL_BYTES, NORMAL_PIX = CACHE_BYTES, PIX_MAX
 
 ole = ctypes.windll.ole32
 gdi = ctypes.windll.gdi32
@@ -514,6 +518,12 @@ def _one_color(img):
     return len({img.pixel(x, y) for x in range(0, w, max(1, w // 12)) for y in range(0, h, max(1, h // 12))}) <= 1
 
 
+def set_limits(on):
+    """1.6.1 가볍게 쓰기 상한 (미리보기 서비스가 아직 없어도 — 나중에 만들어지면 이 값으로)"""
+    global CACHE_BYTES, PIX_MAX, PIX_BYTES
+    CACHE_BYTES, PIX_MAX, PIX_BYTES = (LITE_BYTES, LITE_PIX, LITE_PIX_BYTES) if on else (NORMAL_BYTES, NORMAL_PIX, 0)
+
+
 class Thumbs(QtCore.QObject):
     """요청(경로, 수정 시각, 크기) → 뒤에서 만들어 ready(경로, 크기) 신호. get() 은 있으면 QPixmap, 없으면 요청하고 None"""
     ready = QtCore.Signal(str, int)
@@ -523,6 +533,7 @@ class Thumbs(QtCore.QObject):
         self.cache = OrderedDict()   # (경로 소문자, mtime, px) → QImage
         self.bytes = 0
         self.pix = {}                # 같은 키의 QPixmap (화면 스레드에서만)
+        self.pix_bytes = 0           # 1.6.1 화면용 그림 바이트 (대략: 폭×높이×4)
         self.want = OrderedDict()    # 기다리는 요청 (최근이 뒤)
         self.failed = set()
         self.lock = threading.Lock()
@@ -552,9 +563,23 @@ class Thumbs(QtCore.QObject):
                 return None
         pm = QtGui.QPixmap.fromImage(img)
         self.pix[key] = pm
-        if len(self.pix) > 1500:
+        self.pix_bytes += pm.width() * pm.height() * 4
+        if len(self.pix) > PIX_MAX:
             self.pix.clear()
+            self.pix_bytes = 0
+        elif PIX_BYTES:
+            self._trim_pix(keep=key)
         return pm
+
+    def _trim_pix(self, keep=None):
+        """1.6.1 화면용 그림을 MB 상한 아래로 — 오래 넣은 것부터 (방금 쓴 것은 남김)"""
+        for k in list(self.pix):
+            if self.pix_bytes <= PIX_BYTES or len(self.pix) <= 1:
+                break
+            if k == keep:
+                continue
+            old = self.pix.pop(k)
+            self.pix_bytes -= old.width() * old.height() * 4
 
     def peek(self, path, mtime):
         """이미 만들어 둔 미리보기 중 가장 큰 것 (요청은 안 함) — 끌기 그림용 (thumbs 1.2.0, 4Dir v0.9.67). 없으면 None"""
@@ -587,6 +612,35 @@ class Thumbs(QtCore.QObject):
         self.alive = False
         self.ev.set()
 
+    def stats(self):
+        """1.6.0 보관 크기 보고 (로그·시험용): 그림 개수·MB, 화면용 개수·MB"""
+        with self.lock:
+            n, b = len(self.cache), self.bytes
+        pb = 0
+        for pm in list(self.pix.values()):
+            try:
+                pb += pm.width() * pm.height() * 4
+            except Exception:
+                pass
+        return {"img_n": n, "img_mb": round(b / 1048576, 1), "pix_n": len(self.pix), "pix_mb": round(pb / 1048576, 1)}
+
+    def set_lite(self, on):
+        """1.6.0 가볍게 쓰기: 보관 상한 24MB·화면용 300개 (보통 120MB·1500개). 줄일 때 바로 오래된 것부터 버림"""
+        set_limits(on)
+        before = self.stats()
+        with self.lock:
+            while self.bytes > CACHE_BYTES and self.cache:
+                _, old = self.cache.popitem(last=False)
+                self.bytes -= old.sizeInBytes()
+        if len(self.pix) > PIX_MAX:
+            for k in list(self.pix)[:len(self.pix) - PIX_MAX]:   # 오래 넣은 것부터
+                pm = self.pix.pop(k)
+                self.pix_bytes -= pm.width() * pm.height() * 4
+        if PIX_BYTES:
+            self._trim_pix()
+        log.info("미리보기 보관 상한 %s: 원본 %dMB·화면용 %s (%s → %s)", "가볍게" if on else "보통", CACHE_BYTES // 1048576,
+                 f"{PIX_BYTES // 1048576}MB" if PIX_BYTES else f"{PIX_MAX}개", before, self.stats())
+
     def clear(self):
         """딱지·표지 설정이 바뀜 → 만든 것 전부 버리고 다시 (1.3.0)"""
         with self.lock:
@@ -594,6 +648,7 @@ class Thumbs(QtCore.QObject):
             self.bytes = 0
             self.failed.clear()
         self.pix.clear()
+        self.pix_bytes = 0
         log.info("미리보기 기억 비움 (딱지 %s, 표지 %s)", BADGES, COVERS)
 
     def _run(self):

@@ -82,7 +82,9 @@ class Settings:
                      "update_skip": "",      # 새 버전 팝업에서 '이 버전 건너뛰기' 누른 버전 (v0.9.62)
                      "resume_after_reboot": True,   # 켜 둔 채 윈도우 종료·재부팅하면 다음 로그인 때 다시 열기 (10/12)
                      "keys": {},             # 바꾼 단축키만 {기능: "Ctrl+X; F7"} (keymap.py)
-                     "search_roots": None,   # 검색 범위 [{path, on}] (None = 기본: 로컬 NTFS 드라이브)
+                     "search_roots": None,   # 검색 범위 [{path, on}] (None = 기본 — 0.9.158: 처음 쓰는 사람은 사용자 폴더만, 이미 색인이 있던 사람은 로컬 NTFS 드라이브. 처음 정할 때 저장됨)
+                     "cpu_before_lite": None,   # 0.9.158 빌드 4 가볍게 쓰기 켜기 전 CPU 표시 상태 (끄면 되돌림)
+                     "search_index": True,   # 0.9.158 빠른 전체 검색 색인 (끄면 메모리 절약 — 전체 검색은 범위를 직접 훑음, 느림)
                      "chrome_collapsed": False,   # 상단 메뉴줄+즐겨찾기 바 접음 (Ctrl+Shift+M)
                      "keep_favbar": True,         # 메뉴줄을 접어도 즐겨찾기 줄은 남김 (v0.9.75 사용자 의견)
                      "hide_single_tab": False,    # 칸에 탭이 하나뿐이면 탭 줄 숨김 (v0.9.75, 옵션)
@@ -135,6 +137,11 @@ class Settings:
                     self.data["theme_mode"] = "dark"
                 for k in ("theme_mode", "dark", "fav_expanded", "on_top", "allow_multi", "sysmon", "breadcrumb", "keys", "search_roots", "lang", "chrome_collapsed", "batch_rename", "guide_shown", "update_check", "update_last", "update_skip", "resume_after_reboot", "keep_favbar", "show_favbar", "preview_detail", "folder_view_memory", "hide_single_tab", "empty_click_up", "auto_refresh", "delete_confirm", "columns", "mouse", "folder_size", "select_pattern", "status_col", "ws_slots", "side_shared", "side_shared_w", "side_shared_hidden", "memo_on", "memo_side", "memo_w", "memo_geo", "memo_top", "preview_pane", "preview_w", "preview_geo", "preview_top", "preview_dock", "preview_dock_w", "smooth_scroll", "wheel_rows", "preview_slot", "preview_bare", "preview_bare_win", "prop_cols", "prop_col_w", "tooltips", "arc_browse", "video_sound", "preview_autoplay", "user_buttons", "ftp_sites", "calc_geo", "calc_top", "calc_hist", "calc_tab", "calc_deg", "calc_mode", "calc_mem", "calc_fx", "calc_conv", "calc_graph", "gdrive_auto", "gdrive_last", "gdrive_last_name", "gdrive_asked", "private_mode", "rename_hide_ext", "side_favs", "tab_multirow", "tab_max_rows", "last_win_geo", "color_rules", "same_folder_current", "side_click_expand", "side_pin", "view_all", "top_hidden", "folder_prev", "ui_font", "ui_font_pt", "explorer_exts"):   # 0.9.122: rename_hide_ext 가 빠져 다시 켜면 늘 켜짐이던 것 고침
                     if k in d:
+                        self.data[k] = d[k]
+                # 0.9.158: 위 목록에 빠진 키(content_search·winidx_asked·winidx_skip_junk·auto_resort)는 다시 켜면 기본값으로 돌아갔음
+                #   → 기본값에 있는 키는 모두 불러옴 (새 키를 목록에 안 넣어도 저장·복원되게)
+                for k in self.data:
+                    if k not in ("theme", "theme_dark") and k in d:
                         self.data[k] = d[k]
             except Exception:
                 log.exception("설정 파일 깨짐 → 기본값")

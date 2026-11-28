@@ -2474,5 +2474,12 @@
  "휠 한 칸에 움직일 줄 수": "Linhas por passo da roda",
  "목록 보기에서는 세로 줄 수 (옆으로 넘김)": "Na exibição Lista: número de colunas (rola para o lado)",
  "안에 바뀐 것만": "alterados nos últimos",
- "넘게 지난 것만": "mais antigos que"
+ "넘게 지난 것만": "mais antigos que",
+ "색인 꺼짐": "Índice desligado",
+ "빠른 검색 색인 사용 (끄면 메모리를 덜 씀 — 대신 전체 검색은 아래 범위를 그때그때 직접 훑어 느림)": "Usar o índice de pesquisa rápida (desligue para usar menos memória — a pesquisa global passa a varrer os locais abaixo a cada vez, mais devagar)",
+ "색인 크기는 항목 100만 개에 메모리 약 110MB 입니다. 범위를 사용자 폴더처럼 좁혀도 줄어듭니다.": "O índice usa cerca de 110 MB de memória por milhão de itens. Reduzir os locais (por ex., à sua pasta de usuário) também diminui isso.",
+ "{0:,}개 찾음 (색인 꺼짐 — 직접 훑은 항목 {1:,}개)": "{0:,} encontrados (índice desligado — {1:,} itens varridos)",
+ "가볍게 쓰기 — 빠른 검색 색인을 끄고 메모리를 덜 씀 (전체 검색은 느려짐)": "Modo leve — desliga o índice de pesquisa rápida para usar menos memória (a pesquisa global fica mais lenta)",
+ "색인은 항목 100만 개에 메모리 약 110MB 입니다. 끄면 전체 검색이 그때그때 검색 범위를 직접 훑습니다. 다시 켜면 저장된 색인을 바로 불러오고 뒤에서 새로 훑습니다.": "O índice usa cerca de 110 MB de memória por milhão de itens. Desligado, a pesquisa global varre os locais a cada vez. Ao religar, o índice salvo é carregado na hora e refeito em segundo plano.",
+ "가볍게 쓰기": "Modo leve"
 }

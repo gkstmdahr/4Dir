@@ -2474,5 +2474,12 @@
  "휠 한 칸에 움직일 줄 수": "Baris per putaran roda",
  "목록 보기에서는 세로 줄 수 (옆으로 넘김)": "Di tampilan Daftar: jumlah kolom (bergulir ke samping)",
  "안에 바뀐 것만": "diubah dalam",
- "넘게 지난 것만": "lebih lama dari"
+ "넘게 지난 것만": "lebih lama dari",
+ "색인 꺼짐": "Indeks mati",
+ "빠른 검색 색인 사용 (끄면 메모리를 덜 씀 — 대신 전체 검색은 아래 범위를 그때그때 직접 훑어 느림)": "Gunakan indeks pencarian cepat (matikan untuk menghemat memori — pencarian global akan memindai lokasi di bawah setiap kali, lebih lambat)",
+ "색인 크기는 항목 100만 개에 메모리 약 110MB 입니다. 범위를 사용자 폴더처럼 좁혀도 줄어듭니다.": "Indeks memakai sekitar 110 MB memori per sejuta item. Mempersempit lokasi (mis. hanya folder pengguna) juga menguranginya.",
+ "{0:,}개 찾음 (색인 꺼짐 — 직접 훑은 항목 {1:,}개)": "{0:,} ditemukan (indeks mati — {1:,} item dipindai)",
+ "가볍게 쓰기 — 빠른 검색 색인을 끄고 메모리를 덜 씀 (전체 검색은 느려짐)": "Mode ringan — matikan indeks pencarian cepat agar hemat memori (pencarian global jadi lebih lambat)",
+ "색인은 항목 100만 개에 메모리 약 110MB 입니다. 끄면 전체 검색이 그때그때 검색 범위를 직접 훑습니다. 다시 켜면 저장된 색인을 바로 불러오고 뒤에서 새로 훑습니다.": "Indeks memakai sekitar 110 MB memori per sejuta item. Jika mati, pencarian global memindai lokasi setiap kali. Jika dinyalakan lagi, indeks tersimpan langsung dimuat dan dipindai ulang di latar belakang.",
+ "가볍게 쓰기": "Mode ringan"
 }

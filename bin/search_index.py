@@ -6,7 +6,10 @@
 - 보관: 이름을 한 덩어리 글자열(blob) + 위치표(offs)로 → 100만 개도 수십 MB.
 - 실시간: 범위마다 ReadDirectoryChangesW(하위 폴더 포함 변경 알림, 관리자 권한 불필요)로 생성·삭제·이름변경 반영(delta).
   알림이 넘치면(대량 작업) 그 범위만 다시 만들기 예약.
-- 저장: bin\\index\\index.bin (다음 실행 때 바로 검색 가능, 뒤에서 다시 훑어 갱신)
+- 저장: bin\\index\\index.bin (다음 실행 때 바로 검색 가능)
+- 0.9.158: 끝낼 때 실시간 변경분을 delta.pkl 로 저장 → 다음에 켤 때 저장본이 24시간 안이고 변경분 짝이 맞으면 다시 훑지 않음
+  (전엔 켤 때마다 전체를 다시 훑음 — 736만 개 18분). 켜 둔 채 24시간 지나면 그때 다시 만듦. 4Dir 가 꺼져 있던 동안 바뀐 것은
+  다음 다시 만들기까지 빠질 수 있음(설정 ▸ 검색 '지금 색인 다시 만들기'). 비정상 종료면 변경분 파일이 없어 다시 만듦.
 """
 import os
 import re
@@ -25,6 +28,7 @@ IDX_VER = 3   # 2: 수정일 64비트(2038년 넘는 날짜 파일 대응) / 3: 
 REPARSE = stat.FILE_ATTRIBUTE_REPARSE_POINT
 SKIP_DIRS = {"$recycle.bin", "system volume information", "$windows.~bt", "$windows.~ws"}
 MAX_DELTA = 200_000
+REBUILD_AGE = 24 * 3600   # 0.9.158 (사용자 11/28 '켤 때마다 다시 만들기 줄이기'): 저장본이 이보다 젊고 지난번에 바르게 끝났으면 켤 때 다시 훑지 않음
 
 
 def _bg_thread(on):
@@ -236,6 +240,8 @@ class SearchIndex:
         self._dropped = set()      # 꺼내는 중이라 감시를 놓은 범위 (v0.9.96 — 드라이브 '사용 중' 꺼내기 실패 막기)
         self._rebuild_timer = None
         self._worker = None        # 색인 작업 프로세스 (subprocess.Popen)
+        self._age_timer = None     # 0.9.158 저장본이 24시간 지나면 다시 만들기 (한 번 거는 타이머, 폴링 아님)
+        self.delta_path = os.path.join(store_dir, "delta.pkl")
         self.events = 0
 
     # ---------------------------------------------------------- 시작/정지
@@ -252,10 +258,19 @@ class SearchIndex:
                 snap = Snapshot.load(self.path)
                 if [r.lower() for r in snap.roots] == [r.lower() for r in self.roots]:
                     self.base = snap
+                    delta_ok = self._load_delta(snap)
                     self.state = "ready"
                     log.info("색인 저장본 불러옴 %s개 %.1f초 (만든 시각 %s)", f"{len(snap):,}", time.time() - t0,
                              time.strftime("%m-%d %H:%M", time.localtime(snap.built)))
-                    self.notify("ready", len(snap))
+                    self.notify("ready", self.count())
+                    age = time.time() - snap.built
+                    if delta_ok and 0 <= age < REBUILD_AGE:   # 0.9.158 다시 훑지 않음
+                        log.info("저장본 %.1f시간 전 · 지난번 바르게 끝남 → 다시 만들기 건너뜀 (%.1f시간 뒤 다시 만듦)",
+                                 age / 3600, (REBUILD_AGE - age) / 3600)
+                        self._start_watchers()
+                        self._arm_age_timer(REBUILD_AGE - age)
+                        return
+                    log.info("다시 만들기: %s", "저장본 %.1f시간 지남" % (age / 3600) if delta_ok else "지난번 변경분 없음(처음·비정상 종료·범위 바뀜)")
                 else:
                     log.info("저장본 범위가 달라 새로 만듦")
             except Exception:
@@ -263,7 +278,60 @@ class SearchIndex:
         self._start_watchers()
         self.rebuild()
 
-    def stop(self):
+    def _arm_age_timer(self, sec):
+        if self._age_timer:
+            self._age_timer.cancel()
+        self._age_timer = threading.Timer(max(60.0, sec), self.rebuild)
+        self._age_timer.daemon = True
+        self._age_timer.start()
+
+    def save_delta(self):
+        """0.9.158 끝낼 때 실시간 변경분 저장 (저장본 만든 시각·범위와 함께) — 다음에 켤 때 다시 훑지 않게"""
+        if self.state != "ready" or not self.base.built or not self.roots:
+            return False
+        try:
+            with self.lock:
+                data = {"v": 1, "built": self.base.built, "roots": [r.lower() for r in self.roots], "added": dict(self.added),
+                        "removed": dict(self.removed), "removed_pfx": dict(self.removed_pfx), "saved": time.time()}
+            tmp = self.delta_path + ".tmp"
+            with open(tmp, "wb") as f:
+                pickle.dump(data, f, protocol=5)
+            os.replace(tmp, self.delta_path)
+            log.info("변경분 저장 추가 %d · 지움 %d", len(data["added"]), len(data["removed"]))
+            return True
+        except Exception:
+            log.exception("변경분 저장 실패")
+            return False
+
+    def _load_delta(self, snap):
+        """저장본과 짝이 맞는 변경분이면 불러옴. 읽은 뒤 파일은 지움 → 이번 실행이 비정상 종료하면 다음엔 다시 만듦"""
+        if not os.path.exists(self.delta_path):
+            return False
+        try:
+            with open(self.delta_path, "rb") as f:
+                d = pickle.load(f)
+            os.remove(self.delta_path)
+        except Exception:
+            log.exception("변경분 불러오기 실패")
+            return False
+        if d.get("v") != 1 or d.get("built") != snap.built or d.get("roots") != [r.lower() for r in self.roots]:
+            log.info("변경분이 저장본과 짝이 안 맞음 → 버림")
+            return False
+        with self.lock:
+            self.added.update(d["added"])
+            self.removed.update(d["removed"])
+            self.removed_pfx.update(d["removed_pfx"])
+        log.info("변경분 불러옴 추가 %d · 지움 %d (%s 저장)", len(d["added"]), len(d["removed"]),
+                 time.strftime("%m-%d %H:%M", time.localtime(d["saved"])))
+        return True
+
+    def stop(self, keep=False):
+        """keep=True: 프로그램을 끝냄 → 변경분을 저장해 다음에 다시 훑지 않게 (0.9.158)"""
+        if keep:
+            self.save_delta()
+        if self._age_timer:
+            self._age_timer.cancel()
+            self._age_timer = None
         self._cancel = True
         w = getattr(self, "_worker", None)
         if w is not None and w.poll() is None:
@@ -363,6 +431,7 @@ class SearchIndex:
             self.removed_pfx = {k: t for k, t in self.removed_pfx.items() if t >= start}
         self.state = "ready"
         self.notify("ready", len(snap))
+        self._arm_age_timer(REBUILD_AGE)   # 0.9.158 켜 둔 채 24시간 지나면 다시
         log.info("새 색인 적용 %s개 (저장본 %.1fMB)", f"{len(snap):,}",
                  os.path.getsize(self.path) / 1048576 if os.path.exists(self.path) else 0)
 

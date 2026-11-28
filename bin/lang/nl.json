@@ -2474,5 +2474,12 @@
  "휠 한 칸에 움직일 줄 수": "Rijen per wielklik",
  "목록 보기에서는 세로 줄 수 (옆으로 넘김)": "In lijstweergave: aantal kolommen (schuift opzij)",
  "안에 바뀐 것만": "gewijzigd binnen",
- "넘게 지난 것만": "ouder dan"
+ "넘게 지난 것만": "ouder dan",
+ "색인 꺼짐": "Index uit",
+ "빠른 검색 색인 사용 (끄면 메모리를 덜 씀 — 대신 전체 검색은 아래 범위를 그때그때 직접 훑어 느림)": "Snelle zoekindex gebruiken (uit = minder geheugen; globaal zoeken doorzoekt dan elke keer de locaties hieronder en is trager)",
+ "색인 크기는 항목 100만 개에 메모리 약 110MB 입니다. 범위를 사용자 폴더처럼 좁혀도 줄어듭니다.": "De index gebruikt ongeveer 110 MB geheugen per miljoen items. Minder locaties (bijv. alleen je gebruikersmap) verkleint dit ook.",
+ "{0:,}개 찾음 (색인 꺼짐 — 직접 훑은 항목 {1:,}개)": "{0:,} gevonden (index uit — {1:,} items doorzocht)",
+ "가볍게 쓰기 — 빠른 검색 색인을 끄고 메모리를 덜 씀 (전체 검색은 느려짐)": "Lichte modus — snelle zoekindex uit voor minder geheugen (globaal zoeken wordt trager)",
+ "색인은 항목 100만 개에 메모리 약 110MB 입니다. 끄면 전체 검색이 그때그때 검색 범위를 직접 훑습니다. 다시 켜면 저장된 색인을 바로 불러오고 뒤에서 새로 훑습니다.": "De index gebruikt ongeveer 110 MB geheugen per miljoen items. Uit = globaal zoeken doorzoekt de locaties elke keer. Weer aan = de opgeslagen index wordt meteen geladen en op de achtergrond opnieuw opgebouwd.",
+ "가볍게 쓰기": "Lichte modus"
 }

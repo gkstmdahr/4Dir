@@ -2474,5 +2474,12 @@
  "휠 한 칸에 움직일 줄 수": "Řádků na krok kolečka",
  "목록 보기에서는 세로 줄 수 (옆으로 넘김)": "V zobrazení Seznam: počet sloupců (posun do strany)",
  "안에 바뀐 것만": "změněné během",
- "넘게 지난 것만": "starší než"
+ "넘게 지난 것만": "starší než",
+ "색인 꺼짐": "Index vypnut",
+ "빠른 검색 색인 사용 (끄면 메모리를 덜 씀 — 대신 전체 검색은 아래 범위를 그때그때 직접 훑어 느림)": "Používat index rychlého hledání (vypnutím ušetříte paměť — globální hledání pak pokaždé prochází místa níže, pomaleji)",
+ "색인 크기는 항목 100만 개에 메모리 약 110MB 입니다. 범위를 사용자 폴더처럼 좁혀도 줄어듭니다.": "Index zabírá asi 110 MB paměti na milion položek. Zúžení míst (např. jen na složku uživatele) jej také zmenší.",
+ "{0:,}개 찾음 (색인 꺼짐 — 직접 훑은 항목 {1:,}개)": "Nalezeno {0:,} (index vypnut — prohledáno {1:,} položek)",
+ "가볍게 쓰기 — 빠른 검색 색인을 끄고 메모리를 덜 씀 (전체 검색은 느려짐)": "Úsporný režim — vypnout index rychlého hledání a šetřit paměť (globální hledání bude pomalejší)",
+ "색인은 항목 100만 개에 메모리 약 110MB 입니다. 끄면 전체 검색이 그때그때 검색 범위를 직접 훑습니다. 다시 켜면 저장된 색인을 바로 불러오고 뒤에서 새로 훑습니다.": "Index zabírá asi 110 MB paměti na milion položek. Když je vypnutý, globální hledání pokaždé prochází místa. Po zapnutí se uložený index hned načte a na pozadí se znovu vytvoří.",
+ "가볍게 쓰기": "Úsporný režim"
 }

@@ -2474,5 +2474,12 @@
  "휠 한 칸에 움직일 줄 수": "Rows per wheel notch",
  "목록 보기에서는 세로 줄 수 (옆으로 넘김)": "In List view: number of columns (scrolls sideways)",
  "안에 바뀐 것만": "or newer",
- "넘게 지난 것만": "or older"
+ "넘게 지난 것만": "or older",
+ "색인 꺼짐": "Index off",
+ "빠른 검색 색인 사용 (끄면 메모리를 덜 씀 — 대신 전체 검색은 아래 범위를 그때그때 직접 훑어 느림)": "Use the fast search index (turn off to use less memory — global search then scans the locations below each time, which is slower)",
+ "색인 크기는 항목 100만 개에 메모리 약 110MB 입니다. 범위를 사용자 폴더처럼 좁혀도 줄어듭니다.": "The index uses about 110 MB of memory per million items. Narrowing the locations (e.g. to your user folder) also reduces it.",
+ "{0:,}개 찾음 (색인 꺼짐 — 직접 훑은 항목 {1:,}개)": "{0:,} found (index off — scanned {1:,} items)",
+ "가볍게 쓰기 — 빠른 검색 색인을 끄고 메모리를 덜 씀 (전체 검색은 느려짐)": "Lightweight mode — turn off the fast search index to use less memory (global search gets slower)",
+ "색인은 항목 100만 개에 메모리 약 110MB 입니다. 끄면 전체 검색이 그때그때 검색 범위를 직접 훑습니다. 다시 켜면 저장된 색인을 바로 불러오고 뒤에서 새로 훑습니다.": "The index uses about 110 MB of memory per million items. When off, global search scans the search locations each time. Turning it back on loads the saved index right away and rescans in the background.",
+ "가볍게 쓰기": "Lightweight mode"
 }

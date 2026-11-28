@@ -2474,5 +2474,12 @@
  "휠 한 칸에 움직일 줄 수": "Sor görgőkattanásonként",
  "목록 보기에서는 세로 줄 수 (옆으로 넘김)": "Lista nézetben: oszlopok száma (oldalra görget)",
  "안에 바뀐 것만": "belül módosult",
- "넘게 지난 것만": "régebbiek, mint"
+ "넘게 지난 것만": "régebbiek, mint",
+ "색인 꺼짐": "Index kikapcsolva",
+ "빠른 검색 색인 사용 (끄면 메모리를 덜 씀 — 대신 전체 검색은 아래 범위를 그때그때 직접 훑어 느림)": "Gyorskeresési index használata (kikapcsolva kevesebb memória — a teljes keresés ekkor minden alkalommal végignézi az alábbi helyeket, lassabban)",
+ "색인 크기는 항목 100만 개에 메모리 약 110MB 입니다. 범위를 사용자 폴더처럼 좁혀도 줄어듭니다.": "Az index millió elemenként kb. 110 MB memóriát használ. A helyek szűkítése (pl. csak a felhasználói mappa) is csökkenti.",
+ "{0:,}개 찾음 (색인 꺼짐 — 직접 훑은 항목 {1:,}개)": "{0:,} találat (index kikapcsolva — {1:,} elem átnézve)",
+ "가볍게 쓰기 — 빠른 검색 색인을 끄고 메모리를 덜 씀 (전체 검색은 느려짐)": "Könnyű mód — a gyorskeresési index kikapcsolása kevesebb memóriáért (a teljes keresés lassabb lesz)",
+ "색인은 항목 100만 개에 메모리 약 110MB 입니다. 끄면 전체 검색이 그때그때 검색 범위를 직접 훑습니다. 다시 켜면 저장된 색인을 바로 불러오고 뒤에서 새로 훑습니다.": "Az index millió elemenként kb. 110 MB memóriát használ. Kikapcsolva a teljes keresés minden alkalommal végignézi a helyeket. Visszakapcsoláskor a mentett index azonnal betöltődik, és a háttérben újraépül.",
+ "가볍게 쓰기": "Könnyű mód"
 }

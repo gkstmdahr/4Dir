@@ -2474,5 +2474,12 @@
  "휠 한 칸에 움직일 줄 수": "Rader per hjulsteg",
  "목록 보기에서는 세로 줄 수 (옆으로 넘김)": "I listvyn: antal kolumner (rullar i sidled)",
  "안에 바뀐 것만": "ändrade inom",
- "넘게 지난 것만": "äldre än"
+ "넘게 지난 것만": "äldre än",
+ "색인 꺼짐": "Index av",
+ "빠른 검색 색인 사용 (끄면 메모리를 덜 씀 — 대신 전체 검색은 아래 범위를 그때그때 직접 훑어 느림)": "Använd snabbsökindex (av = mindre minne; global sökning går då igenom platserna nedan varje gång, långsammare)",
+ "색인 크기는 항목 100만 개에 메모리 약 110MB 입니다. 범위를 사용자 폴더처럼 좁혀도 줄어듭니다.": "Indexet använder cirka 110 MB minne per miljon objekt. Färre platser (t.ex. bara användarmappen) minskar det också.",
+ "{0:,}개 찾음 (색인 꺼짐 — 직접 훑은 항목 {1:,}개)": "{0:,} hittade (index av — {1:,} objekt genomsökta)",
+ "가볍게 쓰기 — 빠른 검색 색인을 끄고 메모리를 덜 씀 (전체 검색은 느려짐)": "Lätt läge — stäng av snabbsökindexet för mindre minne (global sökning blir långsammare)",
+ "색인은 항목 100만 개에 메모리 약 110MB 입니다. 끄면 전체 검색이 그때그때 검색 범위를 직접 훑습니다. 다시 켜면 저장된 색인을 바로 불러오고 뒤에서 새로 훑습니다.": "Indexet använder cirka 110 MB minne per miljon objekt. När det är av går global sökning igenom platserna varje gång. När det slås på igen läses det sparade indexet in direkt och byggs om i bakgrunden.",
+ "가볍게 쓰기": "Lätt läge"
 }
