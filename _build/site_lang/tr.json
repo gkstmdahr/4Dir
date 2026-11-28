@@ -1,0 +1,115 @@
+{
+ "T": {
+  "title": "4Dir — Windows için çok bölmeli, sekmeli dosya yöneticisi (ücretsiz, taşınabilir)",
+  "desc": "4Dir, Windows için ücretsiz ve taşınabilir bir dosya yöneticisidir: pencereyi her biri kendi sekmelerine sahip en fazla 20 bölmeye ayırın. Hızlı arama, SVN durumu, açık/koyu tema, 26 dil.",
+  "tagline": "Windows Dosya Gezgini'nden daha hızlı, çok bölmeli bir dosya yöneticisi!!",
+  "sub": "Kurulum yok — zip'i açın ve çalıştırın.",
+  "dl": "4Dir v{ver} indir",
+  "dlnote": "Windows 10/11 64 bit · {size} · {date} · ücretsiz",
+  "shot1": "4 bölme, açık tema",
+  "shot2": "3 bölme, koyu tema",
+  "feat_h": "Özellikler",
+  "feats": [
+   [
+    "20 bölmeye kadar",
+    "Tek tıkla 1, 2, 3, 4 veya 6 bölmeli düzenler ya da 5 × 4'e kadar herhangi bir ızgara. Her bölmenin kendi sekmeleri vardır."
+   ],
+   [
+    "Yolunuza çıkmaz",
+    "Klasörler, ağır Windows kabuk görünümü kullanılmadan doğrudan okunur. Boştayken zamanlayıcı ya da yoklama yok — 3ds Max, oyunlar veya diğer ağır uygulamaların yanında açık tutmak güvenlidir."
+   ],
+   [
+    "Anında arama",
+    "Yazarak sürücülerinizdeki tüm dosya adlarında arayın. Kendi dizini gerçek zamanlı güncellenir — yönetici hakkı gerekmez."
+   ],
+   [
+    "SVN durumu bir bakışta",
+    "Değiştirildi / eklendi / çakışma rozetleri doğrudan .svn'den okunur — içinde bir şey değişince klasörler kırmızıya döner. Git ve Perforce, Windows simge katmanları üzerinden."
+   ],
+   [
+    "Dosya Gezgini gibi",
+    "Aynı klavye kısayolları, Windows'un tam sağ tık menüsü, Dosya Gezgini ve diğer uygulamalara/uygulamalardan sürükle bırak. Bir .webp görüntüsüne sağ tıklayıp PNG veya JPG olarak kaydedin."
+   ],
+   [
+    "Taşınabilir ve gizli",
+    "Ayarlar 4Dir klasöründe kalır. Açık/koyu tema, 26 dil, toplu yeniden adlandırma, oturum geri yükleme ve yerleşik Dosya Gezgini sağlık denetimi."
+   ]
+  ],
+  "how_h": "Nasıl kurulur",
+  "how": [
+   "Yukarıdaki düğmeyle (veya GitHub <b>Releases</b> sayfasından) zip dosyasını indirin. GitHub'daki yeşil “Code → Download ZIP” yalnızca kaynak kodudur ve çalışmaz.",
+   "Zip'e sağ tıklayın → Özellikler → <b>Engellemeyi kaldır</b> kutusunu işaretleyin → Tamam. (Aksi halde Windows her seferinde bir güvenlik uyarısı gösterir.)",
+   "İstediğiniz yere çıkarın ve <b>4Dir.exe</b> dosyasına çift tıklayın. (4Dir.exe engellenmişse 4Dir.vbs)"
+  ],
+  "smart": "Windows SmartScreen çıkarsa: <b>Daha fazla bilgi</b> → <b>Yine de çalıştır</b> seçeneğine tıklayın.",
+  "sha_h": "İndirmeyi doğrulayın (isteğe bağlı)",
+  "sha": "Komut İstemi'nde <code>certutil -hashfile 4Dir_v{ver}.zip SHA256</code> komutunu çalıştırın — sonuç şununla eşleşmelidir:",
+  "don_h": "4Dir'i destekleyin",
+  "don": "4Dir ücretsizdir ve reklam içermez. Size zaman kazandırıyorsa, küçük bir bağış güncellemelerin devam etmesini sağlar.",
+  "faq_h": "SSS",
+  "faq": [
+   [
+    "Gerçekten ücretsiz mi?",
+    "Evet. 4Dir ücretsiz ve açık kaynaklıdır (GPL-3.0). Reklam yok, hesap yok, deneme süresi yok."
+   ],
+   [
+    "İş yerinde kullanabilir miyim?",
+    "Evet. 4Dir, GPL-3.0 lisanslı özgür yazılımdır; bu yüzden şirketler de lisans ücreti ya da kayıt olmadan ücretsiz kullanabilir. Kurulum gerektirmeden çalıştığı için şirketinizin taşınabilir uygulamalara izin verip vermediğini kontrol etmeniz yeterli."
+   ],
+   [
+    "Dosya Gezgini'nden gerçekten daha hızlı mı?",
+    "1.000 dosyalı bir klasörü yeni pencerede açmak 4Dir'de 0,4 sn, Dosya Gezgini'nde yaklaşık 2 sn sürdü. Bir pencere daha açmak 4Dir'de yaklaşık 10 MB, Dosya Gezgini'nde yaklaşık 130 MB bellek ekledi. Aynı bilgisayarda (Windows 11, SSD) her biri 5 kez ölçüldü. Tek bir klasörde on binlerce dosya olduğunda fark küçülür."
+   ],
+   [
+    "Herhangi bir veri gönderiyor mu?",
+    "Kişisel veri göndermez. Yalnızca günde bir kez yeni sürüm olup olmadığını denetler (bunu Araçlar'dan kapatabilirsiniz)."
+   ],
+   [
+    "Bir şeyler mi ters gitti?",
+    "Araçlar → Sorun raporu için günlüğü kaydet, ardından “E-postayla gönder” düğmesine basın (veya zip'i support@4dir.net adresine e-postayla gönderin). GitHub kullanıcıları ayrıca bir issue açabilir."
+   ]
+  ],
+  "src": "Kaynak kodu",
+  "issues": "Sorun bildir",
+  "lic": "GPL-3.0 lisanslı özgür yazılım. Windows, Microsoft'un ticari markasıdır.",
+  "new_h": "v{ver} sürümündeki yenilikler",
+  "hist_link": "Eski sürümler ve tam değişiklik geçmişi",
+  "hist_title": "4Dir sürüm geçmişi — eski sürümleri indirin",
+  "hist_h": "Sürüm geçmişi",
+  "hist_intro": "Değişiklikleriyle birlikte tüm 4Dir sürümleri. En yeni sürüm önerilir; eskileri ihtiyaç olursa diye burada duruyor.",
+  "hist_dl": "İndir",
+  "hist_latest": "en yeni",
+  "home": "← 4Dir ana sayfa",
+  "lang": "Dil",
+  "fast": "Windows Dosya Gezgini'nden daha hızlı!!"
+ },
+ "store": [
+  "Microsoft Store'dan edinin",
+  "Antivirüs veya iş bilgisayarı zip'i engelliyor mu? Bunun yerine Microsoft imzalı Store sürümünü edinin (Win+E bağlantısı orada kullanılamaz)."
+ ],
+ "fp": "Bazı antivirüs programları (Microsoft Defender, HP Wolf Security vb.) zip içindeki 4Dir.exe dosyasını yanlışlıkla kötü amaçlı yazılım olarak işaretler. Bu bir yanlış pozitiftir.\n4Dir.exe, yalnızca uygulamayı başlatan 18 KB'lık bir başlatıcıdır ({src}) ve üreticilere bildirilmiştir.\nBitdefender dosyanın temiz olduğunu doğruladı; tespit sonraki güncellemelerde kaldırılacak.\nEngellenirse Store sürümünü kullanın.",
+ "fp_src": "kaynak",
+ "sup_h": "Teşekkürler, destekçiler",
+ "thx": [
+  "İndirmeniz başladı",
+  "4Dir ücretsizdir ve hep öyle kalacak. İşinize yarıyorsa, küçük bir bağış güncellemelerin sürmesini sağlar.",
+  "Belki sonra"
+ ],
+ "board": "Topluluk",
+ "star": [
+  "4Dir'i beğendiniz mi? GitHub'da bir yıldız verin.",
+  "GitHub'da yıldızla"
+ ],
+ "lang_sup": "Dil desteği",
+ "guide": {
+  "title": "4Dir nasıl kullanılır",
+  "link": "Nasıl kullanılır",
+  "toc": "İçindekiler",
+  "top": "Başa dön",
+  "etc_h": "Diğer",
+  "etc": [
+   "Tema (açık/koyu) ve dil <b>⚙ Ayarlar ▸ Genel</b> bölümündedir. Dil değişikliği 4Dir'i yeniden başlattıktan sonra geçerli olur.",
+   "4Dir garip davranmaya başlarsa <b>Araçlar → Sorun raporu için günlüğü kaydet</b> seçeneğine tıklayın ve oluşan zip dosyasını support@4dir.net adresine gönderin. Nedeni bulmak için günlüğe bakacağız."
+  ]
+ }
+}

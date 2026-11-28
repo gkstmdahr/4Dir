@@ -1,0 +1,115 @@
+{
+ "T": {
+  "title": "4Dir — Multi-pane tabbed file manager for Windows (free, portable)",
+  "desc": "4Dir is a free, portable file manager for Windows: split the window into up to 20 panes, each with its own tabs. Fast search, SVN status, light/dark theme, 26 languages.",
+  "tagline": "A multi-pane file manager faster than Windows File Explorer!!",
+  "sub": "No installation — unzip and run.",
+  "dl": "Download 4Dir v{ver}",
+  "dlnote": "Windows 10/11 64-bit · {size} · {date} · free",
+  "shot1": "4 panes, light theme",
+  "shot2": "3 panes, dark theme",
+  "feat_h": "Features",
+  "feats": [
+   [
+    "Up to 20 panes",
+    "1, 2, 3, 4 or 6 pane layouts with one click, or any grid up to 5 × 4. Every pane has its own tabs."
+   ],
+   [
+    "Stays out of the way",
+    "Folders are read directly, without the heavy Windows shell view. No timers or polling when idle — safe to keep open next to 3ds Max, games or other heavy apps."
+   ],
+   [
+    "Instant search",
+    "Type to search every file name on your drives. Its own index updates in real time — no admin rights needed."
+   ],
+   [
+    "SVN status at a glance",
+    "Modified / added / conflict badges read straight from .svn — folders turn red when something inside changed. Git and Perforce through Windows overlays."
+   ],
+   [
+    "Feels like Explorer",
+    "Same keyboard shortcuts, the full Windows right-click menu, drag & drop to and from Explorer and other apps. Right-click a .webp image to save it as PNG or JPG."
+   ],
+   [
+    "Portable and private",
+    "Settings stay in the 4Dir folder. Light/dark theme, 26 languages, batch rename, session restore and an Explorer health check built in."
+   ]
+  ],
+  "how_h": "How to install",
+  "how": [
+   "Download the zip with the button above (or from GitHub <b>Releases</b>). The green “Code → Download ZIP” on GitHub is source code only and won't run.",
+   "Right-click the zip → Properties → check <b>Unblock</b> → OK. (Otherwise Windows shows a security warning every time.)",
+   "Extract it anywhere and double-click <b>4Dir.exe</b>. (or 4Dir.vbs if 4Dir.exe is blocked)"
+  ],
+  "smart": "If Windows SmartScreen appears: click <b>More info</b> → <b>Run anyway</b>.",
+  "sha_h": "Verify the download (optional)",
+  "sha": "In Command Prompt run <code>certutil -hashfile 4Dir_v{ver}.zip SHA256</code> — the result must match:",
+  "don_h": "Support 4Dir",
+  "don": "4Dir is free and has no ads. If it saves you time, a small donation keeps updates coming.",
+  "faq_h": "FAQ",
+  "faq": [
+   [
+    "Is it really free?",
+    "Yes. 4Dir is free and open source (GPL-3.0). No ads, no account, no trial."
+   ],
+   [
+    "Can I use it at work?",
+    "Yes. 4Dir is GPL-3.0 free software, so companies can use it for free too, with no license fee or registration. Since it runs without installing, just check that your company allows portable apps."
+   ],
+   [
+    "Is it really faster than File Explorer?",
+    "Opening a folder with 1,000 files in a new window took 0.4 s in 4Dir and about 2 s in File Explorer. Opening one more window added about 10 MB of memory in 4Dir and about 130 MB in File Explorer. Measured 5 times each on the same PC (Windows 11, SSD). With tens of thousands of files in one folder the gap gets smaller."
+   ],
+   [
+    "Does it send any data?",
+    "No personal data. It only checks once a day whether a new version exists (you can turn this off in Tools)."
+   ],
+   [
+    "Something went wrong?",
+    "Tools → Save log for problem report, then press “Send by email” (or email the zip to support@4dir.net). GitHub users can also open an issue."
+   ]
+  ],
+  "src": "Source code",
+  "issues": "Report a problem",
+  "lic": "Free software under GPL-3.0. Windows is a trademark of Microsoft.",
+  "new_h": "What's new in v{ver}",
+  "hist_link": "Older versions & full change history",
+  "hist_title": "4Dir version history — download older versions",
+  "hist_h": "Version history",
+  "hist_intro": "Every 4Dir release with what changed. The newest version is recommended; older ones stay here in case you need them.",
+  "hist_dl": "Download",
+  "hist_latest": "latest",
+  "home": "← 4Dir home",
+  "lang": "Language",
+  "fast": "Faster than Windows File Explorer!!"
+ },
+ "store": [
+  "Get it from Microsoft Store",
+  "Antivirus or a work PC blocks the zip? Get the Microsoft-signed Store version instead (Win+E linking not available there)."
+ ],
+ "fp": "Some antivirus programs (Microsoft Defender, HP Wolf Security, etc.) wrongly flag 4Dir.exe in the zip as malware. It is a false positive.\n4Dir.exe is an 18 KB launcher that only starts the app ({src}), and it has been reported to the vendors.\nBitdefender has confirmed the file is clean; the detection will be removed in upcoming updates.\nIf it is blocked, use the Store version.",
+ "fp_src": "source",
+ "sup_h": "Thank you, supporters",
+ "thx": [
+  "Your download has started",
+  "4Dir is free and always will be. If it helps you, a small donation keeps the updates coming.",
+  "Maybe later"
+ ],
+ "board": "Community",
+ "star": [
+  "Like 4Dir? Please give it a star on GitHub.",
+  "Star on GitHub"
+ ],
+ "lang_sup": "Language support",
+ "guide": {
+  "title": "How to use 4Dir",
+  "link": "How to use",
+  "toc": "Contents",
+  "top": "Back to top",
+  "etc_h": "Other things",
+  "etc": [
+   "Theme (light/dark) and language are in <b>⚙ Settings ▸ General</b>. A language change takes effect after you restart 4Dir.",
+   "If 4Dir starts acting strange, click <b>Tools → Save log for problem report</b> and send the zip it makes to support@4dir.net. We'll look at the log to find the cause."
+  ]
+ }
+}

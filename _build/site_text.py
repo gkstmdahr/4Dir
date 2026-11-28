@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""4Dir 사이트 문구 (SITE_TEXT_VER 1.8.0 — 1.8.0 앱 언어 16→26·APP_ONLY 새 10개 언어 · 1.7.0 첫 줄(sub)에서 윈도우 10/11·무료 파일 관리자 뺌(밑 안내 줄에 있음, 사용자 11/25)·한국어 다분할 · 1.6.2 — 1.6.2 오탐 안내에 Bitdefender 확인 한 줄 · 1.6.1 오탐 안내 줄바꿈 · 1.6.0 — 1.6.0 백신 오탐 안내(맨 아래 FP) · 1.5.1 — 1.5.1 소개·기능 칸 앱 언어 10→16 · 1.5.0 앱만 지원하는 언어 한 줄 안내(맨 아래 APP_ONLY) · 1.4.0 1.4.0 Microsoft Store 받기 버튼 문구(맨 아래 STORE) · 실행 안내 4Dir.exe(막히면 vbs) · FAQ 회사 사용(맨 아래 _BIZ) · 메인 fast 줄 + FAQ 속도 근거, 맨 아래 _FAST) — make_site.py 가 읽음.
+"""4Dir 사이트 문구 (SITE_TEXT_VER 1.9.0 — 1.9.0 사이트 26개 언어(site_lang*.json)·국기 FLAG · 1.8.0 앱 언어 16→26·APP_ONLY 새 10개 언어 · 1.7.0 첫 줄(sub)에서 윈도우 10/11·무료 파일 관리자 뺌(밑 안내 줄에 있음, 사용자 11/25)·한국어 다분할 · 1.6.2 — 1.6.2 오탐 안내에 Bitdefender 확인 한 줄 · 1.6.1 오탐 안내 줄바꿈 · 1.6.0 — 1.6.0 백신 오탐 안내(맨 아래 FP) · 1.5.1 — 1.5.1 소개·기능 칸 앱 언어 10→16 · 1.5.0 앱만 지원하는 언어 한 줄 안내(맨 아래 APP_ONLY) · 1.4.0 1.4.0 Microsoft Store 받기 버튼 문구(맨 아래 STORE) · 실행 안내 4Dir.exe(막히면 vbs) · FAQ 회사 사용(맨 아래 _BIZ) · 메인 fast 줄 + FAQ 속도 근거, 맨 아래 _FAST) — make_site.py 가 읽음.
 키: 언어 폴더 이름(en 은 사이트 맨 위). {ver} {size} {date} 는 make_site 가 채움."""
 
 LANGS = ["en", "ko", "zh-CN", "zh-TW", "ja", "es", "de", "fr", "pt-BR", "ru"]
@@ -451,3 +451,33 @@ FP = {
     "ru": "Некоторые антивирусы (Microsoft Defender, HP Wolf Security и др.) ошибочно считают 4Dir.exe из zip вредоносным. Это ложное срабатывание.\n4Dir.exe — 18-КБ загрузчик, который только запускает приложение ({src}); производителям уже сообщено.\nBitdefender подтвердил, что файл чистый; срабатывание уберут в ближайших обновлениях.\nЕсли он заблокирован, используйте версию из Store.",
 }
 FP_SRC = {"en": "source", "ko": "소스", "zh-CN": "源代码", "zh-TW": "原始碼", "ja": "ソース", "es": "código", "de": "Quellcode", "fr": "code source", "pt-BR": "código", "ru": "исходный код"}
+
+
+# ---- 1.9.0 (사용자 11/28 '웹사이트도 해당 언어로'): 앱만 지원하던 16개 언어도 사이트를 그 언어로 — 문구는 site_lang\<코드>.json
+#      (_en_source.json 이 원문. 새 언어 = 그 파일 하나 + 아래 MORE 한 줄). 지난 버전 바뀐 점은 changelog 에 없으면 영어.
+#      국기: _site\img\flags\<나라>.svg (flag-icons MIT), 번체 중국어는 국기 없음 (사용자 11/28)
+import json as _json
+import os as _os
+MORE = ["it", "pl", "nl", "tr", "uk", "id", "cs", "hu", "el", "ro", "sv", "da", "fi", "nb", "vi", "th"]
+FLAG = {"en": "us", "ko": "kr", "zh-CN": "cn", "zh-TW": "", "ja": "jp", "es": "es", "de": "de", "fr": "fr", "pt-BR": "br", "ru": "ru",
+        "it": "it", "pl": "pl", "nl": "nl", "tr": "tr", "uk": "ua", "id": "id", "cs": "cz", "hu": "hu", "el": "gr", "ro": "ro",
+        "sv": "se", "da": "dk", "fi": "fi", "nb": "no", "vi": "vn", "th": "th"}
+EXTRA = {}   # 새 언어 → {store, fp, fp_src, sup_h, thx, board, star, lang_sup, guide} (make_site 가 자기 표에 넣음)
+_D = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "site_lang")
+for _lg in MORE:
+    _p = _os.path.join(_D, _lg + ".json")
+    if not _os.path.isfile(_p):
+        continue
+    _d = _json.load(open(_p, encoding="utf-8"))
+    _t = _d["T"]
+    _t["feats"] = [tuple(x) for x in _t["feats"]]
+    _t["faq"] = [tuple(x) for x in _t["faq"]]
+    T[_lg] = _t
+    LANGS.append(_lg)
+    APP_LANG[_lg] = _lg
+    NAMES[_lg] = _json.load(open(_os.path.join(_os.path.dirname(_D), "..", "bin", "lang", _lg + ".json"), encoding="utf-8"))["_language"]
+    STORE[_lg] = tuple(_d["store"])
+    FP[_lg] = _d["fp"]
+    FP_SRC[_lg] = _d["fp_src"]
+    APP_ONLY = {k: v for k, v in APP_ONLY.items() if v[0] != _lg}   # 사이트가 생겼으니 '사이트는 영어' 안내 안 함
+    EXTRA[_lg] = _d

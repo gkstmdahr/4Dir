@@ -1,0 +1,115 @@
+{
+ "T": {
+  "title": "4Dir — Manager de fișiere cu mai multe panouri și file pentru Windows (gratuit, portabil)",
+  "desc": "4Dir este un manager de fișiere gratuit și portabil pentru Windows: împarte fereastra în până la 20 de panouri, fiecare cu filele lui. Căutare rapidă, stare SVN, temă luminoasă/întunecată, 26 de limbi.",
+  "tagline": "Un manager de fișiere cu mai multe panouri, mai rapid decât Windows File Explorer!!",
+  "sub": "Fără instalare — dezarhivezi și rulezi.",
+  "dl": "Descarcă 4Dir v{ver}",
+  "dlnote": "Windows 10/11 pe 64 de biți · {size} · {date} · gratuit",
+  "shot1": "4 panouri, temă luminoasă",
+  "shot2": "3 panouri, temă întunecată",
+  "feat_h": "Funcții",
+  "feats": [
+   [
+    "Până la 20 de panouri",
+    "Aranjări cu 1, 2, 3, 4 sau 6 panouri dintr-un clic, sau orice grilă până la 5 × 4. Fiecare panou are filele lui."
+   ],
+   [
+    "Nu te încurcă",
+    "Folderele sunt citite direct, fără vizualizarea grea a shell-ului Windows. Fără temporizatoare sau interogări la repaus — îl poți ține deschis lângă 3ds Max, jocuri sau alte aplicații grele."
+   ],
+   [
+    "Căutare instantanee",
+    "Scrie ca să cauți orice nume de fișier de pe unitățile tale. Indexul propriu se actualizează în timp real — nu e nevoie de drepturi de administrator."
+   ],
+   [
+    "Starea SVN dintr-o privire",
+    "Insigne de modificat / adăugat / conflict citite direct din .svn — folderele devin roșii când se schimbă ceva în ele. Git și Perforce prin suprapunerile Windows."
+   ],
+   [
+    "Ca în Explorer",
+    "Aceleași comenzi rapide de la tastatură, meniul complet Windows de clic dreapta, glisare și plasare către și dinspre Explorer și alte aplicații. Clic dreapta pe o imagine .webp pentru a o salva ca PNG sau JPG."
+   ],
+   [
+    "Portabil și privat",
+    "Setările rămân în folderul 4Dir. Temă luminoasă/întunecată, 26 de limbi, redenumire în masă, restaurarea sesiunii și o verificare a stării Explorer, toate integrate."
+   ]
+  ],
+  "how_h": "Cum se instalează",
+  "how": [
+   "Descarcă arhiva zip cu butonul de mai sus (sau din <b>Releases</b> pe GitHub). Butonul verde „Code → Download ZIP” de pe GitHub conține doar codul sursă și nu va rula.",
+   "Clic dreapta pe zip → Proprietăți → bifează <b>Deblocare</b> → OK. (Altfel Windows afișează un avertisment de securitate de fiecare dată.)",
+   "Dezarhivează-l oriunde și dă dublu clic pe <b>4Dir.exe</b>. (sau pe 4Dir.vbs dacă 4Dir.exe este blocat)"
+  ],
+  "smart": "Dacă apare Windows SmartScreen: dă clic pe <b>Mai multe informații</b> → <b>Executare oricum</b>.",
+  "sha_h": "Verifică descărcarea (opțional)",
+  "sha": "În Prompt de comandă rulează <code>certutil -hashfile 4Dir_v{ver}.zip SHA256</code> — rezultatul trebuie să se potrivească:",
+  "don_h": "Susține 4Dir",
+  "don": "4Dir este gratuit și fără reclame. Dacă îți economisește timp, o donație mică ajută la continuarea actualizărilor.",
+  "faq_h": "Întrebări frecvente",
+  "faq": [
+   [
+    "Este chiar gratuit?",
+    "Da. 4Dir este gratuit și open source (GPL-3.0). Fără reclame, fără cont, fără perioadă de probă."
+   ],
+   [
+    "Îl pot folosi la serviciu?",
+    "Da. 4Dir este software liber GPL-3.0, deci și firmele îl pot folosi gratuit, fără taxă de licență sau înregistrare. Fiind fără instalare, verifică doar dacă firma ta permite aplicațiile portabile."
+   ],
+   [
+    "Este chiar mai rapid decât File Explorer?",
+    "Deschiderea unui folder cu 1.000 de fișiere într-o fereastră nouă a durat 0,4 s în 4Dir și aproximativ 2 s în File Explorer. Încă o fereastră deschisă a adăugat circa 10 MB de memorie în 4Dir și circa 130 MB în File Explorer. Măsurat de câte 5 ori pe același PC (Windows 11, SSD). Cu zeci de mii de fișiere într-un singur folder diferența scade."
+   ],
+   [
+    "Trimite date?",
+    "Nicio dată personală. Verifică doar o dată pe zi dacă există o versiune nouă (poți dezactiva asta din Instrumente)."
+   ],
+   [
+    "A apărut o problemă?",
+    "Instrumente → Salvează jurnalul pentru raportul de problemă, apoi apasă „Trimitere prin e-mail” (sau trimite zip-ul prin e-mail la support@4dir.net). Utilizatorii GitHub pot deschide și un issue."
+   ]
+  ],
+  "src": "Cod sursă",
+  "issues": "Raportează o problemă",
+  "lic": "Software liber sub GPL-3.0. Windows este o marcă comercială Microsoft.",
+  "new_h": "Noutăți în v{ver}",
+  "hist_link": "Versiuni mai vechi și istoricul complet al modificărilor",
+  "hist_title": "Istoricul versiunilor 4Dir — descarcă versiuni mai vechi",
+  "hist_h": "Istoricul versiunilor",
+  "hist_intro": "Fiecare versiune 4Dir, cu ce s-a schimbat. Se recomandă cea mai nouă; cele vechi rămân aici în caz că ai nevoie de ele.",
+  "hist_dl": "Descarcă",
+  "hist_latest": "ultima",
+  "home": "← Pagina principală 4Dir",
+  "lang": "Limbă",
+  "fast": "Mai rapid decât Windows File Explorer!!"
+ },
+ "store": [
+  "Obține-l din Microsoft Store",
+  "Antivirusul sau un PC de serviciu blochează zip-ul? Ia în schimb versiunea din Store, semnată de Microsoft (legarea Win+E nu este disponibilă acolo)."
+ ],
+ "fp": "Unele programe antivirus (Microsoft Defender, HP Wolf Security etc.) marchează greșit 4Dir.exe din zip drept malware. Este un fals pozitiv.\n4Dir.exe este un lansator de 18 KB care doar pornește aplicația ({src}) și a fost raportat producătorilor.\nBitdefender a confirmat că fișierul este curat; detecția va fi eliminată în actualizările următoare.\nDacă este blocat, folosește versiunea din Store.",
+ "fp_src": "sursă",
+ "sup_h": "Mulțumim, susținători",
+ "thx": [
+  "Descărcarea a început",
+  "4Dir este gratuit și va rămâne așa. Dacă te ajută, o donație mică ține actualizările în mers.",
+  "Poate mai târziu"
+ ],
+ "board": "Comunitate",
+ "star": [
+  "Îți place 4Dir? Dă-i o stea pe GitHub.",
+  "Stea pe GitHub"
+ ],
+ "lang_sup": "Limbi acceptate",
+ "guide": {
+  "title": "Cum se folosește 4Dir",
+  "link": "Mod de utilizare",
+  "toc": "Cuprins",
+  "top": "Sus",
+  "etc_h": "Altele",
+  "etc": [
+   "Tema (luminoasă/întunecată) și limba se găsesc la <b>⚙ Setări ▸ General</b>. Schimbarea limbii se aplică după repornirea 4Dir.",
+   "Dacă 4Dir începe să se comporte ciudat, dă clic pe <b>Instrumente → Salvează jurnalul pentru raportul de problemă</b> și trimite zip-ul creat la support@4dir.net. Ne uităm în jurnal ca să găsim cauza."
+  ]
+ }
+}

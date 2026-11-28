@@ -1,0 +1,115 @@
+{
+ "T": {
+  "title": "4Dir — File manager a schede e multi-riquadro per Windows (gratuito, portatile)",
+  "desc": "4Dir è un file manager gratuito e portatile per Windows: dividi la finestra in un massimo di 20 riquadri, ciascuno con le sue schede. Ricerca veloce, stato SVN, tema chiaro/scuro, 26 lingue.",
+  "tagline": "Un file manager multi-riquadro più veloce di Esplora file di Windows!!",
+  "sub": "Nessuna installazione: decomprimi e avvia.",
+  "dl": "Scarica 4Dir v{ver}",
+  "dlnote": "Windows 10/11 a 64 bit · {size} · {date} · gratuito",
+  "shot1": "4 riquadri, tema chiaro",
+  "shot2": "3 riquadri, tema scuro",
+  "feat_h": "Funzionalità",
+  "feats": [
+   [
+    "Fino a 20 riquadri",
+    "Layout a 1, 2, 3, 4 o 6 riquadri con un clic, oppure qualsiasi griglia fino a 5 × 4. Ogni riquadro ha le sue schede."
+   ],
+   [
+    "Non dà fastidio",
+    "Le cartelle vengono lette direttamente, senza la pesante vista della shell di Windows. Nessun timer né polling a riposo: lo puoi tenere aperto accanto a 3ds Max, giochi o altre app pesanti."
+   ],
+   [
+    "Ricerca istantanea",
+    "Digita per cercare tra tutti i nomi di file dei tuoi dischi. L'indice si aggiorna in tempo reale, senza bisogno dei diritti di amministratore."
+   ],
+   [
+    "Stato SVN a colpo d'occhio",
+    "I badge di modificato / aggiunto / conflitto vengono letti direttamente da .svn: le cartelle diventano rosse quando qualcosa al loro interno cambia. Git e Perforce tramite le icone di sovrapposizione di Windows."
+   ],
+   [
+    "Come Esplora file",
+    "Stesse scorciatoie da tastiera, menu contestuale completo di Windows, trascinamento da e verso Esplora file e altre app. Fai clic con il pulsante destro su un'immagine .webp per salvarla come PNG o JPG."
+   ],
+   [
+    "Portatile e riservato",
+    "Le impostazioni restano nella cartella di 4Dir. Tema chiaro/scuro, 26 lingue, rinomina multipla, ripristino della sessione e controllo dello stato di Esplora file integrati."
+   ]
+  ],
+  "how_h": "Come installare",
+  "how": [
+   "Scarica lo zip con il pulsante qui sopra (oppure da GitHub <b>Releases</b>). Il pulsante verde “Code → Download ZIP” di GitHub contiene solo il codice sorgente e non si avvia.",
+   "Fai clic con il pulsante destro sullo zip → Proprietà → seleziona <b>Sblocca</b> → OK. (Altrimenti Windows mostra un avviso di sicurezza ogni volta.)",
+   "Estrailo dove vuoi e fai doppio clic su <b>4Dir.exe</b>. (oppure 4Dir.vbs se 4Dir.exe è bloccato)"
+  ],
+  "smart": "Se compare Windows SmartScreen: fai clic su <b>Ulteriori informazioni</b> → <b>Esegui comunque</b>.",
+  "sha_h": "Verifica il download (facoltativo)",
+  "sha": "Nel Prompt dei comandi esegui <code>certutil -hashfile 4Dir_v{ver}.zip SHA256</code>: il risultato deve corrispondere a:",
+  "don_h": "Sostieni 4Dir",
+  "don": "4Dir è gratuito e senza pubblicità. Se ti fa risparmiare tempo, una piccola donazione aiuta a mantenere vivi gli aggiornamenti.",
+  "faq_h": "Domande frequenti",
+  "faq": [
+   [
+    "È davvero gratuito?",
+    "Sì. 4Dir è gratuito e open source (GPL-3.0). Niente pubblicità, niente account, niente prova a tempo."
+   ],
+   [
+    "Posso usarlo al lavoro?",
+    "Sì. 4Dir è software libero GPL-3.0, quindi anche le aziende possono usarlo gratuitamente, senza costi di licenza né registrazione. Poiché funziona senza installazione, verifica solo che la tua azienda consenta le app portatili."
+   ],
+   [
+    "È davvero più veloce di Esplora file?",
+    "Aprire in una nuova finestra una cartella con 1.000 file ha richiesto 0,4 s in 4Dir e circa 2 s in Esplora file. Aprire una finestra in più ha aggiunto circa 10 MB di memoria in 4Dir e circa 130 MB in Esplora file. Misurato 5 volte ciascuno sullo stesso PC (Windows 11, SSD). Con decine di migliaia di file in una sola cartella la differenza si riduce."
+   ],
+   [
+    "Invia dati?",
+    "Nessun dato personale. Controlla solo una volta al giorno se esiste una nuova versione (puoi disattivarlo in Strumenti)."
+   ],
+   [
+    "Qualcosa non va?",
+    "Strumenti → Salva il log per la segnalazione del problema, poi premi “Invia per e-mail” (oppure invia lo zip a support@4dir.net). Chi usa GitHub può anche aprire una issue."
+   ]
+  ],
+  "src": "Codice sorgente",
+  "issues": "Segnala un problema",
+  "lic": "Software libero con licenza GPL-3.0. Windows è un marchio di Microsoft.",
+  "new_h": "Novità della v{ver}",
+  "hist_link": "Versioni precedenti e cronologia completa delle modifiche",
+  "hist_title": "Cronologia delle versioni di 4Dir — scarica le versioni precedenti",
+  "hist_h": "Cronologia delle versioni",
+  "hist_intro": "Tutte le versioni di 4Dir con le modifiche. Si consiglia la più recente; quelle precedenti restano qui nel caso ti servano.",
+  "hist_dl": "Scarica",
+  "hist_latest": "ultima",
+  "home": "← Home di 4Dir",
+  "lang": "Lingua",
+  "fast": "Più veloce di Esplora file di Windows!!"
+ },
+ "store": [
+  "Scaricalo da Microsoft Store",
+  "L'antivirus o un PC aziendale blocca lo zip? Scarica invece la versione dello Store, firmata da Microsoft (qui il collegamento di Win+E non è disponibile)."
+ ],
+ "fp": "Alcuni antivirus (Microsoft Defender, HP Wolf Security, ecc.) segnalano per errore 4Dir.exe nello zip come malware. È un falso positivo.\n4Dir.exe è un launcher di 18 KB che si limita ad avviare l'app ({src}) ed è stato segnalato ai produttori.\nBitdefender ha confermato che il file è pulito; il rilevamento verrà rimosso nei prossimi aggiornamenti.\nSe viene bloccato, usa la versione dello Store.",
+ "fp_src": "sorgente",
+ "sup_h": "Grazie, sostenitori",
+ "thx": [
+  "Il download è iniziato",
+  "4Dir è gratuito e lo resterà sempre. Se ti è utile, una piccola donazione aiuta a mantenere vivi gli aggiornamenti.",
+  "Forse più tardi"
+ ],
+ "board": "Community",
+ "star": [
+  "Ti piace 4Dir? Metti una stella su GitHub.",
+  "Stella su GitHub"
+ ],
+ "lang_sup": "Lingue supportate",
+ "guide": {
+  "title": "Come usare 4Dir",
+  "link": "Come si usa",
+  "toc": "Indice",
+  "top": "Torna su",
+  "etc_h": "Altro",
+  "etc": [
+   "Il tema (chiaro/scuro) e la lingua si trovano in <b>⚙ Impostazioni ▸ Generale</b>. Il cambio di lingua ha effetto dopo il riavvio di 4Dir.",
+   "Se 4Dir inizia a comportarsi in modo strano, fai clic su <b>Strumenti → Salva il log per la segnalazione del problema</b> e invia lo zip creato a support@4dir.net. Esamineremo il log per trovare la causa."
+  ]
+ }
+}

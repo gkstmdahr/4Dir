@@ -1,0 +1,115 @@
+{
+ "T": {
+  "title": "4Dir — Filbehandler med flere ruter og faner for Windows (gratis, bærbar)",
+  "desc": "4Dir er en gratis, bærbar filbehandler for Windows: del vinduet i opptil 20 ruter, hver med egne faner. Raskt søk, SVN-status, lyst/mørkt tema, 26 språk.",
+  "tagline": "En filbehandler med flere ruter som er raskere enn Windows Filutforsker!!",
+  "sub": "Ingen installasjon — pakk ut og kjør.",
+  "dl": "Last ned 4Dir v{ver}",
+  "dlnote": "Windows 10/11 64-bit · {size} · {date} · gratis",
+  "shot1": "4 ruter, lyst tema",
+  "shot2": "3 ruter, mørkt tema",
+  "feat_h": "Funksjoner",
+  "feats": [
+   [
+    "Opptil 20 ruter",
+    "Oppsett med 1, 2, 3, 4 eller 6 ruter med ett klikk, eller et valgfritt rutenett opptil 5 × 4. Hver rute har egne faner."
+   ],
+   [
+    "Holder seg unna",
+    "Mapper leses direkte, uten den tunge Windows-skallvisningen. Ingen tidtakere eller polling i hvile — trygt å ha åpen ved siden av 3ds Max, spill eller andre tunge apper."
+   ],
+   [
+    "Umiddelbart søk",
+    "Skriv for å søke i alle filnavn på stasjonene dine. Den egne indeksen oppdateres i sanntid — du trenger ikke administratorrettigheter."
+   ],
+   [
+    "SVN-status med et blikk",
+    "Merker for endret / lagt til / konflikt leses rett fra .svn — mapper blir røde når noe inni er endret. Git og Perforce via Windows-overlegg."
+   ],
+   [
+    "Føles som Utforsker",
+    "Samme hurtigtaster, hele Windows-høyreklikkmenyen, dra og slipp til og fra Utforsker og andre apper. Høyreklikk et .webp-bilde for å lagre det som PNG eller JPG."
+   ],
+   [
+    "Bærbar og privat",
+    "Innstillingene blir i 4Dir-mappen. Lyst/mørkt tema, 26 språk, batch-omdøping, gjenoppretting av økt og en helsesjekk for Utforsker er innebygd."
+   ]
+  ],
+  "how_h": "Slik installerer du",
+  "how": [
+   "Last ned zip-filen med knappen over (eller fra <b>Releases</b> på GitHub). Den grønne «Code → Download ZIP» på GitHub er bare kildekode og kan ikke kjøres.",
+   "Høyreklikk zip-filen → Egenskaper → merk av for <b>Opphev blokkering</b> → OK. (Ellers viser Windows en sikkerhetsadvarsel hver gang.)",
+   "Pakk den ut hvor som helst og dobbeltklikk <b>4Dir.exe</b>. (eller 4Dir.vbs hvis 4Dir.exe er blokkert)"
+  ],
+  "smart": "Hvis Windows SmartScreen dukker opp: klikk <b>Mer informasjon</b> → <b>Kjør likevel</b>.",
+  "sha_h": "Verifiser nedlastingen (valgfritt)",
+  "sha": "Kjør <code>certutil -hashfile 4Dir_v{ver}.zip SHA256</code> i Ledetekst — resultatet må samsvare med:",
+  "don_h": "Støtt 4Dir",
+  "don": "4Dir er gratis og uten reklame. Hvis det sparer deg for tid, bidrar en liten donasjon til at oppdateringene fortsetter å komme.",
+  "faq_h": "Vanlige spørsmål",
+  "faq": [
+   [
+    "Er det virkelig gratis?",
+    "Ja. 4Dir er gratis og åpen kildekode (GPL-3.0). Ingen reklame, ingen konto, ingen prøveperiode."
+   ],
+   [
+    "Kan jeg bruke det på jobb?",
+    "Ja. 4Dir er fri programvare under GPL-3.0, så bedrifter kan bruke det gratis også, uten lisensavgift eller registrering. Siden det kjører uten installasjon, bør du bare sjekke at bedriften din tillater bærbare apper."
+   ],
+   [
+    "Er det virkelig raskere enn Filutforsker?",
+    "Å åpne en mappe med 1 000 filer i et nytt vindu tok 0,4 s i 4Dir og omtrent 2 s i Filutforsker. Ett vindu til la til omtrent 10 MB minne i 4Dir og omtrent 130 MB i Filutforsker. Målt 5 ganger hver på samme PC (Windows 11, SSD). Med titusenvis av filer i én mappe blir forskjellen mindre."
+   ],
+   [
+    "Sender det noen data?",
+    "Ingen personopplysninger. Det sjekker bare én gang om dagen om det finnes en ny versjon (du kan slå dette av under Verktøy)."
+   ],
+   [
+    "Gikk noe galt?",
+    "Verktøy → Lagre logg for problemrapport, og trykk deretter «Send på e-post» (eller send zip-filen til support@4dir.net). GitHub-brukere kan også opprette en issue."
+   ]
+  ],
+  "src": "Kildekode",
+  "issues": "Rapporter et problem",
+  "lic": "Fri programvare under GPL-3.0. Windows er et varemerke tilhørende Microsoft.",
+  "new_h": "Nytt i v{ver}",
+  "hist_link": "Eldre versjoner og full endringshistorikk",
+  "hist_title": "4Dir versjonshistorikk — last ned eldre versjoner",
+  "hist_h": "Versjonshistorikk",
+  "hist_intro": "Alle 4Dir-utgivelser med hva som er endret. Den nyeste versjonen anbefales; eldre versjoner blir liggende her i tilfelle du trenger dem.",
+  "hist_dl": "Last ned",
+  "hist_latest": "nyeste",
+  "home": "← 4Dir startside",
+  "lang": "Språk",
+  "fast": "Raskere enn Windows Filutforsker!!"
+ },
+ "store": [
+  "Hent den fra Microsoft Store",
+  "Blokkerer antivirus eller en jobb-PC zip-filen? Hent den Microsoft-signerte Store-versjonen i stedet (Win+E-kobling er ikke tilgjengelig der)."
+ ],
+ "fp": "Enkelte antivirusprogrammer (Microsoft Defender, HP Wolf Security osv.) flagger feilaktig 4Dir.exe i zip-filen som skadelig programvare. Det er en falsk positiv.\n4Dir.exe er en 18 KB stor starter som bare åpner appen ({src}), og den er rapportert til leverandørene.\nBitdefender har bekreftet at filen er ren; deteksjonen fjernes i kommende oppdateringer.\nHvis den blokkeres, bruk Store-versjonen.",
+ "fp_src": "kildekode",
+ "sup_h": "Takk, støttespillere",
+ "thx": [
+  "Nedlastingen er startet",
+  "4Dir er gratis og vil alltid være det. Hvis det hjelper deg, bidrar en liten donasjon til at oppdateringene fortsetter å komme.",
+  "Kanskje senere"
+ ],
+ "board": "Fellesskap",
+ "star": [
+  "Liker du 4Dir? Gi det en stjerne på GitHub.",
+  "Gi stjerne på GitHub"
+ ],
+ "lang_sup": "Språkstøtte",
+ "guide": {
+  "title": "Slik bruker du 4Dir",
+  "link": "Bruksanvisning",
+  "toc": "Innhold",
+  "top": "Tilbake til toppen",
+  "etc_h": "Annet",
+  "etc": [
+   "Tema (lyst/mørkt) og språk finner du under <b>⚙ Innstillinger ▸ Generelt</b>. En språkendring trer i kraft etter at du har startet 4Dir på nytt.",
+   "Hvis 4Dir begynner å oppføre seg rart, klikk <b>Verktøy → Lagre logg for problemrapport</b> og send zip-filen den lager til support@4dir.net. Vi ser på loggen for å finne årsaken."
+  ]
+ }
+}

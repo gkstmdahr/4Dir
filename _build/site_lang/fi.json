@@ -1,0 +1,115 @@
+{
+ "T": {
+  "title": "4Dir — Monipaneelinen välilehtitiedostonhallinta Windowsille (ilmainen, kannettava)",
+  "desc": "4Dir on ilmainen, kannettava tiedostonhallinta Windowsille: jaa ikkuna jopa 20 paneeliin, joilla kullakin on omat välilehtensä. Nopea haku, SVN-tila, vaalea/tumma teema, 26 kieltä.",
+  "tagline": "Monipaneelinen tiedostonhallinta, joka on nopeampi kuin Windowsin Resurssienhallinta!!",
+  "sub": "Ei asennusta — pura ja käynnistä.",
+  "dl": "Lataa 4Dir v{ver}",
+  "dlnote": "Windows 10/11 64-bit · {size} · {date} · ilmainen",
+  "shot1": "4 paneelia, vaalea teema",
+  "shot2": "3 paneelia, tumma teema",
+  "feat_h": "Ominaisuudet",
+  "feats": [
+   [
+    "Jopa 20 paneelia",
+    "1, 2, 3, 4 tai 6 paneelin asettelu yhdellä napsautuksella tai mikä tahansa ruudukko aina 5 × 4 asti. Jokaisella paneelilla on omat välilehtensä."
+   ],
+   [
+    "Ei haittaa muille",
+    "Kansiot luetaan suoraan, ilman raskasta Windowsin kuorinäkymää. Ei ajastimia eikä taustakyselyä toimettomana — voit pitää sen auki 3ds Maxin, pelien tai muiden raskaiden sovellusten rinnalla."
+   ],
+   [
+    "Välitön haku",
+    "Kirjoita ja hae kaikista asemiesi tiedostonimistä. Oma hakemisto päivittyy reaaliajassa — järjestelmänvalvojan oikeuksia ei tarvita."
+   ],
+   [
+    "SVN-tila yhdellä silmäyksellä",
+    "Muokattu / lisätty / ristiriita -merkit luetaan suoraan .svn-kansiosta — kansio muuttuu punaiseksi, kun jokin sen sisällä on muuttunut. Git ja Perforce Windowsin peittokuvien kautta."
+   ],
+   [
+    "Tuntuu Resurssienhallinnalta",
+    "Samat pikanäppäimet, täydellinen Windowsin hiiren kakkospainikkeen valikko sekä vetäminen ja pudottaminen Resurssienhallintaan ja muihin sovelluksiin. Napsauta .webp-kuvaa hiiren kakkospainikkeella ja tallenna se PNG- tai JPG-muodossa."
+   ],
+   [
+    "Kannettava ja yksityinen",
+    "Asetukset pysyvät 4Dir-kansiossa. Vaalea/tumma teema, 26 kieltä, eränimeäminen, istunnon palautus ja Resurssienhallinnan kuntotarkistus sisäänrakennettuina."
+   ]
+  ],
+  "how_h": "Asennus",
+  "how": [
+   "Lataa zip yllä olevalla painikkeella (tai GitHubin <b>Releases</b>-sivulta). GitHubin vihreä “Code → Download ZIP” sisältää vain lähdekoodin eikä toimi sellaisenaan.",
+   "Napsauta zipiä hiiren kakkospainikkeella → Ominaisuudet → valitse <b>Poista esto</b> → OK. (Muuten Windows näyttää suojausvaroituksen joka kerta.)",
+   "Pura se mihin tahansa ja kaksoisnapsauta <b>4Dir.exe</b>. (tai 4Dir.vbs, jos 4Dir.exe on estetty)"
+  ],
+  "smart": "Jos Windows SmartScreen tulee näkyviin: napsauta <b>Lisätietoja</b> → <b>Suorita kuitenkin</b>.",
+  "sha_h": "Tarkista lataus (valinnainen)",
+  "sha": "Suorita Komentokehotteessa <code>certutil -hashfile 4Dir_v{ver}.zip SHA256</code> — tuloksen on vastattava tätä:",
+  "don_h": "Tue 4Diria",
+  "don": "4Dir on ilmainen eikä sisällä mainoksia. Jos se säästää aikaasi, pieni lahjoitus pitää päivitykset tulossa.",
+  "faq_h": "Usein kysytyt kysymykset",
+  "faq": [
+   [
+    "Onko se oikeasti ilmainen?",
+    "On. 4Dir on ilmainen ja avoimen lähdekoodin ohjelma (GPL-3.0). Ei mainoksia, ei tiliä, ei kokeilujaksoa."
+   ],
+   [
+    "Voinko käyttää sitä töissä?",
+    "Kyllä. 4Dir on GPL-3.0-lisensoitua vapaata ohjelmistoa, joten myös yritykset voivat käyttää sitä ilmaiseksi ilman lisenssimaksua tai rekisteröintiä. Koska se toimii ilman asennusta, tarkista vain, että yrityksesi sallii kannettavat sovellukset."
+   ],
+   [
+    "Onko se oikeasti nopeampi kuin Resurssienhallinta?",
+    "Kansion, jossa oli 1 000 tiedostoa, avaaminen uudessa ikkunassa kesti 4Dirissa 0,4 s ja Resurssienhallinnassa noin 2 s. Yhden ikkunan lisääminen kasvatti muistinkäyttöä 4Dirissa noin 10 Mt ja Resurssienhallinnassa noin 130 Mt. Mitattu 5 kertaa kummallakin samalla koneella (Windows 11, SSD). Kun yhdessä kansiossa on kymmeniä tuhansia tiedostoja, ero pienenee."
+   ],
+   [
+    "Lähettääkö se tietoja?",
+    "Ei henkilötietoja. Se tarkistaa vain kerran päivässä, onko uusi versio saatavilla (voit poistaa tämän käytöstä Työkalut-valikosta)."
+   ],
+   [
+    "Jokin meni pieleen?",
+    "Työkalut → Tallenna loki ongelmaraporttia varten, paina sitten “Lähetä sähköpostilla” (tai lähetä zip osoitteeseen support@4dir.net). GitHubia käyttävät voivat myös avata issuen."
+   ]
+  ],
+  "src": "Lähdekoodi",
+  "issues": "Ilmoita ongelmasta",
+  "lic": "Vapaa ohjelmisto GPL-3.0-lisenssillä. Windows on Microsoftin tavaramerkki.",
+  "new_h": "Uutta versiossa v{ver}",
+  "hist_link": "Vanhemmat versiot ja koko muutoshistoria",
+  "hist_title": "4Dirin versiohistoria — lataa vanhempia versioita",
+  "hist_h": "Versiohistoria",
+  "hist_intro": "Jokainen 4Dir-julkaisu muutoksineen. Uusin versio on suositeltava; vanhemmat ovat täällä siltä varalta, että tarvitset niitä.",
+  "hist_dl": "Lataa",
+  "hist_latest": "uusin",
+  "home": "← 4Dirin etusivu",
+  "lang": "Kieli",
+  "fast": "Nopeampi kuin Windowsin Resurssienhallinta!!"
+ },
+ "store": [
+  "Hanki Microsoft Storesta",
+  "Virustorjunta tai työkone estää zipin? Hanki sen sijaan Microsoftin allekirjoittama Store-versio (Win+E-linkitys ei ole siinä käytettävissä)."
+ ],
+ "fp": "Jotkin virustorjuntaohjelmat (Microsoft Defender, HP Wolf Security jne.) merkitsevät virheellisesti zipin sisältämän 4Dir.exe-tiedoston haittaohjelmaksi. Kyseessä on virhehälytys.\n4Dir.exe on 18 kt:n käynnistin, joka vain käynnistää sovelluksen ({src}), ja siitä on ilmoitettu toimittajille.\nBitdefender on vahvistanut tiedoston puhtaaksi; tunnistus poistetaan tulevissa päivityksissä.\nJos se estetään, käytä Store-versiota.",
+ "fp_src": "lähdekoodi",
+ "sup_h": "Kiitos tukijoille",
+ "thx": [
+  "Lataus on alkanut",
+  "4Dir on ilmainen ja pysyy ilmaisena. Jos siitä on sinulle apua, pieni lahjoitus pitää päivitykset tulossa.",
+  "Ehkä myöhemmin"
+ ],
+ "board": "Yhteisö",
+ "star": [
+  "Pidätkö 4Dirista? Anna sille tähti GitHubissa.",
+  "Tähti GitHubissa"
+ ],
+ "lang_sup": "Kielituki",
+ "guide": {
+  "title": "4Dirin käyttö",
+  "link": "Käyttöohje",
+  "toc": "Sisältö",
+  "top": "Takaisin ylös",
+  "etc_h": "Muuta",
+  "etc": [
+   "Teema (vaalea/tumma) ja kieli löytyvät kohdasta <b>⚙ Asetukset ▸ Yleiset</b>. Kielen vaihto tulee voimaan, kun käynnistät 4Dirin uudelleen.",
+   "Jos 4Dir alkaa toimia oudosti, napsauta <b>Työkalut → Tallenna loki ongelmaraporttia varten</b> ja lähetä syntyvä zip osoitteeseen support@4dir.net. Etsimme syyn lokista."
+  ]
+ }
+}

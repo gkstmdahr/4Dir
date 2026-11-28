@@ -1,0 +1,115 @@
+{
+ "T": {
+  "title": "4Dir — Víceokenní správce souborů s kartami pro Windows (zdarma, přenosný)",
+  "desc": "4Dir je bezplatný přenosný správce souborů pro Windows: rozdělte okno až na 20 panelů, každý s vlastními kartami. Rychlé vyhledávání, stav SVN, světlý/tmavý motiv, 26 jazyků.",
+  "tagline": "Víceokenní správce souborů rychlejší než Průzkumník Windows!!",
+  "sub": "Bez instalace — rozbalte a spusťte.",
+  "dl": "Stáhnout 4Dir v{ver}",
+  "dlnote": "Windows 10/11 64bitový · {size} · {date} · zdarma",
+  "shot1": "4 panely, světlý motiv",
+  "shot2": "3 panely, tmavý motiv",
+  "feat_h": "Funkce",
+  "feats": [
+   [
+    "Až 20 panelů",
+    "Rozložení s 1, 2, 3, 4 nebo 6 panely jedním kliknutím, nebo libovolná mřížka až 5 × 4. Každý panel má vlastní karty."
+   ],
+   [
+    "Nepřekáží",
+    "Složky se čtou přímo, bez těžkého zobrazení shellu Windows. Žádné časovače ani dotazování v klidu — klidně ho nechte otevřený vedle 3ds Max, her či jiných náročných aplikací."
+   ],
+   [
+    "Okamžité vyhledávání",
+    "Pište a prohledáváte názvy všech souborů na discích. Vlastní index se aktualizuje v reálném čase — nejsou potřeba práva správce."
+   ],
+   [
+    "Stav SVN na první pohled",
+    "Odznaky změněno / přidáno / konflikt se čtou přímo z .svn — složky zčervenají, když se uvnitř něco změnilo. Git a Perforce přes překryvné ikony Windows."
+   ],
+   [
+    "Jako Průzkumník",
+    "Stejné klávesové zkratky, celá nabídka Windows po kliknutí pravým tlačítkem, přetahování do Průzkumníka a jiných aplikací i z nich. Klikněte pravým tlačítkem na obrázek .webp a uložte ho jako PNG nebo JPG."
+   ],
+   [
+    "Přenosný a soukromý",
+    "Nastavení zůstává ve složce 4Dir. Světlý/tmavý motiv, 26 jazyků, hromadné přejmenování, obnovení relace a kontrola stavu Průzkumníka jsou součástí."
+   ]
+  ],
+  "how_h": "Jak nainstalovat",
+  "how": [
+   "Stáhněte zip tlačítkem výše (nebo z <b>Releases</b> na GitHubu). Zelené „Code → Download ZIP“ na GitHubu obsahuje jen zdrojový kód a nespustí se.",
+   "Klikněte na zip pravým tlačítkem → Vlastnosti → zaškrtněte <b>Odblokovat</b> → OK. (Jinak Windows pokaždé zobrazí bezpečnostní upozornění.)",
+   "Rozbalte kamkoli a dvakrát klikněte na <b>4Dir.exe</b>. (nebo na 4Dir.vbs, pokud je 4Dir.exe blokován)"
+  ],
+  "smart": "Pokud se objeví Windows SmartScreen: klikněte na <b>Další informace</b> → <b>Přesto spustit</b>.",
+  "sha_h": "Ověření stažení (volitelné)",
+  "sha": "V Příkazovém řádku spusťte <code>certutil -hashfile 4Dir_v{ver}.zip SHA256</code> — výsledek se musí shodovat:",
+  "don_h": "Podpořte 4Dir",
+  "don": "4Dir je zdarma a bez reklam. Pokud vám šetří čas, malý příspěvek pomůže, aby aktualizace dál přicházely.",
+  "faq_h": "Časté dotazy",
+  "faq": [
+   [
+    "Je to opravdu zdarma?",
+    "Ano. 4Dir je zdarma a open source (GPL-3.0). Bez reklam, bez účtu, bez zkušební doby."
+   ],
+   [
+    "Mohu ho používat v práci?",
+    "Ano. 4Dir je svobodný software pod GPL-3.0, takže ho mohou zdarma používat i firmy, bez licenčního poplatku či registrace. Protože běží bez instalace, jen ověřte, že vaše firma přenosné aplikace povoluje."
+   ],
+   [
+    "Je opravdu rychlejší než Průzkumník?",
+    "Otevření složky s 1 000 soubory v novém okně trvalo v 4Dir 0,4 s a v Průzkumníku asi 2 s. Otevření dalšího okna přidalo v 4Dir asi 10 MB paměti a v Průzkumníku asi 130 MB. Měřeno 5krát na stejném PC (Windows 11, SSD). Při desítkách tisíc souborů v jedné složce se rozdíl zmenšuje."
+   ],
+   [
+    "Odesílá nějaká data?",
+    "Žádné osobní údaje. Jednou denně jen zjistí, zda existuje nová verze (lze vypnout v nabídce Nástroje)."
+   ],
+   [
+    "Něco se pokazilo?",
+    "Nástroje → Uložit protokol pro hlášení problému, poté stiskněte „Odeslat e-mailem“ (nebo pošlete zip na support@4dir.net). Uživatelé GitHubu mohou také založit issue."
+   ]
+  ],
+  "src": "Zdrojový kód",
+  "issues": "Nahlásit problém",
+  "lic": "Svobodný software pod GPL-3.0. Windows je ochranná známka společnosti Microsoft.",
+  "new_h": "Co je nového ve v{ver}",
+  "hist_link": "Starší verze a úplná historie změn",
+  "hist_title": "Historie verzí 4Dir — stažení starších verzí",
+  "hist_h": "Historie verzí",
+  "hist_intro": "Každé vydání 4Dir se seznamem změn. Doporučujeme nejnovější verzi; starší tu zůstávají pro případ, že je budete potřebovat.",
+  "hist_dl": "Stáhnout",
+  "hist_latest": "nejnovější",
+  "home": "← Domů 4Dir",
+  "lang": "Jazyk",
+  "fast": "Rychlejší než Průzkumník Windows!!"
+ },
+ "store": [
+  "Získat z Microsoft Store",
+  "Antivirus nebo pracovní PC blokuje zip? Stáhněte si verzi ze Storu podepsanou Microsoftem (propojení Win+E tam není k dispozici)."
+ ],
+ "fp": "Některé antivirové programy (Microsoft Defender, HP Wolf Security apod.) chybně označují 4Dir.exe v zipu jako malware. Jde o falešný poplach.\n4Dir.exe je 18 KB spouštěč, který jen spouští aplikaci ({src}), a byl nahlášen výrobcům.\nBitdefender potvrdil, že soubor je čistý; detekce bude odstraněna v nadcházejících aktualizacích.\nPokud je blokován, použijte verzi ze Storu.",
+ "fp_src": "zdroj",
+ "sup_h": "Děkujeme podporovatelům",
+ "thx": [
+  "Stahování začalo",
+  "4Dir je zdarma a vždy bude. Pokud vám pomáhá, malý příspěvek zajistí, že aktualizace budou dál přicházet.",
+  "Možná později"
+ ],
+ "board": "Komunita",
+ "star": [
+  "Líbí se vám 4Dir? Dejte mu hvězdičku na GitHubu.",
+  "Hvězdička na GitHubu"
+ ],
+ "lang_sup": "Podpora jazyků",
+ "guide": {
+  "title": "Jak používat 4Dir",
+  "link": "Jak používat",
+  "toc": "Obsah",
+  "top": "Zpět nahoru",
+  "etc_h": "Další",
+  "etc": [
+   "Motiv (světlý/tmavý) a jazyk najdete v <b>⚙ Nastavení ▸ Obecné</b>. Změna jazyka se projeví po restartu 4Dir.",
+   "Pokud se 4Dir začne chovat divně, klikněte na <b>Nástroje → Uložit protokol pro hlášení problému</b> a vytvořený zip pošlete na support@4dir.net. Podíváme se do protokolu a zjistíme příčinu."
+  ]
+ }
+}

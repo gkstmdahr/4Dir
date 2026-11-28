@@ -1,0 +1,115 @@
+{
+ "T": {
+  "title": "4Dir — Bestandsbeheer met meerdere deelvensters en tabbladen voor Windows (gratis, draagbaar)",
+  "desc": "4Dir is een gratis, draagbare bestandsbeheerder voor Windows: verdeel het venster in maximaal 20 deelvensters, elk met eigen tabbladen. Snel zoeken, SVN-status, licht/donker thema, 26 talen.",
+  "tagline": "Een bestandsbeheerder met meerdere deelvensters, sneller dan Windows Verkenner!!",
+  "sub": "Geen installatie — uitpakken en starten.",
+  "dl": "4Dir v{ver} downloaden",
+  "dlnote": "Windows 10/11 64-bits · {size} · {date} · gratis",
+  "shot1": "4 deelvensters, licht thema",
+  "shot2": "3 deelvensters, donker thema",
+  "feat_h": "Functies",
+  "feats": [
+   [
+    "Tot 20 deelvensters",
+    "Indelingen met 1, 2, 3, 4 of 6 deelvensters met één klik, of een willekeurig raster tot 5 × 4. Elk deelvenster heeft eigen tabbladen."
+   ],
+   [
+    "Blijft uit de weg",
+    "Mappen worden rechtstreeks gelezen, zonder de zware Windows-shellweergave. Geen timers of polling in rust — veilig om open te laten naast 3ds Max, games of andere zware apps."
+   ],
+   [
+    "Direct zoeken",
+    "Typ om in alle bestandsnamen op je schijven te zoeken. De eigen index wordt in realtime bijgewerkt — geen beheerdersrechten nodig."
+   ],
+   [
+    "SVN-status in één oogopslag",
+    "Badges voor gewijzigd / toegevoegd / conflict worden rechtstreeks uit .svn gelezen — mappen worden rood als er iets in is gewijzigd. Git en Perforce via Windows-overlays."
+   ],
+   [
+    "Voelt als Verkenner",
+    "Dezelfde sneltoetsen, het volledige Windows-rechtermuisknopmenu, slepen en neerzetten van en naar Verkenner en andere apps. Klik met de rechtermuisknop op een .webp-afbeelding om die als PNG of JPG op te slaan."
+   ],
+   [
+    "Draagbaar en privé",
+    "Instellingen blijven in de 4Dir-map. Licht/donker thema, 26 talen, bulksgewijs hernoemen, sessieherstel en een ingebouwde gezondheidscontrole van Verkenner."
+   ]
+  ],
+  "how_h": "Installeren",
+  "how": [
+   "Download het zipbestand met de knop hierboven (of via GitHub <b>Releases</b>). De groene knop “Code → Download ZIP” op GitHub bevat alleen broncode en werkt niet.",
+   "Klik met de rechtermuisknop op de zip → Eigenschappen → vink <b>Blokkering opheffen</b> aan → OK. (Anders toont Windows elke keer een beveiligingswaarschuwing.)",
+   "Pak het overal uit en dubbelklik op <b>4Dir.exe</b>. (of 4Dir.vbs als 4Dir.exe is geblokkeerd)"
+  ],
+  "smart": "Als Windows SmartScreen verschijnt: klik op <b>Meer informatie</b> → <b>Toch uitvoeren</b>.",
+  "sha_h": "De download controleren (optioneel)",
+  "sha": "Voer in de Opdrachtprompt <code>certutil -hashfile 4Dir_v{ver}.zip SHA256</code> uit — het resultaat moet overeenkomen met:",
+  "don_h": "Steun 4Dir",
+  "don": "4Dir is gratis en heeft geen advertenties. Bespaart het je tijd, dan helpt een kleine donatie om updates te blijven brengen.",
+  "faq_h": "Veelgestelde vragen",
+  "faq": [
+   [
+    "Is het echt gratis?",
+    "Ja. 4Dir is gratis en open source (GPL-3.0). Geen advertenties, geen account, geen proefperiode."
+   ],
+   [
+    "Kan ik het op mijn werk gebruiken?",
+    "Ja. 4Dir is vrije software onder GPL-3.0, dus ook bedrijven kunnen het gratis gebruiken, zonder licentiekosten of registratie. Omdat het zonder installatie werkt, hoef je alleen te controleren of je bedrijf draagbare apps toestaat."
+   ],
+   [
+    "Is het echt sneller dan Verkenner?",
+    "Het openen van een map met 1.000 bestanden in een nieuw venster duurde 0,4 s in 4Dir en ongeveer 2 s in Verkenner. Nog een venster openen kostte ongeveer 10 MB extra geheugen in 4Dir en ongeveer 130 MB in Verkenner. Elk 5 keer gemeten op dezelfde pc (Windows 11, SSD). Met tienduizenden bestanden in één map wordt het verschil kleiner."
+   ],
+   [
+    "Verstuurt het gegevens?",
+    "Geen persoonlijke gegevens. Het controleert slechts één keer per dag of er een nieuwe versie is (dit kun je uitschakelen via Extra)."
+   ],
+   [
+    "Is er iets misgegaan?",
+    "Extra → Log opslaan voor probleemrapport, en klik dan op “Verzenden per e-mail” (of mail de zip naar support@4dir.net). GitHub-gebruikers kunnen ook een issue openen."
+   ]
+  ],
+  "src": "Broncode",
+  "issues": "Een probleem melden",
+  "lic": "Vrije software onder GPL-3.0. Windows is een handelsmerk van Microsoft.",
+  "new_h": "Nieuw in v{ver}",
+  "hist_link": "Oudere versies en volledige wijzigingsgeschiedenis",
+  "hist_title": "Versiegeschiedenis van 4Dir — oudere versies downloaden",
+  "hist_h": "Versiegeschiedenis",
+  "hist_intro": "Alle 4Dir-releases met wat er is veranderd. De nieuwste versie wordt aanbevolen; oudere blijven hier staan voor het geval je ze nodig hebt.",
+  "hist_dl": "Downloaden",
+  "hist_latest": "nieuwste",
+  "home": "← 4Dir-startpagina",
+  "lang": "Taal",
+  "fast": "Sneller dan Windows Verkenner!!"
+ },
+ "store": [
+  "Downloaden via Microsoft Store",
+  "Blokkeert antivirus of een werk-pc de zip? Haal dan de door Microsoft ondertekende Store-versie (koppeling met Win+E is daar niet beschikbaar)."
+ ],
+ "fp": "Sommige antivirusprogramma's (Microsoft Defender, HP Wolf Security, enz.) markeren 4Dir.exe in de zip ten onrechte als malware. Het is een valse melding.\n4Dir.exe is een launcher van 18 KB die alleen de app start ({src}) en is gemeld bij de leveranciers.\nBitdefender heeft bevestigd dat het bestand schoon is; de detectie wordt in komende updates verwijderd.\nAls het wordt geblokkeerd, gebruik dan de Store-versie.",
+ "fp_src": "bron",
+ "sup_h": "Bedankt, supporters",
+ "thx": [
+  "Je download is gestart",
+  "4Dir is gratis en blijft dat. Helpt het je, dan houdt een kleine donatie de updates draaiende.",
+  "Misschien later"
+ ],
+ "board": "Community",
+ "star": [
+  "Vind je 4Dir leuk? Geef het een ster op GitHub.",
+  "Ster op GitHub"
+ ],
+ "lang_sup": "Ondersteunde talen",
+ "guide": {
+  "title": "4Dir gebruiken",
+  "link": "Gebruik",
+  "toc": "Inhoud",
+  "top": "Terug naar boven",
+  "etc_h": "Overig",
+  "etc": [
+   "Thema (licht/donker) en taal vind je onder <b>⚙ Instellingen ▸ Algemeen</b>. Een taalwijziging wordt van kracht nadat je 4Dir opnieuw hebt gestart.",
+   "Als 4Dir vreemd gaat doen, klik dan op <b>Extra → Log opslaan voor probleemrapport</b> en stuur de zip die daarbij wordt gemaakt naar support@4dir.net. We bekijken het log om de oorzaak te vinden."
+  ]
+ }
+}

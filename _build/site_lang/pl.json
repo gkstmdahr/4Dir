@@ -1,0 +1,115 @@
+{
+ "T": {
+  "title": "4Dir — Wielopanelowy menedżer plików z kartami dla Windows (darmowy, przenośny)",
+  "desc": "4Dir to darmowy, przenośny menedżer plików dla Windows: podziel okno na maksymalnie 20 paneli, każdy z własnymi kartami. Szybkie wyszukiwanie, status SVN, jasny/ciemny motyw, 26 języków.",
+  "tagline": "Wielopanelowy menedżer plików szybszy niż Eksplorator plików Windows!!",
+  "sub": "Bez instalacji — rozpakuj i uruchom.",
+  "dl": "Pobierz 4Dir v{ver}",
+  "dlnote": "Windows 10/11 64-bitowy · {size} · {date} · za darmo",
+  "shot1": "4 panele, jasny motyw",
+  "shot2": "3 panele, ciemny motyw",
+  "feat_h": "Funkcje",
+  "feats": [
+   [
+    "Do 20 paneli",
+    "Układy z 1, 2, 3, 4 lub 6 panelami jednym kliknięciem albo dowolna siatka do 5 × 4. Każdy panel ma własne karty."
+   ],
+   [
+    "Nie przeszkadza",
+    "Foldery są odczytywane bezpośrednio, bez ciężkiego widoku powłoki Windows. Brak liczników czasu i odpytywania w stanie bezczynności — można go bezpiecznie trzymać otwartego obok 3ds Max, gier czy innych wymagających aplikacji."
+   ],
+   [
+    "Natychmiastowe wyszukiwanie",
+    "Wpisz tekst, aby przeszukać nazwy wszystkich plików na dyskach. Własny indeks aktualizuje się na bieżąco — bez uprawnień administratora."
+   ],
+   [
+    "Status SVN na pierwszy rzut oka",
+    "Znaczniki zmodyfikowany / dodany / konflikt odczytywane prosto z .svn — foldery robią się czerwone, gdy coś w środku się zmieni. Git i Perforce przez nakładki Windows."
+   ],
+   [
+    "Jak Eksplorator",
+    "Te same skróty klawiszowe, pełne menu kontekstowe Windows, przeciąganie i upuszczanie do i z Eksploratora oraz innych aplikacji. Kliknij prawym przyciskiem obraz .webp, aby zapisać go jako PNG lub JPG."
+   ],
+   [
+    "Przenośny i prywatny",
+    "Ustawienia zostają w folderze 4Dir. Jasny/ciemny motyw, 26 języków, zbiorcza zmiana nazw, przywracanie sesji i wbudowana kontrola kondycji Eksploratora."
+   ]
+  ],
+  "how_h": "Jak zainstalować",
+  "how": [
+   "Pobierz plik zip przyciskiem powyżej (lub z GitHub <b>Releases</b>). Zielony przycisk „Code → Download ZIP” na GitHubie zawiera tylko kod źródłowy i nie uruchomi się.",
+   "Kliknij zip prawym przyciskiem → Właściwości → zaznacz <b>Odblokuj</b> → OK. (W przeciwnym razie Windows będzie za każdym razem pokazywać ostrzeżenie bezpieczeństwa.)",
+   "Wypakuj go gdziekolwiek i kliknij dwukrotnie <b>4Dir.exe</b>. (lub 4Dir.vbs, jeśli 4Dir.exe jest zablokowany)"
+  ],
+  "smart": "Jeśli pojawi się Windows SmartScreen: kliknij <b>Więcej informacji</b> → <b>Uruchom mimo to</b>.",
+  "sha_h": "Sprawdź pobrany plik (opcjonalnie)",
+  "sha": "W Wierszu polecenia uruchom <code>certutil -hashfile 4Dir_v{ver}.zip SHA256</code> — wynik musi się zgadzać:",
+  "don_h": "Wesprzyj 4Dir",
+  "don": "4Dir jest darmowy i bez reklam. Jeśli oszczędza Ci czas, drobna darowizna pomaga utrzymać aktualizacje.",
+  "faq_h": "FAQ",
+  "faq": [
+   [
+    "Czy naprawdę jest darmowy?",
+    "Tak. 4Dir jest darmowy i open source (GPL-3.0). Bez reklam, bez konta, bez wersji próbnej."
+   ],
+   [
+    "Czy mogę używać go w pracy?",
+    "Tak. 4Dir to wolne oprogramowanie na licencji GPL-3.0, więc firmy też mogą z niego korzystać za darmo, bez opłat licencyjnych i rejestracji. Ponieważ działa bez instalacji, upewnij się tylko, że Twoja firma zezwala na aplikacje przenośne."
+   ],
+   [
+    "Czy naprawdę jest szybszy niż Eksplorator plików?",
+    "Otwarcie folderu z 1000 plików w nowym oknie zajęło w 4Dir 0,4 s, a w Eksploratorze plików około 2 s. Otwarcie kolejnego okna zwiększyło zużycie pamięci o około 10 MB w 4Dir i około 130 MB w Eksploratorze plików. Zmierzono po 5 razy na tym samym komputerze (Windows 11, SSD). Przy dziesiątkach tysięcy plików w jednym folderze różnica się zmniejsza."
+   ],
+   [
+    "Czy wysyła jakieś dane?",
+    "Żadnych danych osobowych. Raz dziennie sprawdza tylko, czy jest nowa wersja (możesz to wyłączyć w menu Narzędzia)."
+   ],
+   [
+    "Coś poszło nie tak?",
+    "Narzędzia → Zapisz dziennik do zgłoszenia problemu, a potem kliknij „Wyślij e-mailem” (albo wyślij zip na support@4dir.net). Użytkownicy GitHuba mogą też otworzyć zgłoszenie (issue)."
+   ]
+  ],
+  "src": "Kod źródłowy",
+  "issues": "Zgłoś problem",
+  "lic": "Wolne oprogramowanie na licencji GPL-3.0. Windows jest znakiem towarowym Microsoft.",
+  "new_h": "Nowości w v{ver}",
+  "hist_link": "Starsze wersje i pełna historia zmian",
+  "hist_title": "Historia wersji 4Dir — pobierz starsze wersje",
+  "hist_h": "Historia wersji",
+  "hist_intro": "Wszystkie wydania 4Dir wraz ze zmianami. Zalecana jest najnowsza wersja; starsze zostają tutaj na wypadek, gdyby były potrzebne.",
+  "hist_dl": "Pobierz",
+  "hist_latest": "najnowsza",
+  "home": "← Strona główna 4Dir",
+  "lang": "Język",
+  "fast": "Szybszy niż Eksplorator plików Windows!!"
+ },
+ "store": [
+  "Pobierz ze sklepu Microsoft Store",
+  "Antywirus lub komputer służbowy blokuje plik zip? Pobierz zamiast tego wersję ze sklepu, podpisaną przez Microsoft (integracja z Win+E nie jest tam dostępna)."
+ ],
+ "fp": "Niektóre programy antywirusowe (Microsoft Defender, HP Wolf Security itp.) błędnie oznaczają plik 4Dir.exe w archiwum zip jako złośliwe oprogramowanie. To fałszywy alarm.\n4Dir.exe to 18-kilobajtowy program startowy, który tylko uruchamia aplikację ({src}), i został zgłoszony producentom.\nBitdefender potwierdził, że plik jest czysty; wykrycie zostanie usunięte w kolejnych aktualizacjach.\nJeśli jest blokowany, użyj wersji ze sklepu.",
+ "fp_src": "źródło",
+ "sup_h": "Dziękujemy, wspierający",
+ "thx": [
+  "Pobieranie rozpoczęte",
+  "4Dir jest darmowy i zawsze taki będzie. Jeśli Ci pomaga, drobna darowizna pozwala utrzymać aktualizacje.",
+  "Może później"
+ ],
+ "board": "Społeczność",
+ "star": [
+  "Podoba Ci się 4Dir? Zostaw gwiazdkę na GitHubie.",
+  "Gwiazdka na GitHubie"
+ ],
+ "lang_sup": "Obsługiwane języki",
+ "guide": {
+  "title": "Jak korzystać z 4Dir",
+  "link": "Jak używać",
+  "toc": "Spis treści",
+  "top": "Do góry",
+  "etc_h": "Inne",
+  "etc": [
+   "Motyw (jasny/ciemny) i język znajdziesz w <b>⚙ Ustawienia ▸ Ogólne</b>. Zmiana języka zadziała po ponownym uruchomieniu 4Dir.",
+   "Jeśli 4Dir zacznie dziwnie działać, kliknij <b>Narzędzia → Zapisz dziennik do zgłoszenia problemu</b> i wyślij utworzony plik zip na support@4dir.net. Sprawdzimy dziennik, aby znaleźć przyczynę."
+  ]
+ }
+}

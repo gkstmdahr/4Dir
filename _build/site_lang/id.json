@@ -1,0 +1,115 @@
+{
+ "T": {
+  "title": "4Dir — Pengelola file multi-panel dengan tab untuk Windows (gratis, portabel)",
+  "desc": "4Dir adalah pengelola file gratis dan portabel untuk Windows: bagi jendela menjadi hingga 20 panel, masing-masing dengan tab sendiri. Pencarian cepat, status SVN, tema terang/gelap, 26 bahasa.",
+  "tagline": "Pengelola file multi-panel yang lebih cepat daripada File Explorer Windows!!",
+  "sub": "Tanpa instalasi — ekstrak lalu jalankan.",
+  "dl": "Unduh 4Dir v{ver}",
+  "dlnote": "Windows 10/11 64-bit · {size} · {date} · gratis",
+  "shot1": "4 panel, tema terang",
+  "shot2": "3 panel, tema gelap",
+  "feat_h": "Fitur",
+  "feats": [
+   [
+    "Hingga 20 panel",
+    "Tata letak 1, 2, 3, 4, atau 6 panel dengan satu klik, atau grid apa pun hingga 5 × 4. Setiap panel punya tab sendiri."
+   ],
+   [
+    "Tidak mengganggu",
+    "Folder dibaca langsung, tanpa tampilan shell Windows yang berat. Tidak ada timer atau polling saat idle — aman dibiarkan terbuka di samping 3ds Max, game, atau aplikasi berat lainnya."
+   ],
+   [
+    "Pencarian instan",
+    "Ketik untuk mencari semua nama file di drive Anda. Indeksnya sendiri diperbarui secara real time — tanpa hak admin."
+   ],
+   [
+    "Status SVN sekali lihat",
+    "Lencana diubah / ditambah / konflik dibaca langsung dari .svn — folder berubah merah saat ada perubahan di dalamnya. Git dan Perforce lewat overlay Windows."
+   ],
+   [
+    "Terasa seperti Explorer",
+    "Pintasan keyboard yang sama, menu klik kanan Windows lengkap, seret & lepas dari dan ke Explorer maupun aplikasi lain. Klik kanan gambar .webp untuk menyimpannya sebagai PNG atau JPG."
+   ],
+   [
+    "Portabel dan privat",
+    "Pengaturan tersimpan di folder 4Dir. Tema terang/gelap, 26 bahasa, ganti nama massal, pemulihan sesi, dan pemeriksaan kesehatan Explorer sudah bawaan."
+   ]
+  ],
+  "how_h": "Cara menginstal",
+  "how": [
+   "Unduh zip dengan tombol di atas (atau dari <b>Releases</b> di GitHub). Tombol hijau “Code → Download ZIP” di GitHub hanya berisi kode sumber dan tidak bisa dijalankan.",
+   "Klik kanan zip → Properti → centang <b>Buka blokir</b> → OK. (Jika tidak, Windows akan menampilkan peringatan keamanan setiap kali.)",
+   "Ekstrak di mana saja lalu klik dua kali <b>4Dir.exe</b>. (atau 4Dir.vbs jika 4Dir.exe diblokir)"
+  ],
+  "smart": "Jika Windows SmartScreen muncul: klik <b>Info selengkapnya</b> → <b>Tetap jalankan</b>.",
+  "sha_h": "Verifikasi unduhan (opsional)",
+  "sha": "Di Prompt Perintah jalankan <code>certutil -hashfile 4Dir_v{ver}.zip SHA256</code> — hasilnya harus sama dengan:",
+  "don_h": "Dukung 4Dir",
+  "don": "4Dir gratis dan tanpa iklan. Jika aplikasi ini menghemat waktu Anda, donasi kecil membuat pembaruan terus datang.",
+  "faq_h": "FAQ",
+  "faq": [
+   [
+    "Benarkah gratis?",
+    "Ya. 4Dir gratis dan open source (GPL-3.0). Tanpa iklan, tanpa akun, tanpa masa percobaan."
+   ],
+   [
+    "Boleh dipakai di kantor?",
+    "Ya. 4Dir adalah perangkat lunak bebas GPL-3.0, jadi perusahaan juga bisa memakainya gratis, tanpa biaya lisensi atau registrasi. Karena berjalan tanpa instalasi, cukup pastikan perusahaan Anda mengizinkan aplikasi portabel."
+   ],
+   [
+    "Benarkah lebih cepat daripada File Explorer?",
+    "Membuka folder berisi 1.000 file di jendela baru memakan waktu 0,4 dtk di 4Dir dan sekitar 2 dtk di File Explorer. Membuka satu jendela lagi menambah sekitar 10 MB memori di 4Dir dan sekitar 130 MB di File Explorer. Diukur masing-masing 5 kali di PC yang sama (Windows 11, SSD). Dengan puluhan ribu file dalam satu folder, selisihnya mengecil."
+   ],
+   [
+    "Apakah mengirim data?",
+    "Tidak ada data pribadi. Aplikasi hanya memeriksa sekali sehari apakah ada versi baru (bisa dimatikan di menu Alat)."
+   ],
+   [
+    "Ada yang tidak beres?",
+    "Alat → Simpan log untuk laporan masalah, lalu tekan “Kirim lewat email” (atau kirim zip ke support@4dir.net lewat email). Pengguna GitHub juga bisa membuka issue."
+   ]
+  ],
+  "src": "Kode sumber",
+  "issues": "Laporkan masalah",
+  "lic": "Perangkat lunak bebas berlisensi GPL-3.0. Windows adalah merek dagang Microsoft.",
+  "new_h": "Yang baru di v{ver}",
+  "hist_link": "Versi lama & riwayat perubahan lengkap",
+  "hist_title": "Riwayat versi 4Dir — unduh versi lama",
+  "hist_h": "Riwayat versi",
+  "hist_intro": "Setiap rilis 4Dir beserta perubahannya. Versi terbaru direkomendasikan; versi lama tetap tersedia di sini jika Anda membutuhkannya.",
+  "hist_dl": "Unduh",
+  "hist_latest": "terbaru",
+  "home": "← Beranda 4Dir",
+  "lang": "Bahasa",
+  "fast": "Lebih cepat daripada File Explorer Windows!!"
+ },
+ "store": [
+  "Dapatkan di Microsoft Store",
+  "Antivirus atau PC kantor memblokir zip? Pakai versi Store yang ditandatangani Microsoft (penautan Win+E tidak tersedia di sana)."
+ ],
+ "fp": "Beberapa program antivirus (Microsoft Defender, HP Wolf Security, dll.) keliru menandai 4Dir.exe di dalam zip sebagai malware. Ini false positive.\n4Dir.exe adalah peluncur berukuran 18 KB yang hanya menjalankan aplikasi ({src}), dan sudah dilaporkan ke para vendor.\nBitdefender telah mengonfirmasi bahwa file ini bersih; deteksinya akan dihapus pada pembaruan mendatang.\nJika diblokir, gunakan versi Store.",
+ "fp_src": "sumber",
+ "sup_h": "Terima kasih, para pendukung",
+ "thx": [
+  "Unduhan Anda telah dimulai",
+  "4Dir gratis dan akan selalu begitu. Jika membantu Anda, donasi kecil membuat pembaruan terus datang.",
+  "Nanti saja"
+ ],
+ "board": "Komunitas",
+ "star": [
+  "Suka 4Dir? Beri bintang di GitHub.",
+  "Beri bintang di GitHub"
+ ],
+ "lang_sup": "Dukungan bahasa",
+ "guide": {
+  "title": "Cara menggunakan 4Dir",
+  "link": "Cara pakai",
+  "toc": "Daftar isi",
+  "top": "Kembali ke atas",
+  "etc_h": "Lainnya",
+  "etc": [
+   "Tema (terang/gelap) dan bahasa ada di <b>⚙ Pengaturan ▸ Umum</b>. Perubahan bahasa berlaku setelah 4Dir dimulai ulang.",
+   "Jika 4Dir mulai bertingkah aneh, klik <b>Alat → Simpan log untuk laporan masalah</b> lalu kirim zip yang dibuat ke support@4dir.net. Kami akan memeriksa log untuk mencari penyebabnya."
+  ]
+ }
+}

@@ -6,7 +6,7 @@
 - 넘길 값의 자리 글자: {file} 고른 첫 파일 · {files} 고른 것 전부(따옴표로 묶어 띄어 씀) · {folder} 지금 폴더
   · {other} 다른 칸 폴더 · {name} 고른 첫 파일 이름(폴더 빼고)
 - 실행은 윈도우 열기(ShellExecute)로 — 실행 파일이 아니어도(폴더·문서·주소) 됨. 4Dir 는 기다리지 않음
-- 저장: 설정 user_buttons [{name, cmd, args}]
+- 저장: 설정 user_buttons [{name, cmd, args}] / {name, action} / 1.4.0 {sep: True} 구분선, 항목 선택값 icon(사용자 아이콘 파일)·icon_only
 로그: bin\\log\\4Dir.log [QE.userbtn]
 """
 import os
@@ -17,7 +17,7 @@ from i18n import T
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 
-USERBTNS_VER = "1.3.1"   # 1.3.1 (0.9.130 빌드 2): 겹침 문구 = 이미 쓰는 곳만 알림, [저장] 눌러야 적용 / 1.3.0 (0.9.130): 항목마다 단축키 {key} (같은 키면 My메뉴가 먼저, 빨갛게 알림) / 1.2.0 (0.9.113): 이름 My메뉴, 4Dir 기능도 넣기 {name, action} / 1.1.0: 따옴표·끝 \ 처리, 한 번에 바꿈
+USERBTNS_VER = "1.4.0"   # 1.4.0 (0.9.159, 받은 메일 11/28): 아이콘만 표시(icon_only, 이름 비우고 아이콘 있으면 자동) · 사용자 아이콘(icon = .ico·.png·.exe 등 파일 경로) · 구분선 항목 {sep: True} / 1.3.1 (0.9.130 빌드 2): 겹침 문구 = 이미 쓰는 곳만 알림, [저장] 눌러야 적용 / 1.3.0 (0.9.130): 항목마다 단축키 {key} (같은 키면 My메뉴가 먼저, 빨갛게 알림) / 1.2.0 (0.9.113): 이름 My메뉴, 4Dir 기능도 넣기 {name, action} / 1.1.0: 따옴표·끝 \ 처리, 한 번에 바꿈
 ACTION_ICON = None   # main 이 넣음: 기능 id → QIcon (없으면 빈 아이콘)
 log = logging.getLogger("QE.userbtn")
 
@@ -65,7 +65,41 @@ def run(item, ctx):
     os.startfile(cmd, "open", args, cwd) if args or cwd else os.startfile(cmd)
 
 
+ICON_EXT = (".ico", ".png", ".bmp", ".jpg", ".jpeg", ".gif", ".svg")
+
+
+def custom_icon(path):
+    """1.4.0 사용자 아이콘: 그림 파일(.ico·.png 등)은 그대로, 그 밖(.exe·.dll·바로 가기 등)은 그 파일의 아이콘. 못 읽으면 빈 아이콘"""
+    p = os.path.expandvars((path or "").strip().strip('"'))
+    if not p or not os.path.exists(p):
+        if p:
+            log.info("사용자 아이콘 파일 없음: %s", p)
+        return QtGui.QIcon()
+    if p.lower().endswith(ICON_EXT):
+        ic = QtGui.QIcon(p)
+    else:
+        ic = QtWidgets.QFileIconProvider().icon(QtCore.QFileInfo(p))
+    if ic.isNull() or ic.pixmap(16, 16).isNull():
+        log.info("사용자 아이콘 못 읽음: %s", p)
+        return QtGui.QIcon()
+    return ic
+
+
+def show_text(item, has_icon):
+    """1.4.0 위쪽 단추 글자: 아이콘만 표시(icon_only) 또는 이름이 비었으면서 아이콘이 있으면 '' (예전엔 '?' 가 붙었음)"""
+    name = (item.get("name") or "").strip()
+    if has_icon and (item.get("icon_only") or not name):
+        return ""
+    return name or "?"
+
+
 def icon_for(item):
+    if item.get("sep"):
+        return QtGui.QIcon()
+    if item.get("icon"):   # 1.4.0 사용자 아이콘이 먼저
+        ic = custom_icon(item["icon"])
+        if not ic.isNull():
+            return ic
     if item.get("action"):
         ic = ACTION_ICON(item["action"]) if ACTION_ICON else None
         return ic if ic is not None else QtGui.QIcon()
@@ -178,6 +212,9 @@ class EditDialog(QtWidgets.QDialog):
             b.clicked.connect(fn)
             lay_btn.addWidget(b)
         lay_btn.addStretch(1)
+        b = QtWidgets.QPushButton(T("＋ 구분선"))   # 1.4.0 (받은 메일 11/28)
+        b.clicked.connect(self.add_sep)
+        lay_btn.addWidget(b)
         row.addStretch(1)
         left.addLayout(row)
         left.addLayout(lay_btn)
@@ -211,12 +248,38 @@ class EditDialog(QtWidgets.QDialog):
         self.l_key = QtWidgets.QLabel()   # 겹침 알림 (빨강)
         self.l_key.setWordWrap(True)
         self.l_key.setStyleSheet("color:#d93025")
-        f.addRow(T("이름"), self.e_name)
+        self.l_name = QtWidgets.QLabel(T("이름"))
+        f.addRow(self.l_name, self.e_name)
         f.addRow(T("4Dir 기능"), self.l_func)
         f.addRow(T("실행할 것"), cr)
         f.addRow(T("넘길 값"), self.e_args)
-        f.addRow(T("단축키"), kr)
+        self.l_keyrow = QtWidgets.QLabel(T("단축키"))
+        f.addRow(self.l_keyrow, kr)
         f.addRow("", self.l_key)
+        # 1.4.0 사용자 아이콘·아이콘만 표시 (받은 메일 11/28)
+        self.e_icon = QtWidgets.QLineEdit()
+        self.e_icon.setPlaceholderText(T("비우면 실행 파일 아이콘"))
+        ip = QtWidgets.QPushButton("…")
+        ip.setFixedWidth(30)
+        ip.setToolTip(T("아이콘 고르기"))
+        ip.clicked.connect(self.pick_icon)
+        ix = QtWidgets.QPushButton("✕")
+        ix.setFixedWidth(30)
+        ix.setToolTip(T("사용자 아이콘 지우기"))
+        ix.clicked.connect(lambda: (self.e_icon.clear(), self._store()))
+        ir = QtWidgets.QHBoxLayout()
+        ir.addWidget(self.e_icon, 1)
+        ir.addWidget(ip)
+        ir.addWidget(ix)
+        self.icon_btns = (ip, ix)
+        self.l_icon = QtWidgets.QLabel(T("아이콘"))
+        f.addRow(self.l_icon, ir)
+        self.c_icon_only = QtWidgets.QCheckBox(T("아이콘만 표시 (이름은 마우스를 올리면 보임)"))
+        self.c_icon_only.toggled.connect(self._store)
+        f.addRow("", self.c_icon_only)
+        self.l_sep = QtWidgets.QLabel(T("구분선 — 위쪽 단추 줄에 세로 줄을 그어 단추를 나눕니다. ↑ ↓ 로 자리를 옮기세요."))
+        self.l_sep.setWordWrap(True)
+        f.addRow("", self.l_sep)
         self.form, self.cmd_row, self.pick_btn = f, cr, pick
         right.addLayout(f)
         help_ = self.help_ = QtWidgets.QLabel(T("넘길 값에 쓸 수 있는 자리 글자:\n{file} 고른 첫 파일\n{files} 고른 것 전부\n{name} 고른 첫 파일 이름(확장자 빼고)\n{folder} 지금 폴더\n{other} 다른 칸 폴더\n\n예) 포토샵 + {files} = 고른 그림을 포토샵으로 엶"))
@@ -231,7 +294,7 @@ class EditDialog(QtWidgets.QDialog):
         right.addWidget(bb)
         lay.addLayout(right, 2)
         self.lst.currentRowChanged.connect(self._show)
-        for e in (self.e_name, self.e_cmd, self.e_args):
+        for e in (self.e_name, self.e_cmd, self.e_args, self.e_icon):
             e.textEdited.connect(self._store)
         self.e_key.keySequenceChanged.connect(self._store)
         self._fill()
@@ -249,6 +312,8 @@ class EditDialog(QtWidgets.QDialog):
 
     @staticmethod
     def _row_text(it):
+        if it.get("sep"):
+            return "──────  " + T("구분선")
         n = it.get("name") or T("(이름 없음)")
         return f"{n}    [{it['key']}]" if it.get("key") else n
 
@@ -256,15 +321,25 @@ class EditDialog(QtWidgets.QDialog):
         on = 0 <= r < len(self.items)
         it = self.items[r] if on else {}
         fn = bool(it.get("action"))
-        self.e_name.setEnabled(on)
+        sep = bool(it.get("sep"))   # 1.4.0 구분선 = 칸 전부 숨기고 안내 한 줄
+        self.e_name.setEnabled(on and not sep)
         for e in (self.e_cmd, self.e_args, self.pick_btn):
-            e.setEnabled(on and not fn)
+            e.setEnabled(on and not fn and not sep)
         for w in (self.e_cmd, self.pick_btn, self.e_args, self.help_):
-            w.setVisible(not fn)
+            w.setVisible(not fn and not sep)
         for w in (self.e_cmd, self.e_args):
             lb = self.form.labelForField(w if w is self.e_args else self.cmd_row)
             if lb is not None:
-                lb.setVisible(not fn)
+                lb.setVisible(not fn and not sep)
+        for w in (self.l_name, self.e_name, self.l_icon, self.e_icon, self.c_icon_only, self.l_keyrow, self.e_key, self.key_x) + self.icon_btns:
+            w.setVisible(not sep)
+        self.l_sep.setVisible(sep)
+        for w in (self.e_icon, self.c_icon_only) + self.icon_btns:
+            w.setEnabled(on and not sep)
+        self.e_icon.setText(it.get("icon", ""))
+        self.c_icon_only.blockSignals(True)
+        self.c_icon_only.setChecked(bool(it.get("icon_only")))
+        self.c_icon_only.blockSignals(False)
         self.l_func.setVisible(fn)
         lb = self.form.labelForField(self.l_func)
         if lb is not None:
@@ -276,8 +351,8 @@ class EditDialog(QtWidgets.QDialog):
         self.e_key.blockSignals(True)
         self.e_key.setKeySequence(QtGui.QKeySequence(it.get("key", "")))
         self.e_key.blockSignals(False)
-        self.e_key.setEnabled(on)
-        self.key_x.setEnabled(on)
+        self.e_key.setEnabled(on and not sep)
+        self.key_x.setEnabled(on and not sep)
         self._key_note()
 
     def key_text(self):
@@ -300,13 +375,20 @@ class EditDialog(QtWidgets.QDialog):
     def _store(self, *_):
         r = self.lst.currentRow()
         if 0 <= r < len(self.items):
+            if self.items[r].get("sep"):
+                return
             if self.items[r].get("action"):
                 self.items[r] = {"name": self.e_name.text().strip(), "action": self.items[r]["action"]}
             else:
                 self.items[r] = {"name": self.e_name.text().strip(), "cmd": self.e_cmd.text().strip(), "args": self.e_args.text()}
             if self.key_text():
                 self.items[r]["key"] = self.key_text()
+            if self.e_icon.text().strip():   # 1.4.0
+                self.items[r]["icon"] = self.e_icon.text().strip()
+            if self.c_icon_only.isChecked():
+                self.items[r]["icon_only"] = True
             self.lst.item(r).setText(self._row_text(self.items[r]))
+            self.lst.item(r).setIcon(icon_for(self.items[r]))
             self._key_note()
 
     def add_func(self):
@@ -325,6 +407,24 @@ class EditDialog(QtWidgets.QDialog):
         self._fill(len(self.items) - 1)
         self.e_name.setFocus()
         self.e_name.selectAll()
+
+    def add_sep(self):
+        """1.4.0 구분선 — 고른 항목 바로 밑에 넣음 (없으면 맨 끝)"""
+        r = self.lst.currentRow()
+        at = r + 1 if 0 <= r < len(self.items) else len(self.items)
+        self.items.insert(at, {"sep": True})
+        log.info("My메뉴 구분선 넣음 %d번째", at + 1)
+        self._fill(at)
+
+    def pick_icon(self):
+        """1.4.0 사용자 아이콘 고르기 — 그림(.ico·.png …) 또는 실행 파일·dll(그 파일 아이콘)"""
+        cur = os.path.expandvars(self.e_icon.text().strip().strip('"'))
+        p, _f = QtWidgets.QFileDialog.getOpenFileName(self, T("아이콘 고르기"), os.path.dirname(cur) if cur else "",
+                                                      T("아이콘·그림 (*.ico *.png *.bmp *.jpg *.gif *.svg *.exe *.dll);;모든 파일 (*)"))
+        if p:
+            self.e_icon.setText(os.path.normpath(p))
+            self._store()
+            log.info("My메뉴 사용자 아이콘 %s → %s", self.e_name.text(), p)
 
     def remove(self):
         r = self.lst.currentRow()
@@ -350,4 +450,4 @@ class EditDialog(QtWidgets.QDialog):
                 self.lst.item(r).setIcon(icon_for(self.items[r]))
 
     def result_items(self):
-        return [x for x in self.items if x.get("cmd") or x.get("action")]
+        return [x for x in self.items if x.get("cmd") or x.get("action") or x.get("sep")]

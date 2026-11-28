@@ -1,0 +1,115 @@
+{
+ "T": {
+  "title": "4Dir — Többpaneles, füles fájlkezelő Windowshoz (ingyenes, hordozható)",
+  "desc": "A 4Dir ingyenes, hordozható fájlkezelő Windowshoz: osszd fel az ablakot akár 20 panelre, mindegyik saját fülekkel. Gyors keresés, SVN-állapot, világos/sötét téma, 26 nyelv.",
+  "tagline": "Többpaneles fájlkezelő, ami gyorsabb a Windows Fájlkezelőnél!!",
+  "sub": "Telepítés nélkül — csomagold ki, és indítsd el.",
+  "dl": "4Dir v{ver} letöltése",
+  "dlnote": "Windows 10/11 64 bites · {size} · {date} · ingyenes",
+  "shot1": "4 panel, világos téma",
+  "shot2": "3 panel, sötét téma",
+  "feat_h": "Funkciók",
+  "feats": [
+   [
+    "Akár 20 panel",
+    "1, 2, 3, 4 vagy 6 paneles elrendezés egy kattintással, vagy tetszőleges rács 5 × 4-ig. Minden panelnek saját fülei vannak."
+   ],
+   [
+    "Nem láb alatt van",
+    "A mappákat közvetlenül olvassa, a nehézkes Windows-shellnézet nélkül. Üresjáratban nincs időzítő vagy lekérdezés — nyugodtan nyitva hagyhatod a 3ds Max, játékok vagy más nagy erőforrásigényű alkalmazások mellett."
+   ],
+   [
+    "Azonnali keresés",
+    "Gépelj, és megkeresi a meghajtóidon lévő összes fájlnevet. Saját indexe valós időben frissül — nincs szükség rendszergazdai jogra."
+   ],
+   [
+    "SVN-állapot egy pillantásra",
+    "A módosított / hozzáadott / ütköző jelzések közvetlenül a .svn-ből olvasódnak — a mappák pirosra váltanak, ha bennük valami megváltozott. Git és Perforce a Windows átfedő ikonjain át."
+   ],
+   [
+    "Olyan, mint a Fájlkezelő",
+    "Ugyanazok a billentyűparancsok, a teljes Windows jobb gombos menü, húzás a Fájlkezelőből és más alkalmazásokból, illetve oda. Kattints jobb gombbal egy .webp képre, és mentsd PNG vagy JPG formátumban."
+   ],
+   [
+    "Hordozható és privát",
+    "A beállítások a 4Dir mappában maradnak. Világos/sötét téma, 26 nyelv, tömeges átnevezés, munkamenet-visszaállítás és Fájlkezelő-állapotellenőrzés is van beépítve."
+   ]
+  ],
+  "how_h": "Telepítés",
+  "how": [
+   "Töltsd le a zipet a fenti gombbal (vagy a GitHub <b>Releases</b> oldaláról). A GitHubon a zöld „Code → Download ZIP” csak forráskódot ad, és nem futtatható.",
+   "Kattints jobb gombbal a zipre → Tulajdonságok → jelöld be a <b>Letiltás feloldása</b> négyzetet → OK. (Különben a Windows minden alkalommal biztonsági figyelmeztetést jelenít meg.)",
+   "Csomagold ki bárhová, és kattints duplán a <b>4Dir.exe</b> fájlra. (vagy a 4Dir.vbs fájlra, ha a 4Dir.exe le van tiltva)"
+  ],
+  "smart": "Ha megjelenik a Windows SmartScreen: kattints a <b>További információ</b> → <b>Futtatás mindenképp</b> gombra.",
+  "sha_h": "A letöltés ellenőrzése (nem kötelező)",
+  "sha": "A Parancssorban futtasd: <code>certutil -hashfile 4Dir_v{ver}.zip SHA256</code> — az eredménynek egyeznie kell:",
+  "don_h": "Támogasd a 4Dirt",
+  "don": "A 4Dir ingyenes és reklámmentes. Ha időt spórol neked, egy kis adomány segít, hogy továbbra is jöjjenek a frissítések.",
+  "faq_h": "GYIK",
+  "faq": [
+   [
+    "Tényleg ingyenes?",
+    "Igen. A 4Dir ingyenes és nyílt forráskódú (GPL-3.0). Nincs reklám, fiók vagy próbaidőszak."
+   ],
+   [
+    "Használhatom munkahelyen?",
+    "Igen. A 4Dir GPL-3.0 licencű szabad szoftver, így a cégek is ingyen használhatják, licencdíj és regisztráció nélkül. Mivel telepítés nélkül fut, csak győződj meg róla, hogy a cégednél engedélyezettek a hordozható alkalmazások."
+   ],
+   [
+    "Tényleg gyorsabb, mint a Fájlkezelő?",
+    "Egy 1000 fájlt tartalmazó mappa megnyitása új ablakban a 4Dirben 0,4 mp, a Fájlkezelőben kb. 2 mp volt. Egy újabb ablak megnyitása a 4Dirben kb. 10 MB, a Fájlkezelőben kb. 130 MB memóriát fogyasztott többet. Mindkettőt 5-ször mértük ugyanazon a gépen (Windows 11, SSD). Ha egy mappában több tízezer fájl van, a különbség csökken."
+   ],
+   [
+    "Küld valamilyen adatot?",
+    "Személyes adatot nem. Naponta egyszer csak azt ellenőrzi, hogy van-e új verzió (ez az Eszközök menüben kikapcsolható)."
+   ],
+   [
+    "Valami elromlott?",
+    "Eszközök → Napló mentése hibajelentéshez, majd nyomd meg a „Küldés e-mailben” gombot (vagy küldd el a zipet a support@4dir.net címre). A GitHub-felhasználók issue-t is nyithatnak."
+   ]
+  ],
+  "src": "Forráskód",
+  "issues": "Hiba jelentése",
+  "lic": "Szabad szoftver GPL-3.0 licenc alatt. A Windows a Microsoft védjegye.",
+  "new_h": "Újdonságok a v{ver} verzióban",
+  "hist_link": "Régebbi verziók és a teljes változásnapló",
+  "hist_title": "A 4Dir verziótörténete — régebbi verziók letöltése",
+  "hist_h": "Verziótörténet",
+  "hist_intro": "A 4Dir minden kiadása a változásokkal. A legújabb verzió ajánlott; a régebbiek itt maradnak, ha szükséged lenne rájuk.",
+  "hist_dl": "Letöltés",
+  "hist_latest": "legújabb",
+  "home": "← 4Dir kezdőlap",
+  "lang": "Nyelv",
+  "fast": "Gyorsabb, mint a Windows Fájlkezelő!!"
+ },
+ "store": [
+  "Letöltés a Microsoft Store-ból",
+  "A vírusirtó vagy a munkahelyi gép blokkolja a zipet? Töltsd le helyette a Microsoft által aláírt Store-verziót (a Win+E-társítás ott nem érhető el)."
+ ],
+ "fp": "Egyes vírusirtók (Microsoft Defender, HP Wolf Security stb.) tévesen kártevőnek jelölik a zipben lévő 4Dir.exe fájlt. Ez téves riasztás.\nA 4Dir.exe egy 18 KB-os indító, amely csak az alkalmazást indítja el ({src}), és bejelentettük a gyártóknak.\nA Bitdefender megerősítette, hogy a fájl tiszta; az észlelést a következő frissítésekben eltávolítják.\nHa blokkolva van, használd a Store-verziót.",
+ "fp_src": "forrás",
+ "sup_h": "Köszönjük, támogatók",
+ "thx": [
+  "A letöltés elindult",
+  "A 4Dir ingyenes, és az is marad. Ha segít neked, egy kis adomány biztosítja a további frissítéseket.",
+  "Talán később"
+ ],
+ "board": "Közösség",
+ "star": [
+  "Tetszik a 4Dir? Adj neki egy csillagot a GitHubon.",
+  "Csillag a GitHubon"
+ ],
+ "lang_sup": "Nyelvi támogatás",
+ "guide": {
+  "title": "A 4Dir használata",
+  "link": "Használat",
+  "toc": "Tartalom",
+  "top": "Vissza a tetejére",
+  "etc_h": "Egyéb tudnivalók",
+  "etc": [
+   "A téma (világos/sötét) és a nyelv a <b>⚙ Beállítások ▸ Általános</b> alatt található. A nyelvváltás a 4Dir újraindítása után lép érvénybe.",
+   "Ha a 4Dir furcsán kezd viselkedni, kattints az <b>Eszközök → Napló mentése hibajelentéshez</b> menüpontra, és a létrejött zipet küldd el a support@4dir.net címre. Megnézzük a naplót, hogy megtaláljuk az okot."
+  ]
+ }
+}

@@ -1,0 +1,115 @@
+{
+ "T": {
+  "title": "4Dir — Trình quản lý tệp nhiều ngăn có tab cho Windows (miễn phí, chạy không cần cài)",
+  "desc": "4Dir là trình quản lý tệp miễn phí, chạy không cần cài đặt cho Windows: chia cửa sổ thành tối đa 20 ngăn, mỗi ngăn có tab riêng. Tìm kiếm nhanh, trạng thái SVN, giao diện sáng/tối, 26 ngôn ngữ.",
+  "tagline": "Trình quản lý tệp nhiều ngăn nhanh hơn File Explorer của Windows!!",
+  "sub": "Không cần cài đặt — giải nén và chạy.",
+  "dl": "Tải 4Dir v{ver}",
+  "dlnote": "Windows 10/11 64-bit · {size} · {date} · miễn phí",
+  "shot1": "4 ngăn, giao diện sáng",
+  "shot2": "3 ngăn, giao diện tối",
+  "feat_h": "Tính năng",
+  "feats": [
+   [
+    "Tối đa 20 ngăn",
+    "Bố cục 1, 2, 3, 4 hoặc 6 ngăn chỉ với một cú nhấp, hoặc lưới tùy ý đến 5 × 4. Mỗi ngăn có tab riêng."
+   ],
+   [
+    "Không gây vướng víu",
+    "Thư mục được đọc trực tiếp, không qua giao diện shell nặng nề của Windows. Không có bộ hẹn giờ hay thăm dò khi rảnh — yên tâm để mở cạnh 3ds Max, trò chơi hay các ứng dụng nặng khác."
+   ],
+   [
+    "Tìm kiếm tức thì",
+    "Gõ để tìm mọi tên tệp trên ổ đĩa của bạn. Chỉ mục riêng được cập nhật theo thời gian thực — không cần quyền quản trị."
+   ],
+   [
+    "Trạng thái SVN trong nháy mắt",
+    "Huy hiệu đã sửa / đã thêm / xung đột được đọc thẳng từ .svn — thư mục chuyển sang màu đỏ khi có thay đổi bên trong. Git và Perforce thông qua lớp phủ của Windows."
+   ],
+   [
+    "Dùng quen như Explorer",
+    "Cùng phím tắt, đầy đủ menu chuột phải của Windows, kéo và thả vào/ra Explorer và các ứng dụng khác. Nhấp chuột phải vào ảnh .webp để lưu thành PNG hoặc JPG."
+   ],
+   [
+    "Di động và riêng tư",
+    "Cài đặt nằm trong thư mục 4Dir. Giao diện sáng/tối, 26 ngôn ngữ, đổi tên hàng loạt, khôi phục phiên làm việc và kiểm tra tình trạng Explorer được tích hợp sẵn."
+   ]
+  ],
+  "how_h": "Cách cài đặt",
+  "how": [
+   "Tải tệp zip bằng nút phía trên (hoặc từ mục <b>Releases</b> trên GitHub). Nút xanh “Code → Download ZIP” trên GitHub chỉ là mã nguồn và không chạy được.",
+   "Nhấp chuột phải vào tệp zip → Thuộc tính → chọn <b>Bỏ chặn</b> → OK. (Nếu không, Windows sẽ hiện cảnh báo bảo mật mỗi lần.)",
+   "Giải nén vào bất kỳ đâu rồi nhấp đúp <b>4Dir.exe</b>. (hoặc 4Dir.vbs nếu 4Dir.exe bị chặn)"
+  ],
+  "smart": "Nếu Windows SmartScreen xuất hiện: nhấp <b>Thông tin thêm</b> → <b>Vẫn chạy</b>.",
+  "sha_h": "Kiểm tra bản tải về (tùy chọn)",
+  "sha": "Trong Dấu nhắc Lệnh, chạy <code>certutil -hashfile 4Dir_v{ver}.zip SHA256</code> — kết quả phải khớp với:",
+  "don_h": "Ủng hộ 4Dir",
+  "don": "4Dir miễn phí và không có quảng cáo. Nếu nó giúp bạn tiết kiệm thời gian, một khoản quyên góp nhỏ sẽ giúp các bản cập nhật tiếp tục ra mắt.",
+  "faq_h": "Câu hỏi thường gặp",
+  "faq": [
+   [
+    "Có thật sự miễn phí không?",
+    "Có. 4Dir miễn phí và mã nguồn mở (GPL-3.0). Không quảng cáo, không tài khoản, không dùng thử."
+   ],
+   [
+    "Tôi có thể dùng ở nơi làm việc không?",
+    "Có. 4Dir là phần mềm tự do GPL-3.0 nên doanh nghiệp cũng có thể dùng miễn phí, không mất phí giấy phép hay đăng ký. Vì chạy không cần cài đặt, bạn chỉ cần kiểm tra xem công ty có cho phép ứng dụng di động hay không."
+   ],
+   [
+    "Có thật sự nhanh hơn File Explorer không?",
+    "Mở một thư mục có 1.000 tệp trong cửa sổ mới mất 0,4 giây với 4Dir và khoảng 2 giây với File Explorer. Mở thêm một cửa sổ tốn thêm khoảng 10 MB bộ nhớ với 4Dir và khoảng 130 MB với File Explorer. Đo 5 lần mỗi loại trên cùng một PC (Windows 11, SSD). Khi một thư mục có hàng chục nghìn tệp, khoảng cách sẽ nhỏ lại."
+   ],
+   [
+    "Nó có gửi dữ liệu nào không?",
+    "Không gửi dữ liệu cá nhân. Nó chỉ kiểm tra mỗi ngày một lần xem có phiên bản mới không (bạn có thể tắt trong Công cụ)."
+   ],
+   [
+    "Có gì đó không ổn?",
+    "Công cụ → Lưu nhật ký để báo lỗi, sau đó nhấn “Gửi qua email” (hoặc gửi tệp zip tới support@4dir.net). Người dùng GitHub cũng có thể mở một issue."
+   ]
+  ],
+  "src": "Mã nguồn",
+  "issues": "Báo sự cố",
+  "lic": "Phần mềm tự do theo GPL-3.0. Windows là thương hiệu của Microsoft.",
+  "new_h": "Có gì mới trong v{ver}",
+  "hist_link": "Các phiên bản cũ và toàn bộ lịch sử thay đổi",
+  "hist_title": "Lịch sử phiên bản 4Dir — tải các phiên bản cũ",
+  "hist_h": "Lịch sử phiên bản",
+  "hist_intro": "Mọi bản phát hành 4Dir kèm nội dung thay đổi. Nên dùng phiên bản mới nhất; các bản cũ vẫn được giữ ở đây phòng khi bạn cần.",
+  "hist_dl": "Tải về",
+  "hist_latest": "mới nhất",
+  "home": "← Trang chủ 4Dir",
+  "lang": "Ngôn ngữ",
+  "fast": "Nhanh hơn File Explorer của Windows!!"
+ },
+ "store": [
+  "Tải từ Microsoft Store",
+  "Phần mềm diệt virus hoặc máy tính công ty chặn tệp zip? Hãy dùng bản Store do Microsoft ký thay thế (không có liên kết Win+E ở bản đó)."
+ ],
+ "fp": "Một số phần mềm diệt virus (Microsoft Defender, HP Wolf Security, v.v.) nhận nhầm 4Dir.exe trong tệp zip là mã độc. Đây là báo động giả.\n4Dir.exe là trình khởi chạy 18 KB chỉ để mở ứng dụng ({src}) và đã được báo cáo cho các nhà cung cấp.\nBitdefender đã xác nhận tệp này sạch; việc phát hiện sẽ được gỡ bỏ trong các bản cập nhật sắp tới.\nNếu bị chặn, hãy dùng bản Store.",
+ "fp_src": "mã nguồn",
+ "sup_h": "Cảm ơn những người ủng hộ",
+ "thx": [
+  "Quá trình tải đã bắt đầu",
+  "4Dir miễn phí và sẽ luôn như vậy. Nếu nó giúp ích cho bạn, một khoản quyên góp nhỏ sẽ giúp các bản cập nhật tiếp tục ra mắt.",
+  "Để sau"
+ ],
+ "board": "Cộng đồng",
+ "star": [
+  "Thích 4Dir? Hãy tặng một sao trên GitHub.",
+  "Tặng sao trên GitHub"
+ ],
+ "lang_sup": "Hỗ trợ ngôn ngữ",
+ "guide": {
+  "title": "Cách dùng 4Dir",
+  "link": "Cách dùng",
+  "toc": "Mục lục",
+  "top": "Lên đầu trang",
+  "etc_h": "Những điều khác",
+  "etc": [
+   "Giao diện (sáng/tối) và ngôn ngữ nằm trong <b>⚙ Cài đặt ▸ Chung</b>. Thay đổi ngôn ngữ có hiệu lực sau khi bạn khởi động lại 4Dir.",
+   "Nếu 4Dir hoạt động bất thường, hãy nhấp <b>Công cụ → Lưu nhật ký để báo lỗi</b> và gửi tệp zip được tạo ra tới support@4dir.net. Chúng tôi sẽ xem nhật ký để tìm nguyên nhân."
+  ]
+ }
+}

@@ -25,7 +25,7 @@ import time
 import html
 import shutil
 
-MAKE_SITE_VER = "1.21.1"   # 1.21.1: GitHub Sponsors 와 나란히 있을 때 왼쪽 단추 글자 = 서비스 이름(♥ Ko-fi / 한국어 ♥ 페어리) — 두 단추 구분 (사용자 11/28) / 1.21.0: 후원 = Ko-fi(한국어는 페어리) 옆에 GitHub Sponsors(site_config sponsors=true, 11/28 승인) — 후원 칸·받기 뒤 안내 둘 다 / 1.20.1: 후원자 = 점 목록 가로 4 × 세로 5(20명까지, 폰은 가로 2), 남긴 말은 안 보임 (사용자 11/25) / 1.20.0: 후원 칸 밑에 고마운 후원자 한 줄(site_config.json supporters, 이름은 줄임 — 메일 등 개인 정보 안 씀, 사용자 11/25) / 1.19.0: 한국어 페이지 후원 = 페어리(fairy.hada.io, 국내 카드) — Ko-fi(PayPal)는 한국 계정끼리 결제 막힘 (사용자 11/25) / 1.18.3: 후원 칸 위아래 여백 줄임 (사용자 11/25) / 1.18.2: 후원 문구 첫 문장 뒤 줄바꿈 (사용자 11/25) / 1.18.1: 머리줄 후원 버튼 뺌, 원래 후원 칸을 별 부탁 바로 밑으로 (사용자 11/25) / 1.18.0: 후원 = 머리줄 just downloader 옆 버튼(아래 후원 칸 뺌), 별 부탁 = 받기 안내 줄 바로 밑 (사용자 11/25 스샷) / 1.17.0: code-signing.html 을 SignPath 재신청용으로 되돌림(서명 문구·역할·MFA, 스토어판은 MS 서명 안내 — 사용자 11/20 "진행해") / 1.16.2: 오탐 안내 줄바꿈(\n → <br>, 사용자 11/18) / 1.16.1: 오탐 안내 빨간 굵은 글씨 (사용자 11/18) / 1.16.0: 첫 화면 스토어 안내 밑에 백신 오탐 안내 한 줄(실행기 소스 링크, 사용자 11/18) / 1.15.2: 스토어 안내에서 업데이트 문구 뺌 (사용자 11/15) / 1.15.1: 첫 화면 정리(사용법 버튼 뺌·언어 지원 글자 링크·별 부탁 한 줄) / 1.15.0: 첫 화면 깃허브 별 부탁 칸 / 1.14.4: 첫 화면 언어 버튼 이름 = 언어 지원 / 1.14.3: 첫 화면 사용법 버튼 옆 언어 버튼 / 1.14.2: 언어 선택 상자 맨 아래 '🌐 언어 · 16 →' = languages.html / 1.14.1: _site\root 의 파일을 사이트 맨 위에 복사(검색 엔진 소유 확인 파일) / 1.14.0: 지원 언어 페이지(languages.html, 앱 16개·사이트 10개) + 바닥글 링크, 앱만 지원하는 6개 언어로 온 사람에게 영어 첫 화면에 그 언어로 한 줄 안내 (사용자 11/14 '최소') / 1.13.1: 받기·스토어 버튼 같은 너비 (사용자 11/13) / 1.13.0: 다운로드 버튼 옆 Microsoft Store 받기 + 안내 한 줄 (사용자 11/13) / 1.12.1: 위쪽 just downloader 버튼 = PC판 페이지로 바로 (💻, 사용자 11/11 'PC판이 먼저 보이면') / 1.12.0: 사용법 페이지 = 앱 사용법 2.0 과 같은 21개 주제 + 움직이는 장면 영상(img/demo, 보이는 것만 재생) · 문구는 앱 번역(bin/lang) / 1.11.1: 후원 버튼 새 창(target=_blank) / 1.11.0: 개인정보처리방침 privacy.html (구글 드라이브 백업 — 구글 앱 등록에 필요) / 1.10.0: 1.10.0: 받기를 누르면 다운로드는 바로 시작 + 후원 안내 창(막지 않음, 닫기 가능 — 사용자 11/6 PureRef 처럼) / 1.9.3: 1.9.3: support 메일 링크에 제목 말머리 [4Dir] / 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
+MAKE_SITE_VER = "1.22.0"   # 1.22.0: 사이트 26개 언어(site_text MORE·site_lang\*.json — 사용자 11/28 '웹사이트도 해당 언어로') · 언어 페이지 국기(_site\img\flags, 번체 중국어는 없음)·사이트 링크 · 바뀐 점이 그 언어에 없으면 영어 · 화면 그림이 없는 언어는 영어 그림 / 1.21.1: GitHub Sponsors 와 나란히 있을 때 왼쪽 단추 글자 = 서비스 이름(♥ Ko-fi / 한국어 ♥ 페어리) — 두 단추 구분 (사용자 11/28) / 1.21.0: 후원 = Ko-fi(한국어는 페어리) 옆에 GitHub Sponsors(site_config sponsors=true, 11/28 승인) — 후원 칸·받기 뒤 안내 둘 다 / 1.20.1: 후원자 = 점 목록 가로 4 × 세로 5(20명까지, 폰은 가로 2), 남긴 말은 안 보임 (사용자 11/25) / 1.20.0: 후원 칸 밑에 고마운 후원자 한 줄(site_config.json supporters, 이름은 줄임 — 메일 등 개인 정보 안 씀, 사용자 11/25) / 1.19.0: 한국어 페이지 후원 = 페어리(fairy.hada.io, 국내 카드) — Ko-fi(PayPal)는 한국 계정끼리 결제 막힘 (사용자 11/25) / 1.18.3: 후원 칸 위아래 여백 줄임 (사용자 11/25) / 1.18.2: 후원 문구 첫 문장 뒤 줄바꿈 (사용자 11/25) / 1.18.1: 머리줄 후원 버튼 뺌, 원래 후원 칸을 별 부탁 바로 밑으로 (사용자 11/25) / 1.18.0: 후원 = 머리줄 just downloader 옆 버튼(아래 후원 칸 뺌), 별 부탁 = 받기 안내 줄 바로 밑 (사용자 11/25 스샷) / 1.17.0: code-signing.html 을 SignPath 재신청용으로 되돌림(서명 문구·역할·MFA, 스토어판은 MS 서명 안내 — 사용자 11/20 "진행해") / 1.16.2: 오탐 안내 줄바꿈(\n → <br>, 사용자 11/18) / 1.16.1: 오탐 안내 빨간 굵은 글씨 (사용자 11/18) / 1.16.0: 첫 화면 스토어 안내 밑에 백신 오탐 안내 한 줄(실행기 소스 링크, 사용자 11/18) / 1.15.2: 스토어 안내에서 업데이트 문구 뺌 (사용자 11/15) / 1.15.1: 첫 화면 정리(사용법 버튼 뺌·언어 지원 글자 링크·별 부탁 한 줄) / 1.15.0: 첫 화면 깃허브 별 부탁 칸 / 1.14.4: 첫 화면 언어 버튼 이름 = 언어 지원 / 1.14.3: 첫 화면 사용법 버튼 옆 언어 버튼 / 1.14.2: 언어 선택 상자 맨 아래 '🌐 언어 · 16 →' = languages.html / 1.14.1: _site\root 의 파일을 사이트 맨 위에 복사(검색 엔진 소유 확인 파일) / 1.14.0: 지원 언어 페이지(languages.html, 앱 16개·사이트 10개) + 바닥글 링크, 앱만 지원하는 6개 언어로 온 사람에게 영어 첫 화면에 그 언어로 한 줄 안내 (사용자 11/14 '최소') / 1.13.1: 받기·스토어 버튼 같은 너비 (사용자 11/13) / 1.13.0: 다운로드 버튼 옆 Microsoft Store 받기 + 안내 한 줄 (사용자 11/13) / 1.12.1: 위쪽 just downloader 버튼 = PC판 페이지로 바로 (💻, 사용자 11/11 'PC판이 먼저 보이면') / 1.12.0: 사용법 페이지 = 앱 사용법 2.0 과 같은 21개 주제 + 움직이는 장면 영상(img/demo, 보이는 것만 재생) · 문구는 앱 번역(bin/lang) / 1.11.1: 후원 버튼 새 창(target=_blank) / 1.11.0: 개인정보처리방침 privacy.html (구글 드라이브 백업 — 구글 앱 등록에 필요) / 1.10.0: 1.10.0: 받기를 누르면 다운로드는 바로 시작 + 후원 안내 창(막지 않음, 닫기 가능 — 사용자 11/6 PureRef 처럼) / 1.9.3: 1.9.3: support 메일 링크에 제목 말머리 [4Dir] / 1.9.2: 후원 칸 통째로 받기 바로 밑(작은 버튼 뺌), Ko-fi 버튼 글자 = ♥ 4Dir 후원하기 / 1.9.1: 받기 버튼 밑 작은 후원 버튼
 SUPPORT = "support@4dir.net"   # 문제 보고 메일 (1.1.1)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -139,9 +139,9 @@ def page(lang, cfg, rel):
     opts += f'<option value="{up}languages.html">🌐 {html.escape(ST.T[lang]["lang"])} · {len(app_langs())} →</option>'   # 1.14.2 언어 선택 상자 맨 아래 = 지원 언어 페이지 (사용자 11/14 '언어 페이지가 없네')
     feats = "".join(f'<div class="card"><h3>{e(h)}</h3><p>{e(p)}</p></div>' for h, p in t["feats"])
     how = "".join(f"<li>{s}</li>" for s in t["how"])          # <b> 허용 (문구는 우리가 씀)
-    news = "".join(f"<li>{x}</li>" for x in CL.items(ver, lang))   # <b> 허용 (문구는 우리가 씀)
+    news = "".join(f"<li>{x}</li>" for x in cl_items(ver, lang))   # <b> 허용 (문구는 우리가 씀)
     faq = "".join(f"<details><summary>{e(q)}</summary><p>{e(a)}</p></details>" for q, a in t["faq"])
-    img = ST.APP_LANG[lang]
+    img = shot_lang(lang)
     btns = []
     don_url = ("https://ko-fi.com/" + cfg["kofi"]) if cfg["kofi"] else ""
     if lang == "ko" and cfg["fairy"]:   # 1.19.0 한국어 = 페어리만 (Ko-fi 는 한국 PayPal 끼리 결제 안 됨)
@@ -162,7 +162,7 @@ def page(lang, cfg, rel):
                     f"var m={json.dumps(m)};var L=(navigator.languages||[navigator.language]);"
                     "for(var i=0;i<L.length;i++){var l=(L[i]||'').toLowerCase();if(l.indexOf('en')===0)return;"
                     "if(l==='zh-hk'||l==='zh-mo'||l.indexOf('zh-hant')===0)l='zh-tw';if(l.indexOf('zh')===0&&!m[l])l='zh-cn';"
-                    "if(l.indexOf('pt')===0)l='pt-br';var k=m[l]||m[l.split('-')[0]];if(k){location.replace(k+'/');return;}}}catch(e){}})();</script>")
+                    "if(l.indexOf('pt')===0)l='pt-br';if(l.indexOf('no')===0||l.indexOf('nn')===0)l='nb';var k=m[l]||m[l.split('-')[0]];if(k){location.replace(k+'/');return;}}}catch(e){}})();</script>")
     return f"""<!doctype html>
 <html lang="{lang}">
 <head>
@@ -250,7 +250,8 @@ def languages_page(cfg):
     for c, name, _ in app_langs():
         sl = site.get(c)
         link = f'<a href="{"" if sl == "en" else sl + "/"}">{e(ST.NAMES[sl])}</a>' if sl else "English"
-        rows.append(f"<tr><td>{e(name)}</td><td>✔</td><td>{link}</td></tr>")
+        guide = f' · <a href="{"" if sl == "en" else sl + "/"}guide.html">{e(GT.GUIDE[sl]["link"])}</a>' if sl and sl in GT.GUIDE else ""
+        rows.append(f"<tr><td>{flag_img(sl or c)}{e(name)}</td><td>✔</td><td>{link}{guide}</td></tr>")   # 1.22.0 국기·사용법 링크
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -268,7 +269,7 @@ def languages_page(cfg):
 <section><h1>Languages</h1>
 <p>The 4Dir app is available in {len(rows)} languages. It starts in your Windows display language; to change it, open ⚙ Settings ▸ General ▸ Language and restart 4Dir.
 If your language is not in the list, 4Dir shows English.</p>
-<p>This website, the user guide and the release notes are available in {len(ST.LANGS)} languages; other languages see the English pages.</p>
+<p>This website and the user guide are available in {len(ST.LANGS)} languages; other languages see the English pages. Older release notes may be in English only.</p>
 <table class="langs"><thead><tr><th>Language</th><th>App</th><th>Website</th></tr></thead><tbody>
 {"".join(rows)}
 </tbody></table>
@@ -332,6 +333,30 @@ def star_ask(lang, repo_url):
 LANG_SUP = {"en": "Language support", "ko": "언어 지원", "zh-CN": "语言支持", "zh-TW": "語言支援", "ja": "対応言語",
             "es": "Idiomas compatibles", "de": "Sprachunterstützung", "fr": "Langues prises en charge",
             "pt-BR": "Idiomas suportados", "ru": "Поддержка языков"}   # 1.14.4 첫 화면 버튼 이름 (사용자 11/14 '언어 지원')
+for _lg, _d in ST.EXTRA.items():   # 1.22.0 새 16개 언어 (site_lang\<코드>.json)
+    SUP_H[_lg] = _d["sup_h"]
+    THX[_lg] = tuple(_d["thx"])
+    BOARD[_lg] = _d["board"]
+    STAR_ASK[_lg] = tuple(_d["star"])
+    LANG_SUP[_lg] = _d["lang_sup"]
+    GT.GUIDE[_lg] = dict(_d["guide"], intro="", sections=[])   # 사용법 = 앱 사용법 주제(앱 번역) + 이 언어 제목·목차 글자
+
+
+def cl_items(ver, lang):
+    """1.22.0 바뀐 점 — changelog 에 그 언어가 없으면(새 16개 언어) 영어"""
+    return CL.items(ver, lang)   # changelog 1.1.0 이 언어 없으면 영어로 돌려줌
+
+
+def shot_lang(lang):
+    """1.22.0 첫 화면 그림 — 그 언어 그림(img\<앱 언어>_1.png)이 없으면 영어"""
+    c = ST.APP_LANG[lang]
+    return c if os.path.isfile(os.path.join(SITE_SRC, "img", c + "_1.png")) else "en"
+
+
+def flag_img(lang, up=""):
+    """1.22.0 국기 그림 (번체 중국어 등 FLAG 가 빈 언어는 빈 칸)"""
+    f = ST.FLAG.get(lang, "")
+    return f'<img class="flag" src="{up}img/flags/{f}.svg" alt="" width="20" height="15">' if f else '<span class="flag"></span>'
 
 
 def guide_hero(lang, up=""):
@@ -600,7 +625,7 @@ def versions_page(lang, cfg, rel):
     for v, d, _ in CL.CHANGES:
         z = f"{repo_url}/releases/download/v{v}/4Dir_v{v}.zip"
         tag = f' <span class="tag">{e(t["hist_latest"])}</span>' if v == ver else ""
-        lis = "".join(f"<li>{x}</li>" for x in CL.items(v, lang))
+        lis = "".join(f"<li>{x}</li>" for x in cl_items(v, lang))
         rows.append(f'<article class="ver" id="v{v}"><div class="vh"><h3>v{v}{tag}</h3><span class="date">{d}</span>'
                     f'<a class="btn sm" href="{z}">⬇ {e(t["hist_dl"])}</a> <a class="sha" href="{z}.sha256.txt">SHA256</a></div><ul>{lis}</ul></article>')
     return f"""<!doctype html>
@@ -669,7 +694,7 @@ code{background:var(--code);padding:2px 6px;border-radius:4px;font-family:Consol
 code.sha{display:inline-block;max-width:100%}
 details{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:8px 0}summary{cursor:pointer;font-weight:600}
 #donate{margin:16px auto 8px;max-width:720px;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}#donate h2{margin:0 0 6px}#donate p{margin:0 0 10px}#donate p.btns{margin:0}#donate .sups{margin:12px 0 0;font-size:.9em}#donate .sups ul{display:grid;grid-template-columns:repeat(4,1fr);gap:4px 12px;margin:6px 0 0;padding:0;text-align:left}#donate .sups li{list-style:disc inside;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}@media(max-width:480px){#donate .sups ul{grid-template-columns:repeat(2,1fr)}}
-.applang{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:16px 0 0}table.langs{border-collapse:collapse;margin:16px 0}table.langs th,table.langs td{border-bottom:1px solid var(--line);padding:6px 16px 6px 0;text-align:left}
+.applang{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:16px 0 0}table.langs{border-collapse:collapse;margin:16px 0}.flag{display:inline-block;width:20px;height:15px;margin-right:8px;vertical-align:-2px;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.12)}span.flag{box-shadow:none}table.langs th,table.langs td{border-bottom:1px solid var(--line);padding:6px 16px 6px 0;text-align:left}
 footer{border-top:1px solid var(--line);padding:24px 0;color:var(--mut);font-size:14px;text-align:center}
 .news{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin:8px 0 24px}.news h2{font-size:20px;margin:0 0 8px}.news ul{margin:0 0 8px;padding-left:20px}.news p{margin:0}
 .ver{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:12px 0}.ver ul{margin:8px 0 0;padding-left:20px}
@@ -719,7 +744,7 @@ def main():
         shutil.rmtree(OUT)
     os.makedirs(OUT)
     assert CL.CHANGES[0][0] == rel[0], f"changelog.py 맨 위({CL.CHANGES[0][0]})가 배포판 v{rel[0]} 이 아님 — 바뀐 점 먼저 적을 것"
-    assert all(len(it) == len(CL.ORDER) for _, _, its in CL.CHANGES for it in its), "changelog 항목 언어 수 틀림"
+    assert all(len(it) in (len(CL.ORDER), len(CL.ORDER_ALL)) for _, _, its in CL.CHANGES for it in its), "changelog 항목 언어 수 틀림"
     for lang in ST.LANGS:
         t = ST.T[lang]
         assert set(t) == set(ST.T["en"]), (lang, set(ST.T["en"]) ^ set(t))

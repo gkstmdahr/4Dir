@@ -10,8 +10,8 @@
 
 로그: bin\\log\\4Dir.log
 """
-QE_VERSION = "0.9.158"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
-QE_BUILD = 6              #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
+QE_VERSION = "0.9.159"   #★공개 번호 — 공개 배포할 때만 +1 (v0.9.108 사용자 11/5: 공개 목록이 0.9.99→0.9.101→0.9.107 처럼 건너뛰지 않게)
+QE_BUILD = 2              #★빌드 번호 — 고칠 때마다 +1, 공개한 뒤 다음 고침에서 QE_VERSION+1 · QE_BUILD=1. exe 파일 버전 4번째 자리
 
 import os
 import sys
@@ -13731,8 +13731,10 @@ class Main(QtWidgets.QMainWindow):
         dlg.setStyleSheet(self.styleSheet())
         if dlg.exec():
             SETTINGS["user_buttons"] = dlg.result_items()
-            log.info("My메뉴 %d개 저장 (4Dir 기능 %d개, 단축키 %s)", len(SETTINGS["user_buttons"]), sum(1 for x in SETTINGS["user_buttons"] if x.get("action")),
-                     {x.get("name"): x.get("key") for x in SETTINGS["user_buttons"] if x.get("key")})
+            ub = SETTINGS["user_buttons"]
+            log.info("My메뉴 %d개 저장 (4Dir 기능 %d개, 구분선 %d개, 사용자 아이콘 %d개, 아이콘만 %d개, 단축키 %s)", len(ub), sum(1 for x in ub if x.get("action")),
+                     sum(1 for x in ub if x.get("sep")), sum(1 for x in ub if x.get("icon")), sum(1 for x in ub if x.get("icon_only")),
+                     {x.get("name"): x.get("key") for x in ub if x.get("key")})
             for w in WINDOWS:
                 w.build_user_buttons()
                 w.apply_keys()
@@ -13744,17 +13746,30 @@ class Main(QtWidgets.QMainWindow):
         while self.ubar_lay.count():
             it = self.ubar_lay.takeAt(0)
             if it.widget():
+                it.widget().hide()   # 0.9.159: 지워지기 전까지 새 단추와 겹쳐 보이지 않게
                 it.widget().deleteLater()
         items = SETTINGS["user_buttons"] or []
         for item in items:
+            if item.get("sep"):   # 0.9.159 (받은 메일 11/28): 구분선 = 세로 줄
+                ln = QtWidgets.QFrame()
+                ln.setFrameShape(QtWidgets.QFrame.VLine)
+                ln.setFixedWidth(9)
+                ln.setStyleSheet("QFrame{color:%s}" % ("#5a636c" if SETTINGS["dark"] else "#b8bfc6"))
+                ln.setContextMenuPolicy(Qt.CustomContextMenu)
+                ln.customContextMenuRequested.connect(lambda _p: self.edit_user_buttons())
+                self.ubar_lay.addWidget(ln)
+                continue
             b = QtWidgets.QToolButton()
             b.setAutoRaise(True)
             ic = userbtns.icon_for(item)
             if not ic.isNull():
                 b.setIcon(ic)
-            b.setText(item.get("name") or "?")
-            b.setToolButtonStyle(Qt.ToolButtonTextBesideIcon if not ic.isNull() else Qt.ToolButtonTextOnly)
+            txt = userbtns.show_text(item, not ic.isNull())   # 0.9.159: 아이콘만 표시 (이름 비우면 '?' 붙던 것)
+            b.setText(txt)
+            b.setToolButtonStyle(Qt.ToolButtonIconOnly if not txt else Qt.ToolButtonTextBesideIcon if not ic.isNull() else Qt.ToolButtonTextOnly)
             tip = keymap.LABEL.get(item["action"], item["action"]) if item.get("action") else f"{item.get('cmd', '')} {item.get('args', '')}".strip()
+            if not txt and (item.get("name") or "").strip():
+                tip = item["name"].strip() + "\n" + tip
             if item.get("key"):   # 0.9.130 My메뉴 자기 단축키
                 tip += f"  ({item['key']})"
             elif item.get("action") and key_text(item["action"]):

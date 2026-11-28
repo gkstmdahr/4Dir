@@ -1,0 +1,115 @@
+{
+ "T": {
+  "title": "4Dir — Filhåndtering med flere ruder og faner til Windows (gratis, bærbar)",
+  "desc": "4Dir er en gratis, bærbar filhåndtering til Windows: del vinduet op i op til 20 ruder, hver med sine egne faner. Hurtig søgning, SVN-status, lyst/mørkt tema, 26 sprog.",
+  "tagline": "En filhåndtering med flere ruder, hurtigere end Windows Stifinder!!",
+  "sub": "Ingen installation — udpak og kør.",
+  "dl": "Download 4Dir v{ver}",
+  "dlnote": "Windows 10/11 64-bit · {size} · {date} · gratis",
+  "shot1": "4 ruder, lyst tema",
+  "shot2": "3 ruder, mørkt tema",
+  "feat_h": "Funktioner",
+  "feats": [
+   [
+    "Op til 20 ruder",
+    "Layout med 1, 2, 3, 4 eller 6 ruder med ét klik, eller et vilkårligt gitter op til 5 × 4. Hver rude har sine egne faner."
+   ],
+   [
+    "Holder sig af vejen",
+    "Mapper læses direkte uden Windows' tunge shell-visning. Ingen timere eller polling i hvile — kan roligt holdes åben ved siden af 3ds Max, spil eller andre tunge programmer."
+   ],
+   [
+    "Øjeblikkelig søgning",
+    "Skriv for at søge i alle filnavne på dine drev. Dets eget indeks opdateres i realtid — der kræves ingen administratorrettigheder."
+   ],
+   [
+    "SVN-status med et blik",
+    "Mærker for ændret / tilføjet / konflikt læses direkte fra .svn — mapper bliver røde, når noget indeni er ændret. Git og Perforce via Windows' overlejringer."
+   ],
+   [
+    "Føles som Stifinder",
+    "Samme tastaturgenveje, hele Windows' højreklikmenu, træk og slip til og fra Stifinder og andre programmer. Højreklik på et .webp-billede for at gemme det som PNG eller JPG."
+   ],
+   [
+    "Bærbar og privat",
+    "Indstillingerne bliver i 4Dir-mappen. Lyst/mørkt tema, 26 sprog, masseomdøbning, gendannelse af session og et sundhedstjek af Stifinder er indbygget."
+   ]
+  ],
+  "how_h": "Sådan installerer du",
+  "how": [
+   "Download zip-filen med knappen ovenfor (eller fra <b>Releases</b> på GitHub). Den grønne “Code → Download ZIP” på GitHub er kun kildekode og kan ikke køres.",
+   "Højreklik på zip-filen → Egenskaber → sæt kryds ved <b>Fjern blokering</b> → OK. (Ellers viser Windows en sikkerhedsadvarsel hver gang.)",
+   "Udpak den et vilkårligt sted og dobbeltklik på <b>4Dir.exe</b>. (eller 4Dir.vbs, hvis 4Dir.exe er blokeret)"
+  ],
+  "smart": "Hvis Windows SmartScreen dukker op: klik på <b>Flere oplysninger</b> → <b>Kør alligevel</b>.",
+  "sha_h": "Bekræft overførslen (valgfrit)",
+  "sha": "Kør <code>certutil -hashfile 4Dir_v{ver}.zip SHA256</code> i Kommandoprompt — resultatet skal passe:",
+  "don_h": "Støt 4Dir",
+  "don": "4Dir er gratis og uden reklamer. Hvis det sparer dig tid, er en lille donation med til at holde opdateringerne i gang.",
+  "faq_h": "Ofte stillede spørgsmål",
+  "faq": [
+   [
+    "Er det virkelig gratis?",
+    "Ja. 4Dir er gratis og open source (GPL-3.0). Ingen reklamer, ingen konto, ingen prøveperiode."
+   ],
+   [
+    "Kan jeg bruge det på arbejdet?",
+    "Ja. 4Dir er fri software under GPL-3.0, så virksomheder kan også bruge det gratis, uden licensgebyr eller registrering. Da det kører uden installation, skal du blot tjekke, at din virksomhed tillader bærbare programmer."
+   ],
+   [
+    "Er det virkelig hurtigere end Stifinder?",
+    "At åbne en mappe med 1.000 filer i et nyt vindue tog 0,4 s i 4Dir og omkring 2 s i Stifinder. Endnu et vindue lagde omkring 10 MB hukommelse til i 4Dir og omkring 130 MB i Stifinder. Målt 5 gange hver på den samme pc (Windows 11, SSD). Med titusindvis af filer i én mappe bliver forskellen mindre."
+   ],
+   [
+    "Sender det data?",
+    "Ingen personlige data. Det tjekker kun én gang i døgnet, om der findes en ny version (kan slås fra under Værktøjer)."
+   ],
+   [
+    "Gik noget galt?",
+    "Værktøjer → Gem log til problemrapport, og tryk derefter på “Send med mail” (eller send zip-filen til support@4dir.net). GitHub-brugere kan også oprette en issue."
+   ]
+  ],
+  "src": "Kildekode",
+  "issues": "Rapportér et problem",
+  "lic": "Fri software under GPL-3.0. Windows er et varemærke tilhørende Microsoft.",
+  "new_h": "Nyt i v{ver}",
+  "hist_link": "Ældre versioner og fuld ændringshistorik",
+  "hist_title": "4Dir versionshistorik — download ældre versioner",
+  "hist_h": "Versionshistorik",
+  "hist_intro": "Alle 4Dir-udgivelser med det, der er ændret. Den nyeste version anbefales; de ældre bliver liggende her, hvis du får brug for dem.",
+  "hist_dl": "Download",
+  "hist_latest": "seneste",
+  "home": "← 4Dir forside",
+  "lang": "Sprog",
+  "fast": "Hurtigere end Windows Stifinder!!"
+ },
+ "store": [
+  "Hent fra Microsoft Store",
+  "Blokerer antivirus eller en arbejdscomputer zip-filen? Hent i stedet Store-versionen, som er signeret af Microsoft (Win+E-tilknytning findes ikke der)."
+ ],
+ "fp": "Nogle antivirusprogrammer (Microsoft Defender, HP Wolf Security m.fl.) markerer fejlagtigt 4Dir.exe i zip-filen som malware. Det er en falsk positiv.\n4Dir.exe er en startfil på 18 KB, som blot starter appen ({src}), og den er blevet indberettet til leverandørerne.\nBitdefender har bekræftet, at filen er ren; registreringen fjernes i kommende opdateringer.\nHvis den bliver blokeret, så brug Store-versionen.",
+ "fp_src": "kildekode",
+ "sup_h": "Tak, støtter",
+ "thx": [
+  "Din download er startet",
+  "4Dir er gratis og bliver ved med at være det. Hvis det hjælper dig, er en lille donation med til at holde opdateringerne i gang.",
+  "Måske senere"
+ ],
+ "board": "Fællesskab",
+ "star": [
+  "Kan du lide 4Dir? Giv det en stjerne på GitHub.",
+  "Stjerne på GitHub"
+ ],
+ "lang_sup": "Sprogunderstøttelse",
+ "guide": {
+  "title": "Sådan bruger du 4Dir",
+  "link": "Sådan bruger du",
+  "toc": "Indhold",
+  "top": "Til toppen",
+  "etc_h": "Andet",
+  "etc": [
+   "Tema (lyst/mørkt) og sprog findes under <b>⚙ Indstillinger ▸ Generelt</b>. En sprogændring træder i kraft, når du genstarter 4Dir.",
+   "Hvis 4Dir begynder at opføre sig mærkeligt, så klik på <b>Værktøjer → Gem log til problemrapport</b> og send den zip-fil, der oprettes, til support@4dir.net. Vi kigger i loggen for at finde årsagen."
+  ]
+ }
+}
